@@ -7,4 +7,4 @@ $ npm install
 $ npm webpack
 $ npm start
 ```
-Now you can browser to http://127.0.0.0:8000 and see your running instance of opensheetmusicdisplay.
+Now you can browse to http://127.0.0.0:8080 and see your running instance of opensheetmusicdisplay.
