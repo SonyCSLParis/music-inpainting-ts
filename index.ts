@@ -1,14 +1,14 @@
-import { MusicSheetAPI } from "opensheetmusicdisplay";
+import { OSMD } from "opensheetmusicdisplay";
 
-let osmd: MusicSheetAPI = new MusicSheetAPI();
+let osmd: OSMD;
 
 window.onload = function () {
-	let canvas: HTMLCanvasElement = <HTMLCanvasElement>document.createElement("canvas");
-    canvas.width = 800;
-    canvas.height = 600;
-    document.body.appendChild(canvas);
-    osmd.setCanvas(canvas);
-    osmd.setWidth(800);
+	let container: HTMLElement = <HTMLElement>document.createElement("container");
+	container.clientWidth = 800;
+	container.clientHeight = 600;
+    document.body.appendChild(container);
+
+    osmd = new OSMD(container, false);
     loadMusicXML("musicXmlSample.xml");
 };
 
