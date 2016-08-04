@@ -48,9 +48,7 @@
 	var opensheetmusicdisplay_1 = __webpack_require__(1);
 	var osmd;
 	window.onload = function () {
-	    var container = document.createElement("container");
-	    container.clientWidth = 800;
-	    container.clientHeight = 600;
+	    var container = document.createElement("div");
 	    document.body.appendChild(container);
 	    osmd = new opensheetmusicdisplay_1.OSMD(container, false);
 	    loadMusicXML("musicXmlSample.xml");
@@ -66,6 +64,7 @@
 	                break;
 	            case 4:
 	                osmd.load(xhttp.responseXML);
+	                osmd.render();
 	                break;
 	            default:
 	                throw ("Error loading MusicXML.");

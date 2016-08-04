@@ -2,10 +2,8 @@ import { OSMD } from "opensheetmusicdisplay";
 
 let osmd: OSMD;
 
-window.onload = function () {
-	let container: HTMLElement = <HTMLElement>document.createElement("container");
-	container.clientWidth = 800;
-	container.clientHeight = 600;
+window.onload = () => {
+	let container: HTMLElement = <HTMLElement>document.createElement("div");
     document.body.appendChild(container);
 
     osmd = new OSMD(container, false);
@@ -23,6 +21,7 @@ function loadMusicXML(url: string) {
 	      break;
 	      case 4 : // COMPLETED
 	      	osmd.load(xhttp.responseXML);
+	      	osmd.render();
 	      	break;
 	      default:
 	      	throw("Error loading MusicXML.");
