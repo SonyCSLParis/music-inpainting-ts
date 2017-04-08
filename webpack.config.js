@@ -45,7 +45,7 @@ module.exports = function (options) {
       }),
       new CopyWebpackPlugin([
         {
-          from: 'node_modules/opensheetmusicdisplay/test/data/MuzioClementi_SonatinaOpus36No1_Part1.xml',
+          from: 'MuzioClementi_SonatinaOpus36No1_Part1.xml',
           to: 'musicXmlSample.xml'
         }
       ])
