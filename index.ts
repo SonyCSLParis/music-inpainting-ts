@@ -20,8 +20,12 @@ function loadMusicXML(url: string) {
 	      case 3 : // INTERACTIVE
 	      break;
 	      case 4 : // COMPLETED
-	      	osmd.load(xhttp.responseXML);
-	      	osmd.render();
+	      	osmd
+						.load(xhttp.responseXML)
+						.then(
+							() => osmd.render(),
+							(err) => console.log(err)
+						);
 	      	break;
 	      default:
 	      	throw("Error loading MusicXML.");
