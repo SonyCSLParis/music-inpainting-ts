@@ -16,7 +16,7 @@ $ npm run webpack
 ```
 
 ## Project structure
-* `index.ts` - the application's entry point, contains all source
+* `index.ts` - the application's entry point, contains all sources
 * `webpack.config.js` - Webpack configuration
 * `tsconfig.json` - TypeScript compiler configuration
 * `MuzioClementi_SonatinaOpus36No1_Part1.xml` - the MusicXML file to be displayed
