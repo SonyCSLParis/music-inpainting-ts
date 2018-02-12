@@ -1,8 +1,11 @@
 {
   "compilerOptions": {
-    "noImplicitAny": true,
-    "removeComments": true
+      "target": "es5",
+      "noImplicitAny": false,
+      "removeComments": true,
+      "declaration": true
   },
+  "allowSyntheticDefaultImports": true,
   "awesomeTypescriptLoaderOptions": {},
   "exclude": [
     "node_modules"
