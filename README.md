@@ -24,5 +24,3 @@ $ npm run webpack
 
 ### Build artifacts
 * `dist/` - directory containing all build artifacts, will be served on `npm start`
-
-
