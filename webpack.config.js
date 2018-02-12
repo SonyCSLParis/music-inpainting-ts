@@ -31,7 +31,8 @@ module.exports = function (options) {
             {
               loader: 'awesome-typescript-loader',
               options: {
-                configFileName: 'tsconfig.webpack.json'
+//                  configFileName: 'tsconfig.webpack.json'
+		                  configFileName: 'tsconfig.json'
               }
             }
           ]
@@ -41,7 +42,7 @@ module.exports = function (options) {
 
     plugins: [
       new HtmlWebpackPlugin({
-        title: 'opensheetmusicdisplay | webpack-usage-example'
+        title: 'DeepBach'
       }),
       new CopyWebpackPlugin([
         {
