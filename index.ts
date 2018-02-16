@@ -23,7 +23,8 @@ import * as $ from "jquery";
 //         }
 //     })
 
-let serverUrl = 'http://127.0.0.1:5000/';
+// let serverUrl = 'http://127.0.0.1:5000/';
+let serverUrl = 'http://10.0.1.208:5000/';
 
 let audioControls: HTMLAudioElement = <HTMLAudioElement>document.createElement("audio");
 audioControls.setAttribute("controls", "");

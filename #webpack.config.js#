@@ -19,7 +19,7 @@ module.exports = function (options) {
     devtool: 'source-map',
 
     // Add the loader for .ts files.
-    module: {
+    module: {+-
       rules: [
         {
           test: /\.json$/,
@@ -44,7 +44,6 @@ module.exports = function (options) {
       new HtmlWebpackPlugin({
         title: 'DeepBach'
       }),
-	//example on how to add ressources
       new CopyWebpackPlugin([
         {
           from: 'MuzioClementi_SonatinaOpus36No1_Part1.xml',
