@@ -47,7 +47,7 @@ module.exports = function (options) {
 	//example on how to add ressources
       new CopyWebpackPlugin([
         {
-          from: 'MuzioClementi_SonatinaOpus36No1_Part1.xml',
+          from: 'Boplicity.xml',
           to: 'musicXmlSample.xml'
         }
       ])

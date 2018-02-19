@@ -85,11 +85,11 @@ manager.on('move', function(evt, data) {
     last_click = data.position;
 });
 
-/*
- * Load our MusicXMl and display it. The file is renamed by Webpack during bundling, it's
- * Muzio Clementi's Sonatina Opus 36 No 1, Part 1, which you can find next to this file.
- */
+
+// uncomment the following for testing
+//loadMusicXMLandAudio('musicXmlSample.xml', '');
 loadMusicXMLandAudio(serverUrl + 'ex', serverUrl + 'get-mp3');
+
 
 /**
  * Load a MusicXml file via xhttp request, and display its contents.
