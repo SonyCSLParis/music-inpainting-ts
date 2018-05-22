@@ -68,3 +68,6 @@ dist
 
 # emacs temporary files
 *~
+
+# music21j installation
+music21j/
