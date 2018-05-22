@@ -39,6 +39,8 @@
   "dependencies": {
     "@types/bootstrap-slider": "^9.9.0",
     "bootstrap-slider": "^10.0.0",
-    "nipplejs": "^0.6.8"
+    "midiconvert": "^0.4.4",
+    "nipplejs": "^0.6.8",
+    "tone": "^0.12.80"
   }
 }

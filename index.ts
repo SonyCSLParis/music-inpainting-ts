@@ -1,6 +1,9 @@
 import * as nipplejs from "nipplejs";
 import { eOSMD } from "./locator";
 import * as $ from "jquery";
+import * as MidiConvert from "midiconvert";
+import * as Tone from "tone";
+import * as m21 from "./music21j"
 // import Slider = require("bootstrap-slider");
 
 // // slider
@@ -23,24 +26,41 @@ import * as $ from "jquery";
 //         }
 //     })
 
-// let serverUrl = 'http://127.0.0.1:5000/';
-let serverUrl = 'http://10.0.1.208:5000/';
+let playbutton: HTMLElement = <HTMLElement>document.createElement("button");
+playbutton.textContent = "START";
+playbutton.addEventListener("click", playCallback);
 
-let audioControls: HTMLAudioElement = <HTMLAudioElement>document.createElement("audio");
-audioControls.setAttribute("controls", "");
+document.body.appendChild(playbutton);
 
-let audioPlayer: HTMLElement = <HTMLElement>document.createElement("source");
-audioPlayer.setAttribute("id", "source");
-audioPlayer.setAttribute("type", "audio/mpeg");
-audioPlayer.setAttribute("src", "");
-audioControls.appendChild(audioPlayer);
-document.body.appendChild(audioControls);
+let stopbutton: HTMLElement = <HTMLElement>document.createElement("button");
+stopbutton.textContent = "STOP";
+stopbutton.addEventListener("click", () => {
+    Tone.Transport.stop();
+    playbutton.textContent = "START";
+});
+
+document.body.appendChild(stopbutton);
+document.body.appendChild(document.createElement("div"))
+
+let serverUrl = 'http://0.0.0.0:5000/';
+// let serverUrl = 'http://10.0.1.208:5000/';
+
+// let audioControls: HTMLAudioElement = <HTMLAudioElement>document.createElement("audio");
+// audioControls.setAttribute("controls", "");
+//
+// let audioPlayer: HTMLElement = <HTMLElement>document.createElement("source");
+// audioPlayer.setAttribute("id", "source");
+// audioPlayer.setAttribute("type", "audio/mpeg");
+// audioPlayer.setAttribute("src", "");
+// audioControls.appendChild(audioPlayer);
+// document.body.appendChild(audioControls);
 
 let osmd: eOSMD;
 /*
  * Create a container element for OpenSheetMusicDisplay...
  */
-let container: HTMLElement = <HTMLElement>document.createElement("div");
+let container: HTMLElement = (
+    <HTMLElement>document.createElement("div"));
 /*
  * ... and attach it to our HTML document's body. The document itself is a HTML5
  * stub created by Webpack, so you won't find any actual .html sources.
@@ -68,15 +88,14 @@ manager.on('end', function(evt, nipple) {
     console.log(measureIndex);
 
 
-    let argsGenerationUrl = "one-measure-change";
-    argsGenerationUrl += '?measureIndex=' + measureIndex;
-    let argsMp3Url = "get-mp3";
+    let argsGenerationUrl = ("one-measure-change" +
+        ('?measureIndex=' + measureIndex)
+    );
+    let argsMidiUrl = "get-midi";
 
     //    url += '?choraleIndex=' + choraleIndex;
-    loadMusicXMLandAudio(serverUrl + argsGenerationUrl,
-        serverUrl + argsMp3Url);
-
-    // loadMp3(serverUrl + argsMp3Url);
+    loadMusicXMLandMidi(serverUrl + argsGenerationUrl,
+        serverUrl + argsMidiUrl);
 }
 );
 
@@ -85,66 +104,65 @@ manager.on('move', function(evt, data) {
     last_click = data.position;
 });
 
-
 // uncomment the following for testing
 //loadMusicXMLandAudio('musicXmlSample.xml', '');
-loadMusicXMLandAudio(serverUrl + 'ex', serverUrl + 'get-mp3');
-
+loadMusicXMLandMidi(serverUrl + 'ex', serverUrl + 'get-midi');
 
 /**
  * Load a MusicXml file via xhttp request, and display its contents.
  */
-function loadMusicXMLandAudio(urlXML: string, urlMp3: string) {
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        switch (xhttp.readyState) {
-            case 0: // UNINITIALIZED
-            case 1: // LOADING
-            case 2: // LOADED
-            case 3: // INTERACTIVE
-                break;
-            case 4: // COMPLETED
-                osmd
-                    .load(xhttp.responseXML)
-                    .then(
+function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
+    $.get({
+        url: urlXML,
+        success: (xmldata) => {
+            osmd.load(xmldata)
+                .then(
                     () => osmd.render(),
                     (err) => console.log(err)
-                    );
-
-                $("audio #source").attr('src', urlMp3);
-                (<HTMLAudioElement>$("audio").get(0)).load();
-                break;
-            default:
-                throw ("Error loading MusicXML file.");
+                );
+            loadMidi(urlMidi);
         }
-    }
-    xhttp.open("GET", urlXML, true);
-    xhttp.send();
+    });
 }
 
-function loadMp3(url: string) {
-    var xhttp = new XMLHttpRequest();
-    xhttp.responseType = 'blob'
-    xhttp.onreadystatechange = function() {
-        switch (xhttp.readyState) {
-            case 0: // UNINITIALIZED
-            case 1: // LOADING
-            case 2: // LOADED
-            case 3: // INTERACTIVE
-                break;
-            case 4: // COMPLETED
-                let data = xhttp.response;
-                $("audio #source").attr('src', data);
-                // (<JQuery<HTMLAudioElement>>$("audio")).load();
-                // (<HTMLAudioElement>$("audio")).play();
-                break;
-            default:
-                throw ("Error loading MusicXML file.");
-        }
-    }
-    xhttp.open("GET", url, true);
-    xhttp.send();
+var chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
+var reverb = new Tone.Reverb(1.5).connect(chorus);
+reverb.generate();
+var synth = new Tone.PolySynth(8).connect(reverb);
+
+function playNote(time, event){
+	synth.triggerAttackRelease(event.name, event.duration, time, event.velocity);
 }
+
+function loadMidi(url: string) {
+    MidiConvert.load(url, function(midi) {
+        console.log(midi)
+
+        Tone.Transport.cancel()  // remove all scheduled events
+
+        // make sure you set the tempo before you schedule the events
+        Tone.Transport.bpm.value = midi.header.bpm;
+        Tone.Transport.timeSignature = midi.timeSignature;
+
+        for (let track of midi.tracks) {
+            let notes = track.notes
+            let part = new Tone.Part(playNote, notes);
+            part.loop = true;
+            part.loopEnd = midi.duration;
+            part.start(0)  // scheldule events on the Tone timeline
+        }
+    })
+}
+
+function playCallback(){
+    if (Tone.Transport.state === "started"){
+        Tone.Transport.pause();
+        this.textContent = "START";
+    } else {
+        Tone.Transport.start();
+        this.textContent = "PAUSE";
+    }
+};
 
 function findMeasureIndex(position): string {
     let boundingBoxes = osmd.boundingBoxes;
