@@ -28,13 +28,13 @@ import * as m21 from "./music21j"
 
 let playbutton: HTMLElement = <HTMLElement>document.createElement("button");
 playbutton.textContent = "START";
-playbutton.addEventListener("click", playCallback, true);
+playbutton.addEventListener("click", playCallback);
 
 document.body.appendChild(playbutton);
 
 let stopbutton: HTMLElement = <HTMLElement>document.createElement("button");
 stopbutton.textContent = "STOP";
-stopbutton.addEventListener("click", () => {
+stopbutton.addEventListener("click", (event) => {
     Tone.Transport.stop();
     playbutton.textContent = "START";
 });
@@ -44,7 +44,7 @@ document.addEventListener("keydown", (event) => {
     switch (keyName) {
         case 'p': {playbutton.click(); break}
         case 's': {stopbutton.click(); break}
-    }}, false);
+    }});
 
 document.body.appendChild(stopbutton);
 document.body.appendChild(document.createElement("div"))
