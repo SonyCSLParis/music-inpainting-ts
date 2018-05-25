@@ -1,7 +1,7 @@
-import { OSMD, VexFlowMeasure } from "opensheetmusicdisplay";
+import { OpenSheetMusicDisplay, VexFlowMeasure } from "opensheetmusicdisplay";
 
 
-export class eOSMD extends OSMD {
+export class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, autoResize: boolean = false) {
         super(container, autoResize);
         this._boundingBoxes = [];
