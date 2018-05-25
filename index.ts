@@ -28,7 +28,7 @@ import * as m21 from "./music21j"
 
 let playbutton: HTMLElement = <HTMLElement>document.createElement("button");
 playbutton.textContent = "START";
-playbutton.addEventListener("click", playCallback);
+playbutton.addEventListener("click", playCallback, true);
 
 document.body.appendChild(playbutton);
 
@@ -38,6 +38,13 @@ stopbutton.addEventListener("click", () => {
     Tone.Transport.stop();
     playbutton.textContent = "START";
 });
+
+document.addEventListener("keydown", (event) => {
+    const keyName = event.key
+    switch (keyName) {
+        case 'p': {playbutton.click(); break}
+        case 's': {stopbutton.click(); break}
+    }}, false);
 
 document.body.appendChild(stopbutton);
 document.body.appendChild(document.createElement("div"))
@@ -115,6 +122,7 @@ function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
     $.get({
         url: urlXML,
         success: (xmldata) => {
+            console.log(xmldata)
             osmd.load(xmldata)
                 .then(
                     () => osmd.render(),
@@ -142,14 +150,16 @@ function loadMidi(url: string) {
 
         // make sure you set the tempo before you schedule the events
         Tone.Transport.bpm.value = midi.header.bpm;
-        Tone.Transport.timeSignature = midi.timeSignature;
+        Tone.Transport.timeSignature = midi.header.timeSignature;
+        console.log(Tone.Transport)
 
         for (let track of midi.tracks) {
             let notes = track.notes
             let part = new Tone.Part(playNote, notes);
+            part.start(0)  // schedule events on the Tone timeline
             part.loop = true;
-            part.loopEnd = midi.duration;
-            part.start(0)  // scheldule events on the Tone timeline
+            part.loopEnd = '4m';  // FIXME hardcoded duration
+            console.log(part)
         }
     })
 }
