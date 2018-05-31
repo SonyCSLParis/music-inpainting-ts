@@ -42,7 +42,8 @@ module.exports = function (options) {
 
     plugins: [
       new HtmlWebpackPlugin({
-        title: 'DeepBach'
+        title: 'DeepBach',
+        favicon: 'images/favicon.ico'
       }),
 	//example on how to add ressources
       new CopyWebpackPlugin([
