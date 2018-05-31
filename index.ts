@@ -1,9 +1,13 @@
 import * as nipplejs from "nipplejs";
 import { eOSMD } from "./locator";
+import { Fraction } from 'opensheetmusicdisplay'
 import * as $ from "jquery";
 import * as MidiConvert from "midiconvert";
 import * as Tone from "tone";
 import * as m21 from "./music21j"
+
+import './styles/osmd.scss'
+
 // import Slider = require("bootstrap-slider");
 
 // // slider
@@ -36,6 +40,7 @@ let stopbutton: HTMLElement = <HTMLElement>document.createElement("button");
 stopbutton.textContent = "STOP";
 stopbutton.addEventListener("click", (event) => {
     Tone.Transport.stop();
+    nowPlayingCallback(0, 0);
     playbutton.textContent = "START";
 });
 
@@ -47,86 +52,160 @@ document.addEventListener("keydown", (event) => {
     }});
 
 document.body.appendChild(stopbutton);
+
+let granularitySelect : HTMLSelectElement = document.createElement("select")
+granularitySelect.id = 'select-granularity'
+for (const granularity of ['quarter-note', 'half-note', 'whole-note']) {
+    let granularityOption = document.createElement("option");
+    granularityOption.value = granularityOption.textContent = granularity;
+    granularitySelect.appendChild(granularityOption)
+};
+function granularityOnChange(ev) {
+    console.log(this.value)
+    $('.notebox').removeClass('active');
+    $(`.${this.value}`).addClass('active');
+};
+granularitySelect.addEventListener('change', granularityOnChange)
+granularitySelect.value = 'whole-note'
+
+document.body.appendChild(document.createElement("br"))
+document.body.appendChild(granularitySelect)
+
 document.body.appendChild(document.createElement("div"))
 
 let serverUrl = 'http://0.0.0.0:5000/';
 // let serverUrl = 'http://10.0.1.208:5000/';
 
-// let audioControls: HTMLAudioElement = <HTMLAudioElement>document.createElement("audio");
-// audioControls.setAttribute("controls", "");
-//
-// let audioPlayer: HTMLElement = <HTMLElement>document.createElement("source");
-// audioPlayer.setAttribute("id", "source");
-// audioPlayer.setAttribute("type", "audio/mpeg");
-// audioPlayer.setAttribute("src", "");
-// audioControls.appendChild(audioPlayer);
-// document.body.appendChild(audioControls);
-
 let osmd: eOSMD;
 /*
  * Create a container element for OpenSheetMusicDisplay...
  */
-let container: HTMLElement = (
+let osmdContainer: HTMLElement = (
     <HTMLElement>document.createElement("div"));
+osmdContainer.classList.add('osmd-container')
 /*
  * ... and attach it to our HTML document's body. The document itself is a HTML5
  * stub created by Webpack, so you won't find any actual .html sources.
  */
-document.body.appendChild(container);
+document.body.appendChild(osmdContainer);
 /*
  * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
  * the container we've created in the steps before. The second parameter tells OSMD
  * not to redraw on resize.
  */
-osmd = new eOSMD(container, false);
+osmd = new eOSMD(osmdContainer, false);
 
 var options = {
-    zone: container,
+    zone: osmd.renderingBackend.getInnerElement(),
     color: "blue"
 };
-var manager = nipplejs.create(options);
-var joystick_data = {};
-var last_click = [];
-
-manager.on('end', function(evt, nipple) {
-    console.log(joystick_data);
-    console.log(osmd.boundingBoxes);
-    let measureIndex = findMeasureIndex(last_click);
-    console.log(measureIndex);
-
-
-    let argsGenerationUrl = ("one-measure-change" +
-        ('?measureIndex=' + measureIndex)
-    );
-    let argsMidiUrl = "get-midi";
-
-    //    url += '?choraleIndex=' + choraleIndex;
-    loadMusicXMLandMidi(serverUrl + argsGenerationUrl,
-        serverUrl + argsMidiUrl);
-}
-);
-
-manager.on('move', function(evt, data) {
-    joystick_data = data;
-    last_click = data.position;
-});
+// var manager = nipplejs.create(options);
+// var joystick_data: {};
+// var last_click = [];
+//
+// manager.on('start', function(event: Event, joystick) {
+//     disableChanges();
+// })
+//
+// manager.on('end', function(event: Event, joystick) {
+//     // console.log(joystick_data);
+//     // console.log(osmd.boundingBoxes);
+//     let clickedDiv = event.target; // FIXME
+//     // console.log(clickedDiv);
+//     let measureIndex = findMeasureIndex(last_click);
+//     // console.log(measureIndex);
+//
+//     let argsGenerationUrl = ("one-measure-change" +
+//         ('?measureIndex=' + measureIndex)
+//     );
+//     let argsMidiUrl = "get-midi";
+//
+//     //    url += '?choraleIndex=' + choraleIndex;
+//     loadMusicXMLandMidi(serverUrl + argsGenerationUrl,
+//         serverUrl + argsMidiUrl);
+//     enableChanges();
+// }, true);
+//
+// manager.on('move', function(evt, joystick) {
+//     joystick_data = joystick;
+//     last_click = joystick.position;
+// }, true);
 
 // uncomment the following for testing
 //loadMusicXMLandAudio('musicXmlSample.xml', '');
 loadMusicXMLandMidi(serverUrl + 'ex', serverUrl + 'get-midi');
 
+function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void{
+    // Strip MusicXML document of title/composer tags
+    let titleNode = xmlDocument.getElementsByTagName('work-title')[0]
+    let movementTitleNode = xmlDocument.getElementsByTagName('movement-title')[0]
+    let composerNode = xmlDocument.getElementsByTagName('creator')[0]
+
+    titleNode.textContent = movementTitleNode.textContent = composerNode.textContent = ""
+}
+
+function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
+    const  [sixteenthnoteStart, sixteenthnoteEnd] = ([timeStart, timeEnd].map(
+        timeFrac => Math.round(16 * timeFrac.RealValue)))
+
+    const argsGenerationUrl = ("timerange-change" +
+        (`?sixteenthnoteStart=${sixteenthnoteStart}&sixteenthnoteEnd=${sixteenthnoteEnd}`)
+    );
+    const argsMidiUrl = "get-midi";
+
+    return (function (this, event) {
+        // this.style.opacity = '0.3';
+        loadMusicXMLandMidi(serverUrl + argsGenerationUrl,
+            serverUrl + argsMidiUrl);
+    ;})
+}
+
+function blockall(e) {
+    // block propagation of events in bubbling/capturing
+    e.stopPropagation();
+    e.preventDefault();}
+
+function toggleBusyClass(toggleBusy: boolean): void{
+    // set
+    if (toggleBusy) {
+        $('.notebox').addClass('busy');
+        $('.notebox').removeClass('available');
+    }
+    else {
+        $('.notebox').removeClass('busy');
+        $('.notebox').addClass('available');
+    }
+}
+
+function disableChanges(): void {
+    toggleBusyClass(true);
+    osmdContainer.addEventListener("click", blockall, true);
+}
+
+function enableChanges(): void {
+    // osmdContainer.style.opacity = '1';
+    osmdContainer.removeEventListener("click", blockall, true);
+    toggleBusyClass(false);
+}
+
+
 /**
  * Load a MusicXml file via xhttp request, and display its contents.
  */
 function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
+    disableChanges();
     $.get({
         url: urlXML,
-        success: (xmldata) => {
-            console.log(xmldata)
+        success: (xmldata: XMLDocument) => {
+            removeMusicXMLHeaderNodes(xmldata);
             osmd.load(xmldata)
                 .then(
-                    () => osmd.render(),
-                    (err) => console.log(err)
+                    () => {
+                        osmd.render();
+                        osmd.drawTimestampBoxes(onClickTimestampBoxFactory);
+                        enableChanges()
+                    },
+                    (err) => {console.log(err); enableChanges()}
                 );
             loadMidi(urlMidi);
         }
@@ -142,16 +221,27 @@ function playNote(time, event){
 	synth.triggerAttackRelease(event.name, event.duration, time, event.velocity);
 }
 
+function nowPlayingCallback(time, step){
+    $('.notebox').removeClass('playing');
+    $('.notebox').filter(`[containedQuarterNotes~='${step}']`).addClass('playing');
+}
+
+// quarter-note aligned steps
+var steps = [];
+for (let i = 0; i < 16; i++) {   // FIXME hardcoded piece duration
+    steps.push(i);
+}
+
 function loadMidi(url: string) {
     MidiConvert.load(url, function(midi) {
-        console.log(midi)
-
         Tone.Transport.cancel()  // remove all scheduled events
 
         // make sure you set the tempo before you schedule the events
         Tone.Transport.bpm.value = midi.header.bpm;
         Tone.Transport.timeSignature = midi.header.timeSignature;
-        console.log(Tone.Transport)
+        
+        // schedule quarter-notes clock
+        new Tone.Sequence(nowPlayingCallback, steps, '4n').start(0);
 
         for (let track of midi.tracks) {
             let notes = track.notes
@@ -159,19 +249,20 @@ function loadMidi(url: string) {
             part.start(0)  // schedule events on the Tone timeline
             part.loop = true;
             part.loopEnd = '4m';  // FIXME hardcoded duration
-            console.log(part)
         }
     })
 }
 
 function playCallback(){
-    if (Tone.Transport.state === "started"){
-        Tone.Transport.pause();
-        this.textContent = "START";
-    } else {
-        Tone.Transport.start();
-        this.textContent = "PAUSE";
-    }
+    Tone.context.resume().then(() => {
+        if (Tone.Transport.state === "started"){
+            Tone.Transport.pause();
+            this.textContent = "START";
+        } else {
+            Tone.Transport.start("+0.1");
+            this.textContent = "PAUSE";
+        }
+    })
 };
 
 function findMeasureIndex(position): string {

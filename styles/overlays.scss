@@ -1,0 +1,38 @@
+.notebox {
+    // box-sizing: border-box;
+    z-index: 1;
+    position: absolute;
+    background-color: #009ceb;
+    opacity: 0;
+    pointer-events: none;
+    border-radius: 15px;
+    // border: solid 0.5em;
+    // border-color: #009ceb;
+    // border-width: thick;
+
+    &.active {
+        opacity: 0.1;
+
+        &.available {
+            pointer-events: auto;
+            &:hover{
+                // border-color: #f40081;
+                // background-color: #f40081;
+                cursor: crosshair;
+                opacity: 0.25;
+            }
+        }
+        &.busy {
+            background-color: grey;
+            // border-color: grey;
+            opacity: 0.05;
+        }
+        &.playing {
+            background-color: #f40081;
+        }
+    }
+
+    &.playing {
+        background-color: #f40081;
+    }
+}
