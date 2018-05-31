@@ -11,8 +11,8 @@ module.exports = function (options) {
 
     // Currently we need to add '.ts' to the resolve.extensions array.
     resolve: {
-      extensions: ['.ts', '.js'],
-      modules: ['node_modules']
+      extensions: ['.ts', '.js', '.css', '.scss'],
+      modules: ['node_modules', 'styles', '../opensheetmusicdisplay-fork']
     },
 
     // Source maps support ('inline-source-map' also works)
@@ -20,8 +20,7 @@ module.exports = function (options) {
 
     // Add the loader for .ts files.
     module: {
-      rules: [
-        {
+      rules: [{
           test: /\.json$/,
           use: 'json-loader'
         },
@@ -36,7 +35,14 @@ module.exports = function (options) {
               }
             }
           ]
-        }
+      },
+      {
+          test: /\.scss$/,
+          use: [
+              "style-loader", // creates style nodes from JS strings
+              "css-loader", // translates CSS into CommonJS
+              "sass-loader" // compiles Sass to CSS
+          ]}
       ]
     },
 
