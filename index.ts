@@ -53,28 +53,36 @@ document.addEventListener("keydown", (event) => {
 
 document.body.appendChild(stopbutton);
 
+document.body.appendChild(document.createElement("br"))
+
+// Time-granularity selector
 let granularitySelect : HTMLSelectElement = document.createElement("select")
 granularitySelect.id = 'select-granularity'
-for (const granularity of ['quarter-note', 'half-note', 'whole-note']) {
+let granularities = ['quarter-note', 'half-note', 'whole-note']
+for (const granularityIndex in granularities) {
     let granularityOption = document.createElement("option");
-    granularityOption.value = granularityOption.textContent = granularity;
+    const granularity = granularities[granularityIndex]
+    granularityOption.value = granularityIndex;
+    granularityOption.textContent = granularity;
     granularitySelect.appendChild(granularityOption)
 };
+
 function granularityOnChange(ev) {
-    console.log(this.value)
     $('.notebox').removeClass('active');
-    $(`.${this.value}`).addClass('active');
+    $(`.${granularities[parseInt(this.value)]}`).addClass('active');
 };
 granularitySelect.addEventListener('change', granularityOnChange)
-granularitySelect.value = 'whole-note'
+// set initial value to 'whole-note'
+const initialGranulatity = granularities.indexOf('whole-note').toString()
+granularitySelect.value = initialGranulatity
+console.log(granularities.indexOf('whole-note').toString())
 
-document.body.appendChild(document.createElement("br"))
 document.body.appendChild(granularitySelect)
 
 document.body.appendChild(document.createElement("div"))
 
-let serverUrl = 'http://0.0.0.0:5000/';
-// let serverUrl = 'http://10.0.1.208:5000/';
+// let serverUrl = 'http://0.0.0.0:5000/';
+let serverUrl = 'http://10.0.1.122:5000/';
 
 let osmd: eOSMD;
 /*
@@ -239,7 +247,7 @@ function loadMidi(url: string) {
         // make sure you set the tempo before you schedule the events
         Tone.Transport.bpm.value = midi.header.bpm;
         Tone.Transport.timeSignature = midi.header.timeSignature;
-        
+
         // schedule quarter-notes clock
         new Tone.Sequence(nowPlayingCallback, steps, '4n').start(0);
 

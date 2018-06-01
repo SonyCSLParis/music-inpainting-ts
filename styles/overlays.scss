@@ -1,7 +1,13 @@
+.timecontainer {
+    position: absolute;
+}
+
 .notebox {
     // box-sizing: border-box;
     z-index: 1;
     position: absolute;
+    width: 100%;
+    height: 100%;
     background-color: #009ceb;
     opacity: 0;
     pointer-events: none;
@@ -16,23 +22,53 @@
         &.available {
             pointer-events: auto;
             &:hover{
-                // border-color: #f40081;
-                // background-color: #f40081;
                 cursor: crosshair;
-                opacity: 0.25;
             }
         }
+
+        &:hover{
+            opacity: 0.25;
+        }
+
         &.busy {
             background-color: grey;
-            // border-color: grey;
-            opacity: 0.05;
+             opacity: 0.05;
         }
+
         &.playing {
             background-color: #f40081;
         }
     }
 
-    &.playing {
-        background-color: #f40081;
+    // .playing {
+    //     background-color: #f40081;
+    // }
+}
+
+.fermata {
+    position: absolute;
+    pointer-events: auto;
+    z-index: 1;
+    width: 100%;
+    height: 2em;  // HACK hardcoded
+    top: -4.5em;
+    // opacity: 0;
+    // background-color: rgb(252, 252, 108, 0);
+
+    box-sizing: border-box;
+    border-radius: 15px;
+    border: dashed 0.15em;
+    border-color: rgb(0, 0, 0);  // if no support for transparency
+    border-color: rgba(0, 0, 0, 0.7);
+
+    // border-width: thick;
+
+    &:hover{
+        cursor: pointer;
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    &.active {
+        background-color: rgba(0, 0, 0, 0.6);
     }
 }
