@@ -49,8 +49,10 @@ export class eOSMD extends OpenSheetMusicDisplay {
     Create an overlay box with given shape and assign it the given divClass
     */
     private createTimeDiv(x, y, width, height, divClass: string, divId: string,
-        onclick: (PointerEvent) => void): HTMLElement {
+        onclick: (PointerEvent) => void,
+        timestamps: [Fraction, Fraction]): HTMLElement {
         // container for positioning the timestamp box and attached boxes
+        // needed to properly filter click actions
         const commonDivId = divId + '-common'
         let commonDiv = (document.getElementById(commonDivId) ||
             document.createElement("div"))
@@ -62,15 +64,26 @@ export class eOSMD extends OpenSheetMusicDisplay {
         commonDiv.style.left = this.computePositionZoom(x, 1) + 'px';
         commonDiv.style.width = this.computePositionZoom(width) + 'px';
 
-        console.log(commonDiv)
         if (commonDiv.id !== commonDivId) {
-            // the div was created in this call, it has no ID set yet
+            // the div has no ID set yet: was created in this call
             commonDiv.id = commonDivId;
             commonDiv.classList.add('timecontainer')
+
             div.id = divId
             div.classList.add('notebox');
             div.classList.add('available');
             div.classList.add(divClass);
+
+            // FIXME constrains granularity
+            let containedQuarterNotes = []
+            let quarterNoteStart = Math.floor(timestamps[0].RealValue * 4)
+            let quarterNoteEnd = Math.floor(timestamps[1].RealValue*4)
+            for (let i=quarterNoteStart; i<quarterNoteEnd; i++) {
+                containedQuarterNotes.push(i)
+            }
+            div.setAttribute('containedQuarterNotes',
+                containedQuarterNotes.toString().replace(/,/g, ' '))
+
             let granularitySelect : HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity')
             const currentGranularity = granularitySelect[
                 parseInt(granularitySelect.value)].textContent
@@ -97,7 +110,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
             inner.appendChild(commonDiv);
             commonDiv.appendChild(div);
 
-            if (divClass.search('quarter') >= 0) {
+            if (divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
                 // add fermata selection box
                 this.drawFermataBox(div);
             }
@@ -106,20 +119,34 @@ export class eOSMD extends OpenSheetMusicDisplay {
         return div;
     };
 
+    private sequence_duration(): number {
+        return this.graphicalMusicSheet.measureList.length * 4
+    }
+
     private drawFermataBox(timestampDiv: HTMLElement) {
         // Position fermata box over `timestampElement`
         // FIXME hardcoded quarter-note duration
         const fermataDivId = timestampDiv.id + '-fermata'
         let fermataDiv = (document.getElementById(fermataDivId) ||
             document.createElement("div"));
-        fermataDiv.setAttribute('containedquarternotes',
-            timestampDiv.getAttribute('containedquarternotes'));
+        fermataDiv.id = fermataDivId
         fermataDiv.classList.add('fermata');
 
-        fermataDiv.addEventListener('click', () => {
-            // $('.fermata').removeClass('active')
-            fermataDiv.classList.toggle('active')
-        })
+        let containedQuarters_str: string = timestampDiv.getAttribute('containedquarternotes')
+        fermataDiv.setAttribute('containedquarternotes', containedQuarters_str);
+
+        let containedQuarter = parseInt(containedQuarters_str)
+        if (containedQuarter >= this.sequence_duration()-2) {
+            // Add imposed fermata at the end of the sequence
+            // Do not add onclick callback
+            fermataDiv.classList.add('imposed')
+            fermataDiv.classList.add('active')
+        }
+        else {
+            fermataDiv.addEventListener('click', () => {
+                fermataDiv.classList.toggle('active')
+            })
+        }
 
         timestampDiv.parentNode.appendChild(fermataDiv);
     }
@@ -196,20 +223,13 @@ export class eOSMD extends OpenSheetMusicDisplay {
                         let width = xRight - xLeft;
                         let onclick = (event) => {};
                         if (onclickFactory) {onclick = onclickFactory(leftTimestamp, rightTimestamp)}
+
                         let timediv = this.createTimeDiv(
                             xLeft, y, width, height,
                             granularityName,
                             `${granularityName}-${measureIndex}-${timestampIndex}`,
-                            onclick)
-
-                        // FIXME constrains granularity
-                        let quarterNotes = []
-                        let quarterNoteStart = Math.floor(leftTimestamp.RealValue * 4)
-                        let quarterNoteEnd = Math.floor(rightTimestamp.RealValue*4)
-                        for (let i=quarterNoteStart; i<quarterNoteEnd; i++) {
-                            quarterNotes.push(i)
-                        }
-                        timediv.setAttribute('containedQuarterNotes', quarterNotes.toString().replace(/,/g, ' '))
+                            onclick,
+                            [leftTimestamp, rightTimestamp])
                     }
 
             }
