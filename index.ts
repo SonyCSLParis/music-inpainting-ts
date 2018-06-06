@@ -5,6 +5,7 @@ import * as $ from "jquery";
 import * as MidiConvert from "midiconvert";
 import * as Tone from "tone";
 import * as m21 from "./music21j"
+import * as TonePiano from 'tone-piano'
 
 import './styles/osmd.scss'
 
@@ -233,17 +234,77 @@ function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
                     },
                     (err) => {console.log(err); enableChanges()}
                 );
-            loadMidi(urlMidi);
+            // loadMidi(urlMidi);
+            loadMidiToPiano(urlMidi);
         }
     });
 }
 
 var chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
-var reverb = new Tone.Reverb(1.5).connect(chorus);
+var reverb = new Tone.Reverb(1).connect(chorus);
 reverb.generate();
-var synth = new Tone.PolySynth(8).connect(reverb);
 
-function playNote(time, event){
+let steelpan = new Tone.PolySynth(12).set({
+    "oscillator": {
+        "type": "fatcustom",
+        "partials" : [0.2, 1, 0, 0.5, 0.1],
+        "spread" : 40,
+        "count" : 3},
+    "envelope": {
+        "attack": 0.001,
+        "decay": 1.6,
+        "sustain": 0,
+        "release": 1.6}
+    }
+);
+steelpan.connect(reverb);
+let synth = steelpan;
+
+var piano = new TonePiano.Piano([21, 108], 5).toMaster()
+
+piano.load().then(()=>{
+	//make the button active on load
+	// let button = document.querySelector('button')
+	// button.classList.add('active')
+	// document.querySelector('#loading').remove()
+})
+
+// let instruments = {
+//     'steelpan': steelpan,
+//     'sampled-piano': piano
+// }
+//
+// let instrumentSelect: HTMLSelectElement = document.createElement('select')
+// instrumentSelect.id = 'instrument-select'
+//
+// for (const instrumentName in instruments) {
+//     let instrumentOption = document.createElement("option");
+//     const instrument = instruments[instrumentName]
+//     instrumentOption.value = instrumentName;
+//     instrumentOption.textContent = instrumentName;
+//     instrumentSelect.appendChild(instrumentOption)
+// };
+//
+// function instrumentOnChange(ev) {
+//     // Mute all instruments
+//     for (let instrumentName in (instruments)) {
+//         instruments[instrumentName].volume = -96;
+//     instruments[this.value].volume = -6;
+// }
+// };
+// instrumentSelect.addEventListener('change', instrumentOnChange)
+// // set initial value to 'whole-note'
+// const initialInstrument = 'steelpan'
+// instrumentSelect.value = initialInstrument
+// instrumentSelect.dispatchEvent(new Event('change'))
+//
+// document.body.appendChild(instrumentSelect)
+
+function playNotePiano(time, event){
+		piano.keyDown(event.note, event.velocity, time).keyUp(event.note, time + event.duration)
+	}
+
+function playNoteSynth(time, event){
 	synth.triggerAttackRelease(event.name, event.duration, time, event.velocity);
 }
 
@@ -282,10 +343,46 @@ function loadMidi(url: string) {
 
         for (let track of midi.tracks) {
             let notes = track.notes
-            let part = new Tone.Part(playNote, notes);
+            let part = new Tone.Part(playNoteSynth, notes);
             part.start(0)  // schedule events on the Tone timeline
             part.loop = true;
-            part.loopEnd = '4m';  // FIXME hardcoded duration
+            part.loopEnd = sequence_duration_tone;
+        }
+    })
+}
+
+function loadMidiToPiano(url:string) {
+    MidiConvert.load(url).then((midi) => {
+        Tone.Transport.cancel()  // remove all scheduled events
+
+        Tone.Transport.bpm.value = midi.header.bpm
+    	Tone.Transport.timeSignature = midi.header.timeSignature
+
+        // schedule quarter-notes clock
+        new Tone.Sequence(nowPlayingCallback, steps, '4n').start(0);
+
+        for (let track of midi.tracks) {
+        	//schedule the pedal
+        	let sustain = new Tone.Part((time, event) => {
+        		if (event.value){
+        			piano.pedalDown(time)
+        		} else {
+        			piano.pedalUp(time)
+        		}
+        	}, track.controlChanges[64]).start(0)
+
+        	let noteOffEvents = new Tone.Part((time, event) => {
+        		piano.keyUp(event.midi, time, event.velocity)
+        	}, track.noteOffs).start(0)
+
+        	let noteOnEvents = new Tone.Part((time, event) => {
+        		piano.keyDown(event.midi, time, event.velocity)
+        	}, track.notes).start(0)
+
+            for (let part of [sustain, noteOffEvents, noteOnEvents]) {
+                part.loop = true;
+                part.loopEnd = sequence_duration_tone;
+            }
         }
     })
 }
