@@ -71,4 +71,9 @@
     &.active {
         background-color: rgba(0, 0, 0, 0.6);
     }
+
+    &.imposed {
+        background-color: rgba(0, 0, 0, 0.8);
+        cursor: not-allowed;
+    }
 }

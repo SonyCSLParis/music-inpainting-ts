@@ -152,18 +152,29 @@ function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void{
     titleNode.textContent = movementTitleNode.textContent = composerNode.textContent = ""
 }
 
+function formatFermatas(): string {
+    const activeFermataElems = $('.fermata.active')
+    const containedQuarterNotesList = activeFermataElems.map(
+        function(){return this.getAttribute('containedQuarterNotes');}).get()
+    return containedQuarterNotesList.toString()
+}
+
 function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
     const  [sixteenthnoteStart, sixteenthnoteEnd] = ([timeStart, timeEnd].map(
         timeFrac => Math.round(16 * timeFrac.RealValue)))
 
     const argsGenerationUrl = ("timerange-change" +
-        (`?sixteenthnoteStart=${sixteenthnoteStart}&sixteenthnoteEnd=${sixteenthnoteEnd}`)
+        `?sixteenthnoteStart=${sixteenthnoteStart}` +
+        `&sixteenthnoteEnd=${sixteenthnoteEnd}`
     );
     const argsMidiUrl = "get-midi";
 
     return (function (this, event) {
         // this.style.opacity = '0.3';
-        loadMusicXMLandMidi(serverUrl + argsGenerationUrl,
+        const fermatasString = formatFermatas()
+        const argsGenerationUrlWithFermatas = (argsGenerationUrl +
+            '&fermatas=' + fermatasString)
+        loadMusicXMLandMidi(serverUrl + argsGenerationUrlWithFermatas,
             serverUrl + argsMidiUrl);
     ;})
 }
@@ -175,24 +186,31 @@ function blockall(e) {
 
 function toggleBusyClass(toggleBusy: boolean): void{
     // set
+    let noteboxes = $('.notebox')
     if (toggleBusy) {
-        $('.notebox').addClass('busy');
-        $('.notebox').removeClass('available');
+        noteboxes.addClass('busy');
+        noteboxes.removeClass('available');
     }
     else {
-        $('.notebox').removeClass('busy');
-        $('.notebox').addClass('available');
+        noteboxes.removeClass('busy');
+        noteboxes.addClass('available');
     }
 }
 
 function disableChanges(): void {
     toggleBusyClass(true);
-    osmdContainer.addEventListener("click", blockall, true);
+    $('.notebox').each(function() {
+        this.addEventListener("click", blockall, true);}
+    )
+    // osmdContainer.addEventListener("click", blockall, true);
 }
 
 function enableChanges(): void {
     // osmdContainer.style.opacity = '1';
-    osmdContainer.removeEventListener("click", blockall, true);
+    $('.notebox').each(function() {
+        this.removeEventListener("click", blockall, true);}
+    )
+    // osmdContainer.removeEventListener("click", blockall, true);
     toggleBusyClass(false);
 }
 
@@ -235,10 +253,21 @@ function nowPlayingCallback(time, step){
 }
 
 // quarter-note aligned steps
-var steps = [];
-for (let i = 0; i < 16; i++) {   // FIXME hardcoded piece duration
+let sequence_duration_tone: Tone.Time = Tone.Time('4m')  // FIXME hardcoded piece duration
+// FIXME could break, should really parse tone js duration
+console.log(sequence_duration_tone.toBarsBeatsSixteenths().split(':'))
+console.log(sequence_duration_tone.toBarsBeatsSixteenths().split(':')[1])
+let [seq_dur_measures, seq_dur_quarters, seq_dur_sixteenths] =
+    sequence_duration_tone.toBarsBeatsSixteenths().split(':').map(parseFloat)
+let sequence_duration_quarters = Math.floor((4*seq_dur_measures +
+    seq_dur_quarters + Math.floor(seq_dur_sixteenths / 4)))
+console.log(sequence_duration_tone.toBarsBeatsSixteenths().split(':').map(parseFloat))
+let steps = [];
+for (let i = 0; i < sequence_duration_quarters; i++) {
     steps.push(i);
 }
+console.log(`${seq_dur_measures}, ${seq_dur_quarters}, ${seq_dur_sixteenths}`)
+console.log(steps)
 
 function loadMidi(url: string) {
     MidiConvert.load(url, function(midi) {
