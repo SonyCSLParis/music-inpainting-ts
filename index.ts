@@ -370,7 +370,7 @@ instrumentSelectElem.id = 'instrument-select'
 document.body.appendChild(instrumentSelectElem)
 
 let instrumentSelect = new Nexus.Select('#instrument-select', {
-    'size': [150, 40],
+    'size': [275, 40],
     'options': Object.keys(instrumentFactories)
 })
 // for (const instrumentName in instrumentFactories) {
