@@ -3,8 +3,10 @@ import { eOSMD } from "./locator";
 import { Fraction } from 'opensheetmusicdisplay'
 import * as $ from "jquery";
 import * as MidiConvert from "midiconvert";
-import {Piano} from 'tone-piano'
+import {Piano} from 'tone-piano';
 import * as Tone from "tone";
+import { SampleLibrary } from './tonejs-instruments/Tonejs-Instruments'
+import * as Nexus from 'nexusui'
 // import * as m21 from "./music21j"
 
 import './styles/osmd.scss'
@@ -32,53 +34,91 @@ import './styles/osmd.scss'
 //         }
 //     })
 
-let playbutton: HTMLElement = <HTMLElement>document.createElement("button");
-playbutton.textContent = "START";
-playbutton.addEventListener("click", playCallback);
+let playbuttonElem: HTMLElement = <HTMLElement>document.createElement('div');
+playbuttonElem.id = 'play-button'
+document.body.appendChild(playbuttonElem);
 
-document.body.appendChild(playbutton);
+let playbutton = new Nexus.TextButton('#play-button',{
+    // 'size': [150,50],
+    'state': false,
+    'text': 'Play',
+    'alternateText': 'Pause'
+})
+// playbuttonElem.textContent = "START";
+playbutton.on('mousedown', (e) => {playbutton.flip()}) //playCallback.bind(playbutton));
+playbutton.on('change', playCallback)
+// playbutton.on('change', )
 
-let stopbutton: HTMLElement = <HTMLElement>document.createElement("button");
-stopbutton.textContent = "STOP";
-stopbutton.addEventListener("click", (event) => {
+
+let stopbuttonElem: HTMLElement = <HTMLElement>document.createElement("div");
+stopbuttonElem.id = 'stop-button';
+document.body.appendChild(stopbuttonElem);
+// stopbutton.textContent = "STOP";
+
+let stopbutton = new Nexus.TextButton('#stop-button',{
+    // 'size': [150,50],
+    'state': false,
+    'text': 'Stop'
+})
+stopbutton.on('change', (event) => {
+    playbutton.flip(false);
     Tone.Transport.stop();
     nowPlayingCallback(0, 0);
-    playbutton.textContent = "START";
 });
+
+// stopbutton.addEventListener("click", (event) => {
+//     Tone.Transport.stop();
+//     nowPlayingCallback(0, 0);
+//     playbutton.setOff();
+//     // playbuttonElem.textContent = "START";
+// });
 
 document.addEventListener("keydown", (event) => {
     const keyName = event.key
     switch (keyName) {
-        case 'p': {playbutton.click(); break}
-        case 's': {stopbutton.click(); break}
+        case 'p': {playbutton.down(); break}
+        case 's': {stopbutton.down(); stopbutton.up(); break}
     }});
 
-document.body.appendChild(stopbutton);
+// document.body.appendChild(stopbutton);
 
 document.body.appendChild(document.createElement("br"))
 
 // Time-granularity selector
-let granularitySelect : HTMLSelectElement = document.createElement("select")
-granularitySelect.id = 'select-granularity'
+// let granularitySelect : HTMLSelectElement = document.createElement("select")
+// granularitySelect.id = 'select-granularity'
 let granularities = ['quarter-note', 'half-note', 'whole-note']
-for (const granularityIndex in granularities) {
-    let granularityOption = document.createElement("option");
-    const granularity = granularities[granularityIndex]
-    granularityOption.value = granularityIndex;
-    granularityOption.textContent = granularity;
-    granularitySelect.appendChild(granularityOption)
-};
+// for (const granularityIndex in granularities) {
+//     let granularityOption = document.createElement("option");
+//     const granularity = granularities[granularityIndex]
+//     granularityOption.value = granularityIndex;
+//     granularityOption.textContent = granularity;
+//     granularitySelect.appendChild(granularityOption)
+// };
 
+let granularitySelectElem: HTMLElement = document.createElement("div");
+granularitySelectElem.id = 'select-granularity'
+document.body.appendChild(granularitySelectElem)
+
+let granularitySelect = new Nexus.Select('#select-granularity', {
+    'size': [150, 40],
+    'options': granularities,
+    })
+
+// function granularityOnChange(ev) {
+//     $('.notebox').removeClass('active');
+//     $(`.${granularities[parseInt(this.value)]}`).addClass('active');
+// };
 function granularityOnChange(ev) {
     $('.notebox').removeClass('active');
-    $(`.${granularities[parseInt(this.value)]}`).addClass('active');
+    $('.' + this.value).addClass('active');
 };
-granularitySelect.addEventListener('change', granularityOnChange)
+granularitySelect.on('change', granularityOnChange.bind(granularitySelect))
 // set initial value to 'whole-note'
 const initialGranulatity = granularities.indexOf('whole-note').toString()
-granularitySelect.value = initialGranulatity
+granularitySelect.selectedIndex = initialGranulatity
 
-document.body.appendChild(granularitySelect)
+
 
 let titlediv: HTMLDivElement = document.createElement('div')
 // titlediv.classList.add('header')
@@ -252,13 +292,21 @@ function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
 
 var piano = new Piano([21, 108], 5);
 
+var samples = SampleLibrary.load({
+            instruments: ['organ'],
+            baseUrl: "tonejs-instruments/samples/"
+        })
+var organ = samples['organ']
+organ.release = 1.8
+organ.toMaster();
+
 var chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
 var reverb = new Tone.Reverb(1.5).connect(chorus);
 reverb.generate();
 
 var polysynthGain = new Tone.Volume(1).connect(reverb);
-var polysynth = new Tone.PolySynth(26);
-polysynth.connect(polysynthGain)
+var polysynth = new Tone.PolySynth(12);
+polysynth.connect(reverb)
 
 let steelpan = new Tone.PolySynth(12).set({
     "oscillator": {
@@ -273,14 +321,8 @@ let steelpan = new Tone.PolySynth(12).set({
         "release": 1.6}
     }
 );
-var steelpanGain = new Tone.Volume(1).connect(reverb)
-steelpanGain.mute = true;
-steelpan.connect(steelpanGain);
+steelpan.connect(reverb);
 // let synth = steelpan;
-
-var pianoGain = new Tone.Volume(1).toMaster();
-pianoGain.mute = true;
-piano.connect(pianoGain);
 
 piano.load().then(()=>{
 	//make the button active on load
@@ -289,47 +331,117 @@ piano.load().then(()=>{
 	// document.querySelector('#loading').remove()
 })
 
-let instrumentsAndGains = {
-    'PolySynth': [polysynth, polysynthGain],
-    'sampled-piano': [piano, pianoGain],
-    'steelpan': [steelpan, steelpanGain],
+function addSilentPianoMethods_(instrument: Tone.Instrument) {
+    // add dummy Piano methods for simple duck typing
+    instrument.keyDown = () => {return instrument};
+    instrument.keyUp = () => {return instrument};
+    instrument.pedalDown = () => {return instrument};
+    instrument.pedalUp = () => {return instrument};
+    instrument.pedalDown = () => {return instrument};
+    return instrument
 }
 
-let instrumentSelect: HTMLSelectElement = document.createElement('select')
-instrumentSelect.id = 'instrument-select'
+function addTriggerAttackRelease_(piano: Piano) {
+    // add dummy Instrument method for simple duck typing
+    piano.triggerAttackRelease = () => {return piano};
+    return piano;
+}
 
-for (const instrumentName in instrumentsAndGains) {
-    let instrumentOption = document.createElement("option");
-    instrumentOption.value = instrumentName;
-    instrumentOption.textContent = instrumentName;
-    instrumentSelect.appendChild(instrumentOption)
-};
+let instruments = [polysynth, steelpan, organ]
+for (let instrument of instruments) {
+    addSilentPianoMethods_(instrument);
+}
+addTriggerAttackRelease_(piano)
 
+let instrumentFactories = {
+    'PolySynth': () => {return polysynth},
+    'Sampled Piano': () => {
+        piano.disconnect(0); piano.toMaster(); return piano},
+    'Sampled Piano (w/ reverb)':
+        () => {piano.disconnect(0); piano.connect(reverb); return piano},
+    'Organ': () => {return organ},
+    'Steelpan': () => {return steelpan},
+}
+
+// let instrumentSelect: HTMLSelectElement = new Nexus.Select('#instrument-select')
+// let instrumentSelect: HTMLSelectElement = document.createElement('select')
+let instrumentSelectElem: HTMLElement = document.createElement('div')
+instrumentSelectElem.id = 'instrument-select'
+document.body.appendChild(instrumentSelectElem)
+
+let instrumentSelect = new Nexus.Select('#instrument-select', {
+    'size': [150, 40],
+    'options': Object.keys(instrumentFactories)
+})
+// for (const instrumentName in instrumentFactories) {
+//     let instrumentOption = document.createElement("option");
+//     instrumentOption.value = instrumentName;
+//     instrumentOption.textContent = instrumentName;
+//     instrumentSelect.appendChild(instrumentOption)
+// };
+
+let current_instrument = polysynth;
 function instrumentOnChange(ev) {
-    // Mute all instruments
-    for (let instrumentName in (instrumentsAndGains)) {
-        instrumentsAndGains[instrumentName][1].mute = true;
-    }
-    instrumentsAndGains[this.value][1].mute = false;
+    current_instrument = instrumentFactories[this.value]();
 };
 
-instrumentSelect.addEventListener('change', instrumentOnChange)
+instrumentSelect.on('change', instrumentOnChange.bind(instrumentSelect))
 const initialInstrument = 'PolySynth'
 instrumentSelect.value = initialInstrument
-instrumentSelect.dispatchEvent(new Event('change'))
+// instrumentSelect.dispatchEvent(new Event('change'))
 
-document.body.appendChild(instrumentSelect)
+// document.body.appendChild(instrumentSelect)
 
-function playNotePiano(time, event){
-		piano.keyDown(event.note, event.velocity, time).keyUp(event.note, time + event.duration)
-	}
+// Create BPM slider
+let bpmContainerElem: HTMLDivElement = document.createElement('div');
+bpmContainerElem.setAttribute('horizontal', '');
+bpmContainerElem.setAttribute('layout', '');
+bpmContainerElem.setAttribute('display', 'grid');
+bpmContainerElem.setAttribute('grid-template-columns': '200px 200px;');
 
-let synthesizers = [steelpan, polysynth]
-function playNoteSynth(time, event){
-    for (let synth of synthesizers) {
-        synth.triggerAttackRelease(event.name,
-            event.duration, time, event.velocity);
-    }
+document.body.appendChild(bpmContainerElem);
+
+let bpmSliderElem: HTMLElement = document.createElement('div');
+bpmSliderElem.setAttribute('id', 'bpm-slider');
+bpmContainerElem.appendChild(bpmSliderElem);
+let bpmCounterElem: HTMLElement = document.createElement('div');
+bpmCounterElem.setAttribute('id', 'bpm-counter');
+bpmCounterElem.style.pointerEvents = 'none';
+bpmContainerElem.appendChild(bpmCounterElem);
+
+let bpmSlider = new Nexus.Slider('#bpm-slider', {
+    'size':[200, 40],
+    'min': 80,
+    'max': 130,
+    'step': 1
+});
+let bpmCounter = new Nexus.Number('#bpm-counter', {
+    'min': 80,
+    'max': 130,
+    'step': 1
+});
+bpmSlider.on('change', function(value){
+    Tone.Transport.bpm.value = value
+    // bpmCounter.value = value
+});
+bpmCounter.link(bpmSlider);
+// bpmCounter.on('change', function(value){
+//     // Tone.Transport.bpm.value = value
+//     bpmSlider.value = value
+// });
+
+bpmSlider.value = 110
+
+
+// function playNotePiano(time, event){
+//     current_instrument.keyDown(event.note, event.velocity, time)
+//                       .keyUp(event.note, time + event.duration)
+// }
+
+function playNote(time, event){
+    current_instrument.triggerAttackRelease(event.name, event.duration, time,
+        event.velocity);
+    current_instrument.keyDown(event.note, event.velocity, time).keyUp(event.note, time + event.duration)
 }
 
 function nowPlayingCallback(time, step){
@@ -340,25 +452,21 @@ function nowPlayingCallback(time, step){
 // quarter-note aligned steps
 let sequence_duration_tone: Tone.Time = Tone.Time('4m')  // FIXME hardcoded piece duration
 // FIXME could break, should really parse tone js duration
-console.log(sequence_duration_tone.toBarsBeatsSixteenths().split(':'))
-console.log(sequence_duration_tone.toBarsBeatsSixteenths().split(':')[1])
 let [seq_dur_measures, seq_dur_quarters, seq_dur_sixteenths] =
     sequence_duration_tone.toBarsBeatsSixteenths().split(':').map(parseFloat)
 let sequence_duration_quarters = Math.floor((4*seq_dur_measures +
     seq_dur_quarters + Math.floor(seq_dur_sixteenths / 4)))
-console.log(sequence_duration_tone.toBarsBeatsSixteenths().split(':').map(parseFloat))
 let steps = [];
 for (let i = 0; i < sequence_duration_quarters; i++) {
     steps.push(i);
 }
-console.log(`${seq_dur_measures}, ${seq_dur_quarters}, ${seq_dur_sixteenths}`)
-console.log(steps)
 
 function loadMidi(url: string) {
     MidiConvert.load(url, function(midi) {
         Tone.Transport.cancel()  // remove all scheduled events
 
         // make sure you set the tempo before you schedule the events
+        // Tone.Transport.bpm.value = bpmCounter.value;
         Tone.Transport.bpm.value = midi.header.bpm;
         Tone.Transport.timeSignature = midi.header.timeSignature;
 
@@ -367,7 +475,7 @@ function loadMidi(url: string) {
 
         for (let track of midi.tracks) {
             let notes = track.notes
-            let part = new Tone.Part(playNoteSynth, notes);
+            let part = new Tone.Part(playNote, notes);
             part.start(0)  // schedule events on the Tone timeline
             part.loop = true;
             part.loopEnd = sequence_duration_tone;
@@ -377,24 +485,27 @@ function loadMidi(url: string) {
         	//schedule the pedal
         	let sustain = new Tone.Part((time, event) => {
         		if (event.value){
-        			piano.pedalDown(time)
+        			current_instrument.pedalDown(time)
         		} else {
-        			piano.pedalUp(time)
+        			current_instrument.pedalUp(time)
         		}
         	}, track.controlChanges[64]).start(0)
 
         	let noteOffEvents = new Tone.Part((time, event) => {
-        		piano.keyUp(event.midi, time, event.velocity)
+        		current_instrument.keyUp(event.midi, time, event.velocity)
         	}, track.noteOffs).start(0)
 
         	let noteOnEvents = new Tone.Part((time, event) => {
-        		piano.keyDown(event.midi, time, event.velocity)
+        		current_instrument.keyDown(event.midi, time, event.velocity)
         	}, track.notes).start(0)
 
             for (let part of [sustain, noteOffEvents, noteOnEvents]) {
                 part.loop = true;
                 part.loopEnd = sequence_duration_tone;
             }
+        }
+
+        Tone.Transport.bpm.value = bpmSlider.value;
     })
 }
 
@@ -435,13 +546,15 @@ function loadMidiToPiano(url:string) {
 }
 
 function playCallback(){
+    // playbutton.flip()
     Tone.context.resume().then(() => {
-        if (Tone.Transport.state === "started"){
-            Tone.Transport.pause();
-            this.textContent = "START";
-        } else {
+        if (playbutton.state) {//Tone.Transport.state === "started"){
             Tone.Transport.start("+0.1");
-            this.textContent = "PAUSE";
+            // this.turnOn()
+        } else {
+            Tone.Transport.pause();
+            // this.turnOff();
+            // this.textContent = "PAUSE";
         }
     })
 };

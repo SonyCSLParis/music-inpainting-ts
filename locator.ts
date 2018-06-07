@@ -84,7 +84,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
             div.setAttribute('containedQuarterNotes',
                 containedQuarterNotes.toString().replace(/,/g, ' '))
 
-            let granularitySelect : HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity')
+            let granularitySelect : HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
             const currentGranularity = granularitySelect[
                 parseInt(granularitySelect.value)].textContent
             if (currentGranularity == divClass) div.classList.add('active')
@@ -245,18 +245,20 @@ export class eOSMD extends OpenSheetMusicDisplay {
 }
 
 function cycleGranularity(increase: boolean) {
-    let granularitySelect = $('#select-granularity')
-    if (granularitySelect.length > 0) {
-        let granularitySelectElem = <HTMLSelectElement>granularitySelect[0]
-        const selectedGranularity = parseInt(granularitySelect.val().toString());
-        const numOptions = granularitySelect.children.length
-        if (increase) {
-            granularitySelectElem.value =
-                Math.min(selectedGranularity + 1, numOptions).toString()
-        }
-        else {
-            granularitySelectElem.value =
-                Math.max(selectedGranularity - 1, 0).toString()}
-        // trigger `onchange` callback
-        granularitySelectElem.dispatchEvent(new Event('change'))
-}}
+    let granularitySelect = $('#select-granularity > select')
+    // if (granularitySelect.length > 0) {
+    let granularitySelectElem = <HTMLSelectElement>granularitySelect[0]
+    // let granularitySelectElem: HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
+    const selectedGranularity = parseInt(granularitySelect.val().toString());
+    const numOptions = granularitySelectElem.children.length
+    if (increase) {
+        granularitySelectElem.value =
+            Math.min(selectedGranularity + 1, numOptions-1).toString()
+    }
+    else {
+        granularitySelectElem.value =
+            Math.max(selectedGranularity - 1, 0).toString()}
+    // trigger `onchange` callback
+    granularitySelectElem.dispatchEvent(new Event('change'))
+// }
+}
