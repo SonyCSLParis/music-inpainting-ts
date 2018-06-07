@@ -12,7 +12,8 @@ module.exports = function (options) {
     // Currently we need to add '.ts' to the resolve.extensions array.
     resolve: {
       extensions: ['.ts', '.js', '.css', '.scss'],
-      modules: ['node_modules', 'styles', '../opensheetmusicdisplay-fork']
+      modules: ['node_modules', 'styles', '../opensheetmusicdisplay-fork',
+        './tonejs-instruments']
     },
 
     // Source maps support ('inline-source-map' also works)
@@ -56,7 +57,9 @@ module.exports = function (options) {
         {
           from: 'Boplicity.xml',
           to: 'musicXmlSample.xml'
-        }
+      },
+        {from: './tonejs-instruments/samples/organ',
+         to: 'tonejs-instruments/samples/organ'}
       ])
     ],
 
