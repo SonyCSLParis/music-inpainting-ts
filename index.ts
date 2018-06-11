@@ -7,32 +7,10 @@ import {Piano} from 'tone-piano';
 import * as Tone from "tone";
 import { SampleLibrary } from './tonejs-instruments/Tonejs-Instruments'
 import * as Nexus from 'nexusui'
-// import * as m21 from "./music21j"
 
 import './styles/osmd.scss'
 // import './styles/main.scss'
 
-// import Slider = require("bootstrap-slider");
-
-// // slider
-// let sliderContainer: HTMLElement = <HTMLElement>document.createElement("input");
-// sliderContainer.id = "#chorale-selection";
-// // sliderContainer.setAttribute('type', 'range')
-// // sliderContainer.setAttribute('data-slider-min', '0')
-// // sliderContainer.setAttribute('data-slider-min', '100')
-// // sliderContainer.setAttribute('data-slider-step', '1')
-// document.body.appendChild(sliderContainer);
-
-// // let choraleIndex = $('#chorale-selection').slider().on(
-// //      'slide', function() { }
-// // ).data('slider')
-
-// let slider = new Slider('#chorale-selection',
-//     {
-//         formatter: function(value: number): string {
-//             return '' + value;
-//         }
-//     })
 
 let playbuttonElem: HTMLElement = <HTMLElement>document.createElement('div');
 playbuttonElem.id = 'play-button'
@@ -44,16 +22,13 @@ let playbutton = new Nexus.TextButton('#play-button',{
     'text': 'Play',
     'alternateText': 'Pause'
 })
-// playbuttonElem.textContent = "START";
 playbutton.on('mousedown', (e) => {playbutton.flip()}) //playCallback.bind(playbutton));
 playbutton.on('change', playCallback)
-// playbutton.on('change', )
 
 
 let stopbuttonElem: HTMLElement = <HTMLElement>document.createElement("div");
 stopbuttonElem.id = 'stop-button';
 document.body.appendChild(stopbuttonElem);
-// stopbutton.textContent = "STOP";
 
 let stopbutton = new Nexus.TextButton('#stop-button',{
     // 'size': [150,50],
@@ -66,13 +41,6 @@ stopbutton.on('change', (event) => {
     nowPlayingCallback(0, 0);
 });
 
-// stopbutton.addEventListener("click", (event) => {
-//     Tone.Transport.stop();
-//     nowPlayingCallback(0, 0);
-//     playbutton.setOff();
-//     // playbuttonElem.textContent = "START";
-// });
-
 document.addEventListener("keydown", (event) => {
     const keyName = event.key
     switch (keyName) {
@@ -80,21 +48,10 @@ document.addEventListener("keydown", (event) => {
         case 's': {stopbutton.down(); stopbutton.up(); break}
     }});
 
-// document.body.appendChild(stopbutton);
-
 document.body.appendChild(document.createElement("br"))
 
 // Time-granularity selector
-// let granularitySelect : HTMLSelectElement = document.createElement("select")
-// granularitySelect.id = 'select-granularity'
 let granularities = ['quarter-note', 'half-note', 'whole-note']
-// for (const granularityIndex in granularities) {
-//     let granularityOption = document.createElement("option");
-//     const granularity = granularities[granularityIndex]
-//     granularityOption.value = granularityIndex;
-//     granularityOption.textContent = granularity;
-//     granularitySelect.appendChild(granularityOption)
-// };
 
 let granularitySelectElem: HTMLElement = document.createElement("div");
 granularitySelectElem.id = 'select-granularity'
@@ -105,16 +62,11 @@ let granularitySelect = new Nexus.Select('#select-granularity', {
     'options': granularities,
     })
 
-// function granularityOnChange(ev) {
-//     $('.notebox').removeClass('active');
-//     $(`.${granularities[parseInt(this.value)]}`).addClass('active');
-// };
 function granularityOnChange(ev) {
     $('.notebox').removeClass('active');
     $('.' + this.value).addClass('active');
 };
 granularitySelect.on('change', granularityOnChange.bind(granularitySelect))
-// set initial value to 'whole-note'
 const initialGranulatity = granularities.indexOf('whole-note').toString()
 granularitySelect.selectedIndex = initialGranulatity
 
@@ -235,7 +187,6 @@ function blockall(e) {
     e.preventDefault();}
 
 function toggleBusyClass(toggleBusy: boolean): void{
-    // set
     let noteboxes = $('.notebox')
     if (toggleBusy) {
         noteboxes.addClass('busy');
@@ -252,15 +203,12 @@ function disableChanges(): void {
     $('.notebox').each(function() {
         this.addEventListener("click", blockall, true);}
     )
-    // osmdContainer.addEventListener("click", blockall, true);
 }
 
 function enableChanges(): void {
-    // osmdContainer.style.opacity = '1';
     $('.notebox').each(function() {
         this.removeEventListener("click", blockall, true);}
     )
-    // osmdContainer.removeEventListener("click", blockall, true);
     toggleBusyClass(false);
 }
 
@@ -304,7 +252,6 @@ var chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
 var reverb = new Tone.Reverb(1.5).connect(chorus);
 reverb.generate();
 
-var polysynthGain = new Tone.Volume(1).connect(reverb);
 var polysynth = new Tone.PolySynth(12);
 polysynth.connect(reverb)
 
@@ -322,7 +269,6 @@ let steelpan = new Tone.PolySynth(12).set({
     }
 );
 steelpan.connect(reverb);
-// let synth = steelpan;
 
 piano.load().then(()=>{
 	//make the button active on load
@@ -363,8 +309,6 @@ let instrumentFactories = {
     'Steelpan': () => {return steelpan},
 }
 
-// let instrumentSelect: HTMLSelectElement = new Nexus.Select('#instrument-select')
-// let instrumentSelect: HTMLSelectElement = document.createElement('select')
 let instrumentSelectElem: HTMLElement = document.createElement('div')
 instrumentSelectElem.id = 'instrument-select'
 document.body.appendChild(instrumentSelectElem)
@@ -373,12 +317,6 @@ let instrumentSelect = new Nexus.Select('#instrument-select', {
     'size': [275, 40],
     'options': Object.keys(instrumentFactories)
 })
-// for (const instrumentName in instrumentFactories) {
-//     let instrumentOption = document.createElement("option");
-//     instrumentOption.value = instrumentName;
-//     instrumentOption.textContent = instrumentName;
-//     instrumentSelect.appendChild(instrumentOption)
-// };
 
 let current_instrument = polysynth;
 function instrumentOnChange(ev) {
@@ -388,16 +326,13 @@ function instrumentOnChange(ev) {
 instrumentSelect.on('change', instrumentOnChange.bind(instrumentSelect))
 const initialInstrument = 'PolySynth'
 instrumentSelect.value = initialInstrument
-// instrumentSelect.dispatchEvent(new Event('change'))
-
-// document.body.appendChild(instrumentSelect)
 
 // Create BPM slider
 let bpmContainerElem: HTMLDivElement = document.createElement('div');
 bpmContainerElem.setAttribute('horizontal', '');
 bpmContainerElem.setAttribute('layout', '');
 bpmContainerElem.setAttribute('display', 'grid');
-bpmContainerElem.setAttribute('grid-template-columns': '200px 200px;');
+bpmContainerElem.setAttribute('grid-template-columns', '200px 200px;');
 
 document.body.appendChild(bpmContainerElem);
 
@@ -422,13 +357,8 @@ let bpmCounter = new Nexus.Number('#bpm-counter', {
 });
 bpmSlider.on('change', function(value){
     Tone.Transport.bpm.value = value
-    // bpmCounter.value = value
 });
 bpmCounter.link(bpmSlider);
-// bpmCounter.on('change', function(value){
-//     // Tone.Transport.bpm.value = value
-//     bpmSlider.value = value
-// });
 
 bpmSlider.value = 110
 
@@ -465,8 +395,7 @@ function loadMidi(url: string) {
     MidiConvert.load(url, function(midi) {
         Tone.Transport.cancel()  // remove all scheduled events
 
-        // make sure you set the tempo before you schedule the events
-        // Tone.Transport.bpm.value = bpmCounter.value;
+        // must set the Transport BPM to that of the midi for proper scheduling
         Tone.Transport.bpm.value = midi.header.bpm;
         Tone.Transport.timeSignature = midi.header.timeSignature;
 
@@ -505,6 +434,7 @@ function loadMidi(url: string) {
             }
         }
 
+        // change Transport BPM back to the displayed value
         Tone.Transport.bpm.value = bpmSlider.value;
     })
 }
@@ -558,22 +488,3 @@ function playCallback(){
         }
     })
 };
-
-function findMeasureIndex(position): string {
-    let boundingBoxes = osmd.boundingBoxes;
-    let boundingBox;
-    for (let measureIndex in boundingBoxes) {
-        boundingBox = boundingBoxes[measureIndex];
-        if (position.x <= boundingBox.xmax
-            &&
-            position.x >= boundingBox.xmin
-            &&
-            position.y <= boundingBox.ymax
-            &&
-            position.y >= boundingBox.ymin
-        ) {
-            return measureIndex;
-        }
-    }
-    return null;
-}
