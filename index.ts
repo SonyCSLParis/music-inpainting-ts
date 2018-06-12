@@ -103,7 +103,7 @@ document.body.appendChild(osmdContainer);
  * the container we've created in the steps before. The second parameter tells OSMD
  * not to redraw on resize.
  */
-osmd = new eOSMD(osmdContainer, false);
+osmd = new eOSMD(osmdContainer, true);
 
 var options = {
     zone: osmd.renderingBackend.getInnerElement(),
@@ -225,8 +225,7 @@ function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
             osmd.load(xmldata)
                 .then(
                     () => {
-                        osmd.render();
-                        osmd.drawTimestampBoxes(onClickTimestampBoxFactory);
+                        osmd.render(onClickTimestampBoxFactory);
                         enableChanges()
                     },
                     (err) => {console.log(err); enableChanges()}
