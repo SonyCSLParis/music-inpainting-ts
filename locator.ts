@@ -11,6 +11,11 @@ export class eOSMD extends OpenSheetMusicDisplay {
     }
     public _boundingBoxes: [number, number, number, number][];
 
+    public render(onclickFactory=undefined): void {
+        super.render()
+        this.drawTimestampBoxes(onclickFactory)
+    }
+
     private computeBoundingBoxes(): void {
         // TODO find measureIndex and staffIndex
         let measureList = this.graphicalMusicSheet.MeasureList;
