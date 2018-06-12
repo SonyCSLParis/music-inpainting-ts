@@ -200,6 +200,7 @@ function toggleBusyClass(toggleBusy: boolean): void{
 
 function disableChanges(): void {
     toggleBusyClass(true);
+    $('.timecontainer').addClass('busy');
     $('.notebox').each(function() {
         this.addEventListener("click", blockall, true);}
     )
@@ -209,6 +210,7 @@ function enableChanges(): void {
     $('.notebox').each(function() {
         this.removeEventListener("click", blockall, true);}
     )
+    $('.timecontainer').removeClass('busy');
     toggleBusyClass(false);
 }
 
