@@ -13,25 +13,31 @@ import './styles/osmd.scss'
 
 
 let playbuttonElem: HTMLElement = <HTMLElement>document.createElement('div');
+
+let topControlsGridElem: HTMLDivElement = document.createElement('div')
+topControlsGridElem.id = 'top-controls'
+document.body.appendChild(topControlsGridElem);
+
+let playbuttonElem: HTMLElement = document.createElement('div');
 playbuttonElem.id = 'play-button'
-document.body.appendChild(playbuttonElem);
+topControlsGridElem.appendChild(playbuttonElem);
 
 let playbutton = new Nexus.TextButton('#play-button',{
-    // 'size': [150,50],
+    'size': [150,50],
     'state': false,
     'text': 'Play',
     'alternateText': 'Pause'
 })
-playbutton.on('mousedown', (e) => {playbutton.flip()}) //playCallback.bind(playbutton));
+// playbutton.on('down', (e) => {playbutton.flip()}) //playCallback.bind(playbutton));
 playbutton.on('change', playCallback)
 
 
-let stopbuttonElem: HTMLElement = <HTMLElement>document.createElement("div");
+let stopbuttonElem: HTMLElement = document.createElement("div");
 stopbuttonElem.id = 'stop-button';
-document.body.appendChild(stopbuttonElem);
+topControlsGridElem.appendChild(stopbuttonElem);
 
 let stopbutton = new Nexus.TextButton('#stop-button',{
-    // 'size': [150,50],
+    'size': [150,50],
     'state': false,
     'text': 'Stop'
 })
@@ -48,20 +54,23 @@ document.addEventListener("keydown", (event) => {
         case 's': {stopbutton.down(); stopbutton.up(); break}
     }});
 
-document.body.appendChild(document.createElement("br"))
+// document.body.appendChild(document.createElement("br"))
 
 // Time-granularity selector
 let granularities = ['quarter-note', 'half-note', 'whole-note']
 
 let granularitySelectElem: HTMLElement = document.createElement("div");
 granularitySelectElem.id = 'select-granularity'
-document.body.appendChild(granularitySelectElem)
+topControlsGridElem.appendChild(granularitySelectElem)
 
 let granularitySelect = new Nexus.Select('#select-granularity', {
-    'size': [150, 40],
+    'size': [150, 50],
     'options': granularities,
-    })
-
+});
+console.log((granularitySelectElem.firstElementChild as HTMLElement).style.fontSize);
+console.log((playbuttonElem.firstElementChild.firstElementChild as HTMLElement).style.fontSize);
+(granularitySelectElem.firstElementChild as HTMLElement).style.fontSize = (
+    (playbuttonElem.firstElementChild.firstElementChild as HTMLElement).style.fontSize);
 function granularityOnChange(ev) {
     $('.notebox').removeClass('active');
     $('.' + this.value).addClass('active');
