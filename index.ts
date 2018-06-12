@@ -250,13 +250,13 @@ function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
 
 var piano = new Piano([21, 108], 5);
 
-var samples = SampleLibrary.load({
-            instruments: ['organ'],
-            baseUrl: "tonejs-instruments/samples/"
-        })
-var organ = samples['organ']
-organ.release = 1.8
-organ.toMaster();
+// var samples = SampleLibrary.load({
+//             instruments: ['organ'],
+//             baseUrl: "tonejs-instruments/samples/"
+//         })
+// var organ = samples['organ']
+// organ.release = 1.8
+// organ.toMaster();
 
 var chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
 var reverb = new Tone.Reverb(1.5).connect(chorus);
@@ -280,12 +280,58 @@ let steelpan = new Tone.PolySynth(12).set({
 );
 steelpan.connect(reverb);
 
-piano.load().then(()=>{
-	//make the button active on load
-	// let button = document.querySelector('button')
-	// button.classList.add('active')
-	// document.querySelector('#loading').remove()
+// piano.load().then(()=>{
+// 	//make the button active on load
+// 	// let button = document.querySelector('button')
+// 	// button.classList.add('active')
+// 	// document.querySelector('#loading').remove()
+// })
+
+// Manual samples loading button, to reduce network usage
+let loadSamplesButtonElem: HTMLDivElement = document.createElement('div')
+loadSamplesButtonElem.id = 'load-samples-button'
+document.body.appendChild(loadSamplesButtonElem)
+
+let loadSamplesButton = new Nexus.TextButton('#load-samples-button',{
+    'size': [150,50],
+    'state': false,
+    'text': 'Load samples',
+    'alternateText': 'Samples loading'
 })
+
+let samples, organ;  // declare variables but do not load samples yet
+loadSamplesButton.on('change', () => {
+    // must disable pointer events on *child* node to also use cursor property
+    (loadSamplesButtonElem.firstElementChild as HTMLElement).style.pointerEvents = 'none';
+    loadSamplesButtonElem.style.cursor = 'wait';
+
+    let loadPromises: Promise<any>[] = []
+    let sampleLibraryLoadPromise = new Promise((resolve, reject) => {
+        samples = SampleLibrary.load({
+                    instruments: ['organ'],
+                    baseUrl: "tonejs-instruments/samples/"
+                });
+        organ = samples['organ'];
+        addSilentPianoMethods_(organ);
+        organ.release = 1.8;
+        organ.toMaster();
+        resolve(organ)
+    });
+    loadPromises.push(sampleLibraryLoadPromise)
+
+    let pianoLoadPromise: Promise<boolean> = piano.load()
+    loadPromises.push(pianoLoadPromise)
+
+    Promise.all(loadPromises).then(()=>{
+        console.log('Finished downloading!')
+        loadSamplesButtonElem.remove();
+        instrumentSelect.render();
+    });
+});
+
+console.log('(Something here)')
+// playbutton.on('change', playCallback)
+
 
 function addSilentPianoMethods_(instrument: Tone.Instrument) {
     // add dummy Piano methods for simple duck typing
@@ -303,7 +349,7 @@ function addTriggerAttackRelease_(piano: Piano) {
     return piano;
 }
 
-let instruments = [polysynth, steelpan, organ]
+let instruments = [polysynth, steelpan]
 for (let instrument of instruments) {
     addSilentPianoMethods_(instrument);
 }
@@ -329,7 +375,7 @@ let instrumentSelect = new Nexus.Select('#instrument-select', {
 })
 
 let current_instrument = polysynth;
-function instrumentOnChange(ev) {
+function instrumentOnChange() {
     current_instrument = instrumentFactories[this.value]();
 };
 
