@@ -48,6 +48,7 @@ module.exports = function (options) {
 
     plugins: [
       new HtmlWebpackPlugin({
+        template: 'index.html',
         title: 'DeepBach',
         favicon: 'images/favicon.ico'
       }),
