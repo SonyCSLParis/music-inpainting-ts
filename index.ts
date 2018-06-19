@@ -126,8 +126,8 @@ document.body.appendChild(osmdContainer);
  * the container we've created in the steps before. The second parameter tells OSMD
  * not to redraw on resize.
  */
-let leadsheet = true;
-osmd = new eOSMD(osmdContainer, true, leadsheet);
+let useLeadsheetMode = true;
+osmd = new eOSMD(osmdContainer, true, useLeadsheetMode);
 
 // var options = {
 //     zone: osmd.renderingBackend.getInnerElement(),
