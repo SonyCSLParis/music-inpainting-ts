@@ -1,15 +1,36 @@
 import { OpenSheetMusicDisplay, VexFlowMeasure,
         Fraction, StaffMeasure, SourceMeasure } from "opensheetmusicdisplay";
+import { FermataBox } from './fermata';
+import { ChordSelector } from './chord_selector';
 import * as $ from 'jquery';
-import './styles/overlays.scss';
 import 'nipplejs'
+import './styles/overlays.scss';
 
 export class eOSMD extends OpenSheetMusicDisplay {
-    constructor(container: string | HTMLElement, autoResize: boolean = false) {
+    constructor(container: string | HTMLElement, autoResize: boolean = false,
+            leadsheet: boolean = false) {
         super(container, autoResize);
         this._boundingBoxes = [];
+        this.leadsheet = leadsheet;
+        if (leadsheet) {
+
+        }
     }
     public _boundingBoxes: [number, number, number, number][];
+
+    public leadsheet: boolean;
+
+    private _chordSelectors = [];
+
+    public get chordSelectors(): ChordSelector[] {
+        return this._chordSelectors;
+    }
+
+    private _fermatas = [];
+
+    public get fermatas(): FermataBox[] {
+        return this._fermatas;
+    }
 
     public render(onclickFactory=undefined): void {
         super.render()
@@ -73,11 +94,12 @@ export class eOSMD extends OpenSheetMusicDisplay {
             // the div has no ID set yet: was created in this call
             commonDiv.id = commonDivId;
             commonDiv.classList.add('timecontainer')
+            commonDiv.classList.add(divClass);
 
             div.id = divId
             div.classList.add('notebox');
             div.classList.add('available');
-            div.classList.add(divClass);
+            // div.classList.add(divClass);
 
             // FIXME constrains granularity
             let containedQuarterNotes = []
@@ -86,13 +108,15 @@ export class eOSMD extends OpenSheetMusicDisplay {
             for (let i=quarterNoteStart; i<quarterNoteEnd; i++) {
                 containedQuarterNotes.push(i)
             }
-            div.setAttribute('containedQuarterNotes',
-                containedQuarterNotes.toString().replace(/,/g, ' '))
+            commonDiv.setAttribute('containedQuarterNotes',
+                containedQuarterNotes.toString().replace(/,/g, ' '));
+            // div.setAttribute('containedQuarterNotes',
+            //     commonDiv.getAttribute('containedQuarterNotes'));
 
             let granularitySelect : HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
             const currentGranularity = granularitySelect[
-                parseInt(granularitySelect.value)].textContent
-            if (currentGranularity == divClass) div.classList.add('active')
+                parseInt(granularitySelect.value)].textContent;
+            if (currentGranularity == divClass) div.classList.add('active');
 
             // // insert NipppleJS manager
             // var options = {
@@ -115,45 +139,42 @@ export class eOSMD extends OpenSheetMusicDisplay {
             inner.appendChild(commonDiv);
             commonDiv.appendChild(div);
 
-            if (divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
+            if (!this.leadsheet && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
                 // add fermata selection box
-                this.drawFermataBox(div);
+                this.fermatas.push(new FermataBox(commonDiv, this.sequenceDuration()));
+            }
+
+            if (this.leadsheet && divClass == 'half-note') {
+                // add chord selection boxes at the half-note level
+                this._chordSelectors.push(new ChordSelector(commonDiv));
             }
         }
 
         return div;
     };
 
-    private sequence_duration(): number {
-        return this.graphicalMusicSheet.measureList.length * 4
+    private sequenceDuration(): number {
+        // FIXME hardcoded 4/4 time-signature
+        return this.graphicalMusicSheet.MeasureList.length * 4;
     }
 
-    private drawFermataBox(timestampDiv: HTMLElement) {
-        // Position fermata box over `timestampElement`
-        // FIXME hardcoded quarter-note duration
-        const fermataDivId = timestampDiv.id + '-fermata'
-        let fermataDiv = (document.getElementById(fermataDivId) ||
+    private drawChordBox(timestampDiv: HTMLElement) {
+        // Position chord box over `timestampElement`
+        // FIXME hardcoded half-note duration
+        const chordDivId = timestampDiv.id + '-chord'
+        let chordDiv = (document.getElementById(chordDivId) ||
             document.createElement("div"));
-        fermataDiv.id = fermataDivId
-        fermataDiv.classList.add('fermata');
+        chordDiv.id = chordDivId
+        chordDiv.classList.add('chord');
 
         let containedQuarters_str: string = timestampDiv.getAttribute('containedquarternotes')
-        fermataDiv.setAttribute('containedquarternotes', containedQuarters_str);
+        chordDiv.setAttribute('containedquarternotes', containedQuarters_str);
 
-        let containedQuarter = parseInt(containedQuarters_str)
-        if (containedQuarter >= this.sequence_duration()-2) {
-            // Add imposed fermata at the end of the sequence
-            // Do not add onclick callback
-            fermataDiv.classList.add('imposed')
-            fermataDiv.classList.add('active')
-        }
-        else {
-            fermataDiv.addEventListener('click', () => {
-                fermataDiv.classList.toggle('active')
-            })
-        }
+        chordDiv.addEventListener('click', () => {
+            chordDiv.classList.toggle('active')
+        })
 
-        timestampDiv.parentNode.appendChild(fermataDiv);
+        timestampDiv.parentNode.appendChild(chordDiv);
     }
 
     public drawTimestampBoxes(onclickFactory=undefined): void{
