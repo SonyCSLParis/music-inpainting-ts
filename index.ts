@@ -1,4 +1,4 @@
-import * as nipplejs from "nipplejs";
+// import * as nipplejs from "nipplejs";
 import { eOSMD } from "./locator";
 import { Fraction } from 'opensheetmusicdisplay'
 import * as $ from "jquery";
@@ -8,11 +8,25 @@ import * as Tone from "tone";
 import { SampleLibrary } from './tonejs-instruments/Tonejs-Instruments'
 import * as Nexus from 'nexusui'
 
+import {ChordSelector} from './chord_selector';
+
 import './styles/osmd.scss'
-// import './styles/main.scss'
+import './styles/main.scss'
 
 
-let playbuttonElem: HTMLElement = <HTMLElement>document.createElement('div');
+// let raphaelimport: HTMLScriptElement = document.createElement('script')
+// raphaelimport.type = 'text/javascript'
+// raphaelimport.src = "https://cdn.jsdelivr.net/npm/wheelnav@1.7.1/js/dist/raphael.min.js"
+// document.head.appendChild(raphaelimport)
+//
+// let wheelimport: HTMLScriptElement = document.createElement('script')
+// wheelimport.type = 'text/javascript'
+// wheelimport.src = "https://cdn.jsdelivr.net/npm/wheelnav@1.7.1/js/dist/wheelnav.min.js"
+// document.head.appendChild(wheelimport)
+
+
+Nexus.colors.accent = '#ffb6c1';  // '#f40081';  //  light pink
+Nexus.colors.fill = '#e5f5fd';  // light blue // '#f0f2ff';  // lilac triadic to '#ffb6c1'
 
 let topControlsGridElem: HTMLDivElement = document.createElement('div')
 topControlsGridElem.id = 'top-controls'
@@ -73,7 +87,7 @@ console.log((playbuttonElem.firstElementChild.firstElementChild as HTMLElement).
     (playbuttonElem.firstElementChild.firstElementChild as HTMLElement).style.fontSize);
 function granularityOnChange(ev) {
     $('.notebox').removeClass('active');
-    $('.' + this.value).addClass('active');
+    $('.' + this.value + '> .notebox').addClass('active');
 };
 granularitySelect.on('change', granularityOnChange.bind(granularitySelect))
 const initialGranulatity = granularities.indexOf('whole-note').toString()
@@ -112,12 +126,12 @@ document.body.appendChild(osmdContainer);
  * the container we've created in the steps before. The second parameter tells OSMD
  * not to redraw on resize.
  */
-osmd = new eOSMD(osmdContainer, true);
+osmd = new eOSMD(osmdContainer, true, true);
 
-var options = {
-    zone: osmd.renderingBackend.getInnerElement(),
-    color: "blue"
-};
+// var options = {
+//     zone: osmd.renderingBackend.getInnerElement(),
+//     color: "blue"
+// };
 // var manager = nipplejs.create(options);
 // var joystick_data: {};
 // var last_click = [];
@@ -163,11 +177,33 @@ function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void{
     titleNode.textContent = movementTitleNode.textContent = composerNode.textContent = ""
 }
 
-function formatFermatas(): string {
-    const activeFermataElems = $('.fermata.active')
-    const containedQuarterNotesList = activeFermataElems.map(
-        function(){return this.getAttribute('containedQuarterNotes');}).get()
-    return containedQuarterNotesList.toString()
+function getFermatas(): number[] {
+    const activeFermataElems = $('.FermataBox.active')
+    let containedQuarterNotesList = [];
+    for (let activeFemataElem of activeFermataElems) {
+        containedQuarterNotesList.push(parseInt(
+            activeFemataElem.parentElement.getAttribute('containedQuarterNotes')))
+    }
+    // const containedQuarterNotesList = activeFermataElems.map(
+    //     function(){return this.parentElement.getAttribute('containedQuarterNotes');}).get()
+    return containedQuarterNotesList;
+}
+
+function getChordLabels(): object[] {
+    // return a stringified JSON object describing the current chords
+    let chordLabels = [];
+    for (let chordSelector of osmd.chordSelectors) {
+        chordLabels.push(chordSelector.currentChord)
+    };
+    return chordLabels;
+};
+
+function getMetadata() {
+    return {
+        leadsheet: osmd.leadsheet,
+        fermatas: getFermatas(),
+        chordLabels: getChordLabels()
+    }
 }
 
 function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
@@ -182,9 +218,10 @@ function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
 
     return (function (this, event) {
         // this.style.opacity = '0.3';
-        const fermatasString = formatFermatas()
-        const argsGenerationUrlWithFermatas = (argsGenerationUrl +
-            '&fermatas=' + fermatasString)
+        // console.log(getChordLabels());
+        // const fermatasString = getFermatas()
+        const argsGenerationUrlWithFermatas = (argsGenerationUrl)// +
+            // '&fermatas=' + fermatasString)
         loadMusicXMLandMidi(serverUrl + argsGenerationUrlWithFermatas,
             serverUrl + argsMidiUrl);
     ;})
@@ -229,8 +266,12 @@ function enableChanges(): void {
  */
 function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
     disableChanges();
-    $.get({
+    console.log(JSON.stringify(getMetadata()));
+    $.post({
         url: urlXML,
+        data: JSON.stringify(getMetadata()),
+        contentType: 'application/json',
+        dataType: 'xml',
         success: (xmldata: XMLDocument) => {
             removeMusicXMLHeaderNodes(xmldata);
             osmd.load(xmldata)
@@ -245,7 +286,7 @@ function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
             // loadMidiToPiano(urlMidi);
         }
     });
-}
+};
 
 
 var piano = new Piano([21, 108], 5);
@@ -432,7 +473,7 @@ function playNote(time, event){
 
 function nowPlayingCallback(time, step){
     $('.notebox').removeClass('playing');
-    $('.notebox').filter(`[containedQuarterNotes~='${step}']`).addClass('playing');
+    $(`.timecontainer[containedQuarterNotes~='${step}'] .notebox`).addClass('playing');
 }
 
 // quarter-note aligned steps
