@@ -31,7 +31,9 @@ export class ChordSelector extends AnnotationBox {
     }
 
 
-    private notes: string[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B', '-'];
+    private slur_symbol: string = '-'
+    private notes: string[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B',
+        this.slur_symbol];
     private accidentals: string[] = (() => {
         let accidentals = [];
         for (let i in this.notes) {
@@ -40,7 +42,7 @@ export class ChordSelector extends AnnotationBox {
         };
         return accidentals;
     })();
-    private chordTypes = ['M', '-', 'M7', '-7'];
+    private chordTypes = ['M', '-', '-7', 'M7', '7'];
 
     private noteWheel: any;
     private accidentalWheel: any;
@@ -103,7 +105,7 @@ export class ChordSelector extends AnnotationBox {
     public set currentChord(chord_obj) {
         // FIXME add proper parsing and checks
         this.currentNote = chord_obj['note'];
-        if (this.currentNote !== this.notes[this.notes.length-1]) {
+        if (this.currentNote !== this.slur_symbol) {
             this.currentAccidental = chord_obj['accidental'];
             this.currentChordType = chord_obj['chordType'];
         } else {
@@ -295,7 +297,7 @@ export class ChordSelector extends AnnotationBox {
 
         for (let navItem of this.noteWheel.navItems) {
           navItem.navigateFunction = function () {
-            if (this.itemIndex === (self.notes.length-1)) {
+            if (this.itemIndex === self.notes.indexOf(self.slur_symbol)) {
                 // selected the 'chord continuation' symbol, close selector
                 self.currentAccidental = '';
                 self.currentChordType = self.chordTypes[0];  // WARNING could break if change to chordTypes list
