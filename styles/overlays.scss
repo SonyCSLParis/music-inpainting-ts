@@ -1,3 +1,5 @@
+$chords-font-stack: 'Boogaloo', cursive;
+
 .timecontainer {
     position: absolute;
     pointer-events: auto;
@@ -58,7 +60,7 @@
     z-index: 1;
     width: 100%;
     height: 2em;  // HACK hardcoded
-    top: -6.5em;  // -4.5em;
+    top: -4.5em;
     // opacity: 0;
     // background-color: rgb(252, 252, 108, 0);
 
