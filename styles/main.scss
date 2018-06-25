@@ -1,6 +1,15 @@
+$interface-font-stack: 'Ubuntu', sans-serif;
+$interface-font-weight: bold;
+
 body {
     background-color: #fff7f8;  // millenial pink
+    font-family: $interface-font-stack;
     /* box-shadow: 19px 6px 20px 0px black; */
+}
+
+div[nexus-ui] select, div[nexus-ui] input {
+    font-family: $interface-font-stack !important;
+    font-weight: $interface-font-weight !important;
 }
 
 #top-controls {
