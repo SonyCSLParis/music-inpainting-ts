@@ -162,40 +162,33 @@ export class ChordSelector extends AnnotationBox {
     }
 
     protected closeSelector() {
+        this.updateSpreader()
         this.closeNoteWheelAndCleanAfterNoteAndAccidentalSelectionDone();
         this.closeChordTypeWheel();
         this.toggleActiveContainer(false);
-        // this.removeClickListener();
+        this.removeClickListener();
     }
 
-    // private outsideClickListener = (event) => {
-    //     // HACK!!!! wheelnav creates a <tspan style="-webkit-tap-highlight-color">
-    //     // when the title of the spreader is clicked, which immeditaley disappears,
-    //     // thus being considered as a click outside the spreader because this elemen,t then has no parents
-    //     let target: HTMLElement = event.target
-    //     target.ta
-    //     if (!$(target).closest(this.container).length || (
-    //         target.tagName == 'tspan' && target.style.getPropertyValue()) {
-    //       console.log("Wow, clicked outside")
-    //       console.log(target)
-    //       console.log(target.parentElement)
-    //       this.closeSelector()
-    //     }
-    // };
-    //
-    //  private initHideOnClickOutside() {
-    //     // detects clicks out of the containing div and closes the selector
-    //     // bind this callback when the selector is activated and unbind it when
-    //     // it is closed
-    //     let self = this;
-    //     console.log("Binding click outside callback!!")
-    //     document.body.addEventListener('click', self.outsideClickListener);
-    //  };
-    //
-    //  private removeClickListener() {
-    //      let self = this;
-    //      document.body.removeEventListener('click', self.outsideClickListener)
-    //  };
+    private outsideClickListener = (event) => {
+        let target: HTMLElement = event.target
+        if (!$(target).closest(this.container).length) {
+          this.closeSelector()
+        }
+    };
+
+     private initHideOnClickOutside() {
+         // Attach an event listener to the whole document that detects clicks
+         // out of the containing div and closes the selector in that case
+         // Bind this callback when the selector is activated and unbind it when
+         // it is closed
+         let self = this;
+         document.addEventListener('click', self.outsideClickListener);
+     };
+
+     private removeClickListener() {
+         let self = this;
+         document.removeEventListener('click', self.outsideClickListener)
+     };
 
      protected createWheelNav(): any {
         let self = this;
@@ -212,11 +205,6 @@ export class ChordSelector extends AnnotationBox {
         //Use advanced constructor for more wheelnav on same div
         this.noteWheel = new wheelnav(this.container.id, null,
             this.wheelSize_px, this.wheelSize_px);
-        // offset containing <svg> tag for proper positioning
-        // let svgElem = $(this.container).children('svg')[0]  //offset({
-        //     left: this.wheelSize_px / 2,
-        //     top: this.wheelSize_px / 2
-        // });
         this.accidentalWheel = new wheelnav(accidentalContainer.id, this.noteWheel.raphael);
         this.chordTypeWheel = new wheelnav(chordTypeContainer.id, this.noteWheel.raphael);
 
@@ -227,7 +215,7 @@ export class ChordSelector extends AnnotationBox {
         // wheel1.spreadWheel();
         this.noteWheel.animatetime = 150;
         this.noteWheel.animateeffect = 'easeInOut';
-        this.noteWheel.spreaderTitleFont = "100 20px Helvetica";
+        this.noteWheel.spreaderTitleFont = "100 20px Boogaloo, sans-serif";
         this.noteWheel.spreaderFillColor = 'white';
 
         this.chordTypeWheel.spreaderEnable = false;
@@ -235,6 +223,15 @@ export class ChordSelector extends AnnotationBox {
         // wheel1.spreadWheel();
         this.chordTypeWheel.animatetime = 105;
         this.chordTypeWheel.animateeffect = 'easeInOut';
+        this.noteWheel.spreaderPathInAttr = {
+            fill: '#FFF7F8', 'fill-opacity': 1,
+            'stroke-width': 3, stroke: '#FFD3D9' };
+        // this.noteWheel.spreaderPathInAttr = {
+        //     fill: '#FFF', 'fill-opacity': 0.5,
+        //     'stroke-width': 3, stroke: '#FFF' };
+        // this.noteWheel.spreaderPathOutAttr = { fill: '#FFF', 'stroke-width': 3, stroke: '#FFF' };
+        this.noteWheel.spreaderTitleInAttr = { fill: '#555' };
+        this.noteWheel.spreaderTitleOutAttr = { fill: '#555' };
 
         this.noteWheel.colors = new Array(
           '#009CEB')
@@ -276,9 +273,9 @@ export class ChordSelector extends AnnotationBox {
         this.chordTypeWheel.currentPercent = 0;
 
         // init wheels
-        this.noteWheel.createWheel(this.notes);
         this.accidentalWheel.createWheel(this.accidentals);
         this.chordTypeWheel.createWheel(this.chordTypes);
+        this.noteWheel.createWheel(this.notes);
 
         // offset the svg to have the wheelnav spreader positionned correctly
         let spreaderRadius = this.noteWheel.spreaderRadius
@@ -291,9 +288,6 @@ export class ChordSelector extends AnnotationBox {
         for (let item of this.accidentalWheel.navItems) {
           item.navItem.hide();
         }
-
-        this.noteWheel.spreaderTitleFont = this.noteWheel.navItems[0].titleFont
-        this.updateSpreader();
 
         for (let navItem of this.noteWheel.navItems) {
           navItem.navigateFunction = function () {
@@ -321,6 +315,7 @@ export class ChordSelector extends AnnotationBox {
               }
               // first click on this navSlice: display accidental selectors
               if (self.previouslySelectedNoteIndex) {
+                // hide previously displayed accidentalWheel navSlices
                 self.accidentalWheel.navItems[2*self.previouslySelectedNoteIndex].navItem.hide();
                 self.accidentalWheel.navItems[2*self.previouslySelectedNoteIndex+1].navItem.hide();
               }
@@ -345,42 +340,46 @@ export class ChordSelector extends AnnotationBox {
 
         for (let navItem of this.chordTypeWheel.navItems) {
           navItem.navigateFunction = function () {
-            self.chordTypeWheel.animatetime = 0;
-            self.chordTypeWheel.spreadWheel();
-            self.chordTypeWheel.animatetime = 150;
-
-            self.previouslySelectedNoteIndex = null;
-            self.updateSpreader();
-            self.toggleActiveContainer(false);
+            self.closeSelector();
           };
         }
 
         this.noteWheel.spreader.spreaderPath.click(self.hideCurrentAccidentalNavItems.bind(self));
         this.noteWheel.spreader.spreaderTitle.click(self.hideCurrentAccidentalNavItems.bind(self));
 
-        this.noteWheel.spreader.spreaderPath.click(self.closeChordTypeWheel.bind(self));
-        this.noteWheel.spreader.spreaderTitle.click(self.closeChordTypeWheel.bind(self));
-
         this.noteWheel.spreader.spreaderPath.click(
             () => {this.container.classList.toggle('active')});
         this.noteWheel.spreader.spreaderTitle.click(
             () => {this.container.classList.toggle('active')});
 
-        // focus selector div on opening to allow closing it on unfocus (= blur event)
-        // function onOpenSelector() {
-        //     self.initHideOnClickOutside()
-        // };
-        // this.noteWheel.spreader.spreaderPath.click(onOpenSelector.bind(self));
-        // this.noteWheel.spreader.spreaderTitle.click(onOpenSelector.bind(self));
+        function onOpenSelector() {
+            // this callback is called after spreading/unspreading the
+            // selector, so the wheel is at maxPercent if it was closed before the click
+            if (this.currentPercent === this.maxPercent) {
+                self.initHideOnClickOutside()
+            }
+        };
+        this.noteWheel.spreader.spreaderPath.click(onOpenSelector.bind(this.noteWheel));
+        this.noteWheel.spreader.spreaderTitle.click(onOpenSelector.bind(this.noteWheel));
 
-        this.noteWheel.refreshWheel();
+        function onClickSpreadWithOpenWheels() {
+            // Should call this when the spreader is clicked with either
+            // the noteWheel or the chordTypeWheel open
+            if (self.noteWheel.currentPercent !== self.noteWheel.maxPercent ||
+                self.chordTypeWheel.currentPercent === self.chordTypeWheel.maxPercent) {
+                self.closeSelector()
+            }
+        };
+        this.noteWheel.spreader.spreaderPath.click(onClickSpreadWithOpenWheels.bind(self));
+        this.noteWheel.spreader.spreaderTitle.click(onClickSpreadWithOpenWheels.bind(self));
+
+        this.noteWheel.refreshWheel()
+        this.updateSpreader()
         }
 
     public draw(): void {
-        this.createWheelNav()
-        // this.container.addEventListener('click', () => {
-        //     this.container.classList.toggle('active')
-        // });
+        this.createWheelNav();
+        this.updateSpreader();
     }
 
 }
