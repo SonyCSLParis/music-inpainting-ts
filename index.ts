@@ -586,3 +586,5 @@ function playCallback(){
         }
     })
 };
+
+import './file_upload.ts'
