@@ -1,3 +1,4 @@
+let webpack = require('webpack')
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 
@@ -37,16 +38,36 @@ module.exports = function (options) {
           ]
       },
       {
-          test: /\.scss$/,
+          test: /\.(css|scss)$/,
           use: [
               "style-loader", // creates style nodes from JS strings
               "css-loader", // translates CSS into CommonJS
               "sass-loader" // compiles Sass to CSS
-          ]}
+          ]},
+       {
+         test: /\.(png|svg|jpg|gif)$/,
+         use: [
+           'file-loader'
+         ]
+     },
+     {
+       test: /\.html$/,
+       use: [
+         'html-loader'
+       ]
+     }
       ]
     },
 
     plugins: [
+        new webpack.ProvidePlugin({
+        // this allows to use JQuery plugin by calling `require('plugin-name')`
+        // as it provides a global JQuery
+        // TODO(theis,maybe): alternative method
+        // http://reactkungfu.com/2015/10/integrating-jquery-chosen-with-webpack-using-imports-loader/
+            $: 'jquery',
+            jQuery: 'jquery'
+        }),
       new HtmlWebpackPlugin({
         template: 'index.html',
         title: 'DeepBach',
@@ -58,8 +79,12 @@ module.exports = function (options) {
           from: 'Boplicity.xml',
           to: 'musicXmlSample.xml'
       },
-        {from: './tonejs-instruments/samples/organ',
-         to: 'tonejs-instruments/samples/organ'}
+      {from: './tonejs-instruments/samples/organ',
+       to: 'tonejs-instruments/samples/organ'},
+      {from: './tonejs-instruments/samples/harmonium',
+       to: 'tonejs-instruments/samples/harmonium'},
+      {from: './tonejs-instruments/samples/xylophone',
+       to: 'tonejs-instruments/samples/xylophone'}
       ])
     ],
 
