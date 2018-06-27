@@ -503,6 +503,12 @@ function loadMidi(url: string) {
         Tone.Transport.bpm.value = midi.header.bpm;
         Tone.Transport.timeSignature = midi.header.timeSignature;
 
+        let drawCallback = (time, step) => {
+                // DOM modifying callback should be put in Tone.Draw scheduler!
+                // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
+                Tone.Draw.schedule((time) => {nowPlayingCallback(time, step)}, time);
+                }
+
         // schedule quarter-notes clock
         new Tone.Sequence(nowPlayingCallback, steps, '4n').start(0);
 
