@@ -13,6 +13,8 @@ import {ChordSelector} from './chord_selector';
 import './styles/osmd.scss'
 import './styles/main.scss'
 
+let server_config = require('./config.json')
+
 
 // let raphaelimport: HTMLScriptElement = document.createElement('script')
 // raphaelimport.type = 'text/javascript'
@@ -81,8 +83,6 @@ let granularitySelect = new Nexus.Select('#select-granularity', {
     'size': [150, 50],
     'options': granularities,
 });
-console.log((granularitySelectElem.firstElementChild as HTMLElement).style.fontSize);
-console.log((playbuttonElem.firstElementChild.firstElementChild as HTMLElement).style.fontSize);
 (granularitySelectElem.firstElementChild as HTMLElement).style.fontSize = (
     (playbuttonElem.firstElementChild.firstElementChild as HTMLElement).style.fontSize);
 function granularityOnChange(ev) {
@@ -106,8 +106,15 @@ titlediv.style.fontSize = '64px'
 
 document.body.appendChild(document.createElement("div"))
 
+let useLeadsheetMode = true;
+let serverPort: number
+if (useLeadsheetMode) {
+    serverPort = server_config['leadsheet_port']
+} else {
+    serverPort = server_config['chorale_port']
+}
 // let serverUrl = 'http://0.0.0.0:5000/';
-let serverUrl = 'http://10.0.1.122:5000/';
+let serverUrl = `http://${server_config['server_ip']}:${serverPort}/`;
 
 let osmd: eOSMD;
 /*
@@ -126,7 +133,6 @@ document.body.appendChild(osmdContainer);
  * the container we've created in the steps before. The second parameter tells OSMD
  * not to redraw on resize.
  */
-let useLeadsheetMode = true;
 osmd = new eOSMD(osmdContainer, true, useLeadsheetMode);
 
 // var options = {
