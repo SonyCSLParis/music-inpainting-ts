@@ -63,7 +63,7 @@ module.exports = function (options) {
         new webpack.ProvidePlugin({
         // this allows to use JQuery plugin by calling `require('plugin-name')`
         // as it provides a global JQuery
-        // TODO(theis,maybe): alternative method
+        // TODO(theis, maybe): alternative method
         // http://reactkungfu.com/2015/10/integrating-jquery-chosen-with-webpack-using-imports-loader/
             $: 'jquery',
             jQuery: 'jquery'
