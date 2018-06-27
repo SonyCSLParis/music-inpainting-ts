@@ -16,6 +16,12 @@ import './styles/main.scss'
 let server_config = require('./config.json')
 
 
+// add Piano methods to Tone.Insutrument objects for duck typing
+Tone.Instrument.prototype.keyDown = function() {return this};
+Tone.Instrument.prototype.keyUp = function() {return this};
+Tone.Instrument.prototype.pedalDown = function() {return this};
+Tone.Instrument.prototype.pedalUp = function() {return this};
+
 // let raphaelimport: HTMLScriptElement = document.createElement('script')
 // raphaelimport.type = 'text/javascript'
 // raphaelimport.src = "https://cdn.jsdelivr.net/npm/wheelnav@1.7.1/js/dist/raphael.min.js"
@@ -298,20 +304,15 @@ function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
 
 var piano = new Piano([21, 108], 5);
 
-// var samples = SampleLibrary.load({
-//             instruments: ['organ'],
-//             baseUrl: "tonejs-instruments/samples/"
-//         })
-// var organ = samples['organ']
-// organ.release = 1.8
-// organ.toMaster();
-
 var chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
 var reverb = new Tone.Reverb(1.5).connect(chorus);
 reverb.generate();
 
 var polysynth = new Tone.PolySynth(12);
 polysynth.connect(reverb)
+
+var polysynth_chords = new Tone.PolySynth(24);
+polysynth_chords.connect(reverb)
 
 let steelpan = new Tone.PolySynth(12).set({
     "oscillator": {
@@ -328,13 +329,6 @@ let steelpan = new Tone.PolySynth(12).set({
 );
 steelpan.connect(reverb);
 
-// piano.load().then(()=>{
-// 	//make the button active on load
-// 	// let button = document.querySelector('button')
-// 	// button.classList.add('active')
-// 	// document.querySelector('#loading').remove()
-// })
-
 // Manual samples loading button, to reduce network usage
 let loadSamplesButtonElem: HTMLDivElement = document.createElement('div')
 loadSamplesButtonElem.id = 'load-samples-button'
@@ -347,7 +341,8 @@ let loadSamplesButton = new Nexus.TextButton('#load-samples-button',{
     'alternateText': 'Samples loading'
 })
 
-let samples, organ;  // declare variables but do not load samples yet
+let sampledInstruments;  // declare variables but do not load samples yet
+let sampled_instruments_names = ['organ', 'harmonium', 'xylophone'];
 loadSamplesButton.on('change', () => {
     // must disable pointer events on *child* node to also use cursor property
     (loadSamplesButtonElem.firstElementChild as HTMLElement).style.pointerEvents = 'none';
@@ -355,15 +350,15 @@ loadSamplesButton.on('change', () => {
 
     let loadPromises: Promise<any>[] = []
     let sampleLibraryLoadPromise = new Promise((resolve, reject) => {
-        samples = SampleLibrary.load({
-                    instruments: ['organ'],
+        sampledInstruments = SampleLibrary.load({
+                    instruments: sampled_instruments_names,
                     baseUrl: "tonejs-instruments/samples/"
                 });
-        organ = samples['organ'];
-        addSilentPianoMethods_(organ);
-        organ.release = 1.8;
-        organ.toMaster();
-        resolve(organ)
+        Object.keys(sampledInstruments).forEach(function(instrument_name) {
+            sampledInstruments[instrument_name].release = 1.8;
+            sampledInstruments[instrument_name].toMaster();
+        });
+        resolve(sampledInstruments);
     });
     loadPromises.push(sampleLibraryLoadPromise)
 
@@ -377,29 +372,10 @@ loadSamplesButton.on('change', () => {
     });
 });
 
-console.log('(Something here)')
-// playbutton.on('change', playCallback)
-
-
-function addSilentPianoMethods_(instrument: Tone.Instrument) {
-    // add dummy Piano methods for simple duck typing
-    instrument.keyDown = () => {return instrument};
-    instrument.keyUp = () => {return instrument};
-    instrument.pedalDown = () => {return instrument};
-    instrument.pedalUp = () => {return instrument};
-    instrument.pedalDown = () => {return instrument};
-    return instrument
-}
-
 function addTriggerAttackRelease_(piano: Piano) {
     // add dummy Instrument method for simple duck typing
     piano.triggerAttackRelease = () => {return piano};
     return piano;
-}
-
-let instruments = [polysynth, steelpan]
-for (let instrument of instruments) {
-    addSilentPianoMethods_(instrument);
 }
 addTriggerAttackRelease_(piano)
 
@@ -409,7 +385,7 @@ let instrumentFactories = {
         piano.disconnect(0); piano.toMaster(); return piano},
     'Sampled Piano (w/ reverb)':
         () => {piano.disconnect(0); piano.connect(reverb); return piano},
-    'Organ': () => {return organ},
+    'Xylophone': () => {return sampledInstruments['xylophone']},
     'Steelpan': () => {return steelpan},
 }
 
@@ -430,6 +406,39 @@ function instrumentOnChange() {
 instrumentSelect.on('change', instrumentOnChange.bind(instrumentSelect))
 const initialInstrument = 'PolySynth'
 instrumentSelect.value = initialInstrument
+
+let chordInstrumentSelectElem: HTMLDivElement;
+let chordInstrumentFactories;
+let chordInstrumentSelect;
+let chords_instrument;
+const initialChordInstrument = 'PolySynth';
+if (osmd.leadsheet) {
+    // addSilentPianoMethods_(polysynth_chords);
+
+    // create second instrument selector for chord instrument
+    chordInstrumentSelectElem = document.createElement('div')
+    chordInstrumentSelectElem.id = 'chord-instrument-select'
+    document.body.appendChild(chordInstrumentSelectElem)
+
+    chordInstrumentFactories = {
+        'PolySynth': () => {return polysynth_chords},
+        'Organ': () => {return sampledInstruments['organ']},
+        'Harmonium': () => {return sampledInstruments['harmonium']},
+    }
+
+    chordInstrumentSelect = new Nexus.Select('#chord-instrument-select', {
+        'size': [275, 40],
+        'options': Object.keys(chordInstrumentFactories)
+    })
+
+    chords_instrument = polysynth_chords;
+    function chordInstrumentOnChange() {
+        chords_instrument = chordInstrumentFactories[this.value]();
+    };
+
+    chordInstrumentSelect.on('change', chordInstrumentOnChange.bind(chordInstrumentSelect))
+    chordInstrumentSelect.value = initialChordInstrument
+}
 
 // Create BPM slider
 let bpmContainerElem: HTMLDivElement = document.createElement('div');
@@ -476,6 +485,10 @@ function playNote(time, event){
     current_instrument.triggerAttackRelease(event.name, event.duration, time,
         event.velocity);
     current_instrument.keyDown(event.note, event.velocity, time).keyUp(event.note, time + event.duration)
+
+function playNoteChordsInstrument(time, event){
+    chords_instrument.triggerAttackRelease(event.name, event.duration, time,
+        event.velocity);
 }
 
 function nowPlayingCallback(time, step){
@@ -484,7 +497,9 @@ function nowPlayingCallback(time, step){
 }
 
 // quarter-note aligned steps
-let sequence_duration_tone: Tone.Time = Tone.Time('4m')  // FIXME hardcoded piece duration
+let sequence_duration_tone: Tone.Time;
+if (osmd.leadsheet) {sequence_duration_tone = Tone.Time('8m')}  // FIXME hardcoded piece duration
+else {sequence_duration_tone = Tone.Time('4m')}
 // FIXME could break, should really parse tone js duration
 let [seq_dur_measures, seq_dur_quarters, seq_dur_sixteenths] =
     sequence_duration_tone.toBarsBeatsSixteenths().split(':').map(parseFloat)
@@ -493,6 +508,50 @@ let sequence_duration_quarters = Math.floor((4*seq_dur_measures +
 let steps = [];
 for (let i = 0; i < sequence_duration_quarters; i++) {
     steps.push(i);
+}
+
+function scheduleTrackToInstrument(midiTrack, isChords=false) {
+    let notes = midiTrack.notes;
+    let playNote_callback;
+    let getInstrument;
+
+    if (isChords) {
+        getInstrument = () => chords_instrument;
+        playNote_callback = playNoteChordsInstrument}
+    else {
+        getInstrument = () => current_instrument;
+        playNote_callback = playNote}
+    let part = new Tone.Part(playNote_callback, notes);
+    part.start(0)  // schedule events on the Tone timeline
+    part.loop = true;
+    part.loopEnd = sequence_duration_tone;
+
+    //schedule the pedal
+    // FIXME MAYBE possible bug with binding of the instruùment variable
+    let sustain = new Tone.Part((time, event) => {
+        if (event.value){
+            getInstrument().pedalDown(time)
+        } else {
+            getInstrument().pedalUp(time)
+        }
+    }, midiTrack.controlChanges[64]).start(0)
+
+    let noteOffEvents = new Tone.Part((time, event) => {
+        getInstrument().keyUp(event.midi, time, event.velocity)
+    }, midiTrack.noteOffs).start(0)
+
+    let noteOnEvents = new Tone.Part((time, event) => {
+        getInstrument().keyDown(event.midi, time, event.velocity)
+    }, midiTrack.notes).start(0)
+
+    console.log(midiTrack.noteOffs)
+    console.log(midiTrack.notes)
+
+    for (let part of [sustain, noteOffEvents, noteOnEvents]) {
+        part.loop = true;
+        part.loopEnd = sequence_duration_tone;
+        console.log(part)
+    }
 }
 
 function loadMidi(url: string) {
@@ -510,38 +569,16 @@ function loadMidi(url: string) {
                 }
 
         // schedule quarter-notes clock
-        new Tone.Sequence(nowPlayingCallback, steps, '4n').start(0);
+        new Tone.Sequence(drawCallback, steps, '4n').start(0);
 
-        for (let track of midi.tracks) {
-            let notes = track.notes
-            let part = new Tone.Part(playNote, notes);
-            part.start(0)  // schedule events on the Tone timeline
-            part.loop = true;
-            part.loopEnd = sequence_duration_tone;
-        }
-
-        for (let track of midi.tracks) {
-        	//schedule the pedal
-        	let sustain = new Tone.Part((time, event) => {
-        		if (event.value){
-        			current_instrument.pedalDown(time)
-        		} else {
-        			current_instrument.pedalUp(time)
-        		}
-        	}, track.controlChanges[64]).start(0)
-
-        	let noteOffEvents = new Tone.Part((time, event) => {
-        		current_instrument.keyUp(event.midi, time, event.velocity)
-        	}, track.noteOffs).start(0)
-
-        	let noteOnEvents = new Tone.Part((time, event) => {
-        		current_instrument.keyDown(event.midi, time, event.velocity)
-        	}, track.notes).start(0)
-
-            for (let part of [sustain, noteOffEvents, noteOnEvents]) {
-                part.loop = true;
-                part.loopEnd = sequence_duration_tone;
+        if (!osmd.leadsheet) {
+            for (let track of midi.tracks) {
+                scheduleTrackToInstrument(track);
             }
+        }
+        else {
+            scheduleTrackToInstrument(midi.tracks[0]);
+            scheduleTrackToInstrument(midi.tracks[1], true);
         }
 
         // change Transport BPM back to the displayed value
@@ -549,47 +586,10 @@ function loadMidi(url: string) {
     })
 }
 
-function loadMidiToPiano(url:string) {
-    MidiConvert.load(url).then((midi) => {
-        // Tone.Transport.cancel()  // remove all scheduled events
-        //
-        // Tone.Transport.bpm.value = midi.header.bpm
-    	// Tone.Transport.timeSignature = midi.header.timeSignature
-        //
-        // // schedule quarter-notes clock
-        // new Tone.Sequence(nowPlayingCallback, steps, '4n').start(0);
-
-        for (let track of midi.tracks) {
-        	//schedule the pedal
-        	let sustain = new Tone.Part((time, event) => {
-        		if (event.value){
-        			piano.pedalDown(time)
-        		} else {
-        			piano.pedalUp(time)
-        		}
-        	}, track.controlChanges[64]).start(0)
-
-        	let noteOffEvents = new Tone.Part((time, event) => {
-        		piano.keyUp(event.midi, time, event.velocity)
-        	}, track.noteOffs).start(0)
-
-        	let noteOnEvents = new Tone.Part((time, event) => {
-        		piano.keyDown(event.midi, time, event.velocity)
-        	}, track.notes).start(0)
-
-            for (let part of [sustain, noteOffEvents, noteOnEvents]) {
-                part.loop = true;
-                part.loopEnd = sequence_duration_tone;
-            }
-        }
-    })
-}
-
 function playCallback(){
-    // playbutton.flip()
     Tone.context.resume().then(() => {
         if (playbutton.state) {//Tone.Transport.state === "started"){
-            Tone.Transport.start("+0.1");
+            Tone.Transport.start("+0.2");
             // this.turnOn()
         } else {
             Tone.Transport.pause();
