@@ -220,12 +220,12 @@ function getMetadata() {
 }
 
 function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
-    const  [sixteenthnoteStart, sixteenthnoteEnd] = ([timeStart, timeEnd].map(
-        timeFrac => Math.round(16 * timeFrac.RealValue)))
+    const  [quarternoteStart, quarternoteEnd] = ([timeStart, timeEnd].map(
+        timeFrac => Math.round(4 * timeFrac.RealValue)))
 
     const argsGenerationUrl = ("timerange-change" +
-        `?sixteenthnoteStart=${sixteenthnoteStart}` +
-        `&sixteenthnoteEnd=${sixteenthnoteEnd}`
+        `?quarternoteStart=${quarternoteStart}` +
+        `&quarternoteEnd=${quarternoteEnd}`
     );
     const argsMidiUrl = "get-midi";
 
