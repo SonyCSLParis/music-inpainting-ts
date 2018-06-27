@@ -2,6 +2,7 @@
 import { eOSMD } from "./locator";
 import { Fraction } from 'opensheetmusicdisplay'
 import * as $ from "jquery";
+import * as WebMidi from 'webmidi'
 import * as MidiConvert from "midiconvert";
 import {Piano} from 'tone-piano';
 import * as Tone from "tone";
@@ -475,16 +476,20 @@ bpmCounter.link(bpmSlider);
 
 bpmSlider.value = 110
 
-
-// function playNotePiano(time, event){
-//     current_instrument.keyDown(event.note, event.velocity, time)
-//                       .keyUp(event.note, time + event.duration)
-// }
+let midiOutput;  // declare midiOut stub variable
 
 function playNote(time, event){
+    let timingOffset = performance.now() - Tone.now() * 1000
     current_instrument.triggerAttackRelease(event.name, event.duration, time,
         event.velocity);
-    current_instrument.keyDown(event.note, event.velocity, time).keyUp(event.note, time + event.duration)
+
+    // console.log(time)
+    // console.log(time * 1000 + timingOffset)
+    // console.log(event.name)
+    midiOutput.playNote(event.name, 1,
+        {time: time * 1000 + timingOffset,
+         duration: event.duration * 1000})
+}
 
 function playNoteChordsInstrument(time, event){
     chords_instrument.triggerAttackRelease(event.name, event.duration, time,
@@ -598,5 +603,31 @@ function playCallback(){
         }
     })
 };
+
+let dummyMidiOut = new Tone.Instrument()
+dummyMidiOut.playNote = () => {};
+
+let midiOutSelectElem: HTMLElement = document.createElement("div");
+midiOutSelectElem.id = 'select-midiout';
+document.body.appendChild(midiOutSelectElem);
+WebMidi.enable(function (err) {
+    if (err) console.log(err);
+
+    let midiOutSelect = new Nexus.Select('#select-midiout', {
+        'size': [150, 50],
+        'options': ['No Output'].concat(WebMidi.outputs.map((output) => output.name)),
+    });
+    function midiOutOnChange(ev) {
+        console.log(ev);
+        if (this.value !== 'No Output') {
+                midiOutput = WebMidi.getOutputByName(this.value);
+        }
+        else {
+                midiOutput = dummyMidiOut;
+        }
+        console.log(midiOutput)
+    };
+    midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect));
+});
 
 import './file_upload.ts'
