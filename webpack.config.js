@@ -54,12 +54,20 @@ module.exports = function (options) {
        test: /\.html$/,
        use: [
          'html-loader'
-       ]
+     ],
+     // do not process the template with html-loader, since this breaks
+     // template variables, e.g. title
+     exclude: __dirname + '/index.html'
      }
       ]
     },
 
     plugins: [
+        new HtmlWebpackPlugin({
+            template: 'index.html',
+            title: 'DeepBach',
+            favicon: 'images/favicon.ico'
+        }),
         new webpack.ProvidePlugin({
         // this allows to use JQuery plugin by calling `require('plugin-name')`
         // as it provides a global JQuery
@@ -68,11 +76,6 @@ module.exports = function (options) {
             $: 'jquery',
             jQuery: 'jquery'
         }),
-      new HtmlWebpackPlugin({
-        template: 'index.html',
-        title: 'DeepBach',
-        favicon: 'images/favicon.ico'
-      }),
 	//example on how to add ressources
       new CopyWebpackPlugin([
         {
