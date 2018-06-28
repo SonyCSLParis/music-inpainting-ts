@@ -113,15 +113,15 @@ titlediv.style.fontSize = '64px'
 
 document.body.appendChild(document.createElement("div"))
 
-let useLeadsheetMode = true;
+let useLeadsheetMode = false;  // true for leadsheets, false for chorales
 let serverPort: number
 if (useLeadsheetMode) {
     serverPort = server_config['leadsheet_port']
 } else {
     serverPort = server_config['chorale_port']
 }
-// let serverUrl = 'http://0.0.0.0:5000/';
-let serverUrl = `http://${server_config['server_ip']}:${serverPort}/`;
+let serverUrl = `http://localhost:${serverPort}/`
+// let serverUrl = `http://${server_config['server_ip']}:${serverPort}/`;
 
 let osmd: eOSMD;
 /*
@@ -231,13 +231,8 @@ function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
     const argsMidiUrl = "get-midi";
 
     return (function (this, event) {
-        // this.style.opacity = '0.3';
-        // console.log(getChordLabels());
-        // const fermatasString = getFermatas()
-        const argsGenerationUrlWithFermatas = (argsGenerationUrl)// +
-            // '&fermatas=' + fermatasString)
-        loadMusicXMLandMidi(serverUrl + argsGenerationUrlWithFermatas,
-            serverUrl + argsMidiUrl);
+        loadMusicXMLandMidi(serverUrl + argsGenerationUrl,
+          serverUrl + argsMidiUrl);
     ;})
 }
 
@@ -630,4 +625,6 @@ WebMidi.enable(function (err) {
     midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect));
 });
 
-import './file_upload.ts'
+import { createWavInput } from './file_upload'
+createWavInput(() => loadMusicXMLandMidi(serverUrl + 'get-musicxml',
+  serverUrl + 'get-midi'))
