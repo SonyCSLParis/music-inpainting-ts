@@ -3,7 +3,7 @@ require('jquery-simple-upload');
 let serverConfig: object = require('./config.json')
 
 let serverUrl = `http://${serverConfig['server_ip']}:${serverConfig['chorale_port']}/`;
-let generateArgs: string = 'analyze-notes';
+let generateArgs: string = 'analyze-audio';
 
 let useFineUpload: boolean = false;
 
