@@ -617,15 +617,25 @@ function loadMidi(url: string) {
     })
 }
 
+function downbeatStartCallback() {
+    Tone.Transport.start("+0.00001", "0:0:0")
+}
+
 function playCallback(){
     Tone.context.resume().then(() => {
         if (playbutton.state) {//Tone.Transport.state === "started"){
-            Tone.Transport.start("+0.2");
-            // this.turnOn()
+            if (!(link_enabled && socket !== null && socket.connected)) {
+                // start the normal way
+                Tone.Transport.start("+0.2");
+            } else {
+                console.log('Yay!')
+                // wait for Link-socket to give downbeat signal
+                socket.once('downbeat', downbeatStartCallback)
+            }
         } else {
-            Tone.Transport.pause();
-            // this.turnOff();
-            // this.textContent = "PAUSE";
+            Tone.Transport.stop();  // WARNING! doesn't use pause anymore!
+            if (socket !== null && socket.connected) {
+            }
         }
     })
 };
@@ -655,5 +665,36 @@ WebMidi.enable(function (err) {
     };
     midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect));
 });
+
+let linkbuttonElem: HTMLElement = document.createElement('div');
+linkbuttonElem.id = 'link-button'
+topControlsGridElem.appendChild(linkbuttonElem);
+
+let linkbutton = new Nexus.TextButton('#link-button',{
+    'size': [150,50],
+    'state': true,
+    'text': 'Enable LINK',
+    'alternateText': 'Disable LINK'
+})
+// linkbutton.on('down', (e) => {linkbutton.flip()}) //linkCallback.bind(linkbutton));
+linkbutton.on('change', (value) => {
+    if (value) {
+        socket.emit('enable', '', (data) => {
+            if (data) {
+                console.log('Succesfully enabled Link');
+                link_enabled = true;
+            }
+            else {console.log('Failed to enable Link')}
+        })
+    } else {
+        socket.emit('disable', '', (data) => {
+            if (data) {
+                console.log('Succesfully disabled Link')
+                link_enabled = false;
+            } else {console.log('Failed to disable Link')}
+        })
+    }
+})
+
 
 import './file_upload.ts'
