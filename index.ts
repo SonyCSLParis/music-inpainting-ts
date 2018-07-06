@@ -126,14 +126,22 @@ titlediv.style.fontSize = '64px'
 
 document.body.appendChild(document.createElement("div"))
 
-let useLeadsheetMode = false;  // true for leadsheets, false for chorales
+let useLeadsheetMode = true;  // true for leadsheets, false for chorales
 let serverPort: number
 if (useLeadsheetMode) {
     serverPort = server_config['leadsheet_port']
 } else {
     serverPort = server_config['chorale_port']
 }
-let serverUrl = `http://localhost:${serverPort}/`
+let serverIp: string;
+let useLocalServer: boolean = false;
+if (useLocalServer) {
+    serverIp = 'localhost';
+}
+{
+    serverIp = server_config['server_ip'];
+}
+let serverUrl = `http://${serverIp}:${serverPort}/`;
 // let serverUrl = `http://${server_config['server_ip']}:${serverPort}/`;
 
 let osmd: eOSMD;
