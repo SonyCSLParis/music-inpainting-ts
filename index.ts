@@ -14,6 +14,7 @@ import {ChordSelector} from './chord_selector';
 import './styles/osmd.scss'
 import './styles/main.scss'
 
+declare var ohSnap: any;
 let server_config = require('./config.json')
 
 import * as io from 'socket.io-client';
