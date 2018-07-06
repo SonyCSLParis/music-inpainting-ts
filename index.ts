@@ -79,7 +79,7 @@ let stopbutton = new Nexus.TextButton('#stop-button',{
 stopbutton.on('change', (event) => {
     playbutton.flip(false);
     Tone.Transport.stop();
-    nowPlayingCallback(0, 0);
+    nowPlayingCallback(0, 0);  // update the graphics
 });
 
 document.addEventListener("keydown", (event) => {
@@ -640,7 +640,7 @@ function playCallback(){
     })
 };
 
-let dummyMidiOut = new Tone.Instrument()
+let dummyMidiOut = new Tone.Instrument();
 dummyMidiOut.playNote = () => {};
 
 let midiOutSelectElem: HTMLElement = document.createElement("div");
