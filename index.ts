@@ -507,8 +507,11 @@ else {bpmCounter.value = 110}
 
 let midiOutput;  // declare midiOut stub variable
 
+function getTimingOffset(){
+    return performance.now() - Tone.now() * 1000
+}
+
 function playNote(time, event){
-    let timingOffset = performance.now() - Tone.now() * 1000
     current_instrument.triggerAttackRelease(event.name, event.duration, time,
         event.velocity);
 
@@ -516,13 +519,17 @@ function playNote(time, event){
     // console.log(time * 1000 + timingOffset)
     // console.log(event.name)
     midiOutput.playNote(event.name, 1,
-        {time: time * 1000 + timingOffset,
+        {time: time * 1000 + getTimingOffset(),
          duration: event.duration * 1000})
 }
 
 function playNoteChordsInstrument(time, event){
     chords_instrument.triggerAttackRelease(event.name, event.duration, time,
         event.velocity);
+
+    midiOutput.playNote(event.name, 2,
+        {time: time * 1000 + getTimingOffset(),
+         duration: event.duration * 1000})
 }
 
 function nowPlayingCallback(time, step){
