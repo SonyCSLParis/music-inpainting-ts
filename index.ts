@@ -16,12 +16,24 @@ import './styles/main.scss'
 
 let server_config = require('./config.json')
 
+import * as io from 'socket.io-client';
+// connect to the Ableton Link Node.js server
+const socket = io('http://localhost:3000');
+let link_enabled = false;
+socket.on('connect', () => link_enabled = true);
+socket.on('numPeers', (numPeers) => {
+    // this display is requested in the Ableton-link test-plan
+    ohSnap(`A new Link peer joined! (Now ${numPeers} peers)`,
+        {color: 'blue', 'fade-duration': 'slow'})
+})
+
 
 // add Piano methods to Tone.Insutrument objects for duck typing
 Tone.Instrument.prototype.keyDown = function() {return this};
 Tone.Instrument.prototype.keyUp = function() {return this};
 Tone.Instrument.prototype.pedalDown = function() {return this};
 Tone.Instrument.prototype.pedalUp = function() {return this};
+
 
 // let raphaelimport: HTMLScriptElement = document.createElement('script')
 // raphaelimport.type = 'text/javascript'
@@ -441,7 +453,7 @@ if (osmd.leadsheet) {
     chordInstrumentSelect.value = initialChordInstrument
 }
 
-// Create BPM slider
+// Create BPM display
 let bpmContainerElem: HTMLDivElement = document.createElement('div');
 bpmContainerElem.setAttribute('horizontal', '');
 bpmContainerElem.setAttribute('layout', '');
@@ -450,31 +462,45 @@ bpmContainerElem.setAttribute('grid-template-columns', '200px 200px;');
 
 document.body.appendChild(bpmContainerElem);
 
-let bpmSliderElem: HTMLElement = document.createElement('div');
-bpmSliderElem.setAttribute('id', 'bpm-slider');
-bpmContainerElem.appendChild(bpmSliderElem);
+let bpmNameElem: HTMLElement = document.createElement('div');
+bpmNameElem.textContent = 'BPM'
+bpmContainerElem.appendChild(bpmNameElem);
 let bpmCounterElem: HTMLElement = document.createElement('div');
 bpmCounterElem.setAttribute('id', 'bpm-counter');
-bpmCounterElem.style.pointerEvents = 'none';
 bpmContainerElem.appendChild(bpmCounterElem);
 
-let bpmSlider = new Nexus.Slider('#bpm-slider', {
-    'size':[200, 40],
-    'min': 80,
-    'max': 130,
-    'step': 1
-});
+let minAcceptedBPM = 30
+let maxAcceptedBPM = 250
+if (maxAcceptedBPM < 2*minAcceptedBPM) {
+    throw Error(`BPM range should be at least one tempo octave wide, ie.
+        maxAcceptedBPM at least twice as big as minAcceptedBPM`)
+}
+let currentBPM: number;
 let bpmCounter = new Nexus.Number('#bpm-counter', {
-    'min': 80,
-    'max': 130,
-    'step': 1
+    'min': minAcceptedBPM,
+    'max': maxAcceptedBPM,
+    'step': 0.01
 });
-bpmSlider.on('change', function(value){
-    Tone.Transport.bpm.value = value
-});
-bpmCounter.link(bpmSlider);
 
-bpmSlider.value = 110
+bpmCounter.on('change', function(newBPM){
+    Tone.Transport.bpm.value = newBPM;
+    if (socket !== null && socket.connected) socket.emit('tempo', newBPM);
+});
+socket.on('tempo', (newBPM) => {
+    // ensure the new BPM is in the accepted range
+    // this works because the accepted range is at least one octave wide
+    while (newBPM > maxAcceptedBPM) newBPM = newBPM / 2
+    while (newBPM < minAcceptedBPM) newBPM = 2 * newBPM
+
+    // HACK perform a comparison to avoid messaging loops, since
+    // the link update triggers a bpm modification message
+    if (bpmCounter.value !== newBPM) bpmCounter.value = newBPM});
+
+// set the initial tempo for the app
+if (link_enabled && socket !== null && socket.connected) {
+    // if Link is enabled, use the Link tempo
+    socket.emit('get_bpm', {}, (bpm) => bpmCounter.value = bpm)}
+else {bpmCounter.value = 110}
 
 let midiOutput;  // declare midiOut stub variable
 
@@ -587,7 +613,7 @@ function loadMidi(url: string) {
         }
 
         // change Transport BPM back to the displayed value
-        Tone.Transport.bpm.value = bpmSlider.value;
+        Tone.Transport.bpm.value = bpmCounter.value;  // WARNING if bpmCounter is a floor'ed value, this is wrong
     })
 }
 
