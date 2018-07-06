@@ -314,6 +314,7 @@ function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
     });
 };
 
+var silentInstrument = new Tone.Instrument()
 
 var piano = new Piano([21, 108], 5);
 
@@ -400,6 +401,7 @@ let instrumentFactories = {
         () => {piano.disconnect(0); piano.connect(reverb); return piano},
     'Xylophone': () => {return sampledInstruments['xylophone']},
     'Steelpan': () => {return steelpan},
+    'None': () => {return silentInstrument}
 }
 
 let instrumentSelectElem: HTMLElement = document.createElement('div')
@@ -437,6 +439,7 @@ if (osmd.leadsheet) {
         'PolySynth': () => {return polysynth_chords},
         'Organ': () => {return sampledInstruments['organ']},
         'Harmonium': () => {return sampledInstruments['harmonium']},
+        'None': () => {return silentInstrument}
     }
 
     chordInstrumentSelect = new Nexus.Select('#chord-instrument-select', {
