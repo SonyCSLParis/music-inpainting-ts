@@ -130,9 +130,13 @@ export class ChordSelector extends AnnotationBox {
     private hideCurrentAccidentalNavItems() {
       this.accidentalWheel.navItems[2 * this.noteWheel.selectedNavItemIndex].navItem.hide();
       this.accidentalWheel.navItems[2 * this.noteWheel.selectedNavItemIndex+1].navItem.hide();
-      // if (self.chordTypeWheel.currentPercent === self.chordTypeWheel.maxPercent) {
-      //   self.chordTypeWheel.spreadWheel();
-      // };
+    };
+
+    private hidePreviouslySelectedAccidentalNavItems() {
+        if (this.previouslySelectedNoteIndex !== null) {
+          this.accidentalWheel.navItems[2 * this.previouslySelectedNoteIndex].navItem.hide();
+          this.accidentalWheel.navItems[2 * this.previouslySelectedNoteIndex+1].navItem.hide();
+      }
     };
 
     private closeNoteWheel() {
@@ -293,9 +297,10 @@ export class ChordSelector extends AnnotationBox {
           navItem.navigateFunction = function () {
             if (this.itemIndex === self.notes.indexOf(self.slur_symbol)) {
                 // selected the 'chord continuation' symbol, close selector
+                self.hidePreviouslySelectedAccidentalNavItems()
+                self.closeSelector();
                 self.currentAccidental = '';
                 self.currentChordType = self.chordTypes[0];  // WARNING could break if change to chordTypes list
-                self.closeSelector();
                 return;
             }
             if (self.previouslySelectedNoteIndex == this.itemIndex) {
@@ -309,18 +314,16 @@ export class ChordSelector extends AnnotationBox {
             }
             else {
               if (self.accidentalWheel.selectedNavItemIndex !== null &&
-                  self.accidentalWheel.selectedNavItemIndex !== this.itemIndex) {
-                // deselect previously selected accidental
+                  Math.floor(self.accidentalWheel.selectedNavItemIndex / 2) !== this.itemIndex) {
+                // deselect previously selected accidental, since it applies to
+                // a note different from the currently selected one
                 self.currentAccidental = '';
               }
               // first click on this navSlice: display accidental selectors
-              if (self.previouslySelectedNoteIndex) {
-                // hide previously displayed accidentalWheel navSlices
-                self.accidentalWheel.navItems[2*self.previouslySelectedNoteIndex].navItem.hide();
-                self.accidentalWheel.navItems[2*self.previouslySelectedNoteIndex+1].navItem.hide();
+              self.hidePreviouslySelectedAccidentalNavItems()
+              for (let accidentalItemIndexOffset of [0, 1]) {
+                  self.accidentalWheel.navItems[2*this.itemIndex + accidentalItemIndexOffset].navItem.show();
               }
-              self.accidentalWheel.navItems[2*this.itemIndex].navItem.show();
-              self.accidentalWheel.navItems[2*this.itemIndex+1].navItem.show();
               self.updateSpreader();
             }
             self.previouslySelectedNoteIndex = this.itemIndex;
@@ -329,9 +332,16 @@ export class ChordSelector extends AnnotationBox {
 
         for (let navItem of this.accidentalWheel.navItems) {
           navItem.navigateFunction = function () {
-            self.accidentalWheel.navItems[Math.max(this.itemIndex-1, 0)].navItem.hide();
-            self.accidentalWheel.navItems[this.itemIndex].navItem.hide();
-            self.accidentalWheel.navItems[Math.min(this.itemIndex+1, self.accidentalWheel.navItems.length-1)].navItem.hide();
+            for (let accidentalItemIndexOffset of [-1, 0, 1]) {
+                // hide both surrounding accidental navItems to be sure everything
+                // is hidden afterwards
+                let accidentalItemIndex = this.itemIndex + accidentalItemIndexOffset
+                // ensure the index is valid
+                accidentalItemIndex = Math.min(
+                    Math.max(accidentalItemIndex, 0),
+                    self.accidentalWheel.navItems.length-1)
+                self.accidentalWheel.navItems[accidentalItemIndex].navItem.hide();
+            }
 
             self.closeNoteWheelAndCleanAfterNoteAndAccidentalSelectionDone();
             self.chordTypeWheel.spreadWheel();
