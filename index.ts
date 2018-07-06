@@ -501,7 +501,13 @@ socket.on('tempo', (newBPM) => {
 
     // HACK perform a comparison to avoid messaging loops, since
     // the link update triggers a bpm modification message
-    if (bpmCounter.value !== newBPM) bpmCounter.value = newBPM});
+    if (Tone.Transport.bpm.value !== newBPM) {
+        Tone.Transport.bpm.value = newBPM
+        bpmCounter._value.update(newBPM);
+        bpmCounter.render()
+        }
+    }
+);
 
 // set the initial tempo for the app
 if (link_enabled && socket !== null && socket.connected) {
