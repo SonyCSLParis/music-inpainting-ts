@@ -42,7 +42,7 @@ export class ChordSelector extends AnnotationBox {
         };
         return accidentals;
     })();
-    private chordTypes = ['M', '-', '-7', 'M7', '7'];
+    private chordTypes = ['M', 'm', 'm7', 'M7', '7'];
 
     private noteWheel: any;
     private accidentalWheel: any;
