@@ -86,8 +86,15 @@ stopbutton.on('change', (event) => {
 document.addEventListener("keydown", (event) => {
     const keyName = event.key
     switch (keyName) {
-        case 'p': {playbutton.down(); break}
-        case 's': {stopbutton.down(); stopbutton.up(); break}
+        case ' ':
+        case 'Spacebar':
+        case 'p':
+            playbutton.down();
+            break;
+        case 's':
+            stopbutton.down();
+            stopbutton.up();
+            break
     }});
 
 // document.body.appendChild(document.createElement("br"))
