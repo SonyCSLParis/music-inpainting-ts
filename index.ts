@@ -21,7 +21,7 @@ import * as io from 'socket.io-client';
 // connect to the Ableton Link Node.js server
 const socket = io('http://localhost:3000');
 let link_enabled = false;
-socket.on('connect', () => link_enabled = true);
+socket.on('connect', () => {});
 socket.on('numPeers', (numPeers) => {
     // this display is requested in the Ableton-link test-plan
     ohSnap(`A new Link peer joined! (Now ${numPeers} peers)`,
@@ -498,7 +498,7 @@ let bpmCounter = new Nexus.Number('#bpm-counter', {
 
 bpmCounter.on('change', function(newBPM){
     Tone.Transport.bpm.value = newBPM;
-    if (socket !== null && socket.connected) socket.emit('tempo', newBPM);
+    if (socket !== null && socket.connected && link_enabled) socket.emit('tempo', newBPM);
 });
 socket.on('tempo', (newBPM) => {
     // ensure the new BPM is in the accepted range
@@ -516,10 +516,15 @@ socket.on('tempo', (newBPM) => {
     }
 );
 
+function synchronizeToLinkBPM(): void {
+    socket.emit('get_bpm', {}, (bpm) => bpmCounter.value = bpm)
+}
+
 // set the initial tempo for the app
 if (link_enabled && socket !== null && socket.connected) {
     // if Link is enabled, use the Link tempo
-    socket.emit('get_bpm', {}, (bpm) => bpmCounter.value = bpm)}
+    synchronizeToLinkBPM();
+    }
 else {bpmCounter.value = 110}
 
 let midiOut;  // will be assigned by Select element
@@ -702,7 +707,7 @@ topControlsGridElem.appendChild(linkbuttonElem);
 
 let linkbutton = new Nexus.TextButton('#link-button',{
     'size': [150,50],
-    'state': true,
+    'state': false,
     'text': 'Enable LINK',
     'alternateText': 'Disable LINK'
 })
@@ -713,6 +718,7 @@ linkbutton.on('change', (value) => {
             if (data) {
                 console.log('Succesfully enabled Link');
                 link_enabled = true;
+                synchronizeToLinkBPM();
             }
             else {console.log('Failed to enable Link')}
         })
