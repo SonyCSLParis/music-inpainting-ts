@@ -6,7 +6,13 @@ $chords-font-stack: 'Boogaloo', cursive;
 
     &.busy {
         &:hover {
-            cursor: wait;
+            cursor: wait !important;
+        }
+    }
+
+    &.busy * {
+        &:hover {
+            cursor: wait !important;
         }
     }
 }
