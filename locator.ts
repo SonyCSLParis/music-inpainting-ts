@@ -146,7 +146,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
 
             if (this.leadsheet && divClass == 'half-note') {
                 // add chord selection boxes at the half-note level
-                this._chordSelectors.push(new ChordSelector(commonDiv));
+                this._chordSelectors.push(new ChordSelector(commonDiv, onclick));
             }
         }
 
