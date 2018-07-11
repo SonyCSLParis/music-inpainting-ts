@@ -52,6 +52,20 @@ $chords-font-stack: 'Boogaloo', cursive;
 
         &.playing {
             background-color: #f40081;
+            top: -1.4em;
+            // use CSS-3 run-time calc() function
+            // unquote() necessary because SASS also has a calc() function that
+            // does something else, this ensures we are using the CSS-3 one
+            // see [https://stackoverflow.com/a/25547896]
+            height: unquote("calc(100% + 2*1.2em)");
+            border: solid 0.2em;
+            border-color: blue;
+            opacity: 0.25;
+            // box-shadow: 2px 1px black;
+
+            &:hover {
+                opacity: 0.3;
+            }
         }
     }
 
@@ -157,7 +171,7 @@ $chords-font-stack: 'Boogaloo', cursive;
 
 .ChordSelector tspan {
     // disable undesired behaviour of -webkit-tap-highlight-color tspans catching pointer
-    // click events but disappearing right after, leaving with an event with no target 
+    // click events but disappearing right after, leaving with an event with no target
     pointer-events: none;
 }
 
