@@ -1,5 +1,6 @@
 import { AnnotationBox } from './annotationBox';
 import * as $ from 'jquery';
+import deepEqual = require('deep-equal');
 
 // let raphaelimport: HTMLScriptElement = document.createElement('script')
 // raphaelimport.type = 'text/javascript'
@@ -17,11 +18,14 @@ declare var wheelnav : any;
 declare var slicePath: any;
 
 export class ChordSelector extends AnnotationBox {
-    constructor(timestampContainer: string|HTMLElement, wheelSize_px: number=250) {
+    constructor(timestampContainer: string|HTMLElement,
+            onChordChange: Function, wheelSize_px: number=250) {
         super(timestampContainer);
+        this.onChordChange = onChordChange
         this.container.classList.add('noselect')
         this.wheelSize_px = wheelSize_px;
         this.draw();
+        this.previousChord = this.currentChord;
     }
 
     protected validateTimestampContainer(): void {
@@ -53,6 +57,8 @@ export class ChordSelector extends AnnotationBox {
     // keep track the previously selected index to detect re-clicks
     // on the same note and don't disaply accidental selector in that case
     private previouslySelectedNoteIndex: number = null;
+
+    private onChordChange: Function;
 
     private get currentNote() {
         return this.notes[this.noteWheel.selectedNavItemIndex];
@@ -115,6 +121,8 @@ export class ChordSelector extends AnnotationBox {
         this.closeSelector();
     }
 
+    private previousChord;
+
     private updateSpreader() {
       let currentNote = this.currentNote;
       var spreaderText = currentNote + this.currentAccidental;
@@ -171,6 +179,13 @@ export class ChordSelector extends AnnotationBox {
         this.closeChordTypeWheel();
         this.toggleActiveContainer(false);
         this.removeClickListener();
+        if (!deepEqual(this.currentChord, this.previousChord)) {
+            console.log(this.currentChord)
+            console.log(this.previousChord)
+            // trigger update if the contained chord changed
+            this.onChordChange();
+            this.previousChord = this.currentChord;
+        }
     }
 
     private outsideClickListener = (event) => {
@@ -298,9 +313,9 @@ export class ChordSelector extends AnnotationBox {
             if (this.itemIndex === self.notes.indexOf(self.slur_symbol)) {
                 // selected the 'chord continuation' symbol, close selector
                 self.hidePreviouslySelectedAccidentalNavItems()
-                self.closeSelector();
                 self.currentAccidental = '';
                 self.currentChordType = self.chordTypes[0];  // WARNING could break if change to chordTypes list
+                self.closeSelector();
                 return;
             }
             if (self.previouslySelectedNoteIndex == this.itemIndex) {
