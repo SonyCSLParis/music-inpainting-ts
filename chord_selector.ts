@@ -243,8 +243,8 @@ export class ChordSelector extends AnnotationBox {
         this.chordTypeWheel.animatetime = 105;
         this.chordTypeWheel.animateeffect = 'easeInOut';
         this.noteWheel.spreaderPathInAttr = {
-            fill: '#FFF7F8', 'fill-opacity': 1,
-            'stroke-width': 3, stroke: '#FFD3D9' };
+            fill: '#FFE9EC', 'fill-opacity': 1,
+            'stroke-width': 3, stroke: '#FFD3D9', cursor: 'pointer' };
         // this.noteWheel.spreaderPathInAttr = {
         //     fill: '#FFF', 'fill-opacity': 0.5,
         //     'stroke-width': 3, stroke: '#FFF' };
