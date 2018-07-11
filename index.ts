@@ -429,9 +429,9 @@ function instrumentOnChange() {
     current_instrument = instrumentFactories[this.value]();
 };
 
-instrumentSelect.on('change', instrumentOnChange.bind(instrumentSelect))
-const initialInstrument = 'PolySynth'
-instrumentSelect.value = initialInstrument
+instrumentSelect.on('change', instrumentOnChange.bind(instrumentSelect));
+const initialInstrument = 'PolySynth';
+instrumentSelect.value = initialInstrument;
 
 let chordInstrumentSelectElem: HTMLDivElement;
 let chordInstrumentFactories;
@@ -522,7 +522,7 @@ if (link_enabled && socket !== null && socket.connected) {
     socket.emit('get_bpm', {}, (bpm) => bpmCounter.value = bpm)}
 else {bpmCounter.value = 110}
 
-let midiOutput;  // declare midiOut stub variable
+let midiOut;  // will be assigned by Select element
 
 function getTimingOffset(){
     return performance.now() - Tone.now() * 1000
@@ -535,7 +535,7 @@ function playNote(time, event){
     // console.log(time)
     // console.log(time * 1000 + timingOffset)
     // console.log(event.name)
-    midiOutput.playNote(event.name, 1,
+    midiOut.playNote(event.name, 1,
         {time: time * 1000 + getTimingOffset(),
          duration: event.duration * 1000})
 }
@@ -544,7 +544,7 @@ function playNoteChordsInstrument(time, event){
     chords_instrument.triggerAttackRelease(event.name, event.duration, time,
         event.velocity);
 
-    midiOutput.playNote(event.name, 2,
+    midiOut.playNote(event.name, 2,
         {time: time * 1000 + getTimingOffset(),
          duration: event.duration * 1000})
 }
@@ -570,22 +570,23 @@ for (let i = 0; i < sequence_duration_quarters; i++) {
 
 function scheduleTrackToInstrument(midiTrack, isChords=false) {
     let notes = midiTrack.notes;
+
     let playNote_callback;
     let getInstrument;
-
     if (isChords) {
         getInstrument = () => chords_instrument;
         playNote_callback = playNoteChordsInstrument}
     else {
         getInstrument = () => current_instrument;
         playNote_callback = playNote}
+
     let part = new Tone.Part(playNote_callback, notes);
     part.start(0)  // schedule events on the Tone timeline
     part.loop = true;
     part.loopEnd = sequence_duration_tone;
 
     //schedule the pedal
-    // FIXME MAYBE possible bug with binding of the instruùment variable
+    // FIXME possible bug with binding of the instrument variable
     let sustain = new Tone.Part((time, event) => {
         if (event.value){
             getInstrument().pedalDown(time)
@@ -673,6 +674,7 @@ dummyMidiOut.playNote = () => {};
 let midiOutSelectElem: HTMLElement = document.createElement("div");
 midiOutSelectElem.id = 'select-midiout';
 document.body.appendChild(midiOutSelectElem);
+let midiOutSelect: any;  // declare placeholder variable for midiOut selector
 WebMidi.enable(function (err) {
     if (err) console.log(err);
 
@@ -683,14 +685,15 @@ WebMidi.enable(function (err) {
     function midiOutOnChange(ev) {
         console.log(ev);
         if (this.value !== 'No Output') {
-                midiOutput = WebMidi.getOutputByName(this.value);
+                midiOut = WebMidi.getOutputByName(this.value);
         }
         else {
-                midiOutput = dummyMidiOut;
+                midiOut = dummyMidiOut;
         }
-        console.log(midiOutput)
+        console.log(midiOut)
     };
     midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect));
+    midiOutSelect.value = 'No Output';
 });
 
 let linkbuttonElem: HTMLElement = document.createElement('div');
