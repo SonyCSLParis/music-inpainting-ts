@@ -145,7 +145,7 @@ let useLocalServer: boolean = false;
 if (useLocalServer) {
     serverIp = 'localhost';
 }
-{
+else {
     serverIp = server_config['server_ip'];
 }
 let serverUrl = `http://${serverIp}:${serverPort}/`;
