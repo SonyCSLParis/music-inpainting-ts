@@ -49,7 +49,7 @@ typings/
 # Optional REPL history
 .node_repl_history
 
-dist
+dist*
 =======
 # Optional eslint cache
 .eslintcache
@@ -71,3 +71,6 @@ dist
 
 # music21j installation
 music21j/
+
+tonejs-instruments*
+!tonejs-instruments/Tonejs-Instruments.js
