@@ -1,4 +1,5 @@
-require('jquery-simple-upload');
+import { Promise } from 'es6-promise';
+import 'jquery-simple-upload';
 
 let serverConfig: object = require('./config.json')
 
