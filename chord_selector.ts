@@ -35,7 +35,7 @@ export class ChordSelector extends AnnotationBox {
     }
 
 
-    private slur_symbol: string = '-'
+    private slur_symbol: string = '-';
     private notes: string[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B',
         this.slur_symbol];
     private accidentals: string[] = (() => {
@@ -230,7 +230,7 @@ export class ChordSelector extends AnnotationBox {
         this.noteWheel.spreaderEnable = true;
         // wheel.spreaderPathInAttr = { fill: '#FFF', 'stroke-width': 3, stroke: '#555' };
         // wheel.spreaderPathOutAttr = { fill: '#FFF', 'stroke-width': 3, stroke: '#FFF' };
-        this.noteWheel.spreaderRadius = 28;
+        this.noteWheel.spreaderRadius = 22;
         // wheel1.spreadWheel();
         this.noteWheel.animatetime = 150;
         this.noteWheel.animateeffect = 'easeInOut';
@@ -238,7 +238,7 @@ export class ChordSelector extends AnnotationBox {
         this.noteWheel.spreaderFillColor = 'white';
 
         this.chordTypeWheel.spreaderEnable = false;
-        this.chordTypeWheel.spreaderRadius = 28;
+        this.chordTypeWheel.spreaderRadius = 22;
         // wheel1.spreadWheel();
         this.chordTypeWheel.animatetime = 105;
         this.chordTypeWheel.animateeffect = 'easeInOut';
@@ -260,7 +260,7 @@ export class ChordSelector extends AnnotationBox {
         //Customize slicePaths for proper size
         this.noteWheel.slicePathFunction = slicePath().DonutSlice;
         this.noteWheel.slicePathCustom = slicePath().DonutSliceCustomization();
-        this.noteWheel.slicePathCustom.minRadiusPercent = 0.18;
+        this.noteWheel.slicePathCustom.minRadiusPercent = 0.15;
         this.noteWheel.slicePathCustom.maxRadiusPercent = 0.6;
         this.noteWheel.sliceSelectedPathCustom = this.noteWheel.slicePathCustom;
         this.noteWheel.sliceInitPathCustom = this.noteWheel.slicePathCustom;
@@ -274,7 +274,7 @@ export class ChordSelector extends AnnotationBox {
 
         this.chordTypeWheel.slicePathFunction = slicePath().DonutSlice;
         this.chordTypeWheel.slicePathCustom = slicePath().DonutSliceCustomization();
-        this.chordTypeWheel.slicePathCustom.minRadiusPercent = 0.21;
+        this.chordTypeWheel.slicePathCustom.minRadiusPercent = 0.16;
         this.chordTypeWheel.slicePathCustom.maxRadiusPercent = 0.6;
         this.chordTypeWheel.sliceSelectedPathCustom = this.chordTypeWheel.slicePathCustom;
         this.chordTypeWheel.sliceInitPathCustom = this.chordTypeWheel.slicePathCustom;
