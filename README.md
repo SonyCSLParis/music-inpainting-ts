@@ -1,10 +1,10 @@
 # interactive score interface
 Node.js server to display xml files and interact with them.
 It is a fork from [webpack-usage-example](https://github.com/opensheetmusicdisplay/webpack-usage-example).
-It's an example how to use the [OpenSheetMusicDisplay fork](https://github.com/FlowMachinesStudio/opensheetmusicdisplay-fork) within a Webpack build. Uses TypeScript. 
+It's an example how to use the [OpenSheetMusicDisplay fork](https://github.com/FlowMachinesStudio/opensheetmusicdisplay-fork) within a Webpack build. Uses TypeScript.
 
 ## Usage
-Install the [OpenSheetMusicDisplay fork](https://github.com/FlowMachinesStudio/opensheetmusicdisplay-fork) which allows to have access to internal private variables such as the displayed elements.
+Install the [OpenSheetMusicDisplay fork](https://github.com/SonyCSLParis/opensheetmusicdisplay) which allows to have access to internal private variables such as the displayed elements.
 ```
 $ npm link (in the opensheetmusicdisplay-fork directory)
 $ npm link opensheetmusicdisplay (in interactive-score-interface directory)
