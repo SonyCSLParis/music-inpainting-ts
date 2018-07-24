@@ -19,6 +19,16 @@ div[nexus-ui] select, div[nexus-ui] input {
     grid-template-columns: repeat(3, 1fr);
     // grid-template-rows: 100px;
 }
+
+#lfo-controls {
+    display: grid;
+    width: 40%;
+    // height: 100px;
+    grid-template-columns: repeat(3, 1fr);
+    text-align: center;
+    // font-weight: $interface-font-weight !important;
+    // grid-template-rows: 100px;
+}
 //
 // #play-button {
 //     grid-column: 1 / 2
