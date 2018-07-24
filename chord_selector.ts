@@ -180,8 +180,6 @@ export class ChordSelector extends AnnotationBox {
         this.toggleActiveContainer(false);
         this.removeClickListener();
         if (!deepEqual(this.currentChord, this.previousChord)) {
-            console.log(this.currentChord)
-            console.log(this.previousChord)
             // trigger update if the contained chord changed
             this.onChordChange();
             this.previousChord = this.currentChord;
