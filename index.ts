@@ -8,6 +8,7 @@ import {Piano} from 'tone-piano';
 import * as Tone from "tone";
 import { SampleLibrary } from './tonejs-instruments/Tonejs-Instruments'
 import * as Nexus from 'nexusui'
+import * as log from 'loglevel'
 
 import { createLFOControls } from './lfo'
 
@@ -306,7 +307,8 @@ function enableChanges(): void {
  */
 function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
     disableChanges();
-    console.log(JSON.stringify(getMetadata()));
+    log.debug('Metadata:')
+    log.debug(JSON.stringify(getMetadata()));
     $.post({
         url: urlXML,
         data: JSON.stringify(getMetadata()),
@@ -320,7 +322,7 @@ function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
                         osmd.render(onClickTimestampBoxFactory);
                         enableChanges()
                     },
-                    (err) => {console.log(err); enableChanges()}
+                    (err) => {log.error(err); enableChanges()}
                 );
             loadMidi(urlMidi);
             // loadMidiToPiano(urlMidi);
@@ -372,6 +374,7 @@ let loadSamplesButton = new Nexus.TextButton('#load-samples-button',{
 let sampledInstruments;  // declare variables but do not load samples yet
 let sampled_instruments_names = ['organ', 'harmonium', 'xylophone'];
 loadSamplesButton.on('change', () => {
+    log.info('Start downloading audio samples')
     // must disable pointer events on *child* node to also use cursor property
     (loadSamplesButtonElem.firstElementChild as HTMLElement).style.pointerEvents = 'none';
     loadSamplesButtonElem.style.cursor = 'wait';
@@ -394,7 +397,7 @@ loadSamplesButton.on('change', () => {
     loadPromises.push(pianoLoadPromise)
 
     Promise.all(loadPromises).then(()=>{
-        console.log('Finished downloading!')
+        log.info('Finished downloading')
         loadSamplesButtonElem.remove();
         instrumentSelect.render();
     });
@@ -537,18 +540,17 @@ function getTimingOffset(){
 }
 
 function playNote(time, event){
+    log.debug(`Play note event @ time ${time}: ` + JSON.stringify(event))
     current_instrument.triggerAttackRelease(event.name, event.duration, time,
         event.velocity);
 
-    // console.log(time)
-    // console.log(time * 1000 + timingOffset)
-    // console.log(event.name)
     midiOut.playNote(event.name, 1,
         {time: time * 1000 + getTimingOffset(),
          duration: event.duration * 1000})
 }
 
 function playNoteChordsInstrument(time, event){
+    log.debug(`Play chord event @ time ${time}: ` + JSON.stringify(event))
     chords_instrument.triggerAttackRelease(event.name, event.duration, time,
         event.velocity);
 
@@ -594,7 +596,6 @@ function scheduleTrackToInstrument(midiTrack, isChords=false) {
     part.loopEnd = sequence_duration_tone;
 
     //schedule the pedal
-    // FIXME possible bug with binding of the instrument variable
     let sustain = new Tone.Part((time, event) => {
         if (event.value){
             getInstrument().pedalDown(time)
@@ -611,13 +612,14 @@ function scheduleTrackToInstrument(midiTrack, isChords=false) {
         getInstrument().keyDown(event.midi, time, event.velocity)
     }, midiTrack.notes).start(0)
 
-    console.log(midiTrack.noteOffs)
-    console.log(midiTrack.notes)
+    log.debug('Midi track content')
+    log.debug(midiTrack.noteOffs)
+    log.debug(midiTrack.notes)
 
+    // set correct loop points for all tracks and activate infinite looping
     for (let part of [sustain, noteOffEvents, noteOnEvents]) {
         part.loop = true;
         part.loopEnd = sequence_duration_tone;
-        console.log(part)
     }
 }
 
@@ -664,9 +666,12 @@ function playCallback(){
                 // start the normal way
                 Tone.Transport.start("+0.2");
             } else {
-                console.log('Yay!')
+                log.info('LINK: Waiting for `downbeat` message...');
                 // wait for Link-socket to give downbeat signal
-                socket.once('downbeat', downbeatStartCallback)
+                socket.once('downbeat', () => {
+                    log.info('LINK: Received `downbeat` message, starting playback');
+                    downbeatStartCallback()
+                });
             }
         } else {
             Tone.Transport.stop();  // WARNING! doesn't use pause anymore!
@@ -684,21 +689,20 @@ midiOutSelectElem.id = 'select-midiout';
 document.body.appendChild(midiOutSelectElem);
 let midiOutSelect: any;  // declare placeholder variable for midiOut selector
 WebMidi.enable(function (err) {
-    if (err) console.log(err);
+    if (err) log.error(err);
 
     let midiOutSelect = new Nexus.Select('#select-midiout', {
         'size': [150, 50],
         'options': ['No Output'].concat(WebMidi.outputs.map((output) => output.name)),
     });
     function midiOutOnChange(ev) {
-        console.log(ev);
         if (this.value !== 'No Output') {
                 midiOut = WebMidi.getOutputByName(this.value);
         }
         else {
                 midiOut = dummyMidiOut;
         }
-        console.log(midiOut)
+        log.info('Selected MIDI out: ' + JSON.stringify(midiOut));
     };
     midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect));
     midiOutSelect.value = 'No Output';
@@ -719,18 +723,18 @@ linkbutton.on('change', (value) => {
     if (value) {
         socket.emit('enable', '', (data) => {
             if (data) {
-                console.log('Succesfully enabled Link');
+                log.info('Succesfully enabled Link');
                 link_enabled = true;
                 synchronizeToLinkBPM();
             }
-            else {console.log('Failed to enable Link')}
+            else {log.error('Failed to enable Link')}
         })
     } else {
         socket.emit('disable', '', (data) => {
             if (data) {
-                console.log('Succesfully disabled Link')
+                log.info('Succesfully disabled Link')
                 link_enabled = false;
-            } else {console.log('Failed to disable Link')}
+            } else {log.error('Failed to disable Link')}
         })
     }
 })
