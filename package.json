@@ -26,7 +26,7 @@
   },
   "homepage": "https://github.com/opensheetmusicdisplay/webpack-usage-example#readme",
   "devDependencies": {
-    "@types/jquery": "^3.3.4",
+    "@types/jquery": "^3.3.5",
     "@types/node": "^10.5.2",
     "awesome-typescript-loader": "^3.5.0",
     "copy-webpack-plugin": "^4.5.1",
@@ -49,6 +49,7 @@
     "es6-promise": "^4.2.4",
     "fine-uploader": "^5.16.2",
     "jquery-simple-upload": "^1.1.0",
+    "loglevel": "^1.6.1",
     "midiconvert": "^0.4.7",
     "nexusui": "^2.0.7",
     "nipplejs": "^0.6.8",
