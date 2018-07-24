@@ -12,7 +12,6 @@ export function createWavInput(onSuccess: Function): void {
   if (useFineUpload) {
       import('fine-uploader')
       .then(qq => {
-          console.log(qq)
           require('fine-uploader/fine-uploader/fine-uploader-gallery.css')
           let gallery_template: string = require('fine-uploader/all.fine-uploader/templates/gallery.html')
           let fineUploadGalleryTemplateElement: HTMLElement = document.createElement('div')
