@@ -1,6 +1,7 @@
 // import * as nipplejs from "nipplejs";
 import { eOSMD } from "./locator";
 import { Fraction } from 'opensheetmusicdisplay'
+import { Promise } from 'es6-promise';
 import * as $ from "jquery";
 import * as WebMidi from 'webmidi'
 import * as MidiConvert from "midiconvert";
@@ -465,7 +466,7 @@ if (osmd.leadsheet) {
     })
 
     chords_instrument = polysynth_chords;
-    function chordInstrumentOnChange() {
+    let chordInstrumentOnChange = function() {
         chords_instrument = chordInstrumentFactories[this.value]();
     };
 
