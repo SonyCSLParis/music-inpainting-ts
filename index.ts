@@ -9,7 +9,7 @@ import * as Tone from "tone";
 import { SampleLibrary } from './tonejs-instruments/Tonejs-Instruments'
 import * as Nexus from 'nexusui'
 
-import {ChordSelector} from './chord_selector';
+import { createLFOControls } from './lfo'
 
 import './styles/osmd.scss'
 import './styles/main.scss'
@@ -120,7 +120,10 @@ granularitySelect.on('change', granularityOnChange.bind(granularitySelect))
 const initialGranulatity = granularities.indexOf('whole-note').toString()
 granularitySelect.selectedIndex = initialGranulatity
 
-
+let insertLFO: boolean = true;
+if (insertLFO) {
+    createLFOControls();
+}
 
 let titlediv: HTMLDivElement = document.createElement('div')
 // titlediv.classList.add('header')
