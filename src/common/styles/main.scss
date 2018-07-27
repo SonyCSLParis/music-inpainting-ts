@@ -1,0 +1,51 @@
+$interface-font-stack: 'Ubuntu', sans-serif;
+$interface-font-weight: bold;
+
+body {
+    background-color: #fff7f8;  // millenial pink
+    font-family: $interface-font-stack;
+    /* box-shadow: 19px 6px 20px 0px black; */
+}
+
+div[nexus-ui] select, div[nexus-ui] input {
+    font-family: $interface-font-stack !important;
+    font-weight: $interface-font-weight !important;
+}
+
+#top-controls {
+    display: grid;
+    width: 30%;
+    // height: 100px;
+    grid-template-columns: repeat(3, 1fr);
+    // grid-template-rows: 100px;
+}
+
+#lfo-controls {
+    display: grid;
+    width: 40%;
+    // height: 100px;
+    grid-template-columns: repeat(3, 1fr);
+    text-align: center;
+    // font-weight: $interface-font-weight !important;
+    // grid-template-rows: 100px;
+}
+//
+// #play-button {
+//     grid-column: 1 / 2
+// }
+//
+// #stop-button {
+//     grid-column: 2 / 3
+// }
+//
+// #select-granularity {
+//     grid-column: 3 / span 1
+// }
+
+.header {
+    padding: 1em;
+    position: absolute;
+    left: 50%;
+    // margin-right: -50%;
+    // transform: translate(-50%)
+}
