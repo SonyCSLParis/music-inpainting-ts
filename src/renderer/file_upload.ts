@@ -1,7 +1,7 @@
 import { Promise } from 'es6-promise';
 import 'jquery-simple-upload';
 
-let serverConfig: object = require('./config.json')
+let serverConfig: object = require('../common/config.json')
 
 let serverUrl = `http://${serverConfig['server_ip']}:${serverConfig['chorale_port']}/`;
 let generateArgs: string = 'analyze-audio';

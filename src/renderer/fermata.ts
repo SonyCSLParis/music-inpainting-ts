@@ -1,4 +1,4 @@
-import './styles/overlays.scss';
+import '../common/styles/overlays.scss';
 import { AnnotationBox } from './annotationBox';
 
 export class FermataBox extends AnnotationBox {

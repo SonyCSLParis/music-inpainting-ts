@@ -2,7 +2,7 @@ import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
 import { FermataBox } from './fermata';
 import { ChordSelector } from './chord_selector';
 import 'nipplejs';
-import './styles/overlays.scss';
+import '../common/styles/overlays.scss';
 export declare class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, autoResize?: boolean, leadsheet?: boolean);
     _boundingBoxes: [number, number, number, number][];

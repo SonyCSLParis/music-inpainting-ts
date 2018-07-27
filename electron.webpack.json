@@ -1,0 +1,15 @@
+"electronWebpack": {
+  "commonSourceDirectory": "src/common",
+  "title": true,
+
+  "main": {
+    "sourceDirectory": "src/main",
+    "webpackConfig": "webpack.main.js"
+  },
+
+  "renderer": {
+    "dll": ["fooModule"],
+    "sourceDirectory": "src/renderer",
+    "webpackConfig": "webpack.renderer.js",
+  }
+}

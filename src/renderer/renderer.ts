@@ -1,33 +1,35 @@
+import { ipcRenderer } from 'electron'
+
+let link_channel_prefix: string = 'link/';
+let link_initialized: boolean= false;
+
 // import * as nipplejs from "nipplejs";
 import { eOSMD } from "./locator";
 import { Fraction } from 'opensheetmusicdisplay'
-import { Promise } from 'es6-promise';
+// import { Promise } from 'es6-promise';
 import * as $ from "jquery";
 import * as WebMidi from 'webmidi'
 import * as MidiConvert from "midiconvert";
 import {Piano} from 'tone-piano';
 import * as Tone from "tone";
-import { SampleLibrary } from './tonejs-instruments/Tonejs-Instruments'
+import { SampleLibrary } from '../common/tonejs-instruments/Tonejs-Instruments'
 import * as Nexus from 'nexusui'
 import * as log from 'loglevel'
 
 import { createLFOControls } from './lfo'
 
-import './styles/osmd.scss'
-import './styles/main.scss'
+import '../common/styles/osmd.scss'
+import '../common/styles/main.scss'
 
 declare var ohSnap: any;
-let server_config = require('./config.json')
+let server_config = require('../common/config.json')
 
-import * as io from 'socket.io-client';
-// connect to the Ableton Link Node.js server
-const socket = io('http://localhost:3000');
 let link_enabled = false;
-socket.on('connect', () => {});
-socket.on('numPeers', (numPeers) => {
+ipcRenderer.on('numPeers', (numPeers) => {
     // this display is requested in the Ableton-link test-plan
-    ohSnap(`A new Link peer joined! (Now ${numPeers} peers)`,
-        {color: 'blue', 'fade-duration': 'slow'})
+    new Notification('DeepBach/Ableton LINK interface', {
+        body: 'Number of peers changed, now ' + numPeers + ' peers'
+  })
 })
 
 
@@ -505,9 +507,9 @@ let bpmCounter = new Nexus.Number('#bpm-counter', {
 
 bpmCounter.on('change', function(newBPM){
     Tone.Transport.bpm.value = newBPM;
-    if (socket !== null && socket.connected && link_enabled) socket.emit('tempo', newBPM);
+    if (link_enabled) ipcRenderer.send(link_channel_prefix + 'tempo', newBPM);
 });
-socket.on('tempo', (newBPM) => {
+ipcRenderer.on(link_channel_prefix + 'tempo', (newBPM) => {
     // ensure the new BPM is in the accepted range
     // this works because the accepted range is at least one octave wide
     while (newBPM > maxAcceptedBPM) newBPM = newBPM / 2
@@ -524,11 +526,11 @@ socket.on('tempo', (newBPM) => {
 );
 
 function synchronizeToLinkBPM(): void {
-    socket.emit('get_bpm', {}, (bpm) => bpmCounter.value = bpm)
+    ipcRenderer.emit(link_channel_prefix + 'get_bpm')
 }
 
 // set the initial tempo for the app
-if (link_enabled && socket !== null && socket.connected) {
+if (link_enabled) {
     // if Link is enabled, use the Link tempo
     synchronizeToLinkBPM();
     }
@@ -663,21 +665,19 @@ function downbeatStartCallback() {
 function playCallback(){
     Tone.context.resume().then(() => {
         if (playbutton.state) {//Tone.Transport.state === "started"){
-            if (!(link_enabled && socket !== null && socket.connected)) {
+            if (!(link_enabled)) {
                 // start the normal way
                 Tone.Transport.start("+0.2");
             } else {
                 log.info('LINK: Waiting for `downbeat` message...');
                 // wait for Link-socket to give downbeat signal
-                socket.once('downbeat', () => {
+                ipcRenderer.once('downbeat', () => {
                     log.info('LINK: Received `downbeat` message, starting playback');
                     downbeatStartCallback()
                 });
             }
         } else {
             Tone.Transport.stop();  // WARNING! doesn't use pause anymore!
-            if (socket !== null && socket.connected) {
-            }
         }
     })
 };
@@ -720,25 +720,41 @@ let linkbutton = new Nexus.TextButton('#link-button',{
     'alternateText': 'Disable LINK'
 })
 // linkbutton.on('down', (e) => {linkbutton.flip()}) //linkCallback.bind(linkbutton));
-linkbutton.on('change', (value) => {
-    if (value) {
-        socket.emit('enable', '', (data) => {
-            if (data) {
-                log.info('Succesfully enabled Link');
-                link_enabled = true;
-                synchronizeToLinkBPM();
-            }
-            else {log.error('Failed to enable Link')}
-        })
-    } else {
-        socket.emit('disable', '', (data) => {
-            if (data) {
-                log.info('Succesfully disabled Link')
-                link_enabled = false;
-            } else {log.error('Failed to disable Link')}
-        })
+
+ipcRenderer.on(link_channel_prefix + 'enable-success', (enable_succeeded) => {
+        if (enable_succeeded) {
+            log.info('Succesfully enabled Link');
+            link_enabled = true;
+            synchronizeToLinkBPM();
+        }
+        else {log.error('Failed to enable Link')}
     }
-})
+)
+
+ipcRenderer.on(link_channel_prefix + 'disable-success', (disable_succeeded) => {
+        if (disable_succeeded) {
+            log.info('Succesfully disabled Link')
+            link_enabled = false;
+        }
+        else {log.error('Failed to disable Link')}
+    }
+)
+
+async function link_enable_callback(enable_value) {
+    if (enable_value) {
+        if (!link_initialized) {
+            // hang asynchronously on this call
+            await ipcRenderer.send(link_channel_prefix + 'init')
+            link_initialized = true
+        }
+        ipcRenderer.send(link_channel_prefix + 'enable')
+    }
+    else {
+        ipcRenderer.send(link_channel_prefix + 'disable')
+    }
+}
+
+linkbutton.on('change', link_enable_callback)
 
 import { createWavInput } from './file_upload'
 createWavInput(() => loadMusicXMLandMidi(serverUrl + 'get-musicxml',

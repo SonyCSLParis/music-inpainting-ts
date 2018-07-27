@@ -1,4 +1,4 @@
-import './styles/overlays.scss';
+import '../common/styles/overlays.scss';
 import { AnnotationBox } from './annotationBox';
 export declare class FermataBox extends AnnotationBox {
     constructor(timestampContainer: string | HTMLElement, sequenceDuration: number);

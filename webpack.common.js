@@ -2,15 +2,9 @@ let webpack = require('webpack')
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 
-module.exports = function (options) {
-  return {
-    entry: './index.ts',
-    output: {
-      path: __dirname + '/dist',
-      filename: 'index.bundle.js'
-    },
-
+module.exports = {
     // Currently we need to add '.ts' to the resolve.extensions array.
+    mode: 'development',
     resolve: {
       extensions: ['.ts', '.js', '.css', '.scss'],
       modules: ['node_modules', 'styles', '../opensheetmusicdisplay-fork',
@@ -22,10 +16,11 @@ module.exports = function (options) {
 
     // Add the loader for .ts files.
     module: {
-      rules: [{
-          test: /\.json$/,
-          use: 'json-loader'
-        },
+      rules: [
+        //   {
+        //   test: /\.json$/,
+        //   use: 'json-loader'
+        // },
         {
           test: /\.ts$/,
           use: [
@@ -57,17 +52,12 @@ module.exports = function (options) {
      ],
      // do not process the template with html-loader, since this breaks
      // template variables, e.g. title
-     exclude: __dirname + '/index.html'
+     exclude: __dirname + 'src/main/index.html'
      }
       ]
     },
 
     plugins: [
-        new HtmlWebpackPlugin({
-            template: 'index.html',
-            title: 'DeepBach',
-            favicon: 'images/favicon.ico'
-        }),
         new webpack.ProvidePlugin({
         // this allows to use JQuery plugin by calling `require('plugin-name')`
         // as it provides a global JQuery
@@ -76,15 +66,6 @@ module.exports = function (options) {
             $: 'jquery',
             jQuery: 'jquery'
         }),
-	//example on how to add ressources
-      new CopyWebpackPlugin([
-          {from: './tonejs-instruments/samples/organ',
-           to: 'tonejs-instruments/samples/organ'},
-          {from: './tonejs-instruments/samples/harmonium',
-           to: 'tonejs-instruments/samples/harmonium'},
-          {from: './tonejs-instruments/samples/xylophone',
-           to: 'tonejs-instruments/samples/xylophone'}
-      ])
     ],
 
     node: {
@@ -96,4 +77,3 @@ module.exports = function (options) {
       setImmediate: false
     }
   };
-}
