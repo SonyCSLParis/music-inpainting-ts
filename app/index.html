@@ -6,13 +6,19 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Boogaloo|Ubuntu">
+
+    <!-- Insert this line above script imports  -->
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/wheelnav@1.7.1/js/dist/raphael.min.js"></script>
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/wheelnav@1.7.1/js/dist/wheelnav.min.js"></script>
+
+    <!-- Insert this line after script imports -->
+    <script>if (window.module) module = window.module;</script>
 </head>
 <body>
-
     <script>require('./renderer.js')</script>
 </body>
 </html>
