@@ -74,3 +74,6 @@ music21j/
 
 tonejs-instruments*
 !tonejs-instruments/Tonejs-Instruments.js
+
+# compiled application
+app/
