@@ -1,4 +1,4 @@
-let webpack = require('webpack')
+ let webpack = require('webpack')
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 
@@ -7,8 +7,9 @@ module.exports = {
     mode: 'development',
     resolve: {
       extensions: ['.ts', '.js', '.css', '.scss'],
-      modules: ['node_modules', 'styles', '../opensheetmusicdisplay-fork',
-        './tonejs-instruments']
+      modules: ['node_modules', 'styles', '../opensheetmusicdisplay',
+        './tonejs-instruments'],
+      symlinks: true
     },
 
     // Source maps support ('inline-source-map' also works)
@@ -17,10 +18,6 @@ module.exports = {
     // Add the loader for .ts files.
     module: {
       rules: [
-        //   {
-        //   test: /\.json$/,
-        //   use: 'json-loader'
-        // },
         {
           test: /\.ts$/,
           use: [
