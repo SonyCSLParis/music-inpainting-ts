@@ -4,6 +4,7 @@ var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = function (options) {
   return {
+    mode: 'development',
     entry: './index.ts',
     output: {
       path: __dirname + '/dist',
@@ -13,8 +14,9 @@ module.exports = function (options) {
     // Currently we need to add '.ts' to the resolve.extensions array.
     resolve: {
       extensions: ['.ts', '.js', '.css', '.scss'],
-      modules: ['node_modules', 'styles', '../opensheetmusicdisplay-fork',
-        './tonejs-instruments']
+      modules: ['node_modules', 'styles', '../opensheetmusicdisplay',
+        './tonejs-instruments'],
+      symlinks: true
     },
 
     // Source maps support ('inline-source-map' also works)
@@ -22,10 +24,7 @@ module.exports = function (options) {
 
     // Add the loader for .ts files.
     module: {
-      rules: [{
-          test: /\.json$/,
-          use: 'json-loader'
-        },
+      rules: [
         {
           test: /\.ts$/,
           use: [
