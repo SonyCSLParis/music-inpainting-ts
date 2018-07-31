@@ -6,8 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "webpack",
-    "start": "http-server ./dist",
-    "webpack": "webpack"
+    "start": "electron ./app/index.js",
+    "webpack": "webpack",
+    "rebuild": "electron-rebuild -f -w abletonlink"
   },
   "repository": {
     "type": "git",
@@ -51,6 +52,7 @@
     "abletonlink": "0.0.7",
     "ajv": "^6.5.2",
     "deep-equal": "^1.0.1",
+    "electron": "^2.0.5",
     "es6-promise": "^4.2.4",
     "fine-uploader": "^5.16.2",
     "jquery-simple-upload": "^1.1.0",
