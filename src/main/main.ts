@@ -59,8 +59,41 @@ function initAbletonLinkServer(bpm: number=120, quantum: number=4,
     link = new abletonlink(bpm=120., quantum, enable);
     // TODO(theis): how to detect errors in initialization?
     let success = true
+
+    link.on('tempo', (bpm) => {
+            log.info('LINK: BPM changed, now ' + bpm)
+            mainWindow.webContents.send(link_channel_prefix + 'tempo', bpm);
+        }
+    );
+
+    link.on('numPeers', (numPeers) => {
+            log.info('LINK: numPeers changed, now ' + numPeers);
+            mainWindow.webContents.send(link_channel_prefix + 'numPeers', numPeers);
+        }
+    );
+
     return success
 };
+
+function startDownbeatClock(updateRate: number=16) {
+    // Start a downbeat clock
+    (() => {
+        let lastBeat = 0.0;
+        let lastPhase = 0.0;
+        link.startUpdate(updateRate, (beat, phase, bpm) => {
+            beat = 0 ^ beat;
+            if(0 < beat - lastBeat) {
+                mainWindow.webContents.send('beat', { beat });
+                lastBeat = beat;
+            }
+            if(0 > phase - lastPhase) {
+                mainWindow.webContents.send('downbeat');
+                log.debug('LINK: downbeat');
+            }
+            lastPhase = phase;
+        });
+    })();
+}
 
 ipcMain.on(link_channel_prefix + 'init', (event, _) => {
         let return_promise = new Promise((resolve) => {
@@ -77,7 +110,7 @@ ipcMain.on(link_channel_prefix + 'init', (event, _) => {
 ipcMain.on(link_channel_prefix + 'event', function(data){});
 
 // bind to Link specific events
-ipcMain.on(link_channel_prefix + 'tempo', (newBPM) => {
+ipcMain.on(link_channel_prefix + 'tempo', (event, newBPM) => {
         // HACK perform a comparison to avoid messaging loops, since
         // the link update triggers a BPM modification message
         // from main to renderer
@@ -86,11 +119,13 @@ ipcMain.on(link_channel_prefix + 'tempo', (newBPM) => {
 );
 ipcMain.on(link_channel_prefix + 'enable', (event, _) => {
         link.enable();
+        startDownbeatClock();
         event.sender.send(link_channel_prefix + 'enable-success', true)
     }
 );
 ipcMain.on(link_channel_prefix + 'disable', (event, _) => {
         // TODO is this actually desirable???
+        link.stopUpdate();
         link.disable();
         event.sender.send(link_channel_prefix + 'disable-success', true)
     }
@@ -102,38 +137,6 @@ ipcMain.on(link_channel_prefix + 'get_bpm', (event, _) => {
 );
 
 ipcMain.on('disconnect', function(){});
-
-link.on('tempo', (bpm) => {
-        log.info('LINK: BPM changed, now ' + bpm)
-        mainWindow.webContents.send(link_channel_prefix + 'tempo', bpm);
-    }
-);
-
-link.on('numPeers', (numPeers) => {
-        log.info('LINK: numPeers changed, now ' + numPeers);
-        mainWindow.webContents.send(link_channel_prefix + 'numPeers', numPeers);
-    }
-);
-
-// downbeat clock
-let updateRate: number = 16;
-(() => {
-    let lastBeat = 0.0;
-    let lastPhase = 0.0;
-    link.startUpdate(updateRate, (beat, phase, bpm) => {
-        beat = 0 ^ beat;
-        if(0 < beat - lastBeat) {
-            mainWindow.webContents.send('beat', { beat });
-            lastBeat = beat;
-        }
-        if(0 > phase - lastPhase) {
-            mainWindow.webContents.send('downbeat');
-            log.debug('LINK: downbeat');
-        }
-        lastPhase = phase;
-    });
-})();
-
 
 //
 // (() => {

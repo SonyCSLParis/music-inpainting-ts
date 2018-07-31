@@ -509,7 +509,7 @@ bpmCounter.on('change', function(newBPM){
     Tone.Transport.bpm.value = newBPM;
     if (link_enabled) ipcRenderer.send(link_channel_prefix + 'tempo', newBPM);
 });
-ipcRenderer.on(link_channel_prefix + 'tempo', (newBPM) => {
+ipcRenderer.on(link_channel_prefix + 'tempo', (event, newBPM) => {
     // ensure the new BPM is in the accepted range
     // this works because the accepted range is at least one octave wide
     while (newBPM > maxAcceptedBPM) newBPM = newBPM / 2
@@ -673,7 +673,7 @@ function playCallback(){
                 // wait for Link-socket to give downbeat signal
                 ipcRenderer.once('downbeat', () => {
                     log.info('LINK: Received `downbeat` message, starting playback');
-                    downbeatStartCallback()
+                    downbeatStartCallback();
                 });
             }
         } else {
@@ -703,7 +703,7 @@ WebMidi.enable(function (err) {
         else {
                 midiOut = dummyMidiOut;
         }
-        log.info('Selected MIDI out: ' + JSON.stringify(midiOut));
+        log.info('Selected MIDI out: ' + this.value);
     };
     midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect));
     midiOutSelect.value = 'No Output';
@@ -733,7 +733,7 @@ ipcRenderer.on(link_channel_prefix + 'enable-success', (enable_succeeded) => {
 
 ipcRenderer.on(link_channel_prefix + 'disable-success', (disable_succeeded) => {
         if (disable_succeeded) {
-            log.info('Succesfully disabled Link')
+            log.info('Succesfully disabled Link');
             link_enabled = false;
         }
         else {log.error('Failed to disable Link')}
