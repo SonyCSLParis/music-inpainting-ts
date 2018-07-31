@@ -310,7 +310,7 @@ function enableChanges(): void {
  */
 function loadMusicXMLandMidi(urlXML: string, urlMidi: string) {
     disableChanges();
-    log.debug('Metadata:')
+    log.debug('Metadata:');
     log.debug(JSON.stringify(getMetadata()));
     $.post({
         url: urlXML,
@@ -377,7 +377,7 @@ let loadSamplesButton = new Nexus.TextButton('#load-samples-button',{
 let sampledInstruments;  // declare variables but do not load samples yet
 let sampled_instruments_names = ['organ', 'harmonium', 'xylophone'];
 loadSamplesButton.on('change', () => {
-    log.info('Start downloading audio samples')
+    log.info('Start downloading audio samples');
     // must disable pointer events on *child* node to also use cursor property
     (loadSamplesButtonElem.firstElementChild as HTMLElement).style.pointerEvents = 'none';
     loadSamplesButtonElem.style.cursor = 'wait';
@@ -400,7 +400,7 @@ loadSamplesButton.on('change', () => {
     loadPromises.push(pianoLoadPromise)
 
     Promise.all(loadPromises).then(()=>{
-        log.info('Finished downloading')
+        log.info('Finished downloading');
         loadSamplesButtonElem.remove();
         instrumentSelect.render();
     });
