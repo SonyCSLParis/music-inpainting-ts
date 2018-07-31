@@ -9,4 +9,8 @@ module.exports = merge(common, {
         path: __dirname + '/app',
       filename: 'renderer.js'
     },
+    externals: {
+        raphael: /^raphael$/i,
+        wheelnav: 'wheelnav'
+    }
 });
