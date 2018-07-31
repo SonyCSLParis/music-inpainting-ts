@@ -11,7 +11,7 @@ module.exports = merge(common, {
     entry: './main.ts',
     output: {
       path: __dirname + '/app',
-      filename: 'main.js'
+      filename: 'index.js'
     },
 
     plugins: [
@@ -31,5 +31,10 @@ module.exports = merge(common, {
               {from: '../common/tonejs-instruments/samples/xylophone',
                to: 'tonejs-instruments/samples/xylophone'}
         ])
-    ]
+    ],
+
+    externals: {
+        abletonlink: "require('abletonlink')",
+        nbind: "require('nbind')"
+    }
 });

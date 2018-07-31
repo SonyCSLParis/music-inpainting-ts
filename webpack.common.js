@@ -46,12 +46,16 @@ module.exports = {
        test: /\.html$/,
        use: [
          'html-loader'
-     ],
-     // do not process the template with html-loader, since this breaks
-     // template variables, e.g. title
-     exclude: __dirname + 'src/main/index.html'
+         ],
+       // do not process the template with html-loader, since this breaks
+       // template variables, e.g. title
+       // exclude: __dirname + 'src/main/index.html'
+     },
+     {
+       test: /\.node$/,
+       use: 'node-loader'
      }
-      ]
+     ]
     },
 
     plugins: [
@@ -71,6 +75,8 @@ module.exports = {
       process: true,
       module: false,
       clearImmediate: false,
-      setImmediate: false
+      setImmediate: false,
+      __dirname: false,
+      __filename: false
     }
   };
