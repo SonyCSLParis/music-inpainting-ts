@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "webpack",
     "start": "electron ./app/index.js",
-    "webpack": "webpack",
+    "webpack": "npm run build-main && npm run build-renderer",
+    "build-main": "webpack --config webpack.main.js",
+    "build-renderer": "webpack --config webpack.renderer.js",
     "rebuild": "electron-rebuild -f -w abletonlink"
   },
   "repository": {
