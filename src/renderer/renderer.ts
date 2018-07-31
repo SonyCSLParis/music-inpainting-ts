@@ -542,24 +542,17 @@ function getTimingOffset(){
     return performance.now() - Tone.now() * 1000
 }
 
-function playNote(time, event){
-    log.debug(`Play note event @ time ${time}: ` + JSON.stringify(event))
-    current_instrument.triggerAttackRelease(event.name, event.duration, time,
-        event.velocity);
+function getPlayNoteByMidiChannel(midiChannel){
+    function playNote(time, event){
+        log.debug(`Play note event @ time ${time}: ` + JSON.stringify(event))
+        current_instrument.triggerAttackRelease(event.name, event.duration, time,
+            event.velocity);
 
-    midiOut.playNote(event.name, 1,
-        {time: time * 1000 + getTimingOffset(),
-         duration: event.duration * 1000})
-}
-
-function playNoteChordsInstrument(time, event){
-    log.debug(`Play chord event @ time ${time}: ` + JSON.stringify(event))
-    chords_instrument.triggerAttackRelease(event.name, event.duration, time,
-        event.velocity);
-
-    midiOut.playNote(event.name, 2,
-        {time: time * 1000 + getTimingOffset(),
-         duration: event.duration * 1000})
+        midiOut.playNote(event.name, midiChannel,
+            {time: time * 1000 + getTimingOffset(),
+             duration: event.duration * 1000})
+    }
+    return playNote
 }
 
 function nowPlayingCallback(time, step){
@@ -581,17 +574,12 @@ for (let i = 0; i < sequence_duration_quarters; i++) {
     steps.push(i);
 }
 
-function scheduleTrackToInstrument(midiTrack, isChords=false) {
+function scheduleTrackToInstrument(midiTrack, midiChannel=1) {
     let notes = midiTrack.notes;
 
     let playNote_callback;
-    let getInstrument;
-    if (isChords) {
-        getInstrument = () => chords_instrument;
-        playNote_callback = playNoteChordsInstrument}
-    else {
-        getInstrument = () => current_instrument;
-        playNote_callback = playNote}
+    let getInstrument = () => current_instrument;
+    playNote_callback = getPlayNoteByMidiChannel(midiChannel)
 
     let part = new Tone.Part(playNote_callback, notes);
     part.start(0)  // schedule events on the Tone timeline
@@ -643,14 +631,12 @@ function loadMidi(url: string) {
         // schedule quarter-notes clock
         new Tone.Sequence(drawCallback, steps, '4n').start(0);
 
-        if (!osmd.leadsheet) {
-            for (let track of midi.tracks) {
-                scheduleTrackToInstrument(track);
-            }
-        }
-        else {
-            scheduleTrackToInstrument(midi.tracks[0]);
-            scheduleTrackToInstrument(midi.tracks[1], true);
+        for (let trackIndex_str in midi.tracks){
+            let trackIndex = parseInt(trackIndex_str);
+            let track = midi.tracks[trackIndex];
+            // midiChannels start at 1
+            let midiChannel = trackIndex + 1;
+            scheduleTrackToInstrument(track, midiChannel);
         }
 
         // change Transport BPM back to the displayed value
