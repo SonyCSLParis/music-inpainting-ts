@@ -1,8 +1,9 @@
+import 'common/styles/overlays.scss';
+
 export class AnnotationBox {
     readonly containedQuarterNotes: number[];
-    readonly
 
-    constructor(timestampContainer: string|HTMLElement) {
+    constructor(timestampContainer: string|HTMLElement, cssClass: string) {
         // Store container element
         if (typeof timestampContainer === "string") {
             // ID passed
@@ -24,16 +25,15 @@ export class AnnotationBox {
                 return containedQuarterNotes;
             })();
 
-        this.createContainer()
+        this.cssClass = cssClass;
+        this.createContainer();
     }
 
     protected timestampContainer: HTMLElement;
     protected validateTimestampContainer(): void {};
 
     public container: HTMLDivElement;
-
-    readonly cssClass: string = this.constructor.name;
-
+    readonly cssClass: string;
 
     // create containing div,
     private createContainer(): void {

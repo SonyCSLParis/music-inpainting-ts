@@ -1,10 +1,9 @@
-import '../common/styles/overlays.scss';
 import { AnnotationBox } from './annotationBox';
 
 export class FermataBox extends AnnotationBox {
     constructor(timestampContainer: string|HTMLElement,
             sequenceDuration: number) {
-        super(timestampContainer);
+        super(timestampContainer, 'Fermata');
         this.sequenceDuration = sequenceDuration;
         this.draw()
     }

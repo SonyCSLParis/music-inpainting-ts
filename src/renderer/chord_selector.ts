@@ -20,7 +20,7 @@ declare var slicePath: any;
 export class ChordSelector extends AnnotationBox {
     constructor(timestampContainer: string|HTMLElement,
             onChordChange: Function, wheelSize_px: number=250) {
-        super(timestampContainer);
+        super(timestampContainer, 'ChordSelector');
         this.onChordChange = onChordChange
         this.container.classList.add('noselect')
         this.wheelSize_px = wheelSize_px;
