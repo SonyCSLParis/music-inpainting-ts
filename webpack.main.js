@@ -6,13 +6,13 @@ const merge = require('webpack-merge');
 const common = require('./webpack.common.js');
 
 module.exports = merge(common, {
-    target: "electron-main",
-	context: __dirname + "/src/main",
-    entry: './main.ts',
-    output: {
-      path: __dirname + '/app',
-      filename: 'index.js'
-    },
+    // target: "electron-main",
+	// context: __dirname + "/src/main",
+    // entry: './main.ts',
+    // output: {
+    //   path: __dirname + '/app',
+    //   filename: 'main.js'
+    // },
 
     plugins: [
         new HtmlWebpackPlugin({
@@ -34,7 +34,8 @@ module.exports = merge(common, {
     ],
 
     externals: {
-        abletonlink: "require('abletonlink')",
-        nbind: "require('nbind')"
+        // stops webpack from trying to bundle ableton-link, which is a external
+        // native dependency
+        abletonlink: "require('abletonlink')"
     }
 });
