@@ -13,11 +13,17 @@ div[nexus-ui] select, div[nexus-ui] input {
 }
 
 #top-controls {
-    display: grid;
+    display: inline-grid;
     width: 30%;
     // height: 100px;
     grid-template-columns: repeat(3, 1fr);
     // grid-template-rows: 100px;
+}
+
+top-control-item {
+  // display: flex;
+  align-self: center;
+  justify-self: center;
 }
 
 #lfo-controls {
