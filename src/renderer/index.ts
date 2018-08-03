@@ -231,7 +231,7 @@ function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void{
 }
 
 function getFermatas(): number[] {
-    const activeFermataElems = $('.FermataBox.active')
+    const activeFermataElems = $('.Fermata.active')
     let containedQuarterNotesList = [];
     for (let activeFemataElem of activeFermataElems) {
         containedQuarterNotesList.push(parseInt(
