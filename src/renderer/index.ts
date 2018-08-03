@@ -15,11 +15,15 @@ import * as Tone from "tone";
 import { SampleLibrary } from '../common/tonejs-instruments/Tonejs-Instruments'
 import * as Nexus from 'nexusui'
 import * as log from 'loglevel'
+import * as path from 'path';
 
 import { createLFOControls } from './lfo'
 
 import '../common/styles/osmd.scss'
 import '../common/styles/main.scss'
+
+// variable gets created by electron-webpack
+declare var __static;
 
 declare var ohSnap: any;
 let server_config = require('../common/config.json')
@@ -140,7 +144,7 @@ titlediv.style.fontSize = '64px'
 
 document.body.appendChild(document.createElement("div"))
 
-let useLeadsheetMode = true;  // true for leadsheets, false for chorales
+let useLeadsheetMode = false;  // true for leadsheets, false for chorales
 let serverPort: number
 if (useLeadsheetMode) {
     serverPort = server_config['leadsheet_port']
@@ -374,8 +378,20 @@ let loadSamplesButton = new Nexus.TextButton('#load-samples-button',{
     'alternateText': 'Samples loading'
 })
 
+
 let sampledInstruments;  // declare variables but do not load samples yet
-let sampled_instruments_names = ['organ', 'harmonium', 'xylophone'];
+const sampled_instruments_names = ['organ', 'harmonium', 'xylophone'];
+// for (let instrument_name of sampled_instruments_names) {
+//     require.context(path.join('tonejs-instruments/samples/', instrument_name),
+//         false,
+//         /\.ogg$/)
+// }
+// require.context(path.join('tonejs-instruments/samples/xylophone'),
+//     false,
+//     /\.ogg$/
+// )
+
+// const staticBaseUrl = path.join(__static, 'tonejs-instruments/samples/')
 loadSamplesButton.on('change', () => {
     log.info('Start downloading audio samples');
     // must disable pointer events on *child* node to also use cursor property
@@ -386,7 +402,7 @@ loadSamplesButton.on('change', () => {
     let sampleLibraryLoadPromise = new Promise((resolve, reject) => {
         sampledInstruments = SampleLibrary.load({
                     instruments: sampled_instruments_names,
-                    baseUrl: "tonejs-instruments/samples/"
+                    baseUrl: 'tonejs-instruments/samples/'
                 });
         Object.keys(sampledInstruments).forEach(function(instrument_name) {
             sampledInstruments[instrument_name].release = 1.8;
