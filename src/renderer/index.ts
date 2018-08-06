@@ -28,6 +28,8 @@ declare var __static;
 declare var ohSnap: any;
 let server_config = require('../common/config.json')
 
+Tone.context.latencyHint = 'fastest';
+
 let link_enabled = false;
 ipcRenderer.on('numPeers', (numPeers) => {
     // this display is requested in the Ableton-link test-plan
@@ -560,13 +562,13 @@ function getTimingOffset(){
 
 function getPlayNoteByMidiChannel(midiChannel){
     function playNote(time, event){
-        log.debug(`Play note event @ time ${time}: ` + JSON.stringify(event))
+        midiOut.playNote(event.name, midiChannel,
+            {time: time * 1000 + getTimingOffset(),
+                duration: event.duration * 1000})
         current_instrument.triggerAttackRelease(event.name, event.duration, time,
             event.velocity);
 
-        midiOut.playNote(event.name, midiChannel,
-            {time: time * 1000 + getTimingOffset(),
-             duration: event.duration * 1000})
+        log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event))
     }
     return playNote
 }
@@ -661,7 +663,7 @@ function loadMidi(url: string) {
 }
 
 function downbeatStartCallback() {
-    Tone.Transport.start("+0.00001", "0:0:0")
+    Tone.Transport.start("+0", "0:0:0")
 }
 
 function playCallback(){
@@ -673,9 +675,9 @@ function playCallback(){
             } else {
                 log.info('LINK: Waiting for `downbeat` message...');
                 // wait for Link-socket to give downbeat signal
-                ipcRenderer.once('downbeat', () => {
-                    log.info('LINK: Received `downbeat` message, starting playback');
+                ipcRenderer.once(link_channel_prefix + 'downbeat', () => {
                     downbeatStartCallback();
+                    log.info('LINK: Received `downbeat` message, starting playback');
                 });
             }
         } else {
