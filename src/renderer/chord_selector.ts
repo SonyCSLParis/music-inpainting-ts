@@ -2,19 +2,10 @@ import { AnnotationBox } from './annotationBox';
 import * as $ from 'jquery';
 import deepEqual = require('deep-equal');
 
-// let raphaelimport: HTMLScriptElement = document.createElement('script')
-// raphaelimport.type = 'text/javascript'
-// raphaelimport.src = "https://cdn.jsdelivr.net/npm/wheelnav@1.7.1/js/dist/raphael.min.js"
-// document.head.appendChild(raphaelimport)
-//
-// let wheelimport: HTMLScriptElement = document.createElement('script')
-// wheelimport.type = 'text/javascript'
-// wheelimport.src = "https://cdn.jsdelivr.net/npm/wheelnav@1.7.1/js/dist/wheelnav.min.js"
-// document.head.appendChild(wheelimport)
+let Raphael = require('./wheelnav/raphael');
+import 'wheelnav';
 
-// need to declare these variables which are pouplated by loading wheelnav
-// in a <script> tag in the app's html's head
-declare var wheelnav : any;
+declare var wheelnav: any;
 declare var slicePath: any;
 
 export class ChordSelector extends AnnotationBox {

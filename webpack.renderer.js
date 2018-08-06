@@ -10,8 +10,4 @@ module.exports = merge(common, {
     //   filename: 'renderer.js'
     // },
 
-    externals: {
-        raphael: /^raphael$/i,
-        wheelnav: 'wheelnav'
-    }
 });
