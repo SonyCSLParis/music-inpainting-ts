@@ -1,7 +1,18 @@
 // Modules to control application life and create native browser window
 import {app, BrowserWindow, ipcMain} from 'electron'
+import { format as formatUrl } from 'url'
+import * as path from 'path';
 import * as log from 'loglevel'
-log.enableAll()
+const abletonlink = require('abletonlink');
+
+const isDevelopment = process.env.NODE_ENV !== 'production'
+
+if (isDevelopment) {
+    log.setLevel('debug')
+}
+else {
+    log.setLevel('info')
+}
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -9,12 +20,21 @@ let mainWindow: BrowserWindow;
 
 function createWindow() {
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 800, height: 600})
+  mainWindow = new BrowserWindow()
 
-  // and load the index.html of the app.
-  mainWindow.loadFile(__dirname + '/index.html')
-
-  // Open the DevTools.
+  if (isDevelopment) {
+    mainWindow.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`)
+    // Open the DevTools.
+    mainWindow.webContents.openDevTools()
+  }
+  else {
+    mainWindow.loadURL(formatUrl({
+      pathname: path.join(__dirname, 'index.html'),
+      protocol: 'file',
+      slashes: true
+    }))
+  }
+  // TODO(theis) Remove this!
   mainWindow.webContents.openDevTools()
 
   // Emitted when the window is closed.
@@ -23,6 +43,13 @@ function createWindow() {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null
+  })
+
+  mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow.focus()
+      setImmediate(() => {
+          mainWindow.focus()
+      })
   })
 }
 
@@ -49,7 +76,6 @@ app.on('activate', function () {
 })
 
 // code for ableton-link server
-const abletonlink = require('abletonlink');
 
 let pattern_synchronization_duration_quarters = 4.
 let link_channel_prefix: string = 'link/'
