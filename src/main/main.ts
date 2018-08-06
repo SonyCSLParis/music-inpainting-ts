@@ -114,7 +114,7 @@ function startDownbeatClock(updateRate: number=16) {
                 lastBeat = beat;
             }
             if(0 > phase - lastPhase) {
-                mainWindow.webContents.send('downbeat');
+                mainWindow.webContents.send(link_channel_prefix + 'downbeat');
                 log.debug('LINK: downbeat');
             }
             lastPhase = phase;
@@ -141,7 +141,12 @@ ipcMain.on(link_channel_prefix + 'tempo', (event, newBPM) => {
         // HACK perform a comparison to avoid messaging loops, since
         // the link update triggers a BPM modification message
         // from main to renderer
-        if (link.bpm !== newBPM) link.bpm = newBPM
+        if (link.bpm !== newBPM) {
+            let link_bpm_before = link.bpm
+            link.bpm = newBPM
+            log.debug("LINK: Triggered LINK tempo update:")
+            log.debug(`\tBefore: ${link_bpm_before}, now: ${newBPM}`)
+        }
     }
 );
 ipcMain.on(link_channel_prefix + 'enable', (event, _) => {
