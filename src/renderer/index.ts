@@ -62,7 +62,7 @@ let topControlsGridElem: HTMLDivElement = document.createElement('div')
 topControlsGridElem.id = 'top-controls'
 document.body.appendChild(topControlsGridElem);
 
-let playbuttonElem: HTMLElement = document.createElement('div');
+let playbuttonElem: HTMLElement = document.createElement('top-control-item');
 playbuttonElem.id = 'play-button'
 topControlsGridElem.appendChild(playbuttonElem);
 
@@ -76,7 +76,7 @@ let playbutton = new Nexus.TextButton('#play-button',{
 playbutton.on('change', playCallback)
 
 
-let stopbuttonElem: HTMLElement = document.createElement("div");
+let stopbuttonElem: HTMLElement = document.createElement('top-control-item');
 stopbuttonElem.id = 'stop-button';
 topControlsGridElem.appendChild(stopbuttonElem);
 
@@ -110,7 +110,7 @@ document.addEventListener("keydown", (event) => {
 // Time-granularity selector
 let granularities = ['quarter-note', 'half-note', 'whole-note']
 
-let granularitySelectElem: HTMLElement = document.createElement("div");
+let granularitySelectElem: HTMLElement = document.createElement('top-control-item');
 granularitySelectElem.id = 'select-granularity'
 topControlsGridElem.appendChild(granularitySelectElem)
 
@@ -711,7 +711,7 @@ WebMidi.enable(function (err) {
     midiOutSelect.value = 'No Output';
 });
 
-let linkbuttonElem: HTMLElement = document.createElement('div');
+let linkbuttonElem: HTMLElement = document.createElement('top-control-item');
 linkbuttonElem.id = 'link-button'
 topControlsGridElem.appendChild(linkbuttonElem);
 
@@ -721,13 +721,29 @@ let linkbutton = new Nexus.TextButton('#link-button',{
     'text': 'Enable LINK',
     'alternateText': 'Disable LINK'
 })
-// linkbutton.on('down', (e) => {linkbutton.flip()}) //linkCallback.bind(linkbutton));
+
+let linkdisplayElem: HTMLElement = document.createElement('top-control-item');
+linkdisplayElem.id = 'link-display'
+topControlsGridElem.appendChild(linkdisplayElem);
+
+let linkdisplayButton = new Nexus.Button('#link-display',{
+    'size': [40, 40],
+    'state': false,
+    'mode': 'button'
+})
+
+let linkDisplayTimeout;
+ipcRenderer.on(link_channel_prefix + 'downbeat', () => {
+    linkdisplayButton.down();
+    if (linkDisplayTimeout) clearTimeout(linkDisplayTimeout);
+    linkDisplayTimeout = setTimeout(() => linkdisplayButton.up(), 100)}
+)
 
 ipcRenderer.on(link_channel_prefix + 'enable-success', (enable_succeeded) => {
         if (enable_succeeded) {
-            log.info('Succesfully enabled Link');
             link_enabled = true;
             synchronizeToLinkBPM();
+            log.info('Succesfully enabled Link');
         }
         else {log.error('Failed to enable Link')}
     }
@@ -735,8 +751,8 @@ ipcRenderer.on(link_channel_prefix + 'enable-success', (enable_succeeded) => {
 
 ipcRenderer.on(link_channel_prefix + 'disable-success', (disable_succeeded) => {
         if (disable_succeeded) {
-            log.info('Succesfully disabled Link');
             link_enabled = false;
+            log.info('Succesfully disabled Link');
         }
         else {log.error('Failed to disable Link')}
     }

@@ -3,12 +3,12 @@
   "title": true,
 
   "main": {
+    "dll": ["abletonlink"],
     "sourceDirectory": "src/main",
     "webpackConfig": "webpack.main.js"
   },
 
   "renderer": {
-    "dll": ["fooModule"],
     "sourceDirectory": "src/renderer",
     "webpackConfig": "webpack.renderer.js",
   }
