@@ -1,3 +1,6 @@
-{"server_ip": "10.0.1.122",
- "chorale_port": 5001,
- "leadsheet_port": 5000}
+{
+    "server_ip": "10.0.1.122",
+    "chorale_port": 5001,
+    "leadsheet_port": 5000,
+    "link_channel_prefix": "LINK/"
+}
