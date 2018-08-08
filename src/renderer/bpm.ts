@@ -1,11 +1,7 @@
-import { ipcRenderer } from 'electron'
-
 import * as Tone from 'tone'
 let Nexus = require('./nexusColored')
 
 import { updateLinkBPM } from './linkClient'
-
-let link_channel_prefix: string = require('../common/config.json')['link_channel_prefix'];
 
 
 let bpmCounter;
