@@ -1,8 +1,3 @@
-import { ipcRenderer } from 'electron'
-
-let link_channel_prefix: string = require('../common/config.json')['link_channel_prefix'];
-
-
 // import * as nipplejs from "nipplejs";
 import { eOSMD } from './locator';
 import { Fraction } from 'opensheetmusicdisplay'
@@ -25,7 +20,6 @@ import { createLFOControls } from './lfo'
 
 import '../common/styles/osmd.scss'
 import '../common/styles/main.scss'
-
 
 declare var ohSnap: any;
 let server_config = require('../common/config.json')
