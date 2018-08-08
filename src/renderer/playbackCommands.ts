@@ -1,14 +1,10 @@
-import * as Tone from 'tone'
 import * as log from 'loglevel'
 
 let Nexus = require('./nexusColored');
 
-import * as LinkClient from './linkClient';
 import * as Playback from './playback'
 
 let playButton;
-let stopButton;
-
 
 export function render(): void{
     let topControlsGridElem = document.getElementById('top-controls')
@@ -28,21 +24,6 @@ export function render(): void{
         }
         else {Playback.stop(); Playback.resetPlaybackPositionDisplay();}
     })
-
-    // let stopbuttonElem: HTMLElement = document.createElement('top-control-item');
-    // stopbuttonElem.id = 'stop-button';
-    // topControlsGridElem.appendChild(stopbuttonElem);
-    //
-    // stopButton = new Nexus.TextButton('#stop-button',{
-    //     'size': [150,50],
-    //     'state': false,
-    //     'text': 'Stop'
-    // })
-    // stopButton.on('change', (event) => {
-    //     playButton.flip(false);
-    //     Tone.Transport.stop();
-    //     Playback.resetPlaybackPositionDisplay();  // update the graphics
-    // });
 
     document.addEventListener("keydown", (event) => {
         const keyName = event.key
