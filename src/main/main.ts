@@ -177,7 +177,7 @@ ipcMain.on(link_channel_prefix + 'tempo', (event, newBPM) => {
         // HACK perform a comparison to avoid messaging loops, since
         // the link update triggers a BPM modification message
         // from main to renderer
-        if (link.bpm !== newBPM) {
+        if (isLinkInitialized() && link.bpm !== newBPM) {
             let link_bpm_before = link.bpm
             link.bpm = newBPM
             log.debug("LINK: Triggered LINK tempo update:")
