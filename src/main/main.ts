@@ -98,7 +98,6 @@ function setLinkEnabled(enable): void {
 
 function initAbletonLinkServer(bpm: number=120, quantum: number=4,
     enable: boolean=false): boolean {
-        log.debug('Enter init')
     link = new abletonlink(bpm, quantum, enable);
     setLinkEnabled(enable)
     // TODO(theis): how to detect errors in initialization?
@@ -123,22 +122,20 @@ function initAbletonLinkServer(bpm: number=120, quantum: number=4,
 function startLinkDownbeatClock(updateRate_ms: number=16) {
     // Start a LINK-based downbeat clock using IPC messages
     // updateRate_ms, number: interval (in ms) between updates in the clock
-    (() => {
-        let lastBeat = 0.0;
-        let lastPhase = 0.0;
-        link.startUpdate(updateRate_ms, (beat, phase, bpm) => {
-            beat = 0 ^ beat;
-            if(0 < beat - lastBeat) {
-                mainWindow.webContents.send('beat', { beat });
-                lastBeat = beat;
-            }
-            if(0 > phase - lastPhase) {
-                mainWindow.webContents.send(link_channel_prefix + 'downbeat');
-                log.debug('LINK: downbeat');
-            }
-            lastPhase = phase;
-        });
-    })();
+    let lastBeat = 0.0;
+    let lastPhase = 0.0;
+    link.startUpdate(updateRate_ms, (beat, phase, bpm) => {
+        beat = 0 ^ beat;
+        if(0 < beat - lastBeat) {
+            mainWindow.webContents.send('beat', { beat });
+            lastBeat = beat;
+        }
+        if(0 > phase - lastPhase) {
+            mainWindow.webContents.send(link_channel_prefix + 'downbeat');
+            log.debug('LINK: downbeat');
+        }
+        lastPhase = phase;
+    });
 }
 
 function stopLinkDownbeatClock() {
