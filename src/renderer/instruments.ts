@@ -62,6 +62,7 @@ let instrumentFactories = {
     'Sampled Piano (w/ reverb)':
         () => {piano.disconnect(0); piano.connect(reverb); return piano},
     'Xylophone': () => {return sampledInstruments['xylophone']},
+    'Organ': () => {return sampledInstruments['organ']},
     'Steelpan': () => {return steelpan},
     'None': () => {return silentInstrument}
 }
