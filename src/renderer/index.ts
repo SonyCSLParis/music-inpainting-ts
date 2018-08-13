@@ -15,6 +15,7 @@ import * as Playback from './playback'
 import * as Instruments from './instruments'
 import * as BPM from './bpm'
 import * as LinkClient from './linkClient'
+import * as LinkClientCommands from './linkClientCommands'
 import * as MidiOut from './midiOut'
 import { createLFOControls } from './lfo'
 
@@ -323,8 +324,8 @@ if (insertWavInput) {
 
 $(document).ready(() => {
         LinkClient.kill();
-        LinkClient.render();
-        LinkClient.renderDownbeatDisplay();
+        LinkClientCommands.render();
+        LinkClientCommands.renderDownbeatDisplay();
     }
 );
 
