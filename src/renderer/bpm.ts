@@ -1,7 +1,7 @@
 import * as Tone from 'tone'
 let Nexus = require('./nexusColored')
 
-import { updateLinkBPM } from './linkClient'
+import LinkClient from './linkClient'
 
 
 let bpmCounter;
@@ -37,7 +37,7 @@ export function render(): void{
 
     bpmCounter.on('change', function(newBPM){
         Tone.Transport.bpm.value = newBPM;
-        updateLinkBPM(newBPM);
+        LinkClient.updateLinkBPM(newBPM);
     });
 }
 

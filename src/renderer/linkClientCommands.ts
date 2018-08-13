@@ -2,7 +2,7 @@ import { ipcRenderer } from 'electron'
 import * as log from 'loglevel'
 import * as $ from 'jquery'
 
-import * as LinkClient from './linkClient'
+import LinkClient from './linkClient'
 
 let Nexus = require('./nexusColored')
 

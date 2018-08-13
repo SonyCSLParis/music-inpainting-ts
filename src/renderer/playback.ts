@@ -8,7 +8,7 @@ let Nexus = require('./nexusColored');
 import * as BPM from './bpm'
 import * as Instruments from './instruments'
 import * as MidiOut from './midiOut'
-import * as LinkClient from './linkClient'
+import LinkClient from './linkClient'
 
 
 function getTimingOffset(){

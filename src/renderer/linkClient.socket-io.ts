@@ -122,7 +122,7 @@ socket.on('numPeers', (numPeers) => {
 // Schedule a LINK dependent callback
 export function on(message, callback) {
     socket.on(link_channel_prefix + message, () => {
-        callback();;
+        callback();
 })
 }
 
