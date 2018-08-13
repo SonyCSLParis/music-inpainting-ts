@@ -153,7 +153,7 @@ osmd = new eOSMD(osmdContainer, true, useLeadsheetMode);
 //     last_click = joystick.position;
 // }, true);
 
-loadMusicXMLandMidi(serverUrl, 'ex');
+loadMusicXMLandMidi(serverUrl, 'generate');
 
 function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void{
     // Strip MusicXML document of title/composer tags
