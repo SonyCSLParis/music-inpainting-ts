@@ -3,7 +3,7 @@ import {app, ipcMain} from 'electron'
 import * as log from 'loglevel'
 
 import * as WindowManager from './windowManager'
-import * as LinkServer from './linkServer'
+import LinkServer from './linkServer'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
