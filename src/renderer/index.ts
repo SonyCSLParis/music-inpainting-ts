@@ -210,7 +210,7 @@ function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
 }
 
 
-function toggleBusyClass(toggleBusy: boolean): void{
+function toggleBusyClass(toggleBusy: boolean): void {
     let noteboxes = $('.notebox')
     if (toggleBusy) {
         noteboxes.addClass('busy');
@@ -226,7 +226,8 @@ function toggleBusyClass(toggleBusy: boolean): void{
 function blockall(e) {
     // block propagation of events in bubbling/capturing
     e.stopPropagation();
-    e.preventDefault();}
+    e.preventDefault();
+}
 
 
 function disableChanges(): void {
