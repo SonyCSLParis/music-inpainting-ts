@@ -18,7 +18,7 @@ function getState(): void {
     // get current state of the LINK-server on loading the client
     socket.emit(link_channel_prefix + 'ping');
 }
-getState();
+socket.on('connect', () => getState());
 
 // the `quantum` defines the desired number of quarter-notes between each
 // 'downbeat', which are used to synchronize Play events.
