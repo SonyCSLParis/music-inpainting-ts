@@ -36,7 +36,7 @@ export function isInitialized(): boolean {
 
 export async function enable() {
     if (!isInitialized()) {
-        console.log("Must initialize LINK")
+        log.debug("Must initialize LINK")
         let bpm: number = BPM.getBPM();
         let quantum: number = linkQuantum;
         // hang asynchronously on this call
