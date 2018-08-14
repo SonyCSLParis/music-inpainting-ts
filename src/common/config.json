@@ -1,5 +1,5 @@
 {
-    "server_ip": "10.0.1.122",
+    "server_ip": "localhost",
     "chorale_port": 5001,
     "leadsheet_port": 5000,
     "link_channel_prefix": "LINK/"
