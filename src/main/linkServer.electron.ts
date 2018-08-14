@@ -124,20 +124,27 @@ export function attachListeners() {
 
     // Enable LINK and start a downbeat clock to synchronize Transport
     ipcMain.on(link_channel_prefix + 'enable', (event) => {
-            link.enable();  // enable backend LINK-server
-            startLinkDownbeatClock();
-            setLinkEnabled(true);
-            // event.sender.send(link_channel_prefix + 'enable-success', true)
+            if ( !isLinkInitialized() ) {
+                initAbletonLinkServer()
+            }
+            if ( !isLinkEnabled() ) {
+                link.enable();  // enable backend LINK-server
+                startLinkDownbeatClock();
+                setLinkEnabled(true);
+                // event.sender.send(link_channel_prefix + 'enable-success', true)
+            }
         }
     );
 
 
     // Disable LINK
     ipcMain.on(link_channel_prefix + 'disable', (event) => {
-            stopLinkDownbeatClock();
-            link.disable();  // disable the backend LINK-server
-            setLinkEnabled(false);
-            // event.sender.send(link_channel_prefix + 'disable-success', true)
+            if ( isLinkInitialized() && isLinkEnabled() ) {
+                stopLinkDownbeatClock();
+                link.disable();  // disable the backend LINK-server
+                setLinkEnabled(false);
+                // event.sender.send(link_channel_prefix + 'disable-success', true)
+            }
         }
     );
 
@@ -155,7 +162,7 @@ export function attachListeners() {
 }
 
 function disableLink() {
-    if (isLinkInitialized()) {
+    if ( isLinkInitialized() ) {
         stopLinkDownbeatClock();
         link.disable();  // disable the backend LINK-server
     }
