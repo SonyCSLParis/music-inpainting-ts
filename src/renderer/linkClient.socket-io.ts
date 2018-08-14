@@ -44,7 +44,6 @@ export function enable() {
             // hang asynchronously on this call
             socket.emit(link_channel_prefix + 'init', bpm, quantum,
                 resolve)
-            link_initialized = true
         }
         else {
             resolve()
