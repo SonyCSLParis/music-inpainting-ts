@@ -9,7 +9,7 @@ It requires that the Flask server from
 is running.
 You should edit the configuration file at `src/common/config.json` and set
 the `server_ip` and `*_port` values to the appropriate values for your Flask
-server (e.g. `serverip = "localhost", chorale_port=5001`).
+server (e.g. `server_ip = "localhost", chorale_port=5001`).
 
 ### Developing / interactive development server
 
