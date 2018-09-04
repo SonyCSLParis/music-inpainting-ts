@@ -9,6 +9,8 @@ body {
     // disable blue box over objects on touch
     -webkit-tap-highlight-color: rgba(0,0,0,0);
     -webkit-tap-highlight-color: transparent;
+
+    user-select: none;
 }
 
 div[nexus-ui] select, div[nexus-ui] input {
