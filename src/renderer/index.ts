@@ -1,23 +1,25 @@
 // import * as nipplejs from "nipplejs";
 import { eOSMD } from './locator';
-import { Fraction } from 'opensheetmusicdisplay'
+import { Fraction } from 'opensheetmusicdisplay';
 // import { Promise } from 'es6-promise';
 import * as $ from "jquery";
-import * as WebMidi from 'webmidi'
+import * as WebMidi from 'webmidi';
 import * as MidiConvert from "midiconvert";
 import * as Tone from 'tone';
-import * as log from 'loglevel'
+import * as log from 'loglevel';
 import * as path from 'path';
-let Nexus = require('./nexusColored')
+let Nexus = require('./nexusColored');
 
-import * as PlaybackCommands from './playbackCommands'
-import * as Playback from './playback'
-import * as Instruments from './instruments'
-import * as BPM from './bpm'
-import LinkClient from './linkClient'
-import * as LinkClientCommands from './linkClientCommands'
-import * as MidiOut from './midiOut'
-import { createLFOControls } from './lfo'
+import * as Header from './header';
+import * as PlaybackCommands from './playbackCommands';
+import * as Playback from './playback';
+import * as Instruments from './instruments';
+import * as BPM from './bpm';
+import LinkClient from './linkClient';
+import * as LinkClientCommands from './linkClientCommands';
+import * as MidiOut from './midiOut';
+import * as HelpTour from './helpTour';
+import { createLFOControls } from './lfo';
 
 import '../common/styles/osmd.scss'
 import '../common/styles/main.scss'
@@ -315,7 +317,7 @@ $(document).ready(() => {
     // }
     // else
     { BPM.setBPM(110); }
-})
+});
 
 
 import { createWavInput } from './file_upload'
