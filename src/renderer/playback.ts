@@ -1,3 +1,5 @@
+// <reference path='./jquery-exists.d.ts'/>
+
 import * as Tone from 'tone'
 import * as log from 'loglevel'
 import * as MidiConvert from 'midiconvert'
@@ -10,6 +12,11 @@ import * as Instruments from './instruments'
 import * as MidiOut from './midiOut'
 import LinkClient from './linkClient'
 
+$.fn.exists = function() {
+    return this.length !== 0;
+}
+
+let scrollElementSelector: string = '.simplebar-content'
 
 function getTimingOffset(){
     return performance.now() - Tone.now() * 1000
@@ -49,13 +56,101 @@ function setPlaybackPositionDisplay(step: number): void{
 
 export function resetPlaybackPositionDisplay(): void {
     setPlaybackPositionDisplay(0);
+    resetScrollPosition();
 }
 
-
-function nowPlayingCallback(_: any, step: number): void{
+function nowPlayingCallback(_: any, step: number): void {
+    // scroll display to current step if necessary
+    scrollToStep(step);
     setPlaybackPositionDisplay(step);
+};
+
+function getTimecontainerPosition(step: number): {left: number, right: number} {
+    const containerElemSelector = $(`.timecontainer[containedQuarterNotes~='${step}']`)
+
+    if (!containerElemSelector.exists()) {
+        throw new Error("Inaccessible step")
+    }
+
+    const containerElemStyle = containerElemSelector[0].style;
+
+    return {
+        left: parseFloat(containerElemStyle.left),
+        // FIXME implement and use timecontainer method
+        right: parseFloat(containerElemStyle.left + containerElemStyle.width)
+    }
 }
 
+// TODO disabe scrooling behaviour when user touches scrollbar and re-enable it
+// on pressing stop (or add a 'track playback' button)
+
+const shortScroll: JQuery.Duration = 50;
+
+function getDisplayCenterPosition_px(): number {
+    // return the current position within the sheet display
+    const scrollContentElement: HTMLElement = $(scrollElementSelector)[0]
+    const currentSheetDisplayWidth: number = scrollContentElement.clientWidth;
+    const centerPosition: number = (scrollContentElement.scrollLeft +
+        currentSheetDisplayWidth/2)
+
+    return centerPosition
+}
+
+function scrollToStep(step: number) {
+    // scroll display to keep the center of the currently playing
+    // quarter note container in the center of the sheet window
+    //
+    // We do this by scheduling a scroll to the next step with duration
+    // equal to one quarter-note time (dependent on the current BPM)
+    // Scrolls to position back in time are super-fast
+
+    const sheetDisplayElem: HTMLElement = $('#osmd-container-container')[0]
+    const scrollContentElement: HTMLElement = $(scrollElementSelector)[0]
+    const currentSheetDisplayWidth: number = scrollContentElement.clientWidth;
+    const currentCenterPosition: number = getDisplayCenterPosition_px();
+
+    let positionTarget: number;
+    let scrollOffsetTarget: number;
+    try {
+        // try to retrieve the position of the (potentially non-existing) next
+        // quarter-note
+        let nextStepPosition = getTimecontainerPosition(step+1);
+        const containerCenter = nextStepPosition.left + (nextStepPosition.right - nextStepPosition.left)/2;
+        positionTarget = containerCenter;
+        scrollOffsetTarget = containerCenter - currentSheetDisplayWidth/2 - currentSheetDisplayWidth/8;
+    }
+    catch (e) {
+        // FIXME make and catch specific error
+        let lastStepPosition = getTimecontainerPosition(step);
+        const containerRight = lastStepPosition.right;
+        positionTarget = containerRight;
+        scrollOffsetTarget = containerRight - currentSheetDisplayWidth/2;
+
+        return;
+    }
+
+    if (currentCenterPosition > positionTarget) {
+        // scrolling to a previous position: super-fast scroll
+        $(scrollElementSelector).stop(true, false).animate( {
+            scrollLeft: scrollOffsetTarget
+        }, 10, 'linear');
+    }
+    else {
+        $(scrollElementSelector).stop(true, false).animate( {
+            scrollLeft: scrollOffsetTarget
+        }, computeScrollSpeed() * 1000, 'linear');
+    }
+}
+
+function resetScrollPosition(duration: JQuery.Duration= shortScroll) {
+    scrollToStep(-1);
+}
+
+function computeScrollSpeed() {
+    const currentBPM: number = Tone.Transport.bpm.value
+    const interbeatTime_s = 60 / currentBPM
+    return interbeatTime_s
+}
 
 function downbeatStartCallback() {
     Tone.Transport.start("+0", "0:0:0")
