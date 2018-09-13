@@ -63,19 +63,23 @@ function downbeatStartCallback() {
 
 
 export function play(){
-    Tone.context.resume().then(() => {
-        if (!(LinkClient.isEnabled())) {
-            // start the normal way
-            Tone.Transport.start("+0.2");
-        }
-        else {
-            log.info('LINK: Waiting for `downbeat` message...');
-            // wait for Link-socket to give downbeat signal
-            LinkClient.once('downbeat', () => {
-                downbeatStartCallback();
-                log.info('LINK: Received `downbeat` message, starting playback');
-            });
-        }
+    return new Promise((resolve, reject) => {
+        Tone.context.resume().then(() => {
+            if (!(LinkClient.isEnabled())) {
+                // start the normal way
+                Tone.Transport.start("+0.2");
+                resolve();
+            }
+            else {
+                log.info('LINK: Waiting for `downbeat` message...');
+                // wait for Link-socket to give downbeat signal
+                LinkClient.once('downbeat', () => {
+                    downbeatStartCallback();
+                    log.info('LINK: Received `downbeat` message, starting playback');
+                    resolve();
+                });
+            }
+        })
     })
 };
 
