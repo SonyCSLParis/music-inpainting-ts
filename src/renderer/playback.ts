@@ -19,7 +19,7 @@ function getPlayNoteByMidiChannel(midiChannel: number){
     function playNote(time, event){
         MidiOut.getOutput().playNote(event.name, midiChannel,
             {time: time * 1000 + getTimingOffset(),
-                duration: event.duration * 1000})
+                duration: event.duration * 1000});
         Instruments.getCurrentInstrument().triggerAttackRelease(event.name, event.duration, time,
             event.velocity);
 
@@ -30,9 +30,9 @@ function getPlayNoteByMidiChannel(midiChannel: number){
 
 function makeSteps(sequenceDuration_toneTime: Tone.Time) {
     // create an array of quarter-note aligned steps
-    let [seq_dur_measures, seq_dur_quarters, seq_dur_sixteenths] =
+    const [seq_dur_measures, seq_dur_quarters, seq_dur_sixteenths] =
         sequenceDuration_toneTime.toBarsBeatsSixteenths().split(':').map(parseFloat)
-    let sequence_duration_quarters = Math.floor((4*seq_dur_measures +
+    const sequence_duration_quarters = Math.floor((4*seq_dur_measures +
         seq_dur_quarters + Math.floor(seq_dur_sixteenths / 4)))
     let steps = [];
     for (let i = 0; i < sequence_duration_quarters; i++) {
@@ -93,7 +93,7 @@ export function stop(){
 
 function scheduleTrackToInstrument(sequenceDuration_toneTime: Tone.Time,
     midiTrack, midiChannel=1) {
-    let notes = midiTrack.notes;
+    const notes = midiTrack.notes;
 
     let playNote_callback;
     playNote_callback = getPlayNoteByMidiChannel(midiChannel);
@@ -135,7 +135,7 @@ function scheduleTrackToInstrument(sequenceDuration_toneTime: Tone.Time,
 
 export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
     MidiConvert.load(url, function(midi) {
-        let steps = makeSteps(sequenceDuration_toneTime)
+        const steps = makeSteps(sequenceDuration_toneTime)
         Tone.Transport.cancel();  // remove all scheduled events
 
         // must set the Transport BPM to that of the midi for proper scheduling
@@ -145,7 +145,7 @@ export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
         Tone.Transport.bpm.value = midi.header.bpm;
         Tone.Transport.timeSignature = midi.header.timeSignature;
 
-        let drawCallback = (time, step) => {
+        const drawCallback = (time, step) => {
                 // DOM modifying callback should be put in Tone.Draw scheduler!
                 // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
                 Tone.Draw.schedule((time) => {nowPlayingCallback(time, step)}, time);
@@ -155,10 +155,10 @@ export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
         new Tone.Sequence(drawCallback, steps, '4n').start(0);
 
         for (let trackIndex_str in midi.tracks){
-            let trackIndex = parseInt(trackIndex_str);
-            let track = midi.tracks[trackIndex];
+            const trackIndex = parseInt(trackIndex_str);
+            const track = midi.tracks[trackIndex];
             // midiChannels start at 1
-            let midiChannel = trackIndex + 1;
+            const midiChannel = trackIndex + 1;
             scheduleTrackToInstrument(sequenceDuration_toneTime, track,
                 midiChannel);
         }
