@@ -68,8 +68,8 @@ export class eOSMD extends OpenSheetMusicDisplay {
 
     // compute a position accounting for <this>'s zoom level
     private computePositionZoom(value: number, shift=1): number {
-        return ((value - shift) * 10.0 * this.zoom)
-    }
+        return ((value - shift) * 10.0 * this.zoom);
+    };
 
     /*
     Create an overlay box with given shape and assign it the given divClass
@@ -79,11 +79,11 @@ export class eOSMD extends OpenSheetMusicDisplay {
         timestamps: [Fraction, Fraction]): HTMLElement {
         // container for positioning the timestamp box and attached boxes
         // needed to properly filter click actions
-        const commonDivId = divId + '-common'
+        const commonDivId = divId + '-common';
         let commonDiv = (document.getElementById(commonDivId) ||
-            document.createElement("div"))
+            document.createElement("div"));
         let div = (document.getElementById(divId) ||
-            document.createElement("div"))
+            document.createElement("div"));
 
         commonDiv.style.top = this.computePositionZoom(y, 0) + 'px';
         commonDiv.style.height = this.computePositionZoom(height, 0) + 'px';
@@ -93,27 +93,27 @@ export class eOSMD extends OpenSheetMusicDisplay {
         if (commonDiv.id !== commonDivId) {
             // the div has no ID set yet: was created in this call
             commonDiv.id = commonDivId;
-            commonDiv.classList.add('timecontainer')
+            commonDiv.classList.add('timecontainer');
             commonDiv.classList.add(divClass);
 
-            div.id = divId
+            div.id = divId;
             div.classList.add('notebox');
             div.classList.add('available');
             // div.classList.add(divClass);
 
             // FIXME constrains granularity
-            let containedQuarterNotes = []
-            let quarterNoteStart = Math.floor(timestamps[0].RealValue * 4)
-            let quarterNoteEnd = Math.floor(timestamps[1].RealValue*4)
+            let containedQuarterNotes = [];
+            let quarterNoteStart = Math.floor(timestamps[0].RealValue * 4);
+            let quarterNoteEnd = Math.floor(timestamps[1].RealValue*4);
             for (let i=quarterNoteStart; i<quarterNoteEnd; i++) {
-                containedQuarterNotes.push(i)
-            }
+                containedQuarterNotes.push(i);
+            };
             commonDiv.setAttribute('containedQuarterNotes',
                 containedQuarterNotes.toString().replace(/,/g, ' '));
             // div.setAttribute('containedQuarterNotes',
             //     commonDiv.getAttribute('containedQuarterNotes'));
 
-            let granularitySelect : HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
+            let granularitySelect : HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0];
             const currentGranularity = granularitySelect[
                 parseInt(granularitySelect.value)].textContent;
             if (currentGranularity == divClass) div.classList.add('active');
@@ -142,12 +142,12 @@ export class eOSMD extends OpenSheetMusicDisplay {
             if (!this.leadsheet && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
                 // add fermata selection box
                 this.fermatas.push(new FermataBox(commonDiv, this.sequenceDuration()));
-            }
+            };
 
             if (this.leadsheet && divClass == 'half-note') {
                 // add chord selection boxes at the half-note level
                 this._chordSelectors.push(new ChordSelector(commonDiv, onclick));
-            }
+            };
         }
 
         return div;
