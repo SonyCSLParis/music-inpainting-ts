@@ -30,11 +30,21 @@ let server_config = require('../common/config.json')
 Tone.context.latencyHint = 'fastest';
 
 
-let topControlsGridElem: HTMLDivElement = document.createElement('div')
-topControlsGridElem.id = 'top-controls'
-document.body.appendChild(topControlsGridElem);
+let bottomControlsGridElem: HTMLDivElement;
 
-$(() => {PlaybackCommands.render()});
+$(() => {
+    bottomControlsGridElem = document.createElement('div');
+    bottomControlsGridElem.id = 'bottom-controls';
+    document.body.appendChild(bottomControlsGridElem);
+});
+
+$(() => {
+    let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
+    playbuttonContainerElem.id = 'play-button'
+    bottomControlsGridElem.appendChild(playbuttonContainerElem);
+
+    PlaybackCommands.render(playbuttonContainerElem)
+});
 
 $(() => {renderGranularitySelect()});
 $(() => {
