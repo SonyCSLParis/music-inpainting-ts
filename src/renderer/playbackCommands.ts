@@ -9,12 +9,7 @@ import * as Playback from './playback'
 
 let pressPlay;
 let pressStop;
-export function render(): void{
-    let topControlsGridElem = document.getElementById('bottom-controls')
-    let playbuttonElem: HTMLElement = document.createElement('control-item');
-    playbuttonElem.id = 'play-button'
-    topControlsGridElem.appendChild(playbuttonElem);
-
+export function render(containerElement: HTMLElement): void{
     function playbackCallback(play: boolean) {
         return new Promise((resolve, _) => {
             if (play) {
@@ -35,7 +30,7 @@ export function render(): void{
     let mainIconSize: string = 'fa-4x';
 
     let playButton = document.createElement('i');
-    playbuttonElem.appendChild(playButton)
+    containerElement.appendChild(playButton)
     playButton.classList.add('fas');
     playButton.classList.add(mainIconSize);
     playButton.style.alignSelf = 'inherit';
