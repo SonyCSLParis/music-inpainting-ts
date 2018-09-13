@@ -23,7 +23,7 @@ function getPlayNoteByMidiChannel(midiChannel: number){
         Instruments.getCurrentInstrument().triggerAttackRelease(event.name, event.duration, time,
             event.velocity);
 
-        log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event))
+        log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event));
     }
     return playNote
 }
