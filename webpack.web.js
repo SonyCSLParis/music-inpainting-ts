@@ -96,10 +96,10 @@ module.exports = function (options) {
         }),
 	//example on how to add ressources
       new CopyWebpackPlugin([
-          {from: path.join(__dirname, 'src/renderer/tonejs-instruments/samples/organ'),
-           to: 'tonejs-instruments/samples/organ'},
-           {from: path.join(__dirname, 'src/renderer/tonejs-instruments/samples/xylophone'),
-           to: 'tonejs-instruments/samples/xylophone'},
+          // {from: path.join(__dirname, 'src/renderer/tonejs-instruments/samples/organ'),
+          //  to: 'tonejs-instruments/samples/organ'},
+          //  {from: path.join(__dirname, 'src/renderer/tonejs-instruments/samples/xylophone'),
+          //  to: 'tonejs-instruments/samples/xylophone'},
           {from: path.join(__dirname, 'static'),
            to: 'static'}
       ])
