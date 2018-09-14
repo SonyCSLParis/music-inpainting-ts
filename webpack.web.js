@@ -35,10 +35,7 @@ module.exports = function (options) {
           test: /\.ts$/,
           use: [
             {
-              loader: 'ts-loader',
-              // options: {
-                  // configFileName: 'tsconfig.json'
-              // }
+              loader: 'ts-loader'
             }
           ]
       },
@@ -49,7 +46,7 @@ module.exports = function (options) {
               "css-loader", // translates CSS into CommonJS
               "sass-loader" // compiles Sass to CSS
           ]},
-       {
+      {
          test: /\.(png|svg|jpg|gif)$/,
          use: [
            'file-loader'
@@ -59,12 +56,24 @@ module.exports = function (options) {
        test: /\.html$/,
        use: [
          'html-loader'
-     ],
-     // do not process the template with html-loader, since this breaks
-     // template variables, e.g. title
-     exclude: __dirname + '/index.html'
-     }
-      ]
+        ],
+       // do not process the template with html-loader, since this breaks
+       // template variables, e.g. title
+       exclude: __dirname + '/index.html'
+   },
+      // the url-loader uses DataUrls.
+      // the file-loader emits files.
+      {
+        test: /\.woff2?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+        // Limiting the size of the woff fonts breaks font-awesome ONLY for the extract text plugin
+        // loader: "url?limit=10000"
+        use: "url-loader"
+      },
+      {
+        test: /\.(ttf|eot|svg)(\?[\s\S]+)?$/,
+        use: 'file-loader'
+    }
+ ]
     },
 
     plugins: [
