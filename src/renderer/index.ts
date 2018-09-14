@@ -315,7 +315,7 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
 
 $(document).ready(() => {
         Instruments.renderDownloadButton()
-        Instruments.renderInstrumentSelect(osmd.leadsheet);
+        Instruments.renderInstrumentSelect(osmd.isLeadsheet);
     }
 )
 $(document).ready(() => {

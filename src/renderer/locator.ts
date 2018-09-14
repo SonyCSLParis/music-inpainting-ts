@@ -8,13 +8,10 @@ import '../common/styles/overlays.scss';
 
 export class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, autoResize: boolean = false,
-            leadsheet: boolean = false) {
+            isLeadsheet: boolean = false) {
         super(container, autoResize);
         this._boundingBoxes = [];
-        this.leadsheet = leadsheet;
-        if (leadsheet) {
-
-        }
+        this.isLeadsheet = isLeadsheet;
 
         let self = this;
         // document.addEventListener('onresize',
@@ -22,7 +19,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
     }
     public _boundingBoxes: [number, number, number, number][];
 
-    public leadsheet: boolean;
+    public isLeadsheet: boolean;
 
     private _chordSelectors = [];
 
@@ -201,12 +198,12 @@ export class eOSMD extends OpenSheetMusicDisplay {
             inner.appendChild(commonDiv);
             commonDiv.appendChild(div);
 
-            if (!this.leadsheet && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
+            if (!this.isLeadsheet && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
                 // add fermata selection box
                 this.fermatas.push(new FermataBox(commonDiv, this.sequenceDuration()));
             };
 
-            if (this.leadsheet && divClass == 'half-note') {
+            if (this.isLeadsheet && divClass == 'half-note') {
                 // add chord selection boxes at the half-note level
                 this._chordSelectors.push(new ChordSelector(commonDiv, onclick));
             };
