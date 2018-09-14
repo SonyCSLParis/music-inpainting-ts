@@ -1,5 +1,20 @@
-$interface-font-stack: 'Ubuntu', sans-serif;
+$interface-font-stack: 'Ubuntu-Regular', sans-serif;
 $interface-font-weight: bold;
+
+/*Font Awesome Fonts*/
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('../../../node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Ubuntu-Condensed';
+    src: url('../fonts/Ubuntu_Condensed/UbuntuCondensed-Regular.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Ubuntu-Regular';
+    src: url('../fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
+}
 
 body {
     background-color: #fff7f8;  // millenial pink
