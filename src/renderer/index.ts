@@ -228,7 +228,7 @@ function getChordLabels(): object[] {
 
 function getMetadata() {
     return {
-        leadsheet: osmd.leadsheet,
+        leadsheet: osmd.isLeadsheet,
         fermatas: getFermatas(),
         chordLabels: getChordLabels()
     }
