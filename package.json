@@ -29,8 +29,8 @@
   },
   "homepage": "https://github.com/opensheetmusicdisplay/webpack-usage-example#readme",
   "devDependencies": {
+    "@fortawesome/fontawesome-free": "^5.2.0",
     "@types/deep-equal": "^1.0.1",
-    "@types/electron": "^1.6.10",
     "@types/jquery": "^3.3.5",
     "@types/loglevel": "^1.5.3",
     "@types/node": "^10.5.4",
@@ -51,6 +51,7 @@
     "node-sass": "^4.9.2",
     "sass-loader": "^7.0.2",
     "style-loader": "^0.21.0",
+    "tslint": "^5.11.0",
     "typescript": "^3.0.1",
     "webpack": "^4",
     "webpack-json-loader": "^1.0.0"
