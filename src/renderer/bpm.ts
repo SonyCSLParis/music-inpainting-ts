@@ -16,7 +16,8 @@ export function render(): void{
     bpmContainerElem.setAttribute('display', 'grid');
     bpmContainerElem.setAttribute('grid-template-columns', '200px 200px;');
 
-    document.body.appendChild(bpmContainerElem);
+    let bottomControlsElem: HTMLElement = document.getElementById('bottom-controls');
+    bottomControlsElem.appendChild(bpmContainerElem);
 
     let bpmNameElem: HTMLElement = document.createElement('div');
     bpmNameElem.textContent = 'BPM'
