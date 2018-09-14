@@ -20,6 +20,9 @@ import * as LinkClientCommands from './linkClientCommands';
 import * as MidiOut from './midiOut';
 import * as HelpTour from './helpTour';
 import { createLFOControls } from './lfo';
+import CycleSelect from './cycleSelect';
+import { static_correct} from './staticPath';
+
 
 import '../common/styles/osmd.scss'
 import '../common/styles/main.scss'
@@ -56,24 +59,29 @@ $(() => {
 
 // Time-granularity selector
 function renderGranularitySelect(): void {
-    let granularities = ['quarter-note', 'half-note', 'whole-note']
+    let iconsBasePath: string = path.join(static_correct, 'icons');
+    let granularityIcons: Map<string, string> = new Map([
+        ['quarter-note', 'quarter-note.svg'],
+        ['half-note', 'half-note.svg'],
+        ['whole-note', 'whole.svg']
+    ])
 
-    let granularitySelectElem: HTMLElement = document.createElement('top-control-item');
+    let granularitySelectElem: HTMLElement = document.createElement('control-item');
     granularitySelectElem.id = 'select-granularity'
-    topControlsGridElem.appendChild(granularitySelectElem)
-
-    let granularitySelect = new Nexus.Select('#select-granularity', {
-        'size': [150, 50],
-        'options': granularities,
-    });
+    bottomControlsGridElem.appendChild(granularitySelectElem)
 
     function granularityOnChange(ev) {
         $('.notebox').removeClass('active');
         $('.' + this.value + '> .notebox').addClass('active');
     };
-    granularitySelect.on('change', granularityOnChange.bind(granularitySelect))
-    const initialGranulatity = granularities.indexOf('whole-note').toString()
-    granularitySelect.selectedIndex = initialGranulatity
+
+    let granularitySelect = new CycleSelect(granularitySelectElem,
+        'granularity-select',
+        {handleEvent: granularityOnChange},
+        granularityIcons,
+        iconsBasePath
+    );
+    granularitySelect.value = 'whole-note';
 }
 
 let insertLFO: boolean = false;
