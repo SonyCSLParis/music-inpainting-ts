@@ -24,12 +24,14 @@ piano.setVolume('release', -25);
 piano.setVolume('pedal', -15);
 
 
-let chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
-let reverb = new Tone.Reverb(1.5).connect(chorus);
-reverb.generate();
+// let chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
+// let reverb = new Tone.Reverb(1.5).connect(chorus);
+// reverb.generate();
+let reverb = new Tone.Volume(0).toMaster();
 
-let polysynth = new Tone.PolySynth(12);
-polysynth.connect(reverb)
+let polysynth = new Tone.PolySynth(4);
+// polysynth.stealVoices = false;
+polysynth.connect(reverb);
 
 let polysynth_chords = new Tone.PolySynth(24);
 polysynth_chords.connect(reverb);
