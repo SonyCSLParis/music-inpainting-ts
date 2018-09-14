@@ -90,6 +90,7 @@ export function getCurrentChordsInstrument() {
 
 let sampledInstruments;  // declare variables but do not load samples yet
 let instrumentSelect;
+declare var COMPILE_ELECTRON: boolean;
 export function renderDownloadButton() {
     // Manual samples loading button, to reduce network usage by only loading them
     // when requested
@@ -139,6 +140,10 @@ export function renderDownloadButton() {
     });
 };
 
+    if (COMPILE_ELECTRON) {
+        // auto-download samples
+        loadSamplesButton.flip();
+    }
 
 export function renderInstrumentSelect(useLeadsheetMode: boolean) {
     let instrumentSelectElem: HTMLElement = document.createElement('div')
