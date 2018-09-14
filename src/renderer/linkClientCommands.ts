@@ -9,8 +9,8 @@ let Nexus = require('./nexusColored')
 import * as BPM from './bpm'
 
 export function render() {
-    let topControlsGridElem = document.getElementById('top-controls')
-    let linkbuttonElem: HTMLElement = document.createElement('top-control-item');
+    let topControlsGridElem = document.getElementById('bottom-controls')
+    let linkbuttonElem: HTMLElement = document.createElement('control-item');
     linkbuttonElem.id = 'link-button'
     topControlsGridElem.appendChild(linkbuttonElem);
 
@@ -33,8 +33,8 @@ export function render() {
 
 let linkDisplayTimeout;
 export function renderDownbeatDisplay(): void{
-    let topControlsGridElem = document.getElementById('top-controls')
-    let linkdisplayElem: HTMLElement = document.createElement('top-control-item');
+    let topControlsGridElem = document.getElementById('bottom-controls')
+    let linkdisplayElem: HTMLElement = document.createElement('control-item');
     linkdisplayElem.id = 'link-display';
     linkdisplayElem.style.pointerEvents = 'none';
     topControlsGridElem.appendChild(linkdisplayElem);
