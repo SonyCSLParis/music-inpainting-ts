@@ -73,7 +73,7 @@ module.exports = function (options) {
         }),
 
         new HtmlWebpackPlugin({
-            // template: 'index.html',
+            template: 'src/common/template.html',
             title: 'DeepBach',
             favicon: 'src/common/images/favicon.ico'
         }),
