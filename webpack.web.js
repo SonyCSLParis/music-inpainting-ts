@@ -6,6 +6,7 @@ var CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = function (options) {
   return {
     mode: 'development',
+    target: 'web',
     entry: './src/renderer/index.ts',
     output: {
       path: path.join(__dirname, 'web/dist'),
