@@ -328,8 +328,10 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
 };
 
 $(() => {
-        Instruments.renderDownloadButton()
-        Instruments.renderInstrumentSelect(osmd.isLeadsheet);
+    const instrumentsGridElem = document.createElement('div');
+    bottomControlsGridElem.appendChild(instrumentsGridElem)
+    const instrumentSelectElem = Instruments.renderInstrumentSelect(instrumentsGridElem, osmd.isLeadsheet);
+    Instruments.renderDownloadButton(instrumentsGridElem)
     }
 );
 
