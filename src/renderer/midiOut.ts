@@ -4,11 +4,10 @@ import * as log from 'loglevel'
 
 let Nexus = require('./nexusColored')
 
-let midiOut;
-
 let dummyMidiOut = new Tone.Instrument();
 dummyMidiOut.playNote = () => {};
 
+let midiOut = dummyMidiOut;
 
 export function render() {
     let midiOutSelectElem: HTMLElement = document.createElement("div");
