@@ -6,6 +6,8 @@ import * as path from 'path'
 
 let Nexus = require('./nexusColored')
 
+import CycleSelect from './cycleSelect';
+
 import { static_correct } from './staticPath'
 
 // add Piano methods to Tone.Insutrument objects for duck typing
@@ -57,9 +59,9 @@ addTriggerAttackRelease_(piano);
 
 let instrumentFactories = {
     'PolySynth': () => {return polysynth},
-    'Sampled Piano': () => {
+    'Piano': () => {
         piano.disconnect(0); piano.toMaster(); return piano},
-    'Sampled Piano (w/ reverb)':
+    'Piano (w/ reverb)':
         () => {piano.disconnect(0); piano.connect(reverb); return piano},
     'Xylophone': () => {return sampledInstruments['xylophone']},
     'Organ': () => {return sampledInstruments['organ']},
@@ -68,8 +70,9 @@ let instrumentFactories = {
 };
 
 let current_instrument = polysynth;
-function instrumentOnChange() {
-    current_instrument = instrumentFactories[this.value]();
+let instrumentOnChange: {handleEvent: (e: Event) => void} = {
+    handleEvent: function(this, e: Event) {
+        current_instrument = instrumentFactories[this.value]();}
 };
 
 export function getCurrentInstrument() {
@@ -138,24 +141,31 @@ export function renderDownloadButton() {
             instrumentSelect.render();
         });
     });
-};
 
     if (COMPILE_ELECTRON) {
         // auto-download samples
         loadSamplesButton.flip();
     }
 
+};
+
+let instrumentIconsBasePath: string = path.join(static_correct, 'icons');
+let mainInstrumentsIcons = new Map([
+    ['PolySynth', '019-synthesizer.svg'],
+    ['Piano', '049-piano.svg'],
+]);
+
 export function renderInstrumentSelect(useLeadsheetMode: boolean) {
-    let instrumentSelectElem: HTMLElement = document.createElement('div')
-    instrumentSelectElem.id = 'instrument-select'
-    document.body.appendChild(instrumentSelectElem)
+    let instrumentSelectElem: HTMLElement = document.createElement('control-item');
+    instrumentSelectElem.id = 'instrument-select-container';
+    document.getElementById('bottom-controls').appendChild(instrumentSelectElem);
 
-    instrumentSelect = new Nexus.Select('#instrument-select', {
-        'size': [275, 40],
-        'options': Object.keys(instrumentFactories)
-    })
+    let instrumentSelect = new CycleSelect(instrumentSelectElem,
+        'instrument-select',
+        instrumentOnChange,
+        mainInstrumentsIcons, instrumentIconsBasePath
+    )
 
-    instrumentSelect.on('change', instrumentOnChange.bind(instrumentSelect));
     const initialInstrument = 'PolySynth';
     instrumentSelect.value = initialInstrument;
 
