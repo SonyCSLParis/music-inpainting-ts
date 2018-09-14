@@ -192,7 +192,7 @@ export function renderInstrumentSelect(useLeadsheetMode: boolean) {
         });
 
         current_chords_instrument = polysynth_chords;
-        let chordInstrumentOnChange = function() {
+        let chordInstrumentOnChange = function(this: HTMLSelectElement) {
             current_chords_instrument = chordInstrumentFactories[this.value]();
         };
 

@@ -1,7 +1,6 @@
 // import * as nipplejs from "nipplejs";
 import { eOSMD } from './locator';
 import { Fraction } from 'opensheetmusicdisplay';
-// import { Promise } from 'es6-promise';
 import * as $ from "jquery";
 import * as WebMidi from 'webmidi';
 import * as MidiConvert from "midiconvert";
@@ -32,9 +31,9 @@ import '../common/styles/main.scss'
 declare var ohSnap: any;
 let server_config = require('../common/config.json')
 
-Tone.context.latencyHint = 'fastest';
 let useAdvancedControls: boolean = false;
 
+// Tone.context.latencyHint = 'playback';
 
 $(() => {
     let headerGridElem: HTMLElement = document.createElement('header');
@@ -99,15 +98,11 @@ if (insertLFO) {
 }
 
 let titlediv: HTMLDivElement = document.createElement('div')
-// titlediv.classList.add('header')
 titlediv.textContent = 'DeepBach'
 titlediv.style.alignContent = 'CenterTop'
 titlediv.style.width = '100%'
 titlediv.style.fontStyle = 'bold'
 titlediv.style.fontSize = '64px'
-// document.body.appendChild(titlediv)
-
-document.body.appendChild(document.createElement('div'))
 
 let useLeadsheetMode = false;  // true for leadsheets, false for chorales
 let serverPort: number;
@@ -117,7 +112,7 @@ if (useLeadsheetMode) {
     serverPort = server_config['chorale_port'];
 }
 let serverIp: string;
-let useLocalServer: boolean = false;
+let useLocalServer: boolean = true;
 if (useLocalServer) {
     serverIp = 'localhost';
 }
@@ -125,7 +120,6 @@ else {
     serverIp = server_config['server_ip'];
 }
 let serverUrl = `http://${serverIp}:${serverPort}/`;
-// let serverUrl = `http://${server_config['server_ip']}:${serverPort}/`;
 
 let osmd: eOSMD;
 /*
@@ -196,7 +190,6 @@ $(() => {
 //     last_click = joystick.position;
 // }, true);
 
-loadMusicXMLandMidi(serverUrl, 'generate');
 
 function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void{
     // Strip MusicXML document of title/composer tags
@@ -236,15 +229,13 @@ function getMetadata() {
 
 
 function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
-    const  [timeRangeStart_quarter, timeRangeEnd_quarter] = ([timeStart, timeEnd].map(
+    const [timeRangeStart_quarter, timeRangeEnd_quarter] = ([timeStart, timeEnd].map(
         timeFrac => Math.round(4 * timeFrac.RealValue)))
 
     const argsGenerationUrl = ("timerange-change" +
         `?time_range_start_quarter=${timeRangeStart_quarter}` +
         `&time_range_end_quarter=${timeRangeEnd_quarter}`
     );
-    // const argsMidiUrl = "get-midi";
-    // const argsSequenceDuration = 'get-sequence-duration';
 
     return (function (this, _) {
         loadMusicXMLandMidi(serverUrl, argsGenerationUrl);
@@ -294,18 +285,21 @@ function enableChanges(): void {
  * Load a MusicXml file via xhttp request, and display its contents.
  */
 function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
-    disableChanges();
-    log.trace('Metadata:');
-    log.trace(JSON.stringify(getMetadata()));
-    let sequenceDuration_toneTime: Tone.Time;
-    $.post({
-        url: serverURL + generationCommand,
-        data: JSON.stringify(getMetadata()),
-        contentType: 'application/json',
-        dataType: 'xml',
-        success: (xmldata: XMLDocument) => {
-            removeMusicXMLHeaderNodes(xmldata);
-            osmd.load(xmldata)
+    return new Promise((resolve, _) => {
+        disableChanges();
+
+        log.trace('Metadata:');
+        log.trace(JSON.stringify(getMetadata()));
+
+        let sequenceDuration_toneTime: Tone.Time;
+        $.post({
+            url: serverURL + generationCommand,
+            data: JSON.stringify(getMetadata()),
+            contentType: 'application/json',
+            dataType: 'xml',
+            success: (xmldata: XMLDocument) => {
+                removeMusicXMLHeaderNodes(xmldata);
+                osmd.load(xmldata)
                 .then(
                     () => {
                         osmd.render(onClickTimestampBoxFactory);
@@ -313,9 +307,9 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
                     },
                     (err) => {log.error(err); enableChanges()}
                 );
-        }
-    }).done(() => {
-        $.getJSON(serverURL + 'get-sequence-duration',
+            }
+        }).done(() => {
+            $.getJSON(serverURL + 'get-sequence-duration',
             (sequenceDuration: object) => {
                 let numMeasures = sequenceDuration['numMeasures']
                 let numQuarters = sequenceDuration['numQuarters']
@@ -325,9 +319,12 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
 
                 Playback.loadMidi(serverURL + 'get-midi',
                     sequenceDuration_toneTime);
+                resolve();
                 }
             )
         })
+
+    })
 };
 
 $(() => {
