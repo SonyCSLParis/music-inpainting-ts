@@ -7,8 +7,6 @@ import '@fortawesome/fontawesome-free/css/all.css'
 
 import * as Playback from './playback'
 
-let pressPlay;
-let pressStop;
 export function render(containerElement: HTMLElement): void{
     function playbackCallback(play: boolean) {
         return new Promise((resolve, _) => {
@@ -67,20 +65,27 @@ export function render(containerElement: HTMLElement): void{
     // Initialize playback to stopped
     setPlayingClass(false);
 
-        pressPlay = () => {playCallback(true);}
-
-        pressStop = () => {playCallback(false);}
-
-        playButton.addEventListener('click', () => {
-            playCallback(playButton.classList.contains(stoppedClass));
-        });
+    function playCallback(play: boolean) {
+        setWaitingClass();
+        playbackCallback(play).then(() => {
+            unsetWaitingClass();
+            setPlayingClass(play);
+        })
     }
 
-        playButton.on('change', (state) => playbackCallback(state))
-
-        pressPlay = () => playButton.up();
-        pressStop = () => playButton.down();
+    function pressPlay() {
+        playCallback(true);
     }
+
+    function pressStop() {
+        playCallback(false);
+    }
+
+    function togglePlayback() {
+        playCallback(playButton.classList.contains(stoppedClass));
+    }
+
+    playButton.addEventListener('click', togglePlayback);
 
     document.addEventListener("keydown", (event) => {
         const keyName = event.key
@@ -91,6 +96,8 @@ export function render(containerElement: HTMLElement): void{
 
                 if (event.target == document.body) { log.debug('HEY SPACEBAR!'); event.preventDefault(); };
             case ' ':
+                togglePlayback();
+                break;
             case 'p':
                 pressPlay();
                 break;
