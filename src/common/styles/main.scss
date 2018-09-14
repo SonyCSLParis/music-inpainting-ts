@@ -16,6 +16,11 @@ $interface-font-weight: bold;
     src: url('../fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
 }
 
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
 body {
     background-color: #fff7f8;  // millenial pink
     font-family: $interface-font-stack;
@@ -33,18 +38,109 @@ div[nexus-ui] select, div[nexus-ui] input {
     font-weight: $interface-font-weight !important;
 }
 
-#top-controls {
-    display: inline-grid;
-    width: 30%;
-    // height: 100px;
-    grid-template-columns: repeat(2, 1fr);
-    // grid-template-rows: 100px;
+header {
+    position: absolute;
+    width: 100%;
+    height: 90px;
+    top: 0;
+    left: 0;
+
+    background-color: rgb(255, 236, 249);
+    opacity: 1;
+    /* z-index: 100; */
+    box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.21);
+    font-size: 25px;
+    // font-family: monospace;
+
+    align-self: center;
+    justify-self: center;
+    margin: auto;
 }
 
-top-control-item {
-  // display: flex;
-  align-self: center;
-  justify-self: center;
+@media screen and (min-width: 500px) {
+    header {
+        display: inline-grid;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .header-item-left {
+        width: 160px;
+        margin-left: 25px;
+    }
+}
+
+@media screen and (max-width: 500px) {
+    header {
+        display: inline-grid;
+    }
+
+    .header-item-left {
+        width: 80%;
+        justify-self: center;
+        max-width: 160px;
+    }
+}
+
+.header-item-left {
+    display: flex;
+    align-self: center;
+
+    & img {
+        width: 100%;
+        shape-rendering: auto;
+    }
+}
+
+#app-title {
+    pointer-events: none;  // disable text-selection
+
+    justify-self: inherit;
+    align-self: inherit;
+    display: flex;
+    font-weight: bold;
+}
+
+#help-icon {
+    position: relative;
+    justify-self: right;
+    align-self: inherit;
+    margin-right: 25px;
+
+    &:before {
+        content: "\F05A";
+        left: -30px;
+        top: 0;
+        font-family: 'FontAwesome';
+        position: absolute;
+    }
+
+}
+
+.header-item-right {
+
+    margin-right:25px;
+}
+
+#bottom-controls {
+    position: absolute;
+    display: inline-grid;
+    width: 100%;
+    height: 90px;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: 100%;
+    align-items: center;
+    justify-items: center;
+
+    bottom: 0;
+    left: 0;
+    opacity: 1;
+    /* z-index: 100; */
+    background-color: rgb(255, 236, 249);
+
+    box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
+}
+
+control-item {
 }
 
 #lfo-controls {
@@ -56,6 +152,20 @@ top-control-item {
     // font-weight: $interface-font-weight !important;
     // grid-template-rows: 100px;
 }
+
+.CycleSelect-container {
+    color: lightpink;
+
+    width: 54px;
+    height: 54px;
+    border-radius: 64px;
+    border-style: solid;
+    border-width: thick;
+
+    align-self: center;
+    justify-self: center;
+}
+
 //
 // #play-button {
 //     grid-column: 1 / 2
@@ -69,10 +179,18 @@ top-control-item {
 //     grid-column: 3 / span 1
 // }
 
+#select-granularity--whole-note {
+    width: 35%;
+}
+
 .header {
     padding: 1em;
     position: absolute;
     left: 50%;
     // margin-right: -50%;
     // transform: translate(-50%)
+}
+
+.center {
+    margin: auto
 }
