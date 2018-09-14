@@ -33,6 +33,8 @@ declare var ohSnap: any;
 let server_config = require('../common/config.json')
 
 Tone.context.latencyHint = 'fastest';
+let useAdvancedControls: boolean = false;
+
 
 $(() => {
     let headerGridElem: HTMLElement = document.createElement('header');
@@ -328,12 +330,13 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
         })
 };
 
-$(document).ready(() => {
+$(() => {
         Instruments.renderDownloadButton()
         Instruments.renderInstrumentSelect(osmd.isLeadsheet);
     }
-)
-$(document).ready(() => {
+);
+
+$(() => {
     BPM.render();
     // set the initial tempo for the app
     // if (LinkClient.isEnabled()) {
@@ -351,13 +354,26 @@ if (insertWavInput) {
     createWavInput(() => loadMusicXMLandMidi(serverUrl, 'get-musicxml'))
 };
 
-$(document).ready(() => {
-        LinkClient.kill();
+$(() => {
+    LinkClient.kill();
+    if (useAdvancedControls) {
+        // Insert LINK client controls
         LinkClientCommands.render();
         LinkClientCommands.renderDownbeatDisplay();
-    }
+    }}
 );
 
-$(document).ready(() => { MidiOut.render(); });
+$(() => {
+    if (useAdvancedControls) {
+        // Add MIDI-out selector
+        MidiOut.render();
+    }}
+);
+
+$(() => {
+    // Insert help-tour
+    // HelpTour.render();
+}
+);
 
 if (module.hot) { }
