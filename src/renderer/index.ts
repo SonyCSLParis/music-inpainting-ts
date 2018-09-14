@@ -323,19 +323,6 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
         })
 };
 
-// function getSequenceDuration_toneTime(url: string): Promise {
-//     $.getJSON(url + 'get-sequence-duration',
-//         (sequenceDuration: object) => {
-//             let numMeasures = sequenceDuration['numMeasures']
-//             let numQuarters = sequenceDuration['numQuarters']
-//             let numSixteenth = sequenceDuration['numSixteenth']
-//             let sequenceDuration_toneTime = Tone.Time(
-//                 `${numMeasures}:${numQuarters}:${numSixteenth}`)
-//             Playback.loadMidi(urlMidi, sequenceDuration_toneTime)
-//         }
-//     )
-// }
-
 $(document).ready(() => {
         Instruments.renderDownloadButton()
         Instruments.renderInstrumentSelect(osmd.isLeadsheet);
