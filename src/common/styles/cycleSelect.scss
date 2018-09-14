@@ -1,0 +1,22 @@
+// Styling for the icon-based select element
+
+.CycleSelect-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+
+    cursor: pointer;
+}
+
+.CycleSelect-container img {
+    position: absolute;
+    align-self: center;
+    width: 70%;
+    padding-bottom: 2px;
+
+    visibility: hidden;
+
+    &.CycleSelect-visible {
+        visibility: visible;
+    }
+}
