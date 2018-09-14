@@ -8,17 +8,18 @@ import '../common/styles/overlays.scss';
 
 export class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, autoResize: boolean = false,
-            leadsheet: boolean = false) {
+            isLeadsheet: boolean = false) {
         super(container, autoResize);
         this._boundingBoxes = [];
-        this.leadsheet = leadsheet;
-        if (leadsheet) {
+        this.isLeadsheet = isLeadsheet;
 
-        }
+        let self = this;
+        // document.addEventListener('onresize',
+        //     () => self.updateContainerWidth(true));
     }
     public _boundingBoxes: [number, number, number, number][];
 
-    public leadsheet: boolean;
+    public isLeadsheet: boolean;
 
     private _chordSelectors = [];
 
@@ -33,8 +34,10 @@ export class eOSMD extends OpenSheetMusicDisplay {
     }
 
     public render(onclickFactory=undefined): void {
-        super.render()
-        this.drawTimestampBoxes(onclickFactory)
+        this.updateContainerWidth(false);
+        super.render();
+        this.drawTimestampBoxes(onclickFactory);
+        this.updateContainerWidth(true);
     }
 
     private computeBoundingBoxes(): void {
@@ -66,10 +69,66 @@ export class eOSMD extends OpenSheetMusicDisplay {
         this._boundingBoxes = boundingBoxes;
     };
 
+    private updateContainerWidth(toContentWidth: boolean=true): void {
+        // HACK update width of container element to actual width of content
+        //
+        // this is necessary in order to have OSMD print the sheet with
+        // maximum horizontal spread
+
+        // must use a string to ensure no integer formatting is performed
+        const superlarge_width_px_str: string = '10000000';
+
+        if (!($('#osmd-container svg')[0].hasAttribute('viewBox'))) {
+            // OSMD renderer hasn't been initialized yet, do nothing
+            return;
+        };
+
+        let width_px_str: string;
+        if (toContentWidth) {
+            const shift: number = 0;
+            const sheetAbsolutePosition_px: number = this.computePositionZoom(
+                this.graphicalMusicSheet.MusicPages[0]
+                .MusicSystems[0].PositionAndShape
+                .AbsolutePosition.x, shift);
+            const sheetWidth_px: number = this.computePositionZoom(
+                this.graphicalMusicSheet.MusicPages[0]
+                .MusicSystems[0].PositionAndShape.BorderRight,
+                shift);
+            const musicSystemWidthRightBorderAbsolutePosition_px = (
+                sheetAbsolutePosition_px + sheetWidth_px);
+            // add a right margin for more pleasant display
+            const sheetContainerWidthWithAddedBorder_px = (
+            musicSystemWidthRightBorderAbsolutePosition_px +
+            sheetAbsolutePosition_px);
+
+            let width_px = sheetContainerWidthWithAddedBorder_px;
+            width_px_str = `${width_px}`
+        }
+        else {
+            width_px_str = superlarge_width_px_str;
+        }
+
+        // HACK to make the scrollbar fit into the screen
+        let new_height_px = 600;
+
+        $('#osmd-container')[0].style.width = `${width_px_str}px`;
+        $('#osmd-container svg')[0].setAttribute('width', `${width_px_str}`);
+
+        $('#osmd-container')[0].style.height = `${new_height_px}px`;
+        $('#osmd-container svg')[0].setAttribute('height', `${new_height_px}`);
+
+        const viewBox = $('#osmd-container svg')[0].getAttribute('viewBox');
+        const [x_px, y_px, _, height_px] = viewBox.split(' ');
+        $('#osmd-container svg')[0].setAttribute('viewBox',
+            `${x_px} ${y_px} ${width_px_str} ${new_height_px}`);
+
+
+    }
+
     // compute a position accounting for <this>'s zoom level
     private computePositionZoom(value: number, shift=1): number {
-        return ((value - shift) * 10.0 * this.zoom)
-    }
+        return ((value - shift) * 10.0 * this.zoom);
+    };
 
     /*
     Create an overlay box with given shape and assign it the given divClass
@@ -79,11 +138,11 @@ export class eOSMD extends OpenSheetMusicDisplay {
         timestamps: [Fraction, Fraction]): HTMLElement {
         // container for positioning the timestamp box and attached boxes
         // needed to properly filter click actions
-        const commonDivId = divId + '-common'
+        const commonDivId = divId + '-common';
         let commonDiv = (document.getElementById(commonDivId) ||
-            document.createElement("div"))
+            document.createElement("div"));
         let div = (document.getElementById(divId) ||
-            document.createElement("div"))
+            document.createElement("div"));
 
         commonDiv.style.top = this.computePositionZoom(y, 0) + 'px';
         commonDiv.style.height = this.computePositionZoom(height, 0) + 'px';
@@ -93,27 +152,27 @@ export class eOSMD extends OpenSheetMusicDisplay {
         if (commonDiv.id !== commonDivId) {
             // the div has no ID set yet: was created in this call
             commonDiv.id = commonDivId;
-            commonDiv.classList.add('timecontainer')
+            commonDiv.classList.add('timecontainer');
             commonDiv.classList.add(divClass);
 
-            div.id = divId
+            div.id = divId;
             div.classList.add('notebox');
             div.classList.add('available');
             // div.classList.add(divClass);
 
             // FIXME constrains granularity
-            let containedQuarterNotes = []
-            let quarterNoteStart = Math.floor(timestamps[0].RealValue * 4)
-            let quarterNoteEnd = Math.floor(timestamps[1].RealValue*4)
+            let containedQuarterNotes = [];
+            let quarterNoteStart = Math.floor(timestamps[0].RealValue * 4);
+            let quarterNoteEnd = Math.floor(timestamps[1].RealValue*4);
             for (let i=quarterNoteStart; i<quarterNoteEnd; i++) {
-                containedQuarterNotes.push(i)
-            }
+                containedQuarterNotes.push(i);
+            };
             commonDiv.setAttribute('containedQuarterNotes',
                 containedQuarterNotes.toString().replace(/,/g, ' '));
             // div.setAttribute('containedQuarterNotes',
             //     commonDiv.getAttribute('containedQuarterNotes'));
 
-            let granularitySelect : HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
+            let granularitySelect : HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0];
             const currentGranularity = granularitySelect[
                 parseInt(granularitySelect.value)].textContent;
             if (currentGranularity == divClass) div.classList.add('active');
@@ -139,15 +198,15 @@ export class eOSMD extends OpenSheetMusicDisplay {
             inner.appendChild(commonDiv);
             commonDiv.appendChild(div);
 
-            if (!this.leadsheet && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
+            if (!this.isLeadsheet && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
                 // add fermata selection box
                 this.fermatas.push(new FermataBox(commonDiv, this.sequenceDuration()));
-            }
+            };
 
-            if (this.leadsheet && divClass == 'half-note') {
+            if (this.isLeadsheet && divClass == 'half-note') {
                 // add chord selection boxes at the half-note level
                 this._chordSelectors.push(new ChordSelector(commonDiv, onclick));
-            }
+            };
         }
 
         return div;

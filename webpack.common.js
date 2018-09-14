@@ -5,7 +5,6 @@ var CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = {
     plugins: [
         new webpack.DefinePlugin({
-            // TODO(theis): use CLI-flag + argv parsing
             COMPILE_ELECTRON: true  // comment this for web-target
         }),
 

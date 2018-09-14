@@ -4,6 +4,7 @@
   "compilerOptions": {
       "target": "es6",
       "module": "commonjs",
+      "lib": ["dom", "es7"],
       "pretty": true,
       "noImplicitAny": false,
       "removeComments": true,

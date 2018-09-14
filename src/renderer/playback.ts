@@ -1,3 +1,7 @@
+// <reference path='./jquery-exists.d.ts'/>
+
+// NOTE: This relies on the SonyCSL simplebar fork!
+
 import * as Tone from 'tone'
 import * as log from 'loglevel'
 import * as MidiConvert from 'midiconvert'
@@ -10,6 +14,11 @@ import * as Instruments from './instruments'
 import * as MidiOut from './midiOut'
 import LinkClient from './linkClient'
 
+$.fn.exists = function() {
+    return this.length !== 0;
+}
+
+let scrollElementSelector: string = '.simplebar-content'
 
 function getTimingOffset(){
     return performance.now() - Tone.now() * 1000
@@ -19,20 +28,20 @@ function getPlayNoteByMidiChannel(midiChannel: number){
     function playNote(time, event){
         MidiOut.getOutput().playNote(event.name, midiChannel,
             {time: time * 1000 + getTimingOffset(),
-                duration: event.duration * 1000})
+                duration: event.duration * 1000});
         Instruments.getCurrentInstrument().triggerAttackRelease(event.name, event.duration, time,
             event.velocity);
 
-        log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event))
+        log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event));
     }
     return playNote
 }
 
 function makeSteps(sequenceDuration_toneTime: Tone.Time) {
     // create an array of quarter-note aligned steps
-    let [seq_dur_measures, seq_dur_quarters, seq_dur_sixteenths] =
+    const [seq_dur_measures, seq_dur_quarters, seq_dur_sixteenths] =
         sequenceDuration_toneTime.toBarsBeatsSixteenths().split(':').map(parseFloat)
-    let sequence_duration_quarters = Math.floor((4*seq_dur_measures +
+    const sequence_duration_quarters = Math.floor((4*seq_dur_measures +
         seq_dur_quarters + Math.floor(seq_dur_sixteenths / 4)))
     let steps = [];
     for (let i = 0; i < sequence_duration_quarters; i++) {
@@ -49,13 +58,101 @@ function setPlaybackPositionDisplay(step: number): void{
 
 export function resetPlaybackPositionDisplay(): void {
     setPlaybackPositionDisplay(0);
+    resetScrollPosition();
 }
 
-
-function nowPlayingCallback(_: any, step: number): void{
+function nowPlayingCallback(_: any, step: number): void {
+    // scroll display to current step if necessary
+    scrollToStep(step);
     setPlaybackPositionDisplay(step);
+};
+
+function getTimecontainerPosition(step: number): {left: number, right: number} {
+    const containerElemSelector = $(`.timecontainer[containedQuarterNotes~='${step}']`)
+
+    if (!containerElemSelector.exists()) {
+        throw new Error("Inaccessible step")
+    }
+
+    const containerElemStyle = containerElemSelector[0].style;
+
+    return {
+        left: parseFloat(containerElemStyle.left),
+        // FIXME implement and use timecontainer method
+        right: parseFloat(containerElemStyle.left + containerElemStyle.width)
+    }
 }
 
+// TODO disabe scrooling behaviour when user touches scrollbar and re-enable it
+// on pressing stop (or add a 'track playback' button)
+
+const shortScroll: JQuery.Duration = 50;
+
+function getDisplayCenterPosition_px(): number {
+    // return the current position within the sheet display
+    const scrollContentElement: HTMLElement = $(scrollElementSelector)[0]
+    const currentSheetDisplayWidth: number = scrollContentElement.clientWidth;
+    const centerPosition: number = (scrollContentElement.scrollLeft +
+        currentSheetDisplayWidth/2)
+
+    return centerPosition
+}
+
+function scrollToStep(step: number) {
+    // scroll display to keep the center of the currently playing
+    // quarter note container in the center of the sheet window
+    //
+    // We do this by scheduling a scroll to the next step with duration
+    // equal to one quarter-note time (dependent on the current BPM)
+    // Scrolls to position back in time are super-fast
+
+    const sheetDisplayElem: HTMLElement = $('#osmd-container-container')[0]
+    const scrollContentElement: HTMLElement = $(scrollElementSelector)[0]
+    const currentSheetDisplayWidth: number = scrollContentElement.clientWidth;
+    const currentCenterPosition: number = getDisplayCenterPosition_px();
+
+    let positionTarget: number;
+    let scrollOffsetTarget: number;
+    try {
+        // try to retrieve the position of the (potentially non-existing) next
+        // quarter-note
+        let nextStepPosition = getTimecontainerPosition(step+1);
+        const containerCenter = nextStepPosition.left + (nextStepPosition.right - nextStepPosition.left)/2;
+        positionTarget = containerCenter;
+        scrollOffsetTarget = containerCenter - currentSheetDisplayWidth/2 - currentSheetDisplayWidth/8;
+    }
+    catch (e) {
+        // FIXME make and catch specific error
+        let lastStepPosition = getTimecontainerPosition(step);
+        const containerRight = lastStepPosition.right;
+        positionTarget = containerRight;
+        scrollOffsetTarget = containerRight - currentSheetDisplayWidth/2;
+
+        return;
+    }
+
+    if (currentCenterPosition > positionTarget) {
+        // scrolling to a previous position: super-fast scroll
+        $(scrollElementSelector).stop(true, false).animate( {
+            scrollLeft: scrollOffsetTarget
+        }, 10, 'linear');
+    }
+    else {
+        $(scrollElementSelector).stop(true, false).animate( {
+            scrollLeft: scrollOffsetTarget
+        }, computeScrollSpeed() * 1000, 'linear');
+    }
+}
+
+function resetScrollPosition(duration: JQuery.Duration= shortScroll) {
+    scrollToStep(-1);
+}
+
+function computeScrollSpeed() {
+    const currentBPM: number = Tone.Transport.bpm.value
+    const interbeatTime_s = 60 / currentBPM
+    return interbeatTime_s
+}
 
 function downbeatStartCallback() {
     Tone.Transport.start("+0", "0:0:0")
@@ -63,19 +160,23 @@ function downbeatStartCallback() {
 
 
 export function play(){
-    Tone.context.resume().then(() => {
-        if (!(LinkClient.isEnabled())) {
-            // start the normal way
-            Tone.Transport.start("+0.2");
-        }
-        else {
-            log.info('LINK: Waiting for `downbeat` message...');
-            // wait for Link-socket to give downbeat signal
-            LinkClient.once('downbeat', () => {
-                downbeatStartCallback();
-                log.info('LINK: Received `downbeat` message, starting playback');
-            });
-        }
+    return new Promise((resolve, reject) => {
+        Tone.context.resume().then(() => {
+            if (!(LinkClient.isEnabled())) {
+                // start the normal way
+                Tone.Transport.start("+0.2");
+                resolve();
+            }
+            else {
+                log.info('LINK: Waiting for `downbeat` message...');
+                // wait for Link-socket to give downbeat signal
+                LinkClient.once('downbeat', () => {
+                    downbeatStartCallback();
+                    log.info('LINK: Received `downbeat` message, starting playback');
+                    resolve();
+                });
+            }
+        })
     })
 };
 
@@ -89,7 +190,7 @@ export function stop(){
 
 function scheduleTrackToInstrument(sequenceDuration_toneTime: Tone.Time,
     midiTrack, midiChannel=1) {
-    let notes = midiTrack.notes;
+    const notes = midiTrack.notes;
 
     let playNote_callback;
     playNote_callback = getPlayNoteByMidiChannel(midiChannel);
@@ -131,7 +232,7 @@ function scheduleTrackToInstrument(sequenceDuration_toneTime: Tone.Time,
 
 export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
     MidiConvert.load(url, function(midi) {
-        let steps = makeSteps(sequenceDuration_toneTime)
+        const steps = makeSteps(sequenceDuration_toneTime)
         Tone.Transport.cancel();  // remove all scheduled events
 
         // must set the Transport BPM to that of the midi for proper scheduling
@@ -141,7 +242,7 @@ export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
         Tone.Transport.bpm.value = midi.header.bpm;
         Tone.Transport.timeSignature = midi.header.timeSignature;
 
-        let drawCallback = (time, step) => {
+        const drawCallback = (time, step) => {
                 // DOM modifying callback should be put in Tone.Draw scheduler!
                 // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
                 Tone.Draw.schedule((time) => {nowPlayingCallback(time, step)}, time);
@@ -151,10 +252,10 @@ export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
         new Tone.Sequence(drawCallback, steps, '4n').start(0);
 
         for (let trackIndex_str in midi.tracks){
-            let trackIndex = parseInt(trackIndex_str);
-            let track = midi.tracks[trackIndex];
+            const trackIndex = parseInt(trackIndex_str);
+            const track = midi.tracks[trackIndex];
             // midiChannels start at 1
-            let midiChannel = trackIndex + 1;
+            const midiChannel = trackIndex + 1;
             scheduleTrackToInstrument(sequenceDuration_toneTime, track,
                 midiChannel);
         }
