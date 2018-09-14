@@ -23,6 +23,8 @@ import { createLFOControls } from './lfo';
 import CycleSelect from './cycleSelect';
 import { static_correct} from './staticPath';
 
+import 'simplebar';
+import 'simplebar/packages/simplebar/src/simplebar.css';
 
 import '../common/styles/osmd.scss'
 import '../common/styles/main.scss'
@@ -122,21 +124,34 @@ let osmd: eOSMD;
 /*
  * Create a container element for OpenSheetMusicDisplay...
  */
-let osmdContainer: HTMLElement = (
-    <HTMLElement>document.createElement("div"));
-osmdContainer.classList.add('osmd-container')
-/*
- * ... and attach it to our HTML document's body. The document itself is a HTML5
- * stub created by Webpack, so you won't find any actual .html sources.
- */
-document.body.appendChild(osmdContainer);
-/*
- * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
- * the container we've created in the steps before. The second parameter tells OSMD
- * not to redraw on resize.
- */
-let autoResize: boolean = true;
-osmd = new eOSMD(osmdContainer, autoResize, useLeadsheetMode);
+let osmdContainer: HTMLElement;
+let perfectScrollbar;
+$(() => {
+    let osmdContainerContainerContainer = <HTMLElement>document.createElement("div");
+    osmdContainerContainerContainer.id = 'osmd-container-container-container';
+    osmdContainerContainerContainer.setAttribute('data-simplebar', "");
+    osmdContainerContainerContainer.setAttribute('data-simplebar-auto-hide', "false");
+    document.body.appendChild(osmdContainerContainerContainer);
+    let osmdContainerContainer = <HTMLElement>document.createElement("div");
+    osmdContainerContainer.id = 'osmd-container-container';
+    osmdContainerContainerContainer.appendChild(osmdContainerContainer);
+    osmdContainer = <HTMLElement>document.createElement("div");
+    osmdContainer.id = 'osmd-container';
+    /*
+    * ... and attach it to our HTML document's body. The document itself is a HTML5
+    * stub created by Webpack, so you won't find any actual .html sources.
+    */
+    osmdContainerContainer.appendChild(osmdContainer);
+
+    /*
+    * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
+    * the container we've created in the steps before. The second parameter tells OSMD
+    * not to redraw on resize.
+    */
+    let autoResize: boolean = false;
+    osmd = new eOSMD(osmdContainer, autoResize, useLeadsheetMode);
+    loadMusicXMLandMidi(serverUrl, 'generate');
+})
 
 // var options = {
 //     zone: osmd.renderingBackend.getInnerElement(),
