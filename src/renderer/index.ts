@@ -34,6 +34,11 @@ let server_config = require('../common/config.json')
 
 Tone.context.latencyHint = 'fastest';
 
+$(() => {
+    let headerGridElem: HTMLElement = document.createElement('header');
+    document.body.appendChild(headerGridElem);
+    Header.render(headerGridElem);
+})
 
 let bottomControlsGridElem: HTMLDivElement;
 
