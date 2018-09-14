@@ -1,6 +1,6 @@
 import * as Tone from "tone";
 import {Piano} from 'tone-piano';
-import { SampleLibrary } from './tonejs-instruments/Tonejs-Instruments'
+import { SampleLibrary } from './dependencies/Tonejs-Instruments'
 import * as log from 'loglevel'
 import * as path from 'path'
 
@@ -96,15 +96,15 @@ export function getCurrentChordsInstrument() {
 let sampledInstruments;  // declare variables but do not load samples yet
 let instrumentSelect;
 declare var COMPILE_ELECTRON: boolean;
-export function renderDownloadButton() {
+export function renderDownloadButton(containerElement: HTMLElement): void {
     // Manual samples loading button, to reduce network usage by only loading them
     // when requested
     let loadSamplesButtonElem: HTMLDivElement = document.createElement('div');
     loadSamplesButtonElem.id = 'load-samples-button';
-    document.body.appendChild(loadSamplesButtonElem);
+    containerElement.appendChild(loadSamplesButtonElem);
 
     let loadSamplesButton = new Nexus.TextButton('#load-samples-button',{
-        'size': [150,50],
+        'size': [100,50],
         'state': false,
         'text': 'Load samples',
         'alternateText': 'Samples loading'
@@ -157,10 +157,10 @@ let mainInstrumentsIcons = new Map([
     ['Piano', '049-piano.svg'],
 ]);
 
-export function renderInstrumentSelect(useLeadsheetMode: boolean) {
+export function renderInstrumentSelect(containerElement: HTMLElement, useLeadsheetMode: boolean): void {
     let instrumentSelectElem: HTMLElement = document.createElement('control-item');
     instrumentSelectElem.id = 'instrument-select-container';
-    document.getElementById('bottom-controls').appendChild(instrumentSelectElem);
+    containerElement.appendChild(instrumentSelectElem);
 
     let instrumentSelect = new CycleSelect(instrumentSelectElem,
         'instrument-select',
