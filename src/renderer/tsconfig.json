@@ -5,7 +5,7 @@
       "lib": ["dom", "es7"],
       "pretty": true,
       "noImplicitAny": false,
-      "removeComments": true,
+      "removeComments": false,
       "declaration": true,
       "sourceMap": true
   },
