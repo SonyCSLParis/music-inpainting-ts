@@ -111,6 +111,13 @@ export function renderDownloadButton(containerElement: HTMLElement): void {
         'alternateText': 'Samples loading'
     });
 
+    $(() => {
+        // HACK manually increase fontSize in download samples button
+        let textContentDivElem = <HTMLDivElement>loadSamplesButtonElem.children[0].children[0];
+        textContentDivElem.style.padding = "18px 0px";
+        textContentDivElem.style.fontSize = "12px";
+    })
+
 
     const sampled_instruments_names = ['organ', 'harmonium', 'xylophone'];
 
