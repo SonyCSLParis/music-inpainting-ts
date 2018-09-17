@@ -126,7 +126,6 @@ let osmd: eOSMD;
  * Create a container element for OpenSheetMusicDisplay...
  */
 let osmdContainer: HTMLElement;
-let perfectScrollbar;
 $(() => {
     let osmdContainerContainerContainer = <HTMLElement>document.createElement("div");
     osmdContainerContainerContainer.id = 'osmd-container-container-container';
@@ -329,9 +328,10 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
 
 $(() => {
     const instrumentsGridElem = document.createElement('div');
-    bottomControlsGridElem.appendChild(instrumentsGridElem)
-    const instrumentSelectElem = Instruments.renderInstrumentSelect(instrumentsGridElem, osmd.isLeadsheet);
-    Instruments.renderDownloadButton(instrumentsGridElem)
+    instrumentsGridElem.classList.add('two-columns');
+    bottomControlsGridElem.appendChild(instrumentsGridElem);
+    Instruments.renderInstrumentSelect(instrumentsGridElem, osmd.isLeadsheet);
+    Instruments.renderDownloadButton(instrumentsGridElem);
     }
 );
 
