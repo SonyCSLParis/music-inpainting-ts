@@ -143,6 +143,22 @@ header {
 control-item {
 }
 
+.two-columns {
+    align-items: center;
+    justify-items: center;
+    display: grid;
+    grid-template-columns: 50%;
+    width: 100%;
+
+    & .left-column {
+        grid-column: 1;
+    }
+
+    & .right-column {
+        grid-column: 2;
+    }
+}
+
 #lfo-controls {
     display: grid;
     width: 40%;
