@@ -101,6 +101,7 @@ export function renderDownloadButton(containerElement: HTMLElement): void {
     // when requested
     let loadSamplesButtonElem: HTMLDivElement = document.createElement('div');
     loadSamplesButtonElem.id = 'load-samples-button';
+    loadSamplesButtonElem.classList.add('right-column');
     containerElement.appendChild(loadSamplesButtonElem);
 
     let loadSamplesButton = new Nexus.TextButton('#load-samples-button',{
@@ -139,8 +140,9 @@ export function renderDownloadButton(containerElement: HTMLElement): void {
 
         Promise.all(loadPromises).then(()=>{
             log.info('Finished loading the samples');
+            containerElement.classList.remove('two-columns');
             loadSamplesButtonElem.remove();
-            instrumentSelect.render();
+            // instrumentSelect.render();
         });
     });
 
@@ -160,6 +162,7 @@ let mainInstrumentsIcons = new Map([
 export function renderInstrumentSelect(containerElement: HTMLElement, useLeadsheetMode: boolean): void {
     let instrumentSelectElem: HTMLElement = document.createElement('control-item');
     instrumentSelectElem.id = 'instrument-select-container';
+    instrumentSelectElem.classList.add('left-column');
     containerElement.appendChild(instrumentSelectElem);
 
     let instrumentSelect = new CycleSelect(instrumentSelectElem,

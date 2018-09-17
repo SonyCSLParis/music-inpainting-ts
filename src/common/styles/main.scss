@@ -79,6 +79,16 @@ header {
         justify-self: center;
         max-width: 160px;
     }
+
+    #help-icon {
+        // Hide text content, display only icon
+        // via [https://stackoverflow.com/a/471538]
+        text-indent: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        // HACK Manual offset to center in header
+        top: -38px;
+    }
 }
 
 .header-item-left {
@@ -102,6 +112,7 @@ header {
 
 #help-icon {
     position: relative;
+    width: 45px;
     justify-self: right;
     align-self: inherit;
     margin-right: 25px;
@@ -113,7 +124,6 @@ header {
         font-family: 'FontAwesome';
         position: absolute;
     }
-
 }
 
 .header-item-right {
@@ -141,6 +151,22 @@ header {
 }
 
 control-item {
+}
+
+.two-columns {
+    align-items: center;
+    justify-items: center;
+    display: grid;
+    grid-template-columns: 50%;
+    width: 100%;
+
+    & .left-column {
+        grid-column: 1;
+    }
+
+    & .right-column {
+        grid-column: 2;
+    }
 }
 
 #lfo-controls {
