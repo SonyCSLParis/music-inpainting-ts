@@ -58,12 +58,6 @@ $(() => {
 });
 
 $(() => {renderGranularitySelect()});
-$(() => {
-    let playButtonElem = document.getElementById('play-button');
-    let granularitySelectElem = document.getElementById('select-granularity');
-    (granularitySelectElem.firstElementChild as HTMLElement).style.fontSize = (
-        (playButtonElem.firstElementChild.firstElementChild as HTMLElement).style.fontSize);
-})
 
 // Time-granularity selector
 function renderGranularitySelect(): void {
