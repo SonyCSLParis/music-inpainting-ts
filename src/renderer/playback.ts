@@ -251,8 +251,8 @@ export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
         // schedule quarter-notes clock
         new Tone.Sequence(drawCallback, steps, '4n').start(0);
 
-        for (let trackIndex_str in midi.tracks){
-            const trackIndex = parseInt(trackIndex_str);
+        const numTracks = midi.tracks.length;
+        for (let trackIndex=0; trackIndex < numTracks; trackIndex++){
             const track = midi.tracks[trackIndex];
             // midiChannels start at 1
             const midiChannel = trackIndex + 1;
