@@ -31,7 +31,8 @@ export class ChordSelector extends AnnotationBox {
         this.slur_symbol];
     private accidentals: string[] = (() => {
         let accidentals = [];
-        for (let i in this.notes) {
+        const numNotes: number = this.notes.length;
+        for (let i=0; i < numNotes; i++) {
             accidentals.push('b');
             accidentals.push('#');
         };

@@ -43,10 +43,11 @@ export class eOSMD extends OpenSheetMusicDisplay {
     private computeBoundingBoxes(): void {
         // TODO find measureIndex and staffIndex
         let measureList = this.graphicalMusicSheet.MeasureList;
+        let numMeasures: number = measureList.length;
         let numberOfStaves = measureList[0].length;
         let staffIndex = 0;
         let boundingBoxes = [];
-        for (let measureIndex in measureList) {
+        for (let measureIndex = 0; measureIndex < numMeasures; measureIndex++) {
 
             let measure: VexFlowMeasure = <VexFlowMeasure>measureList[measureIndex][staffIndex] // first staff
             // let staff = measure.getVFStave();
@@ -239,7 +240,8 @@ export class eOSMD extends OpenSheetMusicDisplay {
     public drawTimestampBoxes(onclickFactory=undefined): void{
         // FIXME this assumes a time signature of 4/4
         let measureList = this.graphicalMusicSheet.MeasureList;
-        let numberOfStaves = measureList[0].length;
+        const numMeasures: number = measureList.length;
+        const numberOfStaves = measureList[0].length;
 
         function makeTimestamps(timeTuples: [number, number][]): Fraction[]{
             return timeTuples.map(([num, den]) => new Fraction(num, den))
@@ -255,8 +257,8 @@ export class eOSMD extends OpenSheetMusicDisplay {
             [timestampsHalf, "half-note"],
             [timestampsWhole, "whole-note"]]
 
-        for (let measureIndex in measureList){
-            let measure: StaffMeasure = <StaffMeasure>measureList[measureIndex][0]
+        for (let measureIndex = 0; measureIndex < numMeasures; measureIndex++){
+            let measure: GraphicalMeasure = <GraphicalMeasure>measureList[measureIndex][0]
             let beginInstructionsWidth: number = measure.beginInstructionsWidth
 
             let sourceMeasure: SourceMeasure = measure.parentSourceMeasure;
