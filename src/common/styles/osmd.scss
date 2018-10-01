@@ -1,16 +1,17 @@
 #osmd-container-container-container {
     pointer-events: auto;
 
-    height: 65%;  // HACK should maybe depend more on content size
+    height: calc(100% - 2*90px);
     width: 100%;
     position: absolute;
-    top: 15%;
+    top: 90px;
 }
 
 #osmd-container {
     pointer-events: none;
     margin-left: auto;
     margin-right: auto;
+    margin-top: 180px;
 
     width: 10000000px;  // HACK infinite width
 }
