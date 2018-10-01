@@ -142,8 +142,13 @@ $(() => {
     * the container we've created in the steps before. The second parameter tells OSMD
     * not to redraw on resize.
     */
-    let autoResize: boolean = false;
-    osmd = new eOSMD(osmdContainer, autoResize, useLeadsheetMode);
+    let autoResize: boolean = true;
+    osmd = new eOSMD(osmdContainer,
+        {autoResize: autoResize,
+         drawingParameters: "compact",
+         drawPartNames: false
+     },
+        useLeadsheetMode);
     loadMusicXMLandMidi(serverUrl, 'generate');
 })
 
