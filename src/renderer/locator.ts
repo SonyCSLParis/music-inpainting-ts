@@ -1,5 +1,5 @@
 import { OpenSheetMusicDisplay, VexFlowMeasure,
-        Fraction, StaffMeasure, SourceMeasure } from "opensheetmusicdisplay";
+        Fraction, GraphicalMeasure, SourceMeasure } from "opensheetmusicdisplay";
 import { FermataBox } from './fermata';
 import { ChordSelector } from './chord_selector';
 import * as $ from 'jquery';
@@ -7,9 +7,9 @@ import 'nipplejs'
 import '../common/styles/overlays.scss';
 
 export class eOSMD extends OpenSheetMusicDisplay {
-    constructor(container: string | HTMLElement, autoResize: boolean = false,
+    constructor(container: string | HTMLElement, options: object = {},
             isLeadsheet: boolean = false) {
-        super(container, autoResize);
+        super(container, options);
         this._boundingBoxes = [];
         this.isLeadsheet = isLeadsheet;
 
