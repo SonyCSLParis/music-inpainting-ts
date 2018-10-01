@@ -109,19 +109,13 @@ export class eOSMD extends OpenSheetMusicDisplay {
             width_px_str = superlarge_width_px_str;
         }
 
-        // HACK to make the scrollbar fit into the screen
-        let new_height_px = 600;
-
         $('#osmd-container')[0].style.width = `${width_px_str}px`;
         $('#osmd-container svg')[0].setAttribute('width', `${width_px_str}`);
-
-        $('#osmd-container')[0].style.height = `${new_height_px}px`;
-        $('#osmd-container svg')[0].setAttribute('height', `${new_height_px}`);
 
         const viewBox = $('#osmd-container svg')[0].getAttribute('viewBox');
         const [x_px, y_px, _, height_px] = viewBox.split(' ');
         $('#osmd-container svg')[0].setAttribute('viewBox',
-            `${x_px} ${y_px} ${width_px_str} ${new_height_px}`);
+            `${x_px} ${y_px} ${width_px_str} ${height_px}`);
 
 
     }
