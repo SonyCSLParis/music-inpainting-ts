@@ -15,7 +15,7 @@ export function render() {
     midiOutSelectElem.id = 'select-midiout';
     topControlsGridElem.appendChild(midiOutSelectElem);
 
-    let instrumentSelectElem = document.getElementById('instrument-select-container');
+    let instrumentSelectElems = $('.CycleSelect-container[id$="instrument-select-container"]');
 
     WebMidi.enable(function (err) {
         if (err) log.error(err);
@@ -26,12 +26,12 @@ export function render() {
         });
         function midiOutOnChange(ev) {
             if (this.value !== 'No Output') {
-                instrumentSelectElem.classList.toggle('disabled', true);
+                instrumentSelectElems.toggleClass('CycleSelect-disabled', true);
                 midiOut = WebMidi.getOutputByName(this.value);
                 Tone.Master.mute = true;
             }
             else {
-                instrumentSelectElem.classList.toggle('disabled', false);
+                instrumentSelectElems.toggleClass('CycleSelect-disabled', false);
                 Tone.Master.mute = false;
                 midiOut = dummyMidiOut;
             }
