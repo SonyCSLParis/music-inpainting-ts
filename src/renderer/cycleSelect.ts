@@ -5,10 +5,12 @@ import * as path from 'path';
 import '../common/styles/cycleSelect.scss';
 
 export default class CycleSelect {
-    static mainCssClass: string = 'CycleSelect-container';
+    static containerCssClass: string = 'CycleSelect-container';
+    static innerContainerCssClass: string = 'CycleSelect-inner-container';
     static visibleCssClass: string = 'CycleSelect-visible';
 
     readonly containerElement: HTMLElement;
+    readonly innerContainerElement: HTMLDivElement;
     readonly onchangeCallback: EventListenerObject;
     readonly basePath: string;
     readonly icons: Map<string, string>;
@@ -33,12 +35,16 @@ export default class CycleSelect {
             // the icons are a key-value map where the key is the option name and
             // the value is the path to the icon
             this.containerElement = containerElement;
-            this.containerElement.classList.add(CycleSelect.mainCssClass);
+            this.containerElement.classList.add(CycleSelect.containerCssClass);
+            this.innerContainerElement = document.createElement('div');
+            this.innerContainerElement.classList.add(
+                CycleSelect.innerContainerCssClass);
+            this.containerElement.appendChild(this.innerContainerElement);
 
             this._selectElem = document.createElement('select');
             this._selectElem.style.visibility = 'hidden';
             this._selectElem.id = selectElemID;
-            this.containerElement.appendChild(this._selectElem);
+            this.innerContainerElement.appendChild(this._selectElem);
 
             let copyCallback = onchangeCallback;
             copyCallback.handleEvent = copyCallback.handleEvent.bind(this);
@@ -55,7 +61,7 @@ export default class CycleSelect {
                 self.updateVisuals();
                 self.onchangeCallback.handleEvent.bind(self._selectElem)(e);
             });
-            this.containerElement.addEventListener('click',
+            this.innerContainerElement.addEventListener('click',
                 (e: MouseEvent) => {
                     self.cycleOptions.bind(self)();
                 }
