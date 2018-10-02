@@ -327,9 +327,13 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
 
 $(() => {
     const instrumentsGridElem = document.createElement('div');
+    instrumentsGridElem.id = 'instruments-grid';
     instrumentsGridElem.classList.add('two-columns');
     bottomControlsGridElem.appendChild(instrumentsGridElem);
-    Instruments.renderInstrumentSelect(instrumentsGridElem, osmd.isLeadsheet);
+    Instruments.renderInstrumentSelect(instrumentsGridElem);
+    if ( useLeadsheetMode ) {
+        Instruments.renderChordInstrumentSelect(instrumentsGridElem);
+    }
     Instruments.renderDownloadButton(instrumentsGridElem);
     }
 );
