@@ -14,6 +14,8 @@ export function render() {
     midiOutSelectElem.id = 'select-midiout';
     document.body.appendChild(midiOutSelectElem);
 
+    let instrumentSelectElem = document.getElementById('instrument-select');
+
     WebMidi.enable(function (err) {
         if (err) log.error(err);
 
@@ -23,10 +25,14 @@ export function render() {
         });
         function midiOutOnChange(ev) {
             if (this.value !== 'No Output') {
-                    midiOut = WebMidi.getOutputByName(this.value);
+                instrumentSelectElem.classList.toggle('disabled', true);
+                midiOut = WebMidi.getOutputByName(this.value);
+                Tone.master.mute = true;
             }
             else {
-                    midiOut = dummyMidiOut;
+                instrumentSelectElem.classList.toggle('disabled', false);
+                Tone.master.mute = false;
+                midiOut = dummyMidiOut;
             }
             log.info('Selected MIDI out: ' + this.value);
         };
