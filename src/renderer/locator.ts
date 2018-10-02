@@ -235,7 +235,6 @@ export class eOSMD extends OpenSheetMusicDisplay {
         // FIXME this assumes a time signature of 4/4
         let measureList = this.graphicalMusicSheet.MeasureList;
         const numMeasures: number = measureList.length;
-        const numberOfStaves = measureList[0].length;
 
         function makeTimestamps(timeTuples: [number, number][]): Fraction[]{
             return timeTuples.map(([num, den]) => new Fraction(num, den))
@@ -303,18 +302,18 @@ export class eOSMD extends OpenSheetMusicDisplay {
                         }
                         let width = xRight - xLeft;
                         let onclick = (event) => {};
-                        if (onclickFactory) {onclick = onclickFactory(leftTimestamp, rightTimestamp)}
+                        if (onclickFactory) {onclick = onclickFactory(leftTimestamp, rightTimestamp)};
 
                         let timediv = this.createTimeDiv(
                             xLeft, y, width, height,
                             granularityName,
                             `${granularityName}-${measureIndex}-${timestampIndex}`,
                             onclick,
-                            [leftTimestamp, rightTimestamp])
+                            [leftTimestamp, rightTimestamp]);
                     }
 
             }
-            let duration = sourceMeasure.Duration
+            let duration = sourceMeasure.Duration;
         }
     }
 
