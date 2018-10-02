@@ -28,11 +28,11 @@ export function render() {
             if (this.value !== 'No Output') {
                 instrumentSelectElem.classList.toggle('disabled', true);
                 midiOut = WebMidi.getOutputByName(this.value);
-                Tone.master.mute = true;
+                Tone.Master.mute = true;
             }
             else {
                 instrumentSelectElem.classList.toggle('disabled', false);
-                Tone.master.mute = false;
+                Tone.Master.mute = false;
                 midiOut = dummyMidiOut;
             }
             log.info('Selected MIDI out: ' + this.value);
