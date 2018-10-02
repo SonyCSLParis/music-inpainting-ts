@@ -168,15 +168,15 @@ let mainInstrumentsIcons = new Map([
 
 export function renderInstrumentSelect(containerElement: HTMLElement, useLeadsheetMode: boolean): void {
     let instrumentSelectElem: HTMLElement = document.createElement('control-item');
-    instrumentSelectElem.id = 'instrument-select-container';
+    instrumentSelectElem.id = 'lead-instrument-select-container';
     instrumentSelectElem.classList.add('left-column');
     containerElement.appendChild(instrumentSelectElem);
 
     let instrumentSelect = new CycleSelect(instrumentSelectElem,
-        'instrument-select',
+        'instrument-select-lead',
         instrumentOnChange,
         mainInstrumentsIcons, instrumentIconsBasePath
-    )
+    );
 
     const initialInstrument = 'PolySynth';
     instrumentSelect.value = initialInstrument;

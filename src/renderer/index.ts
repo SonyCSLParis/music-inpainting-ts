@@ -68,16 +68,16 @@ function renderGranularitySelect(): void {
         ['whole-note', 'whole.svg']
     ])
 
-    let granularitySelectElem: HTMLElement = document.createElement('control-item');
-    granularitySelectElem.id = 'select-granularity'
-    bottomControlsGridElem.appendChild(granularitySelectElem)
+    let granularitySelectContainerElem: HTMLElement = document.createElement('control-item');
+    granularitySelectContainerElem.id = 'granularity-select-container'
+    bottomControlsGridElem.appendChild(granularitySelectContainerElem)
 
     function granularityOnChange(ev) {
         $('.notebox').removeClass('active');
         $('.' + this.value + '> .notebox').addClass('active');
     };
 
-    let granularitySelect = new CycleSelect(granularitySelectElem,
+    let granularitySelect = new CycleSelect(granularitySelectContainerElem,
         'granularity-select',
         {handleEvent: granularityOnChange},
         granularityIcons,
