@@ -63,7 +63,7 @@ export default class CycleSelect {
             });
             this.innerContainerElement.addEventListener('click',
                 (e: MouseEvent) => {
-                    self.cycleOptions.bind(self)();
+                    self.selectNextOption.bind(self)();
                 }
             )
 
@@ -124,7 +124,7 @@ export default class CycleSelect {
         })
     }
 
-    private cycleOptions(): void {
+    private selectNextOption(): void {
         // select the next option in the list, cycle to the beginning if needed
         const currentOptionIndex: number = this.options.indexOf(this.value);
         const newIndex: number = (currentOptionIndex+1) % this.options.length;
