@@ -15,7 +15,7 @@ export function render() {
     midiOutSelectElem.id = 'select-midiout';
     topControlsGridElem.appendChild(midiOutSelectElem);
 
-    let instrumentSelectElem = document.getElementById('instrument-select');
+    let instrumentSelectElem = document.getElementById('instrument-select-container');
 
     WebMidi.enable(function (err) {
         if (err) log.error(err);
