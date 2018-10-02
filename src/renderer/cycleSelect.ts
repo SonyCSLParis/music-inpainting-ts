@@ -106,10 +106,10 @@ export default class CycleSelect {
         // append all images as <img> to the container
         let self = this;
         this.icons.forEach((iconPath, instrumentName) => {
-            let optionElem = document.createElement('img');
-            optionElem.id = this.makeOptionId(instrumentName);
-            optionElem.src = path.join(this.basePath, iconPath);
-            self.containerElement.appendChild(optionElem);
+            let imageElem = document.createElement('img');
+            imageElem.id = this.makeOptionId(instrumentName);
+            imageElem.src = path.join(this.basePath, iconPath);
+            self.innerContainerElement.appendChild(imageElem);
         })
     };
 
