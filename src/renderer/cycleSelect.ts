@@ -71,14 +71,17 @@ export default class CycleSelect {
         };
 
     private makeOptionId(key: string): string {
+        // create an id for an <option> element
         return this.containerElement.id + '--' + key;
     }
 
     public get value(): string {
+        // return the name of the currently selected option
         return this.options[parseInt(this._selectElem.value)];
     }
 
     public set value(newValue: string) {
+        // set the value of the <select> element and update the visuals
         if (!(this.options.includes(newValue))) {
             throw EvalError('Unauthorized value' + newValue + ' for CycleSelector');
         };
@@ -87,7 +90,7 @@ export default class CycleSelect {
     }
 
     private updateVisuals() {
-        // display current icon
+        // display icon for the current option and hide all others
         $(`#${this.containerElement.id} img`).removeClass(CycleSelect.visibleCssClass);
 
         this.getCurrentElement().classList.toggle(CycleSelect.visibleCssClass,
@@ -95,10 +98,12 @@ export default class CycleSelect {
     };
 
     private getCurrentElement(): HTMLElement {
+        // return the currently selected element
         return <HTMLElement>document.getElementById(this.makeOptionId(this.value));
     }
 
     private populateContainer(): void {
+        // append all images as <img> to the container
         let self = this;
         this.icons.forEach((iconPath, instrumentName) => {
             let optionElem = document.createElement('img');
@@ -109,6 +114,7 @@ export default class CycleSelect {
     };
 
     private populateSelect(): void {
+        // append all options to the inner <select> element
         let self = this;
         this.options.forEach((optionName, optionIndex) => {
             let newOption = document.createElement('option');
@@ -119,6 +125,7 @@ export default class CycleSelect {
     }
 
     private cycleOptions(): void {
+        // select the next option in the list, cycle to the beginning if needed
         const currentOptionIndex: number = this.options.indexOf(this.value);
         const newIndex: number = (currentOptionIndex+1) % this.options.length;
         this.value = this.options[newIndex];
