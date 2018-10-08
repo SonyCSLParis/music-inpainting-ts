@@ -39,10 +39,12 @@ function getPlayNoteByMidiChannel(midiChannel: number){
 
 function makeSteps(sequenceDuration_toneTime: Tone.Time) {
     // create an array of quarter-note aligned steps
-    const [seq_dur_measures, seq_dur_quarters, seq_dur_sixteenths] =
-        sequenceDuration_toneTime.toBarsBeatsSixteenths().split(':').map(parseFloat)
-    const sequence_duration_quarters = Math.floor((4*seq_dur_measures +
-        seq_dur_quarters + Math.floor(seq_dur_sixteenths / 4)))
+
+    // Taken from Tone.Time implementation
+    // compute duration of one beat
+    const quarterTime = sequenceDuration_toneTime._beatsToUnits(1);
+    const sequence_duration_quarters = Math.floor(
+        sequenceDuration_toneTime.valueOf() / quarterTime);
     let steps = [];
     for (let i = 0; i < sequence_duration_quarters; i++) {
         steps.push(i);
