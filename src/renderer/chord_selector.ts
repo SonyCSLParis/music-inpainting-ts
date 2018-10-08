@@ -9,27 +9,45 @@ declare var wheelnav: any;
 declare var slicePath: any;
 
 export class ChordSelector extends AnnotationBox {
+    private slur_symbol: string = '-';
+    private useSlurSymbol: boolean;
+    private notes: string[];
+    private accidentals: string[];
+
     constructor(timestampContainer: string|HTMLElement,
-            onChordChange: Function, wheelSize_px: number=250) {
+            onChordChange: Function, wheelSize_px: number=250,
+            useSlurSymbol: boolean=false) {
         super(timestampContainer, 'ChordSelector');
-        this.onChordChange = onChordChange
-        this.container.classList.add('noselect')
+        this.onChordChange = onChordChange;
+        this.container.classList.add('noselect');
         this.wheelSize_px = wheelSize_px;
+
+        this.useSlurSymbol = useSlurSymbol;
+        this.notes = this.makeNotes();
+        this.accidentals = this.makeAccidentals();
+
         this.draw();
         this.previousChord = this.currentChord;
-    }
+    };
 
     protected validateTimestampContainer(): void {
         if (!this.timestampContainer.classList.contains('half-note')) {
             throw new EvalError("Chord selector should be associated to a half-note box");
         };
-    }
+    };
 
+    private makeNotes(): string[] {
+        const mainNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 
-    private slur_symbol: string = '-';
-    private notes: string[] = ['C', 'D', 'E', 'F', 'G', 'A', 'B',
-        this.slur_symbol];
-    private accidentals: string[] = (() => {
+        let notes = mainNotes;
+        if (this.useSlurSymbol) {
+            notes.push(this.slur_symbol);
+        }
+        
+        return notes;
+    };
+
+    private makeAccidentals(): string[] {
         let accidentals = [];
         const numNotes: number = this.notes.length;
         for (let i=0; i < numNotes; i++) {
@@ -37,7 +55,8 @@ export class ChordSelector extends AnnotationBox {
             accidentals.push('#');
         };
         return accidentals;
-    })();
+    };
+
     private chordTypes = ['M', 'm', 'm7', 'M7', '7'];
 
     private noteWheel: any;
@@ -224,7 +243,7 @@ export class ChordSelector extends AnnotationBox {
         // wheel1.spreadWheel();
         this.noteWheel.animatetime = 150;
         this.noteWheel.animateeffect = 'easeInOut';
-        this.noteWheel.spreaderTitleFont = "100 20px Boogaloo, sans-serif";
+        this.noteWheel.spreaderTitleFont = "100 20px Ubuntu-Regular, Boogaloo, sans-serif";
         this.noteWheel.spreaderFillColor = 'white';
 
         this.chordTypeWheel.spreaderEnable = false;
