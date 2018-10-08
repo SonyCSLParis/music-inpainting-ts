@@ -235,11 +235,20 @@ export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
         const steps = makeSteps(sequenceDuration_toneTime)
         Tone.Transport.cancel();  // remove all scheduled events
 
+        if (!midi.header.bpm) {
+            // TODO insert warning wrong Flask server
+        }
+        if (!midi.header.timeSignature) {
+            // TODO insert warning wrong Flask server
+            // TODO create a test for the flask server
+        }
         // must set the Transport BPM to that of the midi for proper scheduling
         // TODO(theis): this will probably lead to phase-drift if repeated
         // updates are performed successively, should catch up somehow on
         // the desynchronisation introduced by this temporary tempo change
         Tone.Transport.bpm.value = midi.header.bpm;
+
+        // Required for Tone.Time conversions to properly work
         Tone.Transport.timeSignature = midi.header.timeSignature;
 
         const drawCallback = (time, step) => {
