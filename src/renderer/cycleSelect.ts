@@ -5,10 +5,12 @@ import * as path from 'path';
 import '../common/styles/cycleSelect.scss';
 
 export default class CycleSelect {
-    static mainCssClass: string = 'CycleSelect-container';
+    static containerCssClass: string = 'CycleSelect-container';
+    static innerContainerCssClass: string = 'CycleSelect-inner-container';
     static visibleCssClass: string = 'CycleSelect-visible';
 
     readonly containerElement: HTMLElement;
+    readonly innerContainerElement: HTMLDivElement;
     readonly onchangeCallback: EventListenerObject;
     readonly basePath: string;
     readonly icons: Map<string, string>;
@@ -33,12 +35,16 @@ export default class CycleSelect {
             // the icons are a key-value map where the key is the option name and
             // the value is the path to the icon
             this.containerElement = containerElement;
-            this.containerElement.classList.add(CycleSelect.mainCssClass);
+            this.containerElement.classList.add(CycleSelect.containerCssClass);
+            this.innerContainerElement = document.createElement('div');
+            this.innerContainerElement.classList.add(
+                CycleSelect.innerContainerCssClass);
+            this.containerElement.appendChild(this.innerContainerElement);
 
             this._selectElem = document.createElement('select');
             this._selectElem.style.visibility = 'hidden';
             this._selectElem.id = selectElemID;
-            this.containerElement.appendChild(this._selectElem);
+            this.innerContainerElement.appendChild(this._selectElem);
 
             let copyCallback = onchangeCallback;
             copyCallback.handleEvent = copyCallback.handleEvent.bind(this);
@@ -55,9 +61,9 @@ export default class CycleSelect {
                 self.updateVisuals();
                 self.onchangeCallback.handleEvent.bind(self._selectElem)(e);
             });
-            this.containerElement.addEventListener('click',
+            this.innerContainerElement.addEventListener('click',
                 (e: MouseEvent) => {
-                    self.cycleOptions.bind(self)();
+                    self.selectNextOption.bind(self)();
                 }
             )
 
@@ -65,14 +71,17 @@ export default class CycleSelect {
         };
 
     private makeOptionId(key: string): string {
+        // create an id for an <option> element
         return this.containerElement.id + '--' + key;
     }
 
     public get value(): string {
+        // return the name of the currently selected option
         return this.options[parseInt(this._selectElem.value)];
     }
 
     public set value(newValue: string) {
+        // set the value of the <select> element and update the visuals
         if (!(this.options.includes(newValue))) {
             throw EvalError('Unauthorized value' + newValue + ' for CycleSelector');
         };
@@ -81,7 +90,7 @@ export default class CycleSelect {
     }
 
     private updateVisuals() {
-        // display current icon
+        // display icon for the current option and hide all others
         $(`#${this.containerElement.id} img`).removeClass(CycleSelect.visibleCssClass);
 
         this.getCurrentElement().classList.toggle(CycleSelect.visibleCssClass,
@@ -89,20 +98,23 @@ export default class CycleSelect {
     };
 
     private getCurrentElement(): HTMLElement {
+        // return the currently selected element
         return <HTMLElement>document.getElementById(this.makeOptionId(this.value));
     }
 
     private populateContainer(): void {
+        // append all images as <img> to the container
         let self = this;
         this.icons.forEach((iconPath, instrumentName) => {
-            let optionElem = document.createElement('img');
-            optionElem.id = this.makeOptionId(instrumentName);
-            optionElem.src = path.join(this.basePath, iconPath);
-            self.containerElement.appendChild(optionElem);
+            let imageElem = document.createElement('img');
+            imageElem.id = this.makeOptionId(instrumentName);
+            imageElem.src = path.join(this.basePath, iconPath);
+            self.innerContainerElement.appendChild(imageElem);
         })
     };
 
     private populateSelect(): void {
+        // append all options to the inner <select> element
         let self = this;
         this.options.forEach((optionName, optionIndex) => {
             let newOption = document.createElement('option');
@@ -112,7 +124,8 @@ export default class CycleSelect {
         })
     }
 
-    private cycleOptions(): void {
+    private selectNextOption(): void {
+        // select the next option in the list, cycle to the beginning if needed
         const currentOptionIndex: number = this.options.indexOf(this.value);
         const newIndex: number = (currentOptionIndex+1) % this.options.length;
         this.value = this.options[newIndex];

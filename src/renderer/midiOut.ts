@@ -10,11 +10,12 @@ dummyMidiOut.playNote = () => {};
 let midiOut = dummyMidiOut;
 
 export function render() {
-    let midiOutSelectElem: HTMLElement = document.createElement("div");
+    let topControlsGridElem = document.getElementById('bottom-controls');
+    let midiOutSelectElem: HTMLElement = document.createElement('control-item');
     midiOutSelectElem.id = 'select-midiout';
-    document.body.appendChild(midiOutSelectElem);
+    topControlsGridElem.appendChild(midiOutSelectElem);
 
-    let instrumentSelectElem = document.getElementById('instrument-select');
+    let instrumentSelectElems = $('.CycleSelect-container[id$="instrument-select-container"]');
 
     WebMidi.enable(function (err) {
         if (err) log.error(err);
@@ -25,13 +26,13 @@ export function render() {
         });
         function midiOutOnChange(ev) {
             if (this.value !== 'No Output') {
-                instrumentSelectElem.classList.toggle('disabled', true);
+                instrumentSelectElems.toggleClass('CycleSelect-disabled', true);
                 midiOut = WebMidi.getOutputByName(this.value);
-                Tone.master.mute = true;
+                Tone.Master.mute = true;
             }
             else {
-                instrumentSelectElem.classList.toggle('disabled', false);
-                Tone.master.mute = false;
+                instrumentSelectElems.toggleClass('CycleSelect-disabled', false);
+                Tone.Master.mute = false;
                 midiOut = dummyMidiOut;
             }
             log.info('Selected MIDI out: ' + this.value);
