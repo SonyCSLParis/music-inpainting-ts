@@ -28,6 +28,11 @@ import 'simplebar/packages/simplebar/src/simplebar.css';
 import '../common/styles/osmd.scss'
 import '../common/styles/main.scss'
 
+let COMPILE_MUSEUM_VERSION: boolean = true;
+if ( COMPILE_MUSEUM_VERSION ) {
+    require('../common/styles/museum.scss');
+}
+
 declare var ohSnap: any;
 let server_config = require('../common/config.json')
 
