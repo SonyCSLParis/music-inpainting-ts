@@ -39,10 +39,12 @@ function getPlayNoteByMidiChannel(midiChannel: number){
 
 function makeSteps(sequenceDuration_toneTime: Tone.Time) {
     // create an array of quarter-note aligned steps
-    const [seq_dur_measures, seq_dur_quarters, seq_dur_sixteenths] =
-        sequenceDuration_toneTime.toBarsBeatsSixteenths().split(':').map(parseFloat)
-    const sequence_duration_quarters = Math.floor((4*seq_dur_measures +
-        seq_dur_quarters + Math.floor(seq_dur_sixteenths / 4)))
+
+    // Taken from Tone.Time implementation
+    // compute duration of one beat
+    const quarterTime = sequenceDuration_toneTime._beatsToUnits(1);
+    const sequence_duration_quarters = Math.floor(
+        sequenceDuration_toneTime.valueOf() / quarterTime);
     let steps = [];
     for (let i = 0; i < sequence_duration_quarters; i++) {
         steps.push(i);
@@ -235,11 +237,20 @@ export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
         const steps = makeSteps(sequenceDuration_toneTime)
         Tone.Transport.cancel();  // remove all scheduled events
 
+        if (!midi.header.bpm) {
+            // TODO insert warning wrong Flask server
+        }
+        if (!midi.header.timeSignature) {
+            // TODO insert warning wrong Flask server
+            // TODO create a test for the flask server
+        }
         // must set the Transport BPM to that of the midi for proper scheduling
         // TODO(theis): this will probably lead to phase-drift if repeated
         // updates are performed successively, should catch up somehow on
         // the desynchronisation introduced by this temporary tempo change
         Tone.Transport.bpm.value = midi.header.bpm;
+
+        // Required for Tone.Time conversions to properly work
         Tone.Transport.timeSignature = midi.header.timeSignature;
 
         const drawCallback = (time, step) => {

@@ -167,7 +167,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
             // div.setAttribute('containedQuarterNotes',
             //     commonDiv.getAttribute('containedQuarterNotes'));
 
-            let granularitySelect : HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0];
+            let granularitySelect : HTMLSelectElement = <HTMLSelectElement>$('#granularity-select-container select')[0];
             const currentGranularity = granularitySelect[
                 parseInt(granularitySelect.value)].textContent;
             if (currentGranularity == divClass) div.classList.add('active');
@@ -235,7 +235,6 @@ export class eOSMD extends OpenSheetMusicDisplay {
         // FIXME this assumes a time signature of 4/4
         let measureList = this.graphicalMusicSheet.MeasureList;
         const numMeasures: number = measureList.length;
-        const numberOfStaves = measureList[0].length;
 
         function makeTimestamps(timeTuples: [number, number][]): Fraction[]{
             return timeTuples.map(([num, den]) => new Fraction(num, den))
@@ -303,18 +302,18 @@ export class eOSMD extends OpenSheetMusicDisplay {
                         }
                         let width = xRight - xLeft;
                         let onclick = (event) => {};
-                        if (onclickFactory) {onclick = onclickFactory(leftTimestamp, rightTimestamp)}
+                        if (onclickFactory) {onclick = onclickFactory(leftTimestamp, rightTimestamp)};
 
                         let timediv = this.createTimeDiv(
                             xLeft, y, width, height,
                             granularityName,
                             `${granularityName}-${measureIndex}-${timestampIndex}`,
                             onclick,
-                            [leftTimestamp, rightTimestamp])
+                            [leftTimestamp, rightTimestamp]);
                     }
 
             }
-            let duration = sourceMeasure.Duration
+            let duration = sourceMeasure.Duration;
         }
     }
 
@@ -326,9 +325,9 @@ export class eOSMD extends OpenSheetMusicDisplay {
 }
 
 function cycleGranularity(increase: boolean) {
-    let granularitySelect = $('#select-granularity > select')
+    let granularitySelect = $('#granularity-select-container select');
     // if (granularitySelect.length > 0) {
-    let granularitySelectElem = <HTMLSelectElement>granularitySelect[0]
+    let granularitySelectElem = <HTMLSelectElement>granularitySelect[0];
     // let granularitySelectElem: HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
     const selectedGranularity = parseInt(granularitySelect.val().toString());
     const numOptions = granularitySelectElem.children.length

@@ -1,11 +1,44 @@
 // Styling for the icon-based select element
 
 .CycleSelect-container {
+    &.CycleSelect-disabled {
+        cursor: not-allowed!important;
+
+        color: rgba(0, 0, 0, 0.8);
+
+        &:after{
+            content: "";
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            border-top-width: thick;
+            border-top-style: solid;
+            width: 62px;
+            transform: rotate(-45deg);
+            transform-origin: 0% 0%;
+        }
+
+        & > .CycleSelect-inner-container {
+            pointer-events: none!important;
+        }
+
+        & img {
+            filter: grayscale(100%) contrast(60%);
+        }
+    }
+}
+
+.CycleSelect-container, .CycleSelect-inner-container {
     position: relative;
     display: flex;
     justify-content: center;
 
     cursor: pointer;
+}
+
+.CycleSelect-inner-container {
+    width: 100%;
+    height: 100%;
 }
 
 .CycleSelect-container img {

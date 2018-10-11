@@ -166,47 +166,54 @@ let mainInstrumentsIcons = new Map([
     ['Piano', '049-piano.svg'],
 ]);
 
-export function renderInstrumentSelect(containerElement: HTMLElement, useLeadsheetMode: boolean): void {
+let chordInstrumentsIcons = new Map([
+    ['PolySynth', '019-synthesizer.svg'],
+    ['Piano', '020-piano.svg'],
+]);
+
+export function renderChordInstrumentSelect(containerElement: HTMLElement) {
+    // create second instrument selector for chord instrument
+    let chordInstrumentSelectElem: HTMLElement = document.createElement('control-item');
+    chordInstrumentSelectElem.id = 'chord-instrument-select-container';
+    chordInstrumentSelectElem.classList.add('right-column');
+    containerElement.appendChild(chordInstrumentSelectElem);
+
+    let chordInstrumentSelect = new CycleSelect(chordInstrumentSelectElem,
+        'instrument-select-chord',
+        chordInstrumentOnChange,  // TODO
+        chordInstrumentsIcons, instrumentIconsBasePath
+    );
+
+    chordInstrumentFactories = {
+        'PolySynth': () => {return polysynth_chords},
+        'Organ': () => {return sampledInstruments['organ']},
+        'Harmonium': () => {return sampledInstruments['harmonium']},
+        'None': () => {return silentInstrument}
+    };
+
+    current_chords_instrument = polysynth_chords;
+    let chordInstrumentOnChange = function(this: HTMLSelectElement) {
+        current_chords_instrument = chordInstrumentFactories[this.value]();
+    };
+
+    // chordInstrumentSelect.on('change', chordInstrumentOnChange.bind(chordInstrumentSelect));
+
+    const initialChordInstrument = 'PolySynth';
+    chordInstrumentSelect.value = initialChordInstrument;
+}
+
+export function renderInstrumentSelect(containerElement: HTMLElement): void {
     let instrumentSelectElem: HTMLElement = document.createElement('control-item');
-    instrumentSelectElem.id = 'instrument-select-container';
+    instrumentSelectElem.id = 'lead-instrument-select-container';
     instrumentSelectElem.classList.add('left-column');
     containerElement.appendChild(instrumentSelectElem);
 
     let instrumentSelect = new CycleSelect(instrumentSelectElem,
-        'instrument-select',
+        'instrument-select-lead',
         instrumentOnChange,
         mainInstrumentsIcons, instrumentIconsBasePath
-    )
+    );
 
     const initialInstrument = 'PolySynth';
     instrumentSelect.value = initialInstrument;
-
-    const initialChordInstrument = 'PolySynth';
-
-    if (useLeadsheetMode) {
-        // create second instrument selector for chord instrument
-        chordInstrumentSelectElem = document.createElement('div');
-        chordInstrumentSelectElem.id = 'chord-instrument-select';
-        document.body.appendChild(chordInstrumentSelectElem);
-
-        chordInstrumentFactories = {
-            'PolySynth': () => {return polysynth_chords},
-            'Organ': () => {return sampledInstruments['organ']},
-            'Harmonium': () => {return sampledInstruments['harmonium']},
-            'None': () => {return silentInstrument}
-        };
-
-        chordInstrumentSelect = new Nexus.Select('#chord-instrument-select', {
-            'size': [275, 40],
-            'options': Object.keys(chordInstrumentFactories)
-        });
-
-        current_chords_instrument = polysynth_chords;
-        let chordInstrumentOnChange = function(this: HTMLSelectElement) {
-            current_chords_instrument = chordInstrumentFactories[this.value]();
-        };
-
-        chordInstrumentSelect.on('change', chordInstrumentOnChange.bind(chordInstrumentSelect));
-        chordInstrumentSelect.value = initialChordInstrument;
-    }
 }
