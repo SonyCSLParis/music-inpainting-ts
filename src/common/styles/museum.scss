@@ -1,1 +1,6 @@
 // Stylings specific to the museum version 
+
+// Disable clicking CSL icon
+#csl-logo-elem {
+    pointer-events: none!important;
+}
