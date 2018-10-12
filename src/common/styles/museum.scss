@@ -4,3 +4,16 @@
 #csl-logo-elem {
     pointer-events: none!important;
 }
+
+// Disable y-scrolling
+[data-simplebar="init"] .simplebar-scroll-content, [data-simplebar="init"] .simplebar-content {
+    overflow: hidden;
+    overflow-y: hidden;
+    overflow-x: scroll;
+}
+
+.simplebar-scroll-content .simplebar-content {
+    overflow: hidden;
+    overflow-y: hidden;
+}
+
