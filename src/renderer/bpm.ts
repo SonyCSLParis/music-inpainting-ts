@@ -25,6 +25,8 @@ export function render(): void{
     let bpmCounterElem: HTMLElement = document.createElement('div');
     bpmCounterElem.setAttribute('id', 'bpm-counter');
     bpmContainerElem.appendChild(bpmCounterElem);
+    ControlLabels.createLabel(bpmContainerElem, 'bpm-control-label',
+        'Tempo ändern', 'Change tempo');
 
     if (maxAcceptedBPM < 2*minAcceptedBPM) {
         throw Error(`BPM range should be at least one tempo octave wide, ie.

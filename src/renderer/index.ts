@@ -21,12 +21,14 @@ import * as HelpTour from './helpTour';
 import { createLFOControls } from './lfo';
 import CycleSelect from './cycleSelect';
 import { static_correct} from './staticPath';
+import * as ControlLabels from './controlLabels';
 
 import 'simplebar';
 import 'simplebar/packages/simplebar/src/simplebar.css';
 
 import '../common/styles/osmd.scss'
 import '../common/styles/main.scss'
+import '../common/styles/controls.scss'
 
 let COMPILE_MUSEUM_VERSION: boolean = true;
 if ( COMPILE_MUSEUM_VERSION ) {
@@ -56,8 +58,12 @@ $(() => {
 
 $(() => {
     let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
-    playbuttonContainerElem.id = 'play-button'
+    playbuttonContainerElem.id = 'play-button';
+
     bottomControlsGridElem.appendChild(playbuttonContainerElem);
+
+    ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label',
+        'Partitur abspielen', 'Score playback');
 
     PlaybackCommands.render(playbuttonContainerElem)
 });
@@ -74,8 +80,12 @@ function renderGranularitySelect(): void {
     ])
 
     let granularitySelectContainerElem: HTMLElement = document.createElement('control-item');
-    granularitySelectContainerElem.id = 'granularity-select-container'
-    bottomControlsGridElem.appendChild(granularitySelectContainerElem)
+    granularitySelectContainerElem.id = 'granularity-select-container';
+    bottomControlsGridElem.appendChild(granularitySelectContainerElem);
+
+    ControlLabels.createLabel(granularitySelectContainerElem,
+        'granularity-select-label',
+        'Rekompositionsdauer ändern', 'Change generation duration');
 
     function granularityOnChange(ev) {
         $('.notebox').removeClass('active');
@@ -335,6 +345,10 @@ $(() => {
     instrumentsGridElem.id = 'instruments-grid';
     instrumentsGridElem.classList.add('two-columns');
     bottomControlsGridElem.appendChild(instrumentsGridElem);
+
+    ControlLabels.createLabel(instrumentsGridElem, 'instruments-grid-label',
+        'Instrument ändern', 'Change instrument');
+
     Instruments.renderInstrumentSelect(instrumentsGridElem);
     if ( useLeadsheetMode ) {
         Instruments.renderChordInstrumentSelect(instrumentsGridElem);
