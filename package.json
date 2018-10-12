@@ -77,6 +77,7 @@
     "source-map-support": "^0.5.6",
     "tone": "^0.12.80",
     "tone-piano": "0.0.12",
+    "trip.js": "^3.3.3",
     "webmidi": "^2.2.0",
     "webpack-sources": "^1.0.1",
     "wheelnav": "^1.7.1"
