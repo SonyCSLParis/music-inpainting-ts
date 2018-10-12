@@ -185,6 +185,15 @@ control-item {
     }
 }
 
+.disabled {
+    color: lightgray;
+    cursor: not-allowed;
+
+    & * {
+        pointer-events: none!important;
+    }
+}
+
 #lfo-controls {
     display: grid;
     width: 40%;
