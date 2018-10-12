@@ -1,6 +1,9 @@
 $interface-font-stack: 'Fira-Sans', 'Ubuntu-Regular', sans-serif;
 $interface-font-weight: bold;
 
+$header-height: 120px;
+$bottom-controls-height: 150px;
+
 /*Font Awesome Fonts*/
 @font-face {
     font-family: 'FontAwesome';
@@ -11,6 +14,7 @@ $interface-font-weight: bold;
     font-family: 'Ubuntu-Condensed';
     src: url('../fonts/Ubuntu_Condensed/UbuntuCondensed-Regular.ttf') format('truetype');
 }
+
 @font-face {
     font-family: 'Ubuntu-Regular';
     src: url('../fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
@@ -46,7 +50,7 @@ div[nexus-ui] select, div[nexus-ui] input {
 header {
     position: absolute;
     width: 100%;
-    height: 90px;
+    height: $header-height;
     top: 0;
     left: 0;
 
@@ -136,13 +140,18 @@ header {
     margin-right:25px;
 }
 
+#osmd-container-container-container {
+    height: calc(100% - #{$header-height} - #{$bottom-controls-height});
+    top: $header-height;
+}
+
 #bottom-controls {
     position: absolute;
     display: inline-grid;
     width: 100%;
-    height: 90px;
+    height: $bottom-controls-height;
     grid-template-columns: repeat(4, 25%);
-    grid-template-rows: 100%;
+    grid-template-rows: 90px auto;
     align-items: center;
     justify-items: center;
 
