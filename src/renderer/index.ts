@@ -358,7 +358,8 @@ $(() => {
 );
 
 $(() => {
-    BPM.render();
+    let useSimpleSlider: boolean = !useAdvancedControls;
+    BPM.render(useSimpleSlider);
     // set the initial tempo for the app
     // if (LinkClient.isEnabled()) {
     // // if Link is enabled, use the Link tempo

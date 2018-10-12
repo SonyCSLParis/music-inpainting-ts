@@ -1,16 +1,22 @@
 import * as Tone from 'tone'
 let Nexus = require('./nexusColored')
 
-import LinkClient from './linkClient'
+import LinkClient from './linkClient';
+import * as ControlLabels from './controlLabels';
 
-
-let bpmCounter;
+let bpmControl;
 let minAcceptedBPM: number = 20
 let maxAcceptedBPM: number = 999
 
-export function render(): void{
+export function render(useSimpleSlider: boolean): void{
+    if (maxAcceptedBPM < 2*minAcceptedBPM) {
+        throw Error(`BPM range should be at least one tempo octave wide, ie.
+            maxAcceptedBPM at least twice as big as minAcceptedBPM`)
+    }
+
     // Create BPM display
-    let bpmContainerElem: HTMLDivElement = document.createElement('div');
+    let bpmContainerElem: HTMLElement = document.createElement('control-item');
+    bpmContainerElem.id = 'bpm-control',
     bpmContainerElem.setAttribute('horizontal', '');
     bpmContainerElem.setAttribute('layout', '');
     bpmContainerElem.setAttribute('display', 'grid');
@@ -19,26 +25,35 @@ export function render(): void{
     let bottomControlsElem: HTMLElement = document.getElementById('bottom-controls');
     bottomControlsElem.appendChild(bpmContainerElem);
 
-    let bpmNameElem: HTMLElement = document.createElement('div');
-    bpmNameElem.textContent = 'BPM'
-    bpmContainerElem.appendChild(bpmNameElem);
-    let bpmCounterElem: HTMLElement = document.createElement('div');
-    bpmCounterElem.setAttribute('id', 'bpm-counter');
-    bpmContainerElem.appendChild(bpmCounterElem);
     ControlLabels.createLabel(bpmContainerElem, 'bpm-control-label',
         'Tempo ändern', 'Change tempo');
 
-    if (maxAcceptedBPM < 2*minAcceptedBPM) {
-        throw Error(`BPM range should be at least one tempo octave wide, ie.
-            maxAcceptedBPM at least twice as big as minAcceptedBPM`)
+    if (!useSimpleSlider) {
+        let bpmControlElem: HTMLElement = document.createElement('div');
+        bpmControlElem.setAttribute('id', 'bpm-control');
+        bpmContainerElem.appendChild(bpmControlElem);
+        bpmControl = new Nexus.Number('#bpm-control', {
+            'min': minAcceptedBPM,
+            'max': maxAcceptedBPM,
+            'step': 0.01
+        });
     }
-    bpmCounter = new Nexus.Number('#bpm-counter', {
-        'min': minAcceptedBPM,
-        'max': maxAcceptedBPM,
-        'step': 0.01
-    });
+    else {
+        let bpmSliderElem: HTMLElement = document.createElement('div');
+        bpmSliderElem.setAttribute('id', 'bpm-control');
+        bpmContainerElem.appendChild(bpmSliderElem);
 
-    bpmCounter.on('change', function(newBPM){
+        bpmControl = new Nexus.Slider('#bpm-control', {
+            'size': [200,40],
+            'mode': 'absolute',  // 'relative' or 'absolute'
+            'min': 90,
+            'max': 120,
+            'step': 15,
+            'value': 105,
+        });
+    }
+
+    bpmControl.on('change', function(newBPM){
         Tone.Transport.bpm.value = newBPM;
         LinkClient.updateLinkBPM(newBPM);
     });
@@ -46,7 +61,7 @@ export function render(): void{
 
 
 export function getBPM(): number {
-    return bpmCounter.value
+    return bpmControl.value
 }
 
 
@@ -60,7 +75,7 @@ export function setBPM(newBPM): void {
     // the link update triggers a bpm modification message
     if (Tone.Transport.bpm.value !== newBPM) {
         Tone.Transport.bpm.value = newBPM;
-        bpmCounter._value.update(newBPM);
-        bpmCounter.render()
+        bpmControl._value.update(newBPM);
+        bpmControl.render()
     }
 };
