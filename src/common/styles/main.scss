@@ -217,6 +217,14 @@ control-item {
     justify-self: center;
 }
 
+.CycleSelect-inner-container {
+    // HACK: allows to click on the border of the selector
+    border-radius: 64px;
+    border-style: solid;
+    border-width: thick;
+    top: -5px;
+}
+
 //
 // #play-button {
 //     grid-column: 1 / 2
