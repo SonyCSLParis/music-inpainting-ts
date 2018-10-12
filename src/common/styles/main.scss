@@ -253,3 +253,12 @@ control-item {
 .center {
     margin: auto
 }
+
+#bpm-control {
+    & svg rect {
+        transform: scaleY(0.6);
+        y: 25;
+        rx: 5;
+        ry: 10;
+    }
+}
