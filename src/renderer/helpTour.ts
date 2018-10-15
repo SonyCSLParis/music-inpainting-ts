@@ -78,7 +78,7 @@ export function render(containerElement: HTMLElement) {
     containerElement.appendChild(helpElem);
 
     helpElem.id = 'help-icon';
-    helpElem.textContent = 'Help';
+    helpElem.innerHTML = 'Hilfe / <i>Help</i>';
 
     helpElem.addEventListener('click', function(event) {
         // stops event from trigerring outsideClickListener registered onTripStart

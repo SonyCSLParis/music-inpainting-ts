@@ -97,6 +97,7 @@ header {
         overflow: hidden;
         // HACK Manual offset to center in header
         top: -38px;
+        width: 45px;
     }
 }
 
@@ -122,11 +123,11 @@ header {
 
 #help-icon {
     position: relative;
-    width: 45px;
     justify-self: right;
     align-self: inherit;
     margin-right: 25px;
     cursor: pointer;
+    font-size: x-large;
 
     &:before {
         content: "\F05A";
