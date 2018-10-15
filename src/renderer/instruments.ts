@@ -142,7 +142,10 @@ export function renderDownloadButton(containerElement: HTMLElement): void {
         });
         loadPromises.push(sampleLibraryLoadPromise);
 
-        let pianoLoadPromise: Promise<boolean> = piano.load();
+        let pianoLoadPromise: Promise<boolean> = piano.load(
+            path.join(static_correct,
+                'Salamander/')
+        );
         loadPromises.push(pianoLoadPromise);
 
         Promise.all(loadPromises).then(()=>{
