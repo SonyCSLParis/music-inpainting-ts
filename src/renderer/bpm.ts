@@ -44,7 +44,7 @@ export function render(useSimpleSlider: boolean): void{
         bpmContainerElem.appendChild(bpmSliderElem);
 
         bpmControl = new Nexus.Slider('#bpm-control', {
-            'size': [200,40],
+            'size': [100, 40],
             'mode': 'absolute',  // 'relative' or 'absolute'
             'min': 90,
             'max': 120,
