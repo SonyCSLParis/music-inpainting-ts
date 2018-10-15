@@ -182,6 +182,12 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
     chordInstrumentSelectElem.classList.add('right-column');
     containerElement.appendChild(chordInstrumentSelectElem);
 
+    current_chords_instrument = polysynth_chords;
+    let chordInstrumentOnChange: {handleEvent: (e: Event) => void} = {
+        handleEvent: function(this, e: Event) {
+            current_chords_instrument = chordInstrumentFactories[this.value]();
+    }};
+
     let chordInstrumentSelect = new CycleSelect(chordInstrumentSelectElem,
         'instrument-select-chord',
         chordInstrumentOnChange,  // TODO
@@ -193,11 +199,6 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
         'Organ': () => {return sampledInstruments['organ']},
         'Harmonium': () => {return sampledInstruments['harmonium']},
         'None': () => {return silentInstrument}
-    };
-
-    current_chords_instrument = polysynth_chords;
-    let chordInstrumentOnChange = function(this: HTMLSelectElement) {
-        current_chords_instrument = chordInstrumentFactories[this.value]();
     };
 
     // chordInstrumentSelect.on('change', chordInstrumentOnChange.bind(chordInstrumentSelect));
