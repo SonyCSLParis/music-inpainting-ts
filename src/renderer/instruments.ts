@@ -164,6 +164,7 @@ let instrumentIconsBasePath: string = path.join(static_correct, 'icons');
 let mainInstrumentsIcons = new Map([
     ['PolySynth', '019-synthesizer.svg'],
     ['Piano', '049-piano.svg'],
+    ['Steelpan', '007-timpani.svg']
 ]);
 
 let chordInstrumentsIcons = new Map([
@@ -205,6 +206,7 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
 export function renderInstrumentSelect(containerElement: HTMLElement): void {
     let instrumentSelectElem: HTMLElement = document.createElement('control-item');
     instrumentSelectElem.id = 'lead-instrument-select-container';
+
     instrumentSelectElem.classList.add('left-column');
     containerElement.appendChild(instrumentSelectElem);
 
