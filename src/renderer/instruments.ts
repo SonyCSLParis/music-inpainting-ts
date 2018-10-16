@@ -24,10 +24,10 @@ piano.setVolume('release', -25);
 piano.setVolume('pedal', -15);
 
 
-// let chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
-// let reverb = new Tone.Reverb(1.5).connect(chorus);
-// reverb.generate();
-let reverb = new Tone.Volume(0).toMaster();
+let chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
+let reverb = new Tone.Reverb(1.5).connect(chorus);
+reverb.generate();
+// let reverb = new Tone.Volume(0).toMaster();
 
 let polysynth = new Tone.PolySynth(4);
 // polysynth.stealVoices = false;
@@ -36,7 +36,7 @@ polysynth.connect(reverb);
 let polysynth_chords = new Tone.PolySynth(24);
 polysynth_chords.connect(reverb);
 
-let steelpan = new Tone.PolySynth(12).set({
+let steelpan = new Tone.PolySynth(6).set({
     "oscillator": {
         "type": "fatcustom",
         "partials" : [0.2, 1, 0, 0.5, 0.1],
@@ -165,8 +165,8 @@ export function renderDownloadButton(containerElement: HTMLElement): void {
 
 let instrumentIconsBasePath: string = path.join(static_correct, 'icons');
 let mainInstrumentsIcons = new Map([
-    ['PolySynth', '019-synthesizer.svg'],
     ['Piano', '049-piano.svg'],
+    ['PolySynth', '019-synthesizer.svg'],
     ['Steelpan', '007-timpani.svg']
 ]);
 
