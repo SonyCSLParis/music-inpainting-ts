@@ -35,6 +35,11 @@ if ( COMPILE_MUSEUM_VERSION ) {
     require('../common/styles/museum.scss');
 }
 
+let DISABLE_MOUSE: boolean = true;
+if ( DISABLE_MOUSE ) {
+    require('../common/styles/disableMouse.scss');
+}
+
 declare var ohSnap: any;
 let server_config = require('../common/config.json')
 
