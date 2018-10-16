@@ -8,10 +8,11 @@ import '../common/styles/overlays.scss';
 
 export class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, options: object = {},
-            isLeadsheet: boolean = false) {
+            isLeadsheet: boolean = false, allowOnlyOneFermata: boolean=false) {
         super(container, options);
         this._boundingBoxes = [];
         this.isLeadsheet = isLeadsheet;
+        this._allowOnlyOneFermata = allowOnlyOneFermata;
 
         let self = this;
         // document.addEventListener('onresize',
@@ -20,6 +21,11 @@ export class eOSMD extends OpenSheetMusicDisplay {
     public _boundingBoxes: [number, number, number, number][];
 
     public isLeadsheet: boolean;
+    private _allowOnlyOneFermata: boolean;
+
+    public get allowOnlyOneFermata(): boolean {
+        return this._allowOnlyOneFermata;
+    }
 
     private _chordSelectors = [];
 
@@ -195,7 +201,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
 
             if (!this.isLeadsheet && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
                 // add fermata selection box
-                this.fermatas.push(new FermataBox(commonDiv, this.sequenceDuration()));
+                this.fermatas.push(new FermataBox(commonDiv, this.sequenceDuration(), this.allowOnlyOneFermata));
             };
 
             if (this.isLeadsheet && divClass == 'half-note') {

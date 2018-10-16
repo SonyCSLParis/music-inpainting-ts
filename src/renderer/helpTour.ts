@@ -4,14 +4,14 @@ import "trip.js/dist/trip.css";
 
 var Trip = require('trip.js');
 
-let noteboxHelp_german: string = "Tippe auf die <b>blauen Kästen</b> des \
+let noteboxHelp_german: string = "Tippen Sie auf die <b>blauen Kästen</b> des \
 Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen"
 let noteboxHelp_english: string = "Touch the <b>blue boxes</b> to trigger a \
 <b>regeneration</b> of the underlying portion of the score"
 
-let fermataboxHelp_german: string = 'Tippe auf die <b>gestrichelten Kästchen</b>, um \
-<b>Fermatas</b> ein- und auszuschalten';
-let fermataboxHelp_english: string = 'Touch the <b>dotted boxes</b> to impose or remove <b>fermatas</b>'
+let fermataboxHelp_german: string = 'Tippen Sie auf die <b>gestrichelten Kästchen</b>, um \
+eine <b>Fermata</b> zu setzen. Damit kann die Struktur des Chorales kontrolliert werden';
+let fermataboxHelp_english: string = 'Touch the <b>dotted boxes</b> to position an intermediate <b>fermata</b>. It helps to structure the chorale'
 
 function makeHTMLContent(german: string, english: string) {
     return `${german}<br><br><i>${english}</i><br><br>`
@@ -24,7 +24,7 @@ let trip = new Trip([
           position : "e",
             // expose: true
         },
-        { sel: "#quarter-note-3-0-common-Fermata",
+        { sel: "#quarter-note-1-3-common-Fermata",
           content: makeHTMLContent(fermataboxHelp_german, fermataboxHelp_english),
           position : "s",
             // expose: true,
