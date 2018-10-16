@@ -131,6 +131,8 @@ else {
 let serverUrl = `http://${serverIp}:${serverPort}/`;
 
 let osmd: eOSMD;
+
+let allowOnlyOneFermata: boolean = true;
 /*
  * Create a container element for OpenSheetMusicDisplay...
  */
@@ -163,7 +165,8 @@ $(() => {
          drawingParameters: "compact",
          drawPartNames: false
      },
-        useLeadsheetMode);
+        useLeadsheetMode,
+        allowOnlyOneFermata);
     loadMusicXMLandMidi(serverUrl, 'generate');
 })
 

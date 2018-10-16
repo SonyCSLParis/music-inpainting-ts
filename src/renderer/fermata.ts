@@ -2,10 +2,33 @@ import { AnnotationBox } from './annotationBox';
 
 export class FermataBox extends AnnotationBox {
     constructor(timestampContainer: string|HTMLElement,
-            sequenceDuration: number) {
+            sequenceDuration: number,
+            allowOnlyOneActive: boolean=false) {
         super(timestampContainer, 'Fermata');
         this.sequenceDuration = sequenceDuration;
-        this.draw()
+
+        // allow to enable only one Fermata maximum at a time
+        // (excluding imposed Fermatas)
+        this._allowOnlyOneActive = allowOnlyOneActive;
+
+        if (this.allowOnlyOneActive) {
+            this.onclickCallback = function() {
+                if (this.container.classList.contains('active')) {
+                    this.container.classList.toggle('active', false);
+                }
+                else {
+                    $('.Fermata').not('.imposed').toggleClass('active', false);
+                    this.container.classList.toggle('active');
+                }
+            }
+        }
+        else {
+            this.onclickCallback = function() {
+                this.container.classList.toggle('active');
+            }
+        }
+
+        this.draw();
     }
 
     protected validateTimestampContainer(): void {
@@ -17,6 +40,14 @@ export class FermataBox extends AnnotationBox {
     private sequenceDuration: number;
     private containedQuarterNote: number = this.containedQuarterNotes[0]
 
+    private _allowOnlyOneActive: boolean;
+
+    private onclickCallback: Function;
+
+    public get allowOnlyOneActive(): boolean {
+        return this._allowOnlyOneActive
+    }
+
     public draw(): void {
         if (this.containedQuarterNote >= this.sequenceDuration-2) {
             // Add imposed fermata at the end of the sequence
@@ -25,8 +56,9 @@ export class FermataBox extends AnnotationBox {
             this.container.classList.add('active');
         }
         else {
+            let self = this;
             this.container.addEventListener('click', () => {
-                this.container.classList.toggle('active')
+                self.onclickCallback()
             });
         };
     }
