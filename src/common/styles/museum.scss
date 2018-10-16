@@ -40,3 +40,13 @@ div.trip-overlay {
     // disable Trip.js dark overlay
     visibility: hidden;
 }
+
+.trip-navigation {
+    // increase size of navigation buttons
+    font-size: xx-large;
+
+    & a {
+        color: black;
+        text-decoration: none;
+    }
+}
