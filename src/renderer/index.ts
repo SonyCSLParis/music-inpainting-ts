@@ -140,6 +140,7 @@ let osmdContainer: HTMLElement;
 $(() => {
     let osmdContainerContainerContainer = <HTMLElement>document.createElement("div");
     osmdContainerContainerContainer.id = 'osmd-container-container-container';
+    osmdContainerContainerContainer.classList.add('loading');
     osmdContainerContainerContainer.setAttribute('data-simplebar', "");
     osmdContainerContainerContainer.setAttribute('data-simplebar-auto-hide', "false");
     document.body.appendChild(osmdContainerContainerContainer);
@@ -167,7 +168,10 @@ $(() => {
      },
         useLeadsheetMode,
         allowOnlyOneFermata);
-    loadMusicXMLandMidi(serverUrl, 'generate');
+    loadMusicXMLandMidi(serverUrl, 'generate').then(
+        () => {
+            osmdContainerContainerContainer.classList.remove('loading');
+        });
 })
 
 // var options = {

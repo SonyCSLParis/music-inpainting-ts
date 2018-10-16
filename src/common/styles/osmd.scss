@@ -3,6 +3,17 @@
 
     width: 100%;
     position: absolute;
+
+    justify-content: center;
+    align-content: center;
+
+    &.loading {
+        & .simplebar-track {
+            // hide scrollbars when osmd is loading
+            opacity: 0;
+            pointer-events: none;
+        }
+    }
 }
 
 #osmd-container {
