@@ -220,6 +220,6 @@ export function renderInstrumentSelect(containerElement: HTMLElement): void {
         mainInstrumentsIcons, instrumentIconsBasePath
     );
 
-    const initialInstrument = 'PolySynth';
+    const initialInstrument = 'Piano';
     instrumentSelect.value = initialInstrument;
 }
