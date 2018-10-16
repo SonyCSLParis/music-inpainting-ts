@@ -148,6 +148,14 @@ header {
     top: $header-height;
 }
 
+#osmd-loading-spinner {
+    position: absolute;
+    top: calc((100% - #{$header-height} - #{$bottom-controls-height})/2 + #{$header-height});
+    left: 50%;
+    margin-left: -32px;
+    margin-top: -32px;
+}
+
 #bottom-controls {
     position: absolute;
     display: inline-grid;

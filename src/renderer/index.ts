@@ -132,6 +132,19 @@ let serverUrl = `http://${serverIp}:${serverPort}/`;
 
 let osmd: eOSMD;
 
+function insertLoadingSpinner(container: HTMLElement): HTMLElement {
+    let spinnerElem: HTMLElement = document.createElement('i');
+    container.appendChild(spinnerElem);
+    spinnerElem.classList.add('fas');
+    spinnerElem.classList.add('fa-4x');
+    spinnerElem.style.color = 'black';
+    spinnerElem.classList.add('fa-spin');
+    spinnerElem.classList.add('fa-cog');
+    spinnerElem.id = 'osmd-loading-spinner';
+
+    return spinnerElem
+}
+
 let allowOnlyOneFermata: boolean = true;
 /*
  * Create a container element for OpenSheetMusicDisplay...
@@ -144,6 +157,9 @@ $(() => {
     osmdContainerContainerContainer.setAttribute('data-simplebar', "");
     osmdContainerContainerContainer.setAttribute('data-simplebar-auto-hide', "false");
     document.body.appendChild(osmdContainerContainerContainer);
+
+    let spinnerElem = insertLoadingSpinner(osmdContainerContainerContainer);
+
     let osmdContainerContainer = <HTMLElement>document.createElement("div");
     osmdContainerContainer.id = 'osmd-container-container';
     osmdContainerContainerContainer.appendChild(osmdContainerContainer);
@@ -154,6 +170,7 @@ $(() => {
     * stub created by Webpack, so you won't find any actual .html sources.
     */
     osmdContainerContainer.appendChild(osmdContainer);
+
 
     /*
     * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
@@ -170,6 +187,7 @@ $(() => {
         allowOnlyOneFermata);
     loadMusicXMLandMidi(serverUrl, 'generate').then(
         () => {
+            spinnerElem.style.visibility = 'hidden';
             osmdContainerContainerContainer.classList.remove('loading');
         });
 })
