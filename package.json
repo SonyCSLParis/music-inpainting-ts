@@ -61,6 +61,7 @@
   "dependencies": {
     "@types/simplebar": "^2.4.1",
     "abletonlink": "0.0.7",
+    "activity-detector": "^3.0.0",
     "ajv": "^6.5.2",
     "deep-equal": "^1.0.1",
     "es6-promise": "^4.2.4",

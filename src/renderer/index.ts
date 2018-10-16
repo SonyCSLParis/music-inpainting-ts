@@ -189,6 +189,7 @@ $(() => {
         () => {
             spinnerElem.style.visibility = 'hidden';
             osmdContainerContainerContainer.classList.remove('loading');
+            HelpTour.registerIdleStateDetector();
         });
 })
 
