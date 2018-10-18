@@ -83,7 +83,10 @@ function renderGranularitySelect(): void {
     let granularityIcons: Map<string, string> = new Map([
         ['quarter-note', 'quarter-note.svg'],
         ['half-note', 'half-note.svg'],
-        ['whole-note', 'whole.svg']
+        ['whole-note', 'whole.svg'],
+        // ['two-whole-notes', 'whole-two.png'],
+        // ['three-whole-notes', 'whole-three.png'],
+        // ['four-whole-notes', 'whole-four.png'],
     ])
 
     let granularitySelectContainerElem: HTMLElement = document.createElement('control-item');
