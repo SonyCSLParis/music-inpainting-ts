@@ -35,7 +35,9 @@ if ( COMPILE_MUSEUM_VERSION ) {
     require('../common/styles/museum.scss');
 }
 
-let DISABLE_MOUSE: boolean = true;
+// set to true to display the help tour after two minutes of inactivity on the
+// interface
+let REGISTER_IDLE_STATE_DETECTOR: boolean = false;
 if ( DISABLE_MOUSE ) {
     require('../common/styles/disableMouse.scss');
 }
@@ -194,7 +196,9 @@ $(() => {
         () => {
             spinnerElem.style.visibility = 'hidden';
             osmdContainerContainerContainer.classList.remove('loading');
-            HelpTour.registerIdleStateDetector();
+            if ( REGISTER_IDLE_STATE_DETECTOR ) {
+                HelpTour.registerIdleStateDetector();
+            }
         });
 })
 
