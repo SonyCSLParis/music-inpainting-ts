@@ -1,5 +1,6 @@
 import { OpenSheetMusicDisplay, VexFlowMeasure,
         Fraction, GraphicalMeasure, SourceMeasure } from "opensheetmusicdisplay";
+import { AnnotationBox } from './annotationBox'
 import { FermataBox } from './fermata';
 import { ChordSelector } from './chord_selector';
 import * as $ from 'jquery';
@@ -8,10 +9,10 @@ import '../common/styles/overlays.scss';
 
 export class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, options: object = {},
-            isLeadsheet: boolean = false, allowOnlyOneFermata: boolean=false) {
+            annotationType: string = "none", allowOnlyOneFermata: boolean=false) {
         super(container, options);
         this._boundingBoxes = [];
-        this.isLeadsheet = isLeadsheet;
+        this.annotationType = annotationType;
         this._allowOnlyOneFermata = allowOnlyOneFermata;
 
         let self = this;
@@ -20,7 +21,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
     }
     public _boundingBoxes: [number, number, number, number][];
 
-    public isLeadsheet: boolean;
+    public annotationType: string;
     private _allowOnlyOneFermata: boolean;
 
     public get allowOnlyOneFermata(): boolean {
@@ -199,12 +200,12 @@ export class eOSMD extends OpenSheetMusicDisplay {
             inner.appendChild(commonDiv);
             commonDiv.appendChild(div);
 
-            if (!this.isLeadsheet && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
+            if (this.annotationType == "fermata" && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
                 // add fermata selection box
                 this.fermatas.push(new FermataBox(commonDiv, this.sequenceDuration(), this.allowOnlyOneFermata));
             };
 
-            if (this.isLeadsheet && divClass == 'half-note') {
+            if (this.annotationType == "chord-selector" && divClass == 'half-note') {
                 // add chord selection boxes at the half-note level
                 this._chordSelectors.push(new ChordSelector(commonDiv, onclick));
             };
