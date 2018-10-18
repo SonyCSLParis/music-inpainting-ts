@@ -1,6 +1,6 @@
 // https://github.com/hisasann/electron-various-tutorials/tree/master/electron-hide-mouse-cursor
 
-body, body * {
+body.disable-mouse, body.disable-mouse * {
     cursor: none!important;
     -moz-user-select: none;
     -khtml-user-select: none;
@@ -9,5 +9,5 @@ body, body * {
     user-select: none;
 }
 
-body::selection { background: transparent; }
-body::-moz-selection { background: transparent; }
+body.disable-mouse::selection { background: transparent; }
+body.disable-mouse::-moz-selection { background: transparent; }

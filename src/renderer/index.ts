@@ -26,9 +26,10 @@ import * as ControlLabels from './controlLabels';
 import 'simplebar';
 import 'simplebar/packages/simplebar/src/simplebar.css';
 
-import '../common/styles/osmd.scss'
-import '../common/styles/main.scss'
-import '../common/styles/controls.scss'
+import '../common/styles/osmd.scss';
+import '../common/styles/main.scss';
+import '../common/styles/controls.scss';
+import '../common/styles/disableMouse.scss';
 
 let COMPILE_MUSEUM_VERSION: boolean = true;
 if ( COMPILE_MUSEUM_VERSION ) {
@@ -38,8 +39,12 @@ if ( COMPILE_MUSEUM_VERSION ) {
 // set to true to display the help tour after two minutes of inactivity on the
 // interface
 let REGISTER_IDLE_STATE_DETECTOR: boolean = false;
+
+// set to true to completely hide the mouse pointer on the interface
+// for touchscreens
+let DISABLE_MOUSE: boolean = false;
 if ( DISABLE_MOUSE ) {
-    require('../common/styles/disableMouse.scss');
+    document.body.classList.add('disable-mouse');
 }
 
 declare var ohSnap: any;
