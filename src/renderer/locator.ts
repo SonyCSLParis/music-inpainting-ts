@@ -237,31 +237,57 @@ export class eOSMD extends OpenSheetMusicDisplay {
         timestampDiv.parentNode.appendChild(chordDiv);
     }
 
-    public drawTimestampBoxes(onclickFactory=undefined): void{
+    public get pieceDuration(): Fraction {
+        let pieceDuration = new Fraction(0, 1)
+        const measureList = this.graphicalMusicSheet.MeasureList;
+        const numMeasures: number = measureList.length;
+        for (let measureIndex = 0; measureIndex < numMeasures; measureIndex++) {
+            const measure: GraphicalMeasure = <GraphicalMeasure>measureList[measureIndex][0]
+            const sourceMeasure: SourceMeasure = measure.parentSourceMeasure;
+            const measureDuration = sourceMeasure.Duration;
+
+            pieceDuration.Add(measureDuration)
+        }
+        return pieceDuration;
+    }
+
+    public drawTimestampBoxes(onclickFactory: (startTime: Fraction, endTime: Fraction) => ((event) => void)=undefined): void{
         // FIXME this assumes a time signature of 4/4
         let measureList = this.graphicalMusicSheet.MeasureList;
         const numMeasures: number = measureList.length;
+        const pieceDuration: Fraction = this.pieceDuration;
 
         function makeTimestamps(timeTuples: [number, number][]): Fraction[]{
             return timeTuples.map(([num, den]) => new Fraction(num, den))
         }
 
-        const timestampsQuarter: Fraction[] = makeTimestamps([[0, 4], [1, 4],
-            [2, 4], [3, 4], [4, 4]])
-        const timestampsHalf: Fraction[] = makeTimestamps([[0, 2], [1, 2], [2, 2]])
-        const timestampsWhole: Fraction[] = makeTimestamps([[0, 1], [1, 1]])
+        const durationQuarterNote: Fraction = new Fraction(1, 4)
+        const durationHalfNote: Fraction = new Fraction(1, 2);
+        const durationWholeNote: Fraction = new Fraction(1, 1);
 
-        const timestampsAndNames: [Fraction[], string][] = [
-            [timestampsQuarter, "quarter-note"],
-            [timestampsHalf, "half-note"],
-            [timestampsWhole, "whole-note"]]
+        const durationTwoWhole: Fraction = new Fraction(2, 1);
+        const durationThreeWhole: Fraction = new Fraction(3, 1);
+        const durationFourWhole: Fraction = new Fraction(4, 1);
+
+        const boxDurationsAndNames: [Fraction, string][] = [
+            [durationQuarterNote, "quarter-note"],
+            [durationHalfNote, "half-note"],
+            [durationWholeNote, "whole-note"],
+            [durationTwoWhole, "two-whole-notes"],
+            [durationThreeWhole, "three-whole-notes"],
+            [durationFourWhole, "four-whole-notes"]
+        ]
 
         for (let measureIndex = 0; measureIndex < numMeasures; measureIndex++){
             let measure: GraphicalMeasure = <GraphicalMeasure>measureList[measureIndex][0]
             let beginInstructionsWidth: number = measure.beginInstructionsWidth
 
             let sourceMeasure: SourceMeasure = measure.parentSourceMeasure;
-            let absoluteTimestamp: Fraction = sourceMeasure.AbsoluteTimestamp;
+
+            // compute time interval covered by the measure
+            let measureStartTimestamp: Fraction = sourceMeasure.AbsoluteTimestamp;
+            let measureEndTimestamp: Fraction = Fraction.plus(measureStartTimestamp, sourceMeasure.Duration);
+
             let musicSystem = measure.parentMusicSystem;
             let systemTop = musicSystem.PositionAndShape.AbsolutePosition.y;
             let systemHeight = musicSystem.PositionAndShape.Size.height;
@@ -272,54 +298,79 @@ export class eOSMD extends OpenSheetMusicDisplay {
               musicSystem.StaffLines[musicSystem.StaffLines.length - 1].PositionAndShape.RelativePosition.y + 4.0;
             let height = endY - y;
 
-            for (const [timestampList, granularityName] of timestampsAndNames) {
-                for (var timestampIndex=0; timestampIndex < timestampList.length-1;
-                    timestampIndex++) {
-                        let leftTimestamp = Fraction.plus(absoluteTimestamp,
-                            timestampList[timestampIndex])
-                        let rightTimestamp = Fraction.plus(absoluteTimestamp,
-                            timestampList[timestampIndex+1])
+            // for (const [timestampList, granularityName] of timestampsAndNames) {
+            for (const [boxDuration, granularityName] of boxDurationsAndNames) {
+                // we start at the timestamp of the beginning pof the current measure
+                // and shift by `duration` until we reach the end of the measure
+                // to generate all sub-intervals of `duration` in this measure
+                // Will generate a single interval if duration is
+                const currentBeginTimestamp = measureStartTimestamp.clone();
+                const currentEndTimestamp = Fraction.plus(currentBeginTimestamp,
+                    boxDuration);
 
-                        let xLeft = this.graphicalMusicSheet
-                            .calculateXPositionFromTimestamp(leftTimestamp)[0]
+                // HACK breaks if boxDuration equal e.g. Fraction(3, 2)
+                if ( boxDuration.WholeValue > 1 && !(measureIndex % boxDuration.WholeValue == 0)) {
+                    continue
+                }
 
-                        let xRight : number
-                        if (timestampIndex < timestampList.length-2) {
+                // number of boxes generated for this boxDuration and this measure
+                let boxIndex: number = 0;
+                while (currentBeginTimestamp.lt(measureEndTimestamp) &&
+                    currentEndTimestamp.lte(pieceDuration)) {
+                        let xBeginBox = this.graphicalMusicSheet
+                            .calculateXPositionFromTimestamp(currentBeginTimestamp)[0]
+
+                        let xEndBox : number
+                        if (currentEndTimestamp.lt(measureEndTimestamp)) {
                             // x-coordinates for the bounding box
-                            xRight = this.graphicalMusicSheet
-                                .calculateXPositionFromTimestamp(rightTimestamp)[0]
+                            xEndBox = this.graphicalMusicSheet
+                                .calculateXPositionFromTimestamp(currentEndTimestamp)[0]
                             }
                         else {
+                            // index of the last measure contained in the current box
+                            // e.g. if durationBox is 2, we arrive in `measureIndex+1`
+                            const lastContainedMeasureIndex: number = measureIndex + boxDuration.WholeValue - 1*(boxDuration.RealValue == boxDuration.WholeValue?1:0);
+                            const lastMeasure: GraphicalMeasure = <GraphicalMeasure>measureList[lastContainedMeasureIndex][0]
                             // reached last segment of the measure
                             // set xRight as the x-position of the next measure bar
-                            xRight = (measure.PositionAndShape.AbsolutePosition.x +
-                                measure.PositionAndShape.Size.width) + 1
+                            xEndBox = (lastMeasure.PositionAndShape.AbsolutePosition.x +
+                                lastMeasure.PositionAndShape.Size.width) + 1
                         }
 
                         if (beginInstructionsWidth>1) {
+                            // add x-offset to compensate for the presence of special
+                            // symbols (e.g. key symbols) at the beginning of the measure
                             if (beginInstructionsWidth > 5) {
-                                xLeft -= 1  // HACK hardcoded
-                                xRight -= 1
+                                xBeginBox -= 1  // HACK hardcoded
+                                xEndBox -= 1
                             }
                             else {
-                                xLeft -= 2
-                                xRight -= 2
+                                xBeginBox -= 2
+                                xEndBox -= 2
                             }
                         }
-                        let width = xRight - xLeft;
+                        let width = xEndBox - xBeginBox;
                         let onclick = (event) => {};
-                        if (onclickFactory) {onclick = onclickFactory(leftTimestamp, rightTimestamp)};
+                        if (onclickFactory) {
+                            onclick = onclickFactory(currentBeginTimestamp,
+                                currentEndTimestamp)
+                        };
 
-                        let timediv = this.createTimeDiv(
-                            xLeft, y, width, height,
+                        this.createTimeDiv(
+                            xBeginBox, y, width, height,
                             granularityName,
-                            `${granularityName}-${measureIndex}-${timestampIndex}`,
+                            `${granularityName}-${measureIndex}-${boxIndex}`,
                             onclick,
-                            [leftTimestamp, rightTimestamp]);
+                            [currentBeginTimestamp, currentEndTimestamp]
+                        );
+
+                        // translate the box in time
+                        currentBeginTimestamp.Add(boxDuration);
+                        currentEndTimestamp.Add(boxDuration)
+                        boxIndex++;
                     }
 
             }
-            let duration = sourceMeasure.Duration;
         }
     }
 
