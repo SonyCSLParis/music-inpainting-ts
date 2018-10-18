@@ -18,6 +18,7 @@ function makeHTMLContent(german: string, english: string) {
     return `${german}<br><br><i>${english}</i><br><br>`
 }
 
+// TODO contents should depend on AnnotationBox type used
 const tripContents: object[] = [
         // div[id$='-note-0-0']
         { sel: "#whole-note-0-0-common",
