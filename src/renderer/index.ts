@@ -201,7 +201,7 @@ $(() => {
          drawingParameters: "compact",
          drawPartNames: false
      },
-        useLeadsheetMode,
+        "fermata",
         allowOnlyOneFermata);
     loadMusicXMLandMidi(serverUrl, 'generate').then(
         () => {

@@ -50,6 +50,7 @@ export class FermataBox extends AnnotationBox {
 
     public draw(): void {
         if (this.containedQuarterNote >= this.sequenceDuration-2) {
+            // TODO(theis) move this out of the class
             // Add imposed fermata at the end of the sequence
             // Do not add onclick callback
             this.container.classList.add('imposed');
