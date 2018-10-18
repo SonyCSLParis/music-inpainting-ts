@@ -51,6 +51,9 @@ declare var ohSnap: any;
 let server_config = require('../common/config.json')
 
 let useAdvancedControls: boolean = false;
+if (useAdvancedControls) {
+    document.body.classList.add('advanced-controls');
+}
 
 // Tone.context.latencyHint = 'playback';
 

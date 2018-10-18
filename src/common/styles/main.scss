@@ -3,6 +3,7 @@ $interface-font-weight: bold;
 
 $header-height: 120px;
 $bottom-controls-height: 150px;
+$advanced-controls-height: 40px;
 
 /*Font Awesome Fonts*/
 @font-face {
@@ -175,6 +176,17 @@ header {
     box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
 
     text-align: center;
+}
+
+body.advanced-controls #bottom-controls {
+    height: calc(#{$bottom-controls-height} + #{$advanced-controls-height});
+    grid-template-columns: repeat(4, 25%);
+    grid-template-rows: 80px 50px 60px;
+
+}
+
+body.advanced-controls #osmd-container-container-container {
+    height: calc(100% - #{$header-height} - #{$bottom-controls-height} - #{$advanced-controls-height});
 }
 
 control-item {
