@@ -32,8 +32,18 @@ import '../common/styles/controls.scss';
 import '../common/styles/disableMouse.scss';
 
 let COMPILE_MUSEUM_VERSION: boolean = true;
+
+// defined at compile-time via webpack.DefinePlugin
+declare var COMPILE_ELECTRON: boolean; 
+
 if ( COMPILE_MUSEUM_VERSION ) {
     require('../common/styles/museum.scss');
+
+    if (COMPILE_ELECTRON) {
+        var webFrame = require('electron').webFrame;
+        webFrame.setVisualZoomLevelLimits(1, 1);
+        webFrame.setLayoutZoomLevelLimits(0, 0);
+    }
 }
 
 // set to true to display the help tour after two minutes of inactivity on the
