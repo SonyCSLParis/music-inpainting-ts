@@ -6,7 +6,10 @@ import LinkSocketModule = require('./linkClient.socket-io')
 // https://github.com/TypeStrong/ts-loader/tree/master/test/comparison-tests/conditionalRequire
 
 let Client;
-declare var COMPILE_ELECTRON: boolean;  // uses webpack.DefinePlugin
+
+// defined at compile-time via webpack.DefinePlugin
+declare var COMPILE_ELECTRON: boolean;
+
 if ( COMPILE_ELECTRON ) {
     let LinkElectron = <typeof LinkElectronModule>require('./linkClient.electron');
     Client = LinkElectron
