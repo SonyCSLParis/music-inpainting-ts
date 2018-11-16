@@ -18,6 +18,8 @@ $.fn.exists = function() {
     return this.length !== 0;
 }
 
+log.setLevel(log.levels.INFO);
+
 let scrollElementSelector: string = '.simplebar-content'
 
 function getTimingOffset(){
@@ -69,11 +71,13 @@ function nowPlayingCallback(_: any, step: number): void {
     setPlaybackPositionDisplay(step);
 };
 
+
+
 function getTimecontainerPosition(step: number): {left: number, right: number} {
-    const containerElemSelector = $(`.timecontainer[containedQuarterNotes~='${step}']`)
+    const containerElemSelector = $(`.timecontainer[containedQuarterNotes='${step}']`);
 
     if (!containerElemSelector.exists()) {
-        throw new Error("Inaccessible step")
+        throw new Error("Inaccessible step");
     }
 
     const containerElemStyle = containerElemSelector[0].style;
@@ -81,8 +85,8 @@ function getTimecontainerPosition(step: number): {left: number, right: number} {
     return {
         left: parseFloat(containerElemStyle.left),
         // FIXME implement and use timecontainer method
-        right: parseFloat(containerElemStyle.left + containerElemStyle.width)
-    }
+        right: parseFloat(containerElemStyle.left) + parseFloat(containerElemStyle.width)
+    };
 }
 
 // TODO disabe scrooling behaviour when user touches scrollbar and re-enable it
@@ -95,7 +99,7 @@ function getDisplayCenterPosition_px(): number {
     const scrollContentElement: HTMLElement = $(scrollElementSelector)[0]
     const currentSheetDisplayWidth: number = scrollContentElement.clientWidth;
     const centerPosition: number = (scrollContentElement.scrollLeft +
-        currentSheetDisplayWidth/2)
+        currentSheetDisplayWidth/2);
 
     return centerPosition
 }
@@ -106,48 +110,60 @@ function scrollToStep(step: number) {
     //
     // We do this by scheduling a scroll to the next step with duration
     // equal to one quarter-note time (dependent on the current BPM)
-    // Scrolls to position back in time are super-fast
+    // Inversely, scrolling to a position earlier in time (e.g. when pressing
+    // stop or reaching the end of the loop) is super-fast
+    log.debug(`Scrolling to step: ${step}`);
+    const sheetDisplayElem: HTMLElement = $('#osmd-container-container')[0];
+    const scrollContentElement: HTMLElement = $(scrollElementSelector)[0];
+    const currentSheetDisplayWidth_px: number = scrollContentElement.clientWidth;
+    const currentCenterPosition_px: number = getDisplayCenterPosition_px();
 
-    const sheetDisplayElem: HTMLElement = $('#osmd-container-container')[0]
-    const scrollContentElement: HTMLElement = $(scrollElementSelector)[0]
-    const currentSheetDisplayWidth: number = scrollContentElement.clientWidth;
-    const currentCenterPosition: number = getDisplayCenterPosition_px();
-
-    let positionTarget: number;
-    let scrollOffsetTarget: number;
+    let positionTarget_px: number;
+    let newScrollLeft_px: number;
     try {
         // try to retrieve the position of the (potentially non-existing) next
         // quarter-note
-        let nextStepPosition = getTimecontainerPosition(step+1);
-        const containerCenter = nextStepPosition.left + (nextStepPosition.right - nextStepPosition.left)/2;
-        positionTarget = containerCenter;
-        scrollOffsetTarget = containerCenter - currentSheetDisplayWidth/2 - currentSheetDisplayWidth/8;
+        const nextStepBoxDelimiters = getTimecontainerPosition(step);
+        const nextStepBoxWidth_px: number = (
+            nextStepBoxDelimiters.right - nextStepBoxDelimiters.left)
+        log.debug(`nextStepPosition: [${nextStepBoxDelimiters.left}, ${nextStepBoxDelimiters.right}]`);
+
+        // Center of the box containing the next quarter note
+        const containerCenter = nextStepBoxDelimiters.left + (
+            nextStepBoxWidth_px)/2;
+        positionTarget_px = nextStepBoxDelimiters.right;
     }
     catch (e) {
+        // reached last container box
         // FIXME make and catch specific error
         let lastStepPosition = getTimecontainerPosition(step);
+        log.debug(`Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`);
+
+        // right-side delimiter of the last quarter note box
         const containerRight = lastStepPosition.right;
-        positionTarget = containerRight;
-        scrollOffsetTarget = containerRight - currentSheetDisplayWidth/2;
-
-        return;
+        positionTarget_px = containerRight;
     }
+    newScrollLeft_px = positionTarget_px - currentSheetDisplayWidth_px/2;
 
-    if (currentCenterPosition > positionTarget) {
+    log.debug(`currentSheetDisplayWidth: ${currentSheetDisplayWidth_px}`)
+    log.debug(`currentCenterPosition: ${currentCenterPosition_px}`);
+    log.debug(`positionTarget: ${positionTarget_px}`);
+    log.debug(`scrollOffsetTarget: ${newScrollLeft_px }`);
+    if (currentCenterPosition_px > positionTarget_px) {
         // scrolling to a previous position: super-fast scroll
         $(scrollElementSelector).stop(true, false).animate( {
-            scrollLeft: scrollOffsetTarget
+            scrollLeft: newScrollLeft_px
         }, 10, 'linear');
     }
     else {
         $(scrollElementSelector).stop(true, false).animate( {
-            scrollLeft: scrollOffsetTarget
+            scrollLeft: newScrollLeft_px
         }, computeScrollSpeed() * 1000, 'linear');
     }
 }
 
 function resetScrollPosition(duration: JQuery.Duration= shortScroll) {
-    scrollToStep(-1);
+    scrollToStep(0);
 }
 
 function computeScrollSpeed() {
@@ -230,6 +246,53 @@ function scheduleTrackToInstrument(sequenceDuration_toneTime: Tone.Time,
         part.loop = true;
         part.loopEnd = sequenceDuration_toneTime;
     }
+function getNextPlayingStep(): number {
+    const sheetDuration_quarters = $('.quarter-note').length;
+    const nowPlayingStep = $('.timecontainer.quarter-note.playing').attr(
+        'containedquarternotes');
+    return parseInt(nowPlayingStep) % sheetDuration_quarters;
+}
+
+function getSheetDuration_quarters(): number {
+    const osmdContainer: HTMLElement = document.getElementById("osmd-container");
+    if (osmdContainer === null) {
+        throw new Error("Cannot access OSMD container");
+    }
+    const maxStep: number = parseInt(
+        osmdContainer.getAttribute("sequenceDuration_quarters"));
+    if (maxStep === null) {
+        throw new Error("Property sequenceDuration_quarters not found on OSMD container");
+    }
+    return maxStep;
+}
+
+function movePlaybackCursorToCurrentlyPlayingQuarter(): void {
+    // HACK should use proper typings for Tone
+    const [currentBar, currentQuarter, currentSixteenth] = (
+        <string>Tone.Transport.position
+        ).split(":");
+    log.debug(`Jumping to position ${[currentBar, currentQuarter, currentSixteenth]}`);
+    const sheetDuration_quarters = getSheetDuration_quarters();
+    // FIXME assumes a Time Signature of 4/4
+    nowPlayingCallback(null,
+        (4 * parseInt(currentBar) + parseInt(currentQuarter)) % sheetDuration_quarters
+    );
+}
+
+export function initialize(): void {
+        // initialize playback display scheduler
+        const drawCallback = (time, step) => {
+            // DOM modifying callback should be put in Tone.Draw scheduler!
+            // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
+            Tone.Draw.schedule((time) => {
+                movePlaybackCursorToCurrentlyPlayingQuarter();
+            })
+        };
+
+        // schedule quarter-notes clock
+        log.debug("Scheduling draw callback sequence");
+        // FIXME assumes a TimeSignature of 4/4
+        new Tone.Loop(drawCallback, '4n').start(0);
 }
 
 export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
@@ -252,15 +315,6 @@ export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
 
         // Required for Tone.Time conversions to properly work
         Tone.Transport.timeSignature = midi.header.timeSignature;
-
-        const drawCallback = (time, step) => {
-                // DOM modifying callback should be put in Tone.Draw scheduler!
-                // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
-                Tone.Draw.schedule((time) => {nowPlayingCallback(time, step)}, time);
-            }
-
-        // schedule quarter-notes clock
-        new Tone.Sequence(drawCallback, steps, '4n').start(0);
 
         const numTracks = midi.tracks.length;
         for (let trackIndex=0; trackIndex < numTracks; trackIndex++){
