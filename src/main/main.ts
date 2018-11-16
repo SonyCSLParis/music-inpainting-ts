@@ -1,5 +1,6 @@
 // Modules to control application life
 import {app, ipcMain} from 'electron'
+app.commandLine.appendSwitch('disable-pinch');
 import * as log from 'loglevel'
 
 import * as WindowManager from './windowManager'

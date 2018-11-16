@@ -1,5 +1,5 @@
 // import * as nipplejs from "nipplejs";
-import { eOSMD } from './locator';
+import { eOSMD, renderZoomControls } from './locator';
 import { Fraction } from 'opensheetmusicdisplay';
 import * as $ from "jquery";
 import * as WebMidi from 'webmidi';
@@ -32,8 +32,18 @@ import '../common/styles/controls.scss';
 import '../common/styles/disableMouse.scss';
 
 let COMPILE_MUSEUM_VERSION: boolean = true;
+
+// defined at compile-time via webpack.DefinePlugin
+declare var COMPILE_ELECTRON: boolean; 
+
 if ( COMPILE_MUSEUM_VERSION ) {
     require('../common/styles/museum.scss');
+
+    if (COMPILE_ELECTRON) {
+        var webFrame = require('electron').webFrame;
+        webFrame.setVisualZoomLevelLimits(1, 1);
+        webFrame.setLayoutZoomLevelLimits(0, 0);
+    }
 }
 
 // set to true to display the help tour after two minutes of inactivity on the
@@ -358,9 +368,12 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
             dataType: 'xml',
             success: (xmldata: XMLDocument) => {
                 removeMusicXMLHeaderNodes(xmldata);
-                osmd.load(xmldata)
-                .then(
+                // save current zoom level to restore it after load
+                const zoom = osmd.zoom;
+                osmd.load(xmldata).then(
                     () => {
+                        // restore pre-load zoom level
+                        osmd.zoom = zoom;
                         osmd.render(onClickTimestampBoxFactory);
                         enableChanges();
                     },
@@ -445,3 +458,15 @@ $(() => {
 );
 
 if (module.hot) { }
+$(() => {
+    // Insert zoom controls
+    const zoomControlsGridElem = document.createElement('div');
+    zoomControlsGridElem.id = 'osmd-zoom-controls';
+    // zoomControlsGridElem.classList.add('two-columns');
+    const osmdContainerContainerContainer = document.getElementById(
+        "osmd-container-container-container");
+    osmdContainerContainerContainer.appendChild(zoomControlsGridElem);
+    renderZoomControls(zoomControlsGridElem, osmd);
+}
+);
+

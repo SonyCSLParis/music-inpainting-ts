@@ -68,3 +68,18 @@
         background-color: #1fb4ff; // lighter blue // #ffc7cf;  // lighter pink
     }
 }
+
+#osmd-zoom-controls {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+    opacity: 0.7;
+
+    & .zoom-out {
+        padding-right: 0.5em;
+    }
+
+    &:hover {
+        opacity: 1;
+    }
+}

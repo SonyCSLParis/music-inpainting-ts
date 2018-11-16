@@ -1,7 +1,9 @@
 // const isWeb = !process.env.COMPILE_ELECTRON;
 import * as path from 'path';
 
-declare var COMPILE_ELECTRON: boolean;  // uses webpack.DefinePlugin
+// defined at compile-time via webpack.DefinePlugin
+declare var COMPILE_ELECTRON: boolean;
+
 const isWeb = !COMPILE_ELECTRON;
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
