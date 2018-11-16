@@ -274,7 +274,8 @@ export class eOSMD extends OpenSheetMusicDisplay {
         return pieceDuration;
     }
 
-    public drawTimestampBoxes(onclickFactory: (startTime: Fraction, endTime: Fraction) => ((event) => void)=undefined): void{
+    public drawTimestampBoxes(onclickFactory: (startTime: Fraction,
+        endTime: Fraction) => ((event) => void)=undefined): void{
         // FIXME this assumes a time signature of 4/4
         let measureList = this.graphicalMusicSheet.MeasureList;
         const numMeasures: number = measureList.length;
