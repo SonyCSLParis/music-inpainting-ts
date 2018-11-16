@@ -1,10 +1,13 @@
+import * as $ from 'jquery';
+import * as log from 'loglevel';
+import 'nipplejs';
+
 import { OpenSheetMusicDisplay, VexFlowMeasure,
         Fraction, GraphicalMeasure, SourceMeasure } from "opensheetmusicdisplay";
-import { AnnotationBox } from './annotationBox'
+import { AnnotationBox } from './annotationBox';
 import { FermataBox } from './fermata';
 import { ChordSelector } from './chord_selector';
-import * as $ from 'jquery';
-import 'nipplejs'
+
 import '../common/styles/overlays.scss';
 
 export class eOSMD extends OpenSheetMusicDisplay {
@@ -83,7 +86,9 @@ export class eOSMD extends OpenSheetMusicDisplay {
         // this is necessary in order to have OSMD print the sheet with
         // maximum horizontal spread
 
+        const superlarge_width_px: number = 10000000;
         // must use a string to ensure no integer formatting is performed
+        // which could lead to invalid values in the CSS
         const superlarge_width_px_str: string = '10000000';
 
         if (!($('#osmd-container svg')[0].hasAttribute('viewBox'))) {
@@ -91,40 +96,53 @@ export class eOSMD extends OpenSheetMusicDisplay {
             return;
         };
 
-        let width_px_str: string;
+        let newWidth_px: number;
+        let newWidth_px_str: string;
+        const previousWidth_px: number = parseInt(
+            $('#osmd-container svg')[0].getAttribute('width'));
+        // let x_px_str: string;
         if (toContentWidth) {
             const shift: number = 0;
             const sheetAbsolutePosition_px: number = this.computePositionZoom(
                 this.graphicalMusicSheet.MusicPages[0]
                 .MusicSystems[0].PositionAndShape
                 .AbsolutePosition.x, shift);
+            // x_px_str = `${sheetAbsolutePosition_px}`
+
             const sheetWidth_px: number = this.computePositionZoom(
                 this.graphicalMusicSheet.MusicPages[0]
                 .MusicSystems[0].PositionAndShape.BorderRight,
                 shift);
-            const musicSystemWidthRightBorderAbsolutePosition_px = (
+            const musicSystemRightBorderAbsolutePosition_px = (
                 sheetAbsolutePosition_px + sheetWidth_px);
             // add a right margin for more pleasant display
             const sheetContainerWidthWithAddedBorder_px = (
-            musicSystemWidthRightBorderAbsolutePosition_px +
-            sheetAbsolutePosition_px);
+                musicSystemRightBorderAbsolutePosition_px +
+                sheetAbsolutePosition_px);
 
-            let width_px = sheetContainerWidthWithAddedBorder_px;
-            width_px_str = `${width_px}`
+            newWidth_px = sheetContainerWidthWithAddedBorder_px;
+            newWidth_px_str = `${newWidth_px}`;
+
         }
         else {
-            width_px_str = superlarge_width_px_str;
+            newWidth_px = superlarge_width_px;
+            newWidth_px_str = superlarge_width_px_str;
         }
 
-        $('#osmd-container')[0].style.width = `${width_px_str}px`;
-        $('#osmd-container svg')[0].setAttribute('width', `${width_px_str}`);
+        // update the width of the container so the scrollbar operates properly
+        $('#osmd-container')[0].style.width = `${newWidth_px_str}px`;
+        // update the width of the svg so the scrollbar operates properly
+        $('#osmd-container svg')[0].setAttribute('width', `${newWidth_px_str}`);
 
+
+        // update the viewBox width to reflect the updated width
+        const viewBoxRatio_NewToOld = newWidth_px / previousWidth_px;
         const viewBox = $('#osmd-container svg')[0].getAttribute('viewBox');
-        const [x_px, y_px, _, height_px] = viewBox.split(' ');
+        const [x_px, y_px, previousWidth_px_str, height_px] = viewBox.split(' ');
+        const newViewBoxWidth_px_str: string = (
+            viewBoxRatio_NewToOld * parseInt(previousWidth_px_str)).toString();
         $('#osmd-container svg')[0].setAttribute('viewBox',
-            `${x_px} ${y_px} ${width_px_str} ${height_px}`);
-
-
+            `${x_px} ${y_px} ${newViewBoxWidth_px_str} ${height_px}`);
     }
 
     // compute a position accounting for <this>'s zoom level
@@ -399,4 +417,41 @@ function cycleGranularity(increase: boolean) {
     // trigger `onchange` callback
     granularitySelectElem.dispatchEvent(new Event('change'))
 // }
+}
+
+export function renderZoomControls(containerElement: HTMLElement,
+    osmd_target: eOSMD): void {
+    let zoomOutButton = document.createElement('i');
+    let zoomInButton = document.createElement('i');
+    containerElement.appendChild(zoomOutButton);
+    containerElement.appendChild(zoomInButton);
+
+    zoomOutButton.classList.add("zoom-out", "fa-search-minus");
+    zoomInButton.classList.add("zoom-in", "fa-search-plus");
+
+    // zoomOutButton.classList.add('left-column');
+    // zoomInButton.classList.add('right-column');
+
+    const mainIconSize: string = 'fa-3x';
+
+    let zoomButtons = [zoomOutButton, zoomInButton];
+    zoomButtons.forEach((zoomButton) => {
+        zoomButton.classList.add('fas');
+        zoomButton.classList.add(mainIconSize);
+        zoomButton.style.alignSelf = 'inherit';
+        zoomButton.style.cursor = 'pointer';
+        // FIXME not super visible
+        zoomButton.style.color = 'lightpink';
+    });
+
+    zoomOutButton.addEventListener('click', function() {
+        osmd_target.zoom /= 1.2;
+        osmd_target.render();
+        log.info(`OSMD zoom level now: ${osmd_target.zoom}`);
+    })
+    zoomInButton.addEventListener('click', function() {
+        osmd_target.zoom *= 1.2;
+        osmd_target.render();
+        log.info(`OSMD zoom level now: ${osmd_target.zoom}`);
+    })
 }
