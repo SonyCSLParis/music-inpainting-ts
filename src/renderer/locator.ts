@@ -47,6 +47,8 @@ export class eOSMD extends OpenSheetMusicDisplay {
         this.updateContainerWidth(false);
         super.render();
         this.drawTimestampBoxes(onclickFactory);
+        this.container.setAttribute('sequenceDuration_quarters',
+            this.sequenceDuration_quarters.toString());
         this.updateContainerWidth(true);
     }
 
@@ -232,7 +234,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
         return div;
     };
 
-    private sequenceDuration(): number {
+    private get sequenceDuration_quarters(): number {
         // FIXME hardcoded 4/4 time-signature
         return this.graphicalMusicSheet.MeasureList.length * 4;
     }
