@@ -47,6 +47,8 @@ export class eOSMD extends OpenSheetMusicDisplay {
         this.updateContainerWidth(false);
         super.render();
         this.drawTimestampBoxes(onclickFactory);
+        this.container.setAttribute('sequenceDuration_quarters',
+            this.sequenceDuration_quarters.toString());
         this.updateContainerWidth(true);
     }
 
@@ -220,7 +222,9 @@ export class eOSMD extends OpenSheetMusicDisplay {
 
             if (this.annotationType == "fermata" && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
                 // add fermata selection box
-                this.fermatas.push(new FermataBox(commonDiv, this.sequenceDuration(), this.allowOnlyOneFermata));
+                this.fermatas.push(new FermataBox(commonDiv,
+                    this.sequenceDuration_quarters,
+                    this.allowOnlyOneFermata));
             };
 
             if (this.annotationType == "chord-selector" && divClass == 'half-note') {
@@ -232,7 +236,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
         return div;
     };
 
-    private sequenceDuration(): number {
+    private get sequenceDuration_quarters(): number {
         // FIXME hardcoded 4/4 time-signature
         return this.graphicalMusicSheet.MeasureList.length * 4;
     }
