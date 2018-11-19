@@ -8,6 +8,7 @@ import * as Tone from 'tone';
 import * as log from 'loglevel';
 import * as path from 'path';
 let Nexus = require('./nexusColored');
+import * as url from 'url';
 
 import * as Header from './header';
 import * as PlaybackCommands from './playbackCommands';
@@ -249,8 +250,8 @@ $(() => {
 //     let argsMidiUrl = "get-midi";
 //
 //     //    url += '?choraleIndex=' + choraleIndex;
-//     loadMusicXMLandMidi(serverUrl + argsGenerationUrl,
-//         serverUrl + argsMidiUrl);
+//     loadMusicXMLandMidi(url.resolve(serverUrl, argsGenerationUrl),
+//         url.resolve(serverUrl, argsMidiUrl));
 //     enableChanges();
 // }, true);
 //
@@ -362,7 +363,7 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
 
         let sequenceDuration_toneTime: Tone.Time;
         $.post({
-            url: serverURL + generationCommand,
+            url: url.resolve(serverURL, generationCommand),
             data: JSON.stringify(getMetadata()),
             contentType: 'application/json',
             dataType: 'xml',
@@ -381,7 +382,7 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
                 );
             }
         }).done(() => {
-            $.getJSON(serverURL + 'get-sequence-duration',
+            $.getJSON(url.resolve(serverURL, 'get-sequence-duration'),
             (sequenceDuration: object) => {
                 let numMeasures = sequenceDuration['numMeasures']
                 let numQuarters = sequenceDuration['numQuarters']
@@ -389,7 +390,7 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
                 sequenceDuration_toneTime = Tone.Time(
                     `${numMeasures}:${numQuarters}:${numSixteenth}`);
 
-                Playback.loadMidi(serverURL + 'get-midi',
+                Playback.loadMidi(url.resolve(serverURL, 'get-midi'),
                     sequenceDuration_toneTime);
                 resolve();
                 }
