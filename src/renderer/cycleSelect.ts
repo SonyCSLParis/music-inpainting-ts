@@ -83,7 +83,7 @@ export default class CycleSelect {
     public set value(newValue: string) {
         // set the value of the <select> element and update the visuals
         if (!(this.options.includes(newValue))) {
-            throw EvalError('Unauthorized value' + newValue + ' for CycleSelector');
+            throw EvalError('Unauthorized value ' + newValue + ' for CycleSelector');
         };
         this._selectElem.value = this.options.indexOf(newValue).toString();
         this._selectElem.dispatchEvent(new Event('change'));
