@@ -20,7 +20,7 @@ import * as LinkClientCommands from './linkClientCommands';
 import * as MidiOut from './midiOut';
 import * as HelpTour from './helpTour';
 import { createLFOControls } from './lfo';
-import CycleSelect from './cycleSelect';
+import { CycleSelect } from './cycleSelect';
 import { static_correct} from './staticPath';
 import * as ControlLabels from './controlLabels';
 
