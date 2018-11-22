@@ -6,7 +6,7 @@ import * as path from 'path'
 
 let Nexus = require('./nexusColored')
 
-import CycleSelect from './cycleSelect';
+import { CycleSelect } from './cycleSelect';
 
 import { static_correct } from './staticPath'
 

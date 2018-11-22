@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import '../common/styles/cycleSelect.scss';
 
-export default class CycleSelect {
+export class CycleSelect {
     static containerCssClass: string = 'CycleSelect-container';
     static innerContainerCssClass: string = 'CycleSelect-inner-container';
     static visibleCssClass: string = 'CycleSelect-visible';
