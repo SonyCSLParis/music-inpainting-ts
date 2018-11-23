@@ -39,21 +39,6 @@ function getPlayNoteByMidiChannel(midiChannel: number){
     return playNote
 }
 
-function makeSteps(sequenceDuration_toneTime: Tone.Time) {
-    // create an array of quarter-note aligned steps
-
-    // Taken from Tone.Time implementation
-    // compute duration of one beat
-    const quarterTime = sequenceDuration_toneTime._beatsToUnits(1);
-    const sequence_duration_quarters = Math.floor(
-        sequenceDuration_toneTime.valueOf() / quarterTime);
-    let steps = [];
-    for (let i = 0; i < sequence_duration_quarters; i++) {
-        steps.push(i);
-    }
-    return steps
-}
-
 
 function setPlaybackPositionDisplay(step: number): void{
     $('.notebox').removeClass('playing');
@@ -246,11 +231,6 @@ function scheduleTrackToInstrument(sequenceDuration_toneTime: Tone.Time,
         part.loop = true;
         part.loopEnd = sequenceDuration_toneTime;
     }
-function getNextPlayingStep(): number {
-    const sheetDuration_quarters = $('.quarter-note').length;
-    const nowPlayingStep = $('.timecontainer.quarter-note.playing').attr(
-        'containedquarternotes');
-    return parseInt(nowPlayingStep) % sheetDuration_quarters;
 }
 
 function getSheetDuration_quarters(): number {
@@ -295,37 +275,62 @@ export function initialize(): void {
         new Tone.Loop(drawCallback, '4n').start(0);
 }
 
-export function loadMidi(url: string, sequenceDuration_toneTime: Tone.Time) {
-    MidiConvert.load(url, function(midi) {
-        const steps = makeSteps(sequenceDuration_toneTime)
-        Tone.Transport.cancel();  // remove all scheduled events
+function midiRequestWithData(url: string, data=null, method:string = 'GET'): Promise<MidiConvert.MIDI>{
+		return new Promise<MidiConvert.MIDI>((success, fail) => {
+			var request = new XMLHttpRequest()
+			request.open(method, url)
+			request.responseType = 'arraybuffer'
+			// decode asynchronously
+			request.addEventListener('load', () => {
+				if (request.readyState === 4 && request.status === 200){
+					success(MidiConvert.parse(request.response))
+				} else {
+					fail(request.status)
+				}
+			})
+			request.addEventListener('error', fail)
+			request.send(data)
+		});
+	}
 
-        if (!midi.header.bpm) {
-            // TODO insert warning wrong Flask server
+
+export function loadMidi(serverURL: string, musicXML: XMLDocument, sequenceDuration_toneTime: Tone.Time) {
+    const serializer = new XMLSerializer();
+    const payload = serializer.serializeToString(musicXML);
+
+    $(document).ajaxError((error) => console.log(error));
+
+    midiRequestWithData(serverURL, payload, 'POST').then(function (midi) {
+            Tone.Transport.cancel();  // remove all scheduled events
+            initialize();
+
+            if (!midi.header.bpm) {
+                // TODO insert warning wrong Flask server
+            }
+            if (!midi.header.timeSignature) {
+                // TODO insert warning wrong Flask server
+                // TODO create a test for the flask server
+            }
+            // must set the Transport BPM to that of the midi for proper scheduling
+            // TODO(theis): this will probably lead to phase-drift if repeated
+            // updates are performed successively, should catch up somehow on
+            // the desynchronisation introduced by this temporary tempo change
+            Tone.Transport.bpm.value = midi.header.bpm;
+
+            // Required for Tone.Time conversions to properly work
+            Tone.Transport.timeSignature = midi.header.timeSignature;
+
+            const numTracks = midi.tracks.length;
+            for (let trackIndex=0; trackIndex < numTracks; trackIndex++){
+                const track = midi.tracks[trackIndex];
+                // midiChannels start at 1
+                const midiChannel = trackIndex + 1;
+                scheduleTrackToInstrument(sequenceDuration_toneTime, track,
+                    midiChannel);
+            }
+
+            // change Transport BPM back to the displayed value
+            Tone.Transport.bpm.value = BPM.getBPM();  // WARNING if bpmCounter is a floor'ed value, this is wrong
         }
-        if (!midi.header.timeSignature) {
-            // TODO insert warning wrong Flask server
-            // TODO create a test for the flask server
-        }
-        // must set the Transport BPM to that of the midi for proper scheduling
-        // TODO(theis): this will probably lead to phase-drift if repeated
-        // updates are performed successively, should catch up somehow on
-        // the desynchronisation introduced by this temporary tempo change
-        Tone.Transport.bpm.value = midi.header.bpm;
-
-        // Required for Tone.Time conversions to properly work
-        Tone.Transport.timeSignature = midi.header.timeSignature;
-
-        const numTracks = midi.tracks.length;
-        for (let trackIndex=0; trackIndex < numTracks; trackIndex++){
-            const track = midi.tracks[trackIndex];
-            // midiChannels start at 1
-            const midiChannel = trackIndex + 1;
-            scheduleTrackToInstrument(sequenceDuration_toneTime, track,
-                midiChannel);
-        }
-
-        // change Transport BPM back to the displayed value
-        Tone.Transport.bpm.value = BPM.getBPM();  // WARNING if bpmCounter is a floor'ed value, this is wrong
-    })
+    ).catch((error) => {console.log(error)})
 }
