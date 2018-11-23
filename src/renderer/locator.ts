@@ -12,23 +12,31 @@ import '../common/styles/overlays.scss';
 
 export class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, options: object = {},
-            annotationType: string = "none", allowOnlyOneFermata: boolean=false) {
+            boxDurations_quarters: number[],
+            annotationTypes: string[] = [], allowOnlyOneFermata: boolean=false) {
         super(container, options);
         this._boundingBoxes = [];
-        this.annotationType = annotationType;
+        this._annotationTypes = annotationTypes;
+        this._boxDurations_quarters = boxDurations_quarters;
         this._allowOnlyOneFermata = allowOnlyOneFermata;
-
-        let self = this;
-        // document.addEventListener('onresize',
-        //     () => self.updateContainerWidth(true));
     }
     public _boundingBoxes: [number, number, number, number][];
 
-    public annotationType: string;
+    private _boxDurations_quarters: number[];
+
+    private _annotationTypes: string[];
     private _allowOnlyOneFermata: boolean;
+
+    public get annotationTypes(): string[] {
+        return this._annotationTypes;
+    }
 
     public get allowOnlyOneFermata(): boolean {
         return this._allowOnlyOneFermata;
+    }
+
+    public get boxDurations_quarters(): number[] {
+        return this._boxDurations_quarters;
     }
 
     private _chordSelectors = [];
@@ -152,10 +160,25 @@ export class eOSMD extends OpenSheetMusicDisplay {
         return ((value - shift) * 10.0 * this.zoom);
     };
 
+    // CSS class depicting the duration of a timecontainer box
+    static makeGranularityCSSClass(duration_quarters: number): string {
+        return duration_quarters.toFixed() + '_quarterNote_duration'
+    }
+
+    // Unique ID for a timecontainer box
+    static makeGranularityID(duration_quarters: number,
+        measureIndex: number, positionInMeasure: number): string {
+        return ([duration_quarters, measureIndex, positionInMeasure]
+            .map((string) => string.toFixed())
+            .join("-")
+            .concat('-timecontainer'))
+    }
+
     /*
     Create an overlay box with given shape and assign it the given divClass
     */
-    private createTimeDiv(x, y, width, height, divClass: string, divId: string,
+    private createTimeDiv(x, y, width, height, duration_quarters: number,
+        divId: string,
         onclick: (PointerEvent) => void,
         timestamps: [Fraction, Fraction]): HTMLElement {
         // container for positioning the timestamp box and attached boxes
@@ -175,7 +198,8 @@ export class eOSMD extends OpenSheetMusicDisplay {
             // the div has no ID set yet: was created in this call
             commonDiv.id = commonDivId;
             commonDiv.classList.add('timecontainer');
-            commonDiv.classList.add(divClass);
+            commonDiv.classList.add(
+                eOSMD.makeGranularityCSSClass(duration_quarters));
 
             div.id = divId;
             div.classList.add('notebox');
@@ -194,10 +218,14 @@ export class eOSMD extends OpenSheetMusicDisplay {
             // div.setAttribute('containedQuarterNotes',
             //     commonDiv.getAttribute('containedQuarterNotes'));
 
-            let granularitySelect : HTMLSelectElement = <HTMLSelectElement>$('#granularity-select-container select')[0];
-            const currentGranularity = granularitySelect[
-                parseInt(granularitySelect.value)].textContent;
-            if (currentGranularity == divClass) div.classList.add('active');
+            let granularitySelect: HTMLSelectElement = <HTMLSelectElement>$('#granularity-select-container select')[0];
+            const currentGranularity: number = parseInt(
+                granularitySelect.options
+                [parseInt(granularitySelect.value)]
+                .innerText);
+            if (currentGranularity == duration_quarters) {
+                div.classList.add('active');
+            };
 
             // // insert NipppleJS manager
             // var options = {
@@ -220,14 +248,14 @@ export class eOSMD extends OpenSheetMusicDisplay {
             inner.appendChild(commonDiv);
             commonDiv.appendChild(div);
 
-            if (this.annotationType == "fermata" && divClass === 'quarter-note') {  // FIXME hardcoded quarter-note duration
+            if (this.annotationTypes.includes("fermata") && duration_quarters == 1) {  // FIXME hardcoded quarter-note duration
                 // add fermata selection box
                 this.fermatas.push(new FermataBox(commonDiv,
                     this.sequenceDuration_quarters,
                     this.allowOnlyOneFermata));
             };
 
-            if (this.annotationType == "chord-selector" && divClass == 'half-note') {
+            if (this.annotationTypes.includes("chord-selector") && duration_quarters == 2) {
                 // add chord selection boxes at the half-note level
                 this._chordSelectors.push(new ChordSelector(commonDiv, onclick));
             };
@@ -236,7 +264,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
         return div;
     };
 
-    private get sequenceDuration_quarters(): number {
+    public get sequenceDuration_quarters(): number {
         // FIXME hardcoded 4/4 time-signature
         return this.graphicalMusicSheet.MeasureList.length * 4;
     }
@@ -281,26 +309,9 @@ export class eOSMD extends OpenSheetMusicDisplay {
         const numMeasures: number = measureList.length;
         const pieceDuration: Fraction = this.pieceDuration;
 
-        function makeTimestamps(timeTuples: [number, number][]): Fraction[]{
-            return timeTuples.map(([num, den]) => new Fraction(num, den))
+        function makeDurationFraction(duration_quarters: number): Fraction {
+            return new Fraction(duration_quarters, 4)
         }
-
-        const durationQuarterNote: Fraction = new Fraction(1, 4)
-        const durationHalfNote: Fraction = new Fraction(1, 2);
-        const durationWholeNote: Fraction = new Fraction(1, 1);
-
-        const durationTwoWhole: Fraction = new Fraction(2, 1);
-        const durationThreeWhole: Fraction = new Fraction(3, 1);
-        const durationFourWhole: Fraction = new Fraction(4, 1);
-
-        const boxDurationsAndNames: [Fraction, string][] = [
-            [durationQuarterNote, "quarter-note"],
-            [durationHalfNote, "half-note"],
-            [durationWholeNote, "whole-note"],
-            [durationTwoWhole, "two-whole-notes"],
-            [durationThreeWhole, "three-whole-notes"],
-            [durationFourWhole, "four-whole-notes"]
-        ]
 
         for (let measureIndex = 0; measureIndex < numMeasures; measureIndex++){
             let measure: GraphicalMeasure = <GraphicalMeasure>measureList[measureIndex][0]
@@ -323,8 +334,11 @@ export class eOSMD extends OpenSheetMusicDisplay {
             let height = endY - y;
 
             // for (const [timestampList, granularityName] of timestampsAndNames) {
-            for (const [boxDuration, granularityName] of boxDurationsAndNames) {
-                // we start at the timestamp of the beginning pof the current measure
+            this.boxDurations_quarters.forEach((boxDuration_quarters) => {
+            // for (const boxDuration_quarters of ) {
+                const boxDuration = makeDurationFraction(boxDuration_quarters);
+
+                // we start at the timestamp of the beginning of the current measure
                 // and shift by `duration` until we reach the end of the measure
                 // to generate all sub-intervals of `duration` in this measure
                 // Will generate a single interval if duration is
@@ -334,7 +348,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
 
                 // HACK breaks if boxDuration equal e.g. Fraction(3, 2)
                 if ( boxDuration.WholeValue > 1 && !(measureIndex % boxDuration.WholeValue == 0)) {
-                    continue
+                    return
                 }
 
                 // number of boxes generated for this boxDuration and this measure
@@ -380,10 +394,15 @@ export class eOSMD extends OpenSheetMusicDisplay {
                                 currentEndTimestamp)
                         };
 
+                        const timecontainerID = eOSMD.makeGranularityID(
+                            boxDuration_quarters,
+                            measureIndex,
+                            boxIndex
+                        );
                         this.createTimeDiv(
                             xBeginBox, y, width, height,
-                            granularityName,
-                            `${granularityName}-${measureIndex}-${boxIndex}`,
+                            boxDuration_quarters,
+                            timecontainerID,
                             onclick,
                             [currentBeginTimestamp, currentEndTimestamp]
                         );
@@ -393,8 +412,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
                         currentEndTimestamp.Add(boxDuration)
                         boxIndex++;
                     }
-
-            }
+                })
         }
     }
 
@@ -412,6 +430,7 @@ function cycleGranularity(increase: boolean) {
     // let granularitySelectElem: HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
     const selectedGranularity = parseInt(granularitySelect.val().toString());
     const numOptions = granularitySelectElem.children.length
+
     if (increase) {
         granularitySelectElem.value =
             Math.min(selectedGranularity + 1, numOptions-1).toString()
@@ -419,6 +438,7 @@ function cycleGranularity(increase: boolean) {
     else {
         granularitySelectElem.value =
             Math.max(selectedGranularity - 1, 0).toString()}
+
     // trigger `onchange` callback
     granularitySelectElem.dispatchEvent(new Event('change'))
 // }
@@ -433,9 +453,6 @@ export function renderZoomControls(containerElement: HTMLElement,
 
     zoomOutButton.classList.add("zoom-out", "fa-search-minus");
     zoomInButton.classList.add("zoom-in", "fa-search-plus");
-
-    // zoomOutButton.classList.add('left-column');
-    // zoomInButton.classList.add('right-column');
 
     const mainIconSize: string = 'fa-3x';
 
