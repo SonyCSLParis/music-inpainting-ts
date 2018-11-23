@@ -16,6 +16,7 @@
 
     "disable_mouse": false,
 
+    "insert_help": false,
     "display_help_on_idle": false,
     "display_help_on_idle_period_ms": 10000,
 

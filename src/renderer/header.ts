@@ -2,9 +2,12 @@ import * as Path from 'path';
 
 import '../common/styles/main.scss';
 
+
 import { static_correct } from './staticPath';
 
 import * as HelpTour from './helpTour';
+
+let configuration = require('../common/config.json');
 
 declare var COMPILE_ELECTRON: boolean;
 if (COMPILE_ELECTRON) {
@@ -41,7 +44,9 @@ export function render(containerElement: HTMLElement) {
     nameElem.innerText = 'DeepBach';
     containerElement.appendChild(nameElem);
 
-    HelpTour.render(containerElement);
+    if (configuration["insert_help"]) {
+        HelpTour.render(containerElement);
+    }
 }
 
 if (module.hot) {}
