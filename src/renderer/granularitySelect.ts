@@ -44,8 +44,7 @@ export function renderGranularitySelect(containerElement: HTMLElement,
     containerElement.appendChild(granularitySelectContainerElem);
 
     ControlLabels.createLabel(granularitySelectContainerElem,
-        'granularity-select-label',
-        'Rekompositionsdauer ändern', 'Change generation duration');
+        'granularity-select-label');
 
     function granularityOnChange(ev) {
         const duration_quarters: number = parseInt(this.value);

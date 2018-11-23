@@ -5,6 +5,8 @@ import "trip.js/dist/trip.css";
 
 var Trip = require('trip.js');
 
+// TODO move helpTour to localizations file
+
 let noteboxHelp_german: string = "Tippen Sie auf die <b>blauen Kästen</b> des \
 Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen"
 let noteboxHelp_english: string = "Touch the <b>blue boxes</b> to trigger a \

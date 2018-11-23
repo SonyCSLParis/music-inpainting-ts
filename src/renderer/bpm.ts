@@ -25,8 +25,7 @@ export function render(useSimpleSlider: boolean): void{
     let bottomControlsElem: HTMLElement = document.getElementById('bottom-controls');
     bottomControlsElem.appendChild(bpmContainerElem);
 
-    ControlLabels.createLabel(bpmContainerElem, 'bpm-control-label',
-        'Tempo ändern', 'Change tempo');
+    ControlLabels.createLabel(bpmContainerElem, 'bpm-control-label');
 
     if (!useSimpleSlider) {
         let bpmControlElem: HTMLElement = document.createElement('div');

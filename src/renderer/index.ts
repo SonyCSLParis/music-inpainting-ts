@@ -42,7 +42,7 @@ const granularities_quarters: string[] = (
 let COMPILE_MUSEUM_VERSION: boolean = true;
 
 // defined at compile-time via webpack.DefinePlugin
-declare var COMPILE_ELECTRON: boolean; 
+declare var COMPILE_ELECTRON: boolean;
 
 if ( COMPILE_MUSEUM_VERSION ) {
     require('../common/styles/museum.scss');
@@ -94,8 +94,7 @@ $(() => {
 
     bottomControlsGridElem.appendChild(playbuttonContainerElem);
 
-    ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label',
-        'Partitur abspielen', 'Score playback');
+    ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
 
     PlaybackCommands.render(playbuttonContainerElem)
 });
@@ -397,8 +396,7 @@ $(() => {
     instrumentsGridElem.classList.add('two-columns');
     bottomControlsGridElem.appendChild(instrumentsGridElem);
 
-    ControlLabels.createLabel(instrumentsGridElem, 'instruments-grid-label',
-        'Instrument ändern', 'Change instrument');
+    ControlLabels.createLabel(instrumentsGridElem, 'instruments-grid-label');
 
     Instruments.renderInstrumentSelect(instrumentsGridElem);
     if ( configuration['use_chords_instrument'] ) {

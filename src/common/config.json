@@ -7,6 +7,9 @@
 
     "granularities_quarters": ["1", "2", "4"],
 
+    "main_language": "en",
+    "secondary_language": null,
+
     "use_chords_instrument": false,
 
     "insert_advanced_controls": true,
