@@ -1,6 +1,20 @@
 {
+    "use_local_server": true,
     "server_ip": "localhost",
-    "chorale_port": 5001,
-    "leadsheet_port": 5000,
+    "server_port": 5000,
+
+    "annotation_types": ["fermata"],
+
+    "granularities_quarters": ["1", "2", "4"],
+
+    "use_chords_instrument": false,
+
+    "insert_advanced_controls": true,
+
+    "disable_mouse": false,
+
+    "display_help_on_idle": false,
+    "display_help_on_idle_period_ms": 10000,
+
     "link_channel_prefix": "LINK/"
 }
