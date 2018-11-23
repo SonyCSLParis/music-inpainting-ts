@@ -23,6 +23,7 @@ import { createLFOControls } from './lfo';
 import { CycleSelect } from './cycleSelect';
 import { static_correct} from './staticPath';
 import * as ControlLabels from './controlLabels';
+import * as GranularitySelect from './granularitySelect';
 
 import 'simplebar';
 import 'simplebar/packages/simplebar/src/simplebar.css';
@@ -99,41 +100,12 @@ $(() => {
     PlaybackCommands.render(playbuttonContainerElem)
 });
 
-$(() => {renderGranularitySelect()});
 
-// Time-granularity selector
-function renderGranularitySelect(): void {
-    let iconsBasePath: string = path.join(static_correct, 'icons');
-    let granularityIcons: Map<string, string> = new Map([
-        ['quarter-note', 'quarter-note.svg'],
-        ['half-note', 'half-note.svg'],
-        ['whole-note', 'whole.svg'],
-        // ['two-whole-notes', 'whole-two.png'],
-        // ['three-whole-notes', 'whole-three.png'],
-        // ['four-whole-notes', 'whole-four.png'],
-    ])
+$(() => {
+    GranularitySelect.renderGranularitySelect(bottomControlsGridElem,
+        granularities_quarters);
+});
 
-    let granularitySelectContainerElem: HTMLElement = document.createElement('control-item');
-    granularitySelectContainerElem.id = 'granularity-select-container';
-    bottomControlsGridElem.appendChild(granularitySelectContainerElem);
-
-    ControlLabels.createLabel(granularitySelectContainerElem,
-        'granularity-select-label',
-        'Rekompositionsdauer ändern', 'Change generation duration');
-
-    function granularityOnChange(ev) {
-        $('.notebox').removeClass('active');
-        $('.' + this.value + '> .notebox').addClass('active');
-    };
-
-    let granularitySelect = new CycleSelect(granularitySelectContainerElem,
-        'granularity-select',
-        {handleEvent: granularityOnChange},
-        granularityIcons,
-        iconsBasePath
-    );
-    granularitySelect.value = 'whole-note';
-}
 
 let insertLFO: boolean = false;
 if (insertLFO) {
@@ -213,6 +185,7 @@ $(() => {
          drawingParameters: "compact",
          drawPartNames: false
         },
+        granularities_quarters.map((num) => {return parseInt(num, 10);}),
         configuration['annotation_types'],
         allowOnlyOneFermata);
     loadMusicXMLandMidi(serverUrl, 'generate').then(
