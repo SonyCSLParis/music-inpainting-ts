@@ -32,6 +32,12 @@ import '../common/styles/main.scss';
 import '../common/styles/controls.scss';
 import '../common/styles/disableMouse.scss';
 
+let configuration = require('../common/config.json');
+
+const granularities_quarters: string[] = (
+    (<string[]>configuration['granularities_quarters']).sort(
+        (a, b) => {return parseInt(a) - parseInt(b)}));
+
 let COMPILE_MUSEUM_VERSION: boolean = true;
 
 // defined at compile-time via webpack.DefinePlugin
@@ -49,19 +55,18 @@ if ( COMPILE_MUSEUM_VERSION ) {
 
 // set to true to display the help tour after two minutes of inactivity on the
 // interface
-let REGISTER_IDLE_STATE_DETECTOR: boolean = false;
+let REGISTER_IDLE_STATE_DETECTOR: boolean = configuration["display_help_on_idle"];
 
 // set to true to completely hide the mouse pointer on the interface
 // for touchscreens
-let DISABLE_MOUSE: boolean = false;
+let DISABLE_MOUSE: boolean = configuration['disable_mouse'];
 if ( DISABLE_MOUSE ) {
     document.body.classList.add('disable-mouse');
 }
 
 declare var ohSnap: any;
-let server_config = require('../common/config.json')
 
-let useAdvancedControls: boolean = false;
+let useAdvancedControls: boolean = configuration['insert_advanced_controls'];
 if (useAdvancedControls) {
     document.body.classList.add('advanced-controls');
 }
@@ -142,20 +147,15 @@ titlediv.style.width = '100%'
 titlediv.style.fontStyle = 'bold'
 titlediv.style.fontSize = '64px'
 
-let useLeadsheetMode = false;  // true for leadsheets, false for chorales
-let serverPort: number;
-if (useLeadsheetMode) {
-    serverPort = server_config['leadsheet_port'];
-} else {
-    serverPort = server_config['chorale_port'];
-}
+
+let serverPort: number = configuration['server_port'];
 let serverIp: string;
-let useLocalServer: boolean = true;
+let useLocalServer: boolean = configuration["use_local_server"];
 if (useLocalServer) {
     serverIp = 'localhost';
 }
 else {
-    serverIp = server_config['server_ip'];
+    serverIp = configuration['server_ip'];
 }
 let serverUrl = `http://${serverIp}:${serverPort}/`;
 
@@ -206,13 +206,14 @@ $(() => {
     * the container we've created in the steps before. The second parameter tells OSMD
     * not to redraw on resize.
     */
+
     let autoResize: boolean = true;
     osmd = new eOSMD(osmdContainer,
         {autoResize: autoResize,
          drawingParameters: "compact",
          drawPartNames: false
-     },
-        "fermata",
+        },
+        configuration['annotation_types'],
         allowOnlyOneFermata);
     loadMusicXMLandMidi(serverUrl, 'generate').then(
         () => {
@@ -291,7 +292,6 @@ function getChordLabels(): object[] {
 
 function getMetadata() {
     return {
-        leadsheet: osmd.isLeadsheet,
         fermatas: getFermatas(),
         chordLabels: getChordLabels()
     }
@@ -410,7 +410,7 @@ $(() => {
         'Instrument ändern', 'Change instrument');
 
     Instruments.renderInstrumentSelect(instrumentsGridElem);
-    if ( useLeadsheetMode ) {
+    if ( configuration['use_chords_instrument'] ) {
         Instruments.renderChordInstrumentSelect(instrumentsGridElem);
     }
     Instruments.renderDownloadButton(instrumentsGridElem);
@@ -470,4 +470,3 @@ $(() => {
     renderZoomControls(zoomControlsGridElem, osmd);
 }
 );
-
