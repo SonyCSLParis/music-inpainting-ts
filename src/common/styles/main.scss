@@ -5,6 +5,8 @@ $header-height: 120px;
 $bottom-controls-height: 150px;
 $advanced-controls-height: 40px;
 
+$CycleSelect-size: 54px;
+
 /*Font Awesome Fonts*/
 @font-face {
     font-family: 'FontAwesome';
@@ -230,8 +232,8 @@ control-item {
 .CycleSelect-container {
     color: lightpink;
 
-    width: 54px;
-    height: 54px;
+    width: $CycleSelect-size;
+    height: $CycleSelect-size;
     border-radius: 64px;
     border-style: solid;
     border-width: thick;
@@ -241,10 +243,16 @@ control-item {
 }
 
 .CycleSelect-inner-container {
-    // HACK: allows to click on the border of the selector
+    width: inherit !important;
+    height: inherit !important;
+
+    // HACK: invisble border to allow clicking on the border of the selector
     border-radius: 64px;
     border-style: solid;
     border-width: thick;
+    border-color: inherit;  // fallback if no opacity support
+    border-color: rgba(0, 0, 0, 0);
+
     top: -5px;
 }
 
