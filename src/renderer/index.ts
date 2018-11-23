@@ -323,6 +323,10 @@ function enableChanges(): void {
     toggleBusyClass(false);
 }
 
+// TODO don't create globals like this
+const serializer = new XMLSerializer();
+const parser = new DOMParser();
+let currentXML: XMLDocument;
 
 /**
  * Load a MusicXml file via xhttp request, and display its contents.
@@ -331,43 +335,57 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
     return new Promise((resolve, _) => {
         disableChanges();
 
+        let payload_object = getMetadata();
+
         log.trace('Metadata:');
         log.trace(JSON.stringify(getMetadata()));
 
+        if (!generationCommand.includes('generate')) {
+            payload_object['sheet'] = serializer.serializeToString(currentXML);
+        }
+        $(document).ajaxError((error) => console.log(error));
         let sequenceDuration_toneTime: Tone.Time;
         $.post({
             url: url.resolve(serverURL, generationCommand),
-            data: JSON.stringify(getMetadata()),
+            data: JSON.stringify(payload_object),
             contentType: 'application/json',
-            dataType: 'xml',
-            success: (xmldata: XMLDocument) => {
+            dataType: 'json',
+            success: (jsonResponse: {}) => {
+                // update metadata
+                // TODO: must check if json HAS the given metadata key first!
+                // const new_fermatas = jsonResponse["fermatas"];
+                if (!generationCommand.includes('generate')) {
+                    // TODO updateFermatas(newFermatas);
+                }
+
+                // load the received MusicXML
+                const xml_sheet_string = jsonResponse["sheet"];
+                let xmldata = parser.parseFromString(xml_sheet_string,
+                    "text/xml");
                 removeMusicXMLHeaderNodes(xmldata);
+                currentXML = xmldata;
+
                 // save current zoom level to restore it after load
                 const zoom = osmd.zoom;
-                osmd.load(xmldata).then(
+                osmd.load(currentXML).then(
                     () => {
                         // restore pre-load zoom level
                         osmd.zoom = zoom;
                         osmd.render(onClickTimestampBoxFactory);
                         enableChanges();
+
+                        console.log(currentXML);
+                        resolve();
+
+                        Playback.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
+                            currentXML,
+                            Tone.Time(`0:${osmd.sequenceDuration_quarters}:0`)
+                        );
                     },
                     (err) => {log.error(err); enableChanges()}
                 );
             }
         }).done(() => {
-            $.getJSON(url.resolve(serverURL, 'get-sequence-duration'),
-            (sequenceDuration: object) => {
-                let numMeasures = sequenceDuration['numMeasures']
-                let numQuarters = sequenceDuration['numQuarters']
-                let numSixteenth = sequenceDuration['numSixteenth']
-                sequenceDuration_toneTime = Tone.Time(
-                    `${numMeasures}:${numQuarters}:${numSixteenth}`);
-
-                Playback.loadMidi(url.resolve(serverURL, 'get-midi'),
-                    sequenceDuration_toneTime);
-                resolve();
-                }
-            )
         })
 
     })
