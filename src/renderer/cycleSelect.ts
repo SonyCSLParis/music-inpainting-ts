@@ -105,9 +105,9 @@ export class CycleSelect {
     private populateContainer(): void {
         // append all images as <img> to the container
         let self = this;
-        this.icons.forEach((iconPath, instrumentName) => {
+        this.icons.forEach((iconPath, iconName) => {
             let imageElem = document.createElement('img');
-            imageElem.id = this.makeOptionId(instrumentName);
+            imageElem.id = this.makeOptionId(iconName);
             imageElem.src = path.join(this.basePath, iconPath);
             self.innerContainerElement.appendChild(imageElem);
         })
