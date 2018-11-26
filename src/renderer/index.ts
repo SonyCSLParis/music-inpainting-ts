@@ -24,6 +24,7 @@ import { CycleSelect } from './cycleSelect';
 import { static_correct} from './staticPath';
 import * as ControlLabels from './controlLabels';
 import * as GranularitySelect from './granularitySelect';
+import { createWavInput } from './file_upload';
 
 import 'simplebar';
 import 'simplebar/packages/simplebar/src/simplebar.css';
@@ -418,12 +419,12 @@ $(() => {
     { BPM.setBPM(110); }
 });
 
+$(() => {
+    let insertWavInput: boolean = configuration['insert_wav_input'];
+    if (insertWavInput) {
+        createWavInput(() => loadMusicXMLandMidi(serverUrl, 'get-musicxml'))
+}});
 
-import { createWavInput } from './file_upload'
-let insertWavInput: boolean = false;
-if (insertWavInput) {
-    createWavInput(() => loadMusicXMLandMidi(serverUrl, 'get-musicxml'))
-};
 
 $(() => {
     LinkClient.kill();
