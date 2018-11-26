@@ -5,10 +5,11 @@
 
     "annotation_types": ["fermata"],
 
+    "allow_only_one_fermata": false,
+
     "granularities_quarters": ["1", "2", "4"],
 
-    "main_language": "en",
-    "secondary_language": null,
+    "insert_variations_lfo": false,
 
     "use_chords_instrument": false,
 
@@ -17,6 +18,9 @@
     "disable_mouse": false,
 
     "insert_wav_input": false,
+
+    "main_language": "en",
+    "secondary_language": null,
 
     "insert_help": false,
     "display_help_on_idle": false,
