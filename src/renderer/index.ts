@@ -112,12 +112,6 @@ if (insertLFO) {
     createLFOControls();
 }
 
-let titlediv: HTMLDivElement = document.createElement('div')
-titlediv.textContent = 'DeepBach'
-titlediv.style.alignContent = 'CenterTop'
-titlediv.style.width = '100%'
-titlediv.style.fontStyle = 'bold'
-titlediv.style.fontSize = '64px'
 
 
 let serverPort: number = configuration['server_port'];
