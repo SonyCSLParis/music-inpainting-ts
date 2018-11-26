@@ -15,13 +15,10 @@ export class eOSMD extends OpenSheetMusicDisplay {
             boxDurations_quarters: number[],
             annotationTypes: string[] = [], allowOnlyOneFermata: boolean=false) {
         super(container, options);
-        this._boundingBoxes = [];
         this._annotationTypes = annotationTypes;
         this._boxDurations_quarters = boxDurations_quarters;
         this._allowOnlyOneFermata = allowOnlyOneFermata;
     }
-    public _boundingBoxes: [number, number, number, number][];
-
     private _boxDurations_quarters: number[];
 
     private _annotationTypes: string[];
@@ -59,36 +56,6 @@ export class eOSMD extends OpenSheetMusicDisplay {
             this.sequenceDuration_quarters.toString());
         this.updateContainerWidth(true);
     }
-
-    private computeBoundingBoxes(): void {
-        // TODO find measureIndex and staffIndex
-        let measureList = this.graphicalMusicSheet.MeasureList;
-        let numMeasures: number = measureList.length;
-        let numberOfStaves = measureList[0].length;
-        let staffIndex = 0;
-        let boundingBoxes = [];
-        for (let measureIndex = 0; measureIndex < numMeasures; measureIndex++) {
-
-            let measure: VexFlowMeasure = <VexFlowMeasure>measureList[measureIndex][staffIndex] // first staff
-            // let staff = measure.getVFStave();
-            let system = measure.parentMusicSystem;
-            let height = system.PositionAndShape.Size.height;
-            let measureBoundingBox = measure.PositionAndShape;
-            let x = measureBoundingBox.AbsolutePosition.x;
-            let y = measureBoundingBox.AbsolutePosition.y;
-            let width = measureBoundingBox.Size.width;
-
-            let rectangle = {
-                "xmin": x * 10,
-                "ymin": y * 10,
-                "xmax": (x + width) * 10,
-                "ymax": (y + height) * 10
-            };
-            boundingBoxes.push(rectangle);
-
-        }
-        this._boundingBoxes = boundingBoxes;
-    };
 
     private updateContainerWidth(toContentWidth: boolean=true): void {
         // HACK update width of container element to actual width of content
@@ -269,25 +236,6 @@ export class eOSMD extends OpenSheetMusicDisplay {
         return this.graphicalMusicSheet.MeasureList.length * 4;
     }
 
-    private drawChordBox(timestampDiv: HTMLElement) {
-        // Position chord box over `timestampElement`
-        // FIXME hardcoded half-note duration
-        const chordDivId = timestampDiv.id + '-chord'
-        let chordDiv = (document.getElementById(chordDivId) ||
-            document.createElement("div"));
-        chordDiv.id = chordDivId
-        chordDiv.classList.add('chord');
-
-        let containedQuarters_str: string = timestampDiv.getAttribute('containedquarternotes')
-        chordDiv.setAttribute('containedquarternotes', containedQuarters_str);
-
-        chordDiv.addEventListener('click', () => {
-            chordDiv.classList.toggle('active')
-        })
-
-        timestampDiv.parentNode.appendChild(chordDiv);
-    }
-
     public get pieceDuration(): Fraction {
         let pieceDuration = new Fraction(0, 1)
         const measureList = this.graphicalMusicSheet.MeasureList;
@@ -324,8 +272,6 @@ export class eOSMD extends OpenSheetMusicDisplay {
             let measureEndTimestamp: Fraction = Fraction.plus(measureStartTimestamp, sourceMeasure.Duration);
 
             let musicSystem = measure.parentMusicSystem;
-            let systemTop = musicSystem.PositionAndShape.AbsolutePosition.y;
-            let systemHeight = musicSystem.PositionAndShape.Size.height;
 
             // cf. sizing the Cursor in OpenSheetMusicDisplay/Cursor.ts
             let y = musicSystem.PositionAndShape.AbsolutePosition.y + musicSystem.StaffLines[0].PositionAndShape.RelativePosition.y;
@@ -415,12 +361,6 @@ export class eOSMD extends OpenSheetMusicDisplay {
                 })
         }
     }
-
-    public get boundingBoxes() {
-        this.computeBoundingBoxes();
-        return this._boundingBoxes;
-    }
-
 }
 
 function cycleGranularity(increase: boolean) {
