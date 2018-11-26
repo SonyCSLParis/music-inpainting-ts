@@ -142,10 +142,25 @@ export class eOSMD extends OpenSheetMusicDisplay {
     }
 
     /*
+    Update sizing of the box with given ID
+    */
+    private updateTimeContainerSize(divId: string,
+        x: number, y: number, width: number, height: number): void {
+        const commonDivId = divId + '-common';
+        let commonDiv = (document.getElementById(commonDivId) ||
+            document.createElement("div"));
+
+        commonDiv.style.top = this.computePositionZoom(y, 0) + 'px';
+        commonDiv.style.height = this.computePositionZoom(height, 0) + 'px';
+        commonDiv.style.left = this.computePositionZoom(x, 1) + 'px';
+        commonDiv.style.width = this.computePositionZoom(width) + 'px';
+    }
+
+    /*
     Create an overlay box with given shape and assign it the given divClass
     */
-    private createTimeDiv(x, y, width, height, duration_quarters: number,
-        divId: string,
+    private createTimeContainer(divId: string,
+        duration_quarters: number,
         onclick: (PointerEvent) => void,
         timestamps: [Fraction, Fraction]): HTMLElement {
         // container for positioning the timestamp box and attached boxes
@@ -155,11 +170,6 @@ export class eOSMD extends OpenSheetMusicDisplay {
             document.createElement("div"));
         let div = (document.getElementById(divId) ||
             document.createElement("div"));
-
-        commonDiv.style.top = this.computePositionZoom(y, 0) + 'px';
-        commonDiv.style.height = this.computePositionZoom(height, 0) + 'px';
-        commonDiv.style.left = this.computePositionZoom(x, 1) + 'px';
-        commonDiv.style.width = this.computePositionZoom(width) + 'px';
 
         if (commonDiv.id !== commonDivId) {
             // the div has no ID set yet: was created in this call
@@ -345,15 +355,22 @@ export class eOSMD extends OpenSheetMusicDisplay {
                             measureIndex,
                             boxIndex
                         );
-                        this.createTimeDiv(
-                            xBeginBox, y, width, height,
-                            boxDuration_quarters,
-                            timecontainerID,
-                            onclick,
-                            [currentBeginTimestamp, currentEndTimestamp]
-                        );
 
-                        // translate the box in time
+                        if (!document.getElementById(timecontainerID)) {
+                            // the time container does not yet exist, create it
+                            this.createTimeContainer(
+                                timecontainerID,
+                                boxDuration_quarters,
+                                onclick,
+                                [currentBeginTimestamp, currentEndTimestamp]
+                            );
+                        };
+
+                        this.updateTimeContainerSize(timecontainerID,
+                            xBeginBox, y, width, height);
+
+
+                        // continue to next time container
                         currentBeginTimestamp.Add(boxDuration);
                         currentEndTimestamp.Add(boxDuration)
                         boxIndex++;
