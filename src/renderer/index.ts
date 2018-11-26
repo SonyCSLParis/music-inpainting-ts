@@ -97,7 +97,7 @@ $(() => {
 
     ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
 
-    PlaybackCommands.render(playbuttonContainerElem)
+    PlaybackCommands.render(playbuttonContainerElem);
 });
 
 
@@ -107,11 +107,12 @@ $(() => {
 });
 
 
-let insertLFO: boolean = false;
-if (insertLFO) {
-    createLFOControls();
-}
-
+$(() => {
+    let insertLFO: boolean = configuration["insert_variations_lfo"];
+    if (insertLFO) {
+        createLFOControls();
+    }
+});
 
 
 let serverPort: number = configuration['server_port'];
@@ -125,7 +126,6 @@ else {
 }
 let serverUrl = `http://${serverIp}:${serverPort}/`;
 
-let osmd: eOSMD;
 
 function insertLoadingSpinner(container: HTMLElement): HTMLElement {
     let spinnerElem: HTMLElement = document.createElement('i');
@@ -140,7 +140,9 @@ function insertLoadingSpinner(container: HTMLElement): HTMLElement {
     return spinnerElem
 }
 
-let allowOnlyOneFermata: boolean = true;
+let osmd: eOSMD;
+
+let allowOnlyOneFermata: boolean = configuration['allow_only_one_fermata'];
 /*
  * Create a container element for OpenSheetMusicDisplay...
  */
@@ -337,8 +339,10 @@ function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
         if (!generationCommand.includes('generate')) {
             payload_object['sheet'] = serializer.serializeToString(currentXML);
         }
+
+        // register minimal error handler
         $(document).ajaxError((error) => console.log(error));
-        let sequenceDuration_toneTime: Tone.Time;
+
         $.post({
             url: url.resolve(serverURL, generationCommand),
             data: JSON.stringify(payload_object),
