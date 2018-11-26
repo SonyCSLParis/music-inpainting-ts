@@ -34,6 +34,9 @@ import '../common/styles/main.scss';
 import '../common/styles/controls.scss';
 import '../common/styles/disableMouse.scss';
 
+// defined at compile-time via webpack.DefinePlugin
+declare var COMPILE_ELECTRON: boolean;
+
 let configuration = require('../common/config.json');
 
 const granularities_quarters: string[] = (
@@ -41,9 +44,6 @@ const granularities_quarters: string[] = (
         (a, b) => {return parseInt(a) - parseInt(b)}));
 
 let COMPILE_MUSEUM_VERSION: boolean = true;
-
-// defined at compile-time via webpack.DefinePlugin
-declare var COMPILE_ELECTRON: boolean;
 
 if ( COMPILE_MUSEUM_VERSION ) {
     require('../common/styles/museum.scss');
@@ -443,13 +443,6 @@ $(() => {
 );
 
 $(() => {
-    // Insert help-tour
-    // HelpTour.render();
-}
-);
-
-if (module.hot) { }
-$(() => {
     // Insert zoom controls
     const zoomControlsGridElem = document.createElement('div');
     zoomControlsGridElem.id = 'osmd-zoom-controls';
@@ -460,3 +453,5 @@ $(() => {
     renderZoomControls(zoomControlsGridElem, osmd);
 }
 );
+
+if (module.hot) { }
