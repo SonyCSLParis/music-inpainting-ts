@@ -189,6 +189,7 @@ export function stop(){
     })
 };
 
+let midiParts: Tone.Part[] = [];
 
 
 function scheduleTrackToInstrument(sequenceDuration_toneTime: Tone.Time,
@@ -230,6 +231,9 @@ function scheduleTrackToInstrument(sequenceDuration_toneTime: Tone.Time,
     for (let part of [sustain, noteOffEvents, noteOnEvents]) {
         part.loop = true;
         part.loopEnd = sequenceDuration_toneTime;
+
+        // add the part to the array of currently scheduled parts
+        midiParts.push(part);
     }
 }
 
@@ -301,8 +305,11 @@ export function loadMidi(serverURL: string, musicXML: XMLDocument, sequenceDurat
     $(document).ajaxError((error) => console.log(error));
 
     midiRequestWithData(serverURL, payload, 'POST').then(function (midi) {
-            Tone.Transport.cancel();  // remove all scheduled events
-            initialize();
+            for (let midiPartIndex=0, numMidiParts=midiParts.length;
+                midiPartIndex < numMidiParts; midiPartIndex++) {
+                    let midiPart = midiParts.pop();
+                    midiPart.dispose();
+            }
 
             if (!midi.header.bpm) {
                 // TODO insert warning wrong Flask server
