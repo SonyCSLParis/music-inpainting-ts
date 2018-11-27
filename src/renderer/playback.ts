@@ -211,6 +211,7 @@ function scheduleTrackToInstrument(sequenceDuration_toneTime: Tone.Time,
     part.start(0)  // schedule events on the Tone timeline
     part.loop = true;
     part.loopEnd = sequenceDuration_toneTime;
+    midiParts.push(part)
 
     //schedule the pedal
     let sustain = new Tone.Part((time, event) => {
