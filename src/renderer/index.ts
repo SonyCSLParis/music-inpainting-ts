@@ -193,6 +193,11 @@ function render(configuration=defaultConfiguration) {
             allowOnlyOneFermata);
         Playback.initialize();
 
+        if (configuration['use_chords_instrument']) {
+            Playback.scheduleChordsPlayer(osmd,
+                configuration['chords_midi_channel']);
+        }
+
         loadMusicXMLandMidi(serverUrl, 'generate').then(
             () => {
                 spinnerElem.style.visibility = 'hidden';

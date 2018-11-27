@@ -96,7 +96,8 @@ export function getCurrentChordsInstrument() {
 let sampledInstruments;  // declare variables but do not load samples yet
 let instrumentSelect;
 declare var COMPILE_ELECTRON: boolean;
-export function renderDownloadButton(containerElement: HTMLElement): void {
+export function renderDownloadButton(containerElement: HTMLElement,
+    useChordsInstruments: boolean): void {
     // Manual samples loading button, to reduce network usage by only loading them
     // when requested
     let loadSamplesButtonElem: HTMLDivElement = document.createElement('div');
@@ -150,7 +151,9 @@ export function renderDownloadButton(containerElement: HTMLElement): void {
 
         Promise.all(loadPromises).then(()=>{
             log.info('Finished loading the samples');
-            containerElement.classList.remove('two-columns');
+            if (!useChordsInstruments) {
+                containerElement.classList.remove('two-columns');
+            }
             loadSamplesButtonElem.remove();
             // instrumentSelect.render();
         });
