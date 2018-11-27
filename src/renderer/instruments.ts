@@ -19,6 +19,8 @@ Tone.Instrument.prototype.pedalUp = function() {return this};
 
 let silentInstrument = new Tone.Instrument()
 
+Piano.prototype.triggerRelease = function() {return this};
+
 let piano = new Piano([21, 108], 1);
 piano.setVolume('release', -25);
 piano.setVolume('pedal', -15);
