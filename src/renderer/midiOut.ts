@@ -24,6 +24,7 @@ export function render() {
             'size': [150, 50],
             'options': ['No Output'].concat(WebMidi.outputs.map((output) => output.name)),
         });
+
         function midiOutOnChange(ev) {
             if (this.value !== 'No Output') {
                 instrumentSelectElems.toggleClass('CycleSelect-disabled', true);
@@ -37,6 +38,7 @@ export function render() {
             }
             log.info('Selected MIDI out: ' + this.value);
         };
+
         midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect));
         midiOutSelect.value = 'No Output';
     });

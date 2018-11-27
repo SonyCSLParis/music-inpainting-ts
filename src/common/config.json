@@ -12,6 +12,7 @@
     "insert_variations_lfo": false,
 
     "use_chords_instrument": false,
+    "chords_midi_channel": 2,
 
     "insert_advanced_controls": true,
 
