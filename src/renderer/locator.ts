@@ -232,7 +232,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
                     this.allowOnlyOneFermata));
             };
 
-            if (this.annotationTypes.includes("chord-selector") && duration_quarters == 2) {
+            if (this.annotationTypes.includes("chord_selector") && duration_quarters == 2) {
                 // add chord selection boxes at the half-note level
                 this._chordSelectors.push(new ChordSelector(commonDiv, onclick));
             };
