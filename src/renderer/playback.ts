@@ -26,13 +26,21 @@ function getTimingOffset(){
     return performance.now() - Tone.now() * 1000
 }
 
-function getPlayNoteByMidiChannel(midiChannel: number){
+function getPlayNoteByMidiChannel(midiChannel: number,
+    useChordsInstruments: boolean = false){
+    let getCurrentInstrument = Instruments.getCurrentInstrument;
+    if (useChordsInstruments) {
+        getCurrentInstrument = Instruments.getCurrentChordsInstrument;
+    }
+
     function playNote(time, event){
         MidiOut.getOutput().playNote(event.name, midiChannel,
             {time: time * 1000 + getTimingOffset(),
-                duration: event.duration * 1000});
-        Instruments.getCurrentInstrument().triggerAttackRelease(event.name, event.duration, time,
-            event.velocity);
+                duration: Tone.Time(event.duration).toSeconds() * 1000 - 50 });
+        getCurrentInstrument().triggerRelease(time-0.02);
+        getCurrentInstrument().keyUp(event.name, time-0.02);
+        getCurrentInstrument().triggerAttackRelease(event.name,
+            Tone.Time(event.duration).toSeconds() - 0.05, time, event.velocity);
 
         log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event));
     }
