@@ -2,17 +2,20 @@
 
 // NOTE: This relies on the SonyCSL simplebar fork!
 
-import * as Tone from 'tone'
-import * as log from 'loglevel'
-import * as MidiConvert from 'midiconvert'
-import * as $ from 'jquery'
+import * as Tone from 'tone';
+import * as log from 'loglevel';
+import * as MidiConvert from 'midiconvert';
+import * as $ from 'jquery';
 
 let Nexus = require('./nexusColored');
 
-import * as BPM from './bpm'
-import * as Instruments from './instruments'
-import * as MidiOut from './midiOut'
-import LinkClient from './linkClient'
+import * as BPM from './bpm';
+import * as Instruments from './instruments';
+import * as MidiOut from './midiOut';
+import LinkClient from './linkClient';
+import * as Chord from './chord';
+
+import { eOSMD } from './locator';
 
 $.fn.exists = function() {
     return this.length !== 0;
@@ -357,4 +360,27 @@ export function loadMidi(serverURL: string, musicXML: XMLDocument,
             Tone.Transport.bpm.value = BPM.getBPM();  // WARNING if bpmCounter is a floor'ed value, this is wrong
         }
     ).catch((error) => {console.log(error)})
+}
+
+export function scheduleChordsPlayer(osmd: eOSMD, midiChannel: number) {
+    // schedule callback to play the chords contained in the OSMD
+    const useChordsInstruments = true;
+
+    const playChord = (time) => {
+        let currentStep = getCurrentStep();
+        if (currentStep % 2 == 0) {
+            let chord = osmd.chordSelectors[Math.floor(currentStep / 2)].currentChord;
+            const events = Chord.getNoteEvents(chord.note + chord.accidental,
+                chord.chordType, time, '2n', 0.5);
+            const playNote = getPlayNoteByMidiChannel(midiChannel,
+                useChordsInstruments);
+            for (let eventIndex = 0, numEvents = events.length;
+                eventIndex < numEvents; eventIndex++) {
+                    playNote(time, events[eventIndex])
+            }
+        }
+    };
+
+    // FIXME assumes a TimeSignature of 4/4
+    new Tone.Loop(playChord, '4n').start(0);
 }

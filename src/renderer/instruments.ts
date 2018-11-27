@@ -33,7 +33,7 @@ let polysynth = new Tone.PolySynth(4);
 // polysynth.stealVoices = false;
 polysynth.connect(reverb);
 
-let polysynth_chords = new Tone.PolySynth(24);
+let polysynth_chords = new Tone.PolySynth(4);
 polysynth_chords.connect(reverb);
 
 let steelpan = new Tone.PolySynth(6).set({
@@ -175,7 +175,7 @@ let mainInstrumentsIcons = new Map([
 
 let chordInstrumentsIcons = new Map([
     ['PolySynth', '019-synthesizer.svg'],
-    ['Piano', '020-piano.svg'],
+    ['Organ', '049-piano.svg'],
 ]);
 
 export function renderChordInstrumentSelect(containerElement: HTMLElement) {
@@ -186,6 +186,14 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
     containerElement.appendChild(chordInstrumentSelectElem);
 
     current_chords_instrument = polysynth_chords;
+
+    chordInstrumentFactories = {
+        'PolySynth': () => {return polysynth_chords},
+        'Organ': () => {return sampledInstruments['organ']},
+        'Harmonium': () => {return sampledInstruments['harmonium']},
+        'None': () => {return silentInstrument}
+    };
+
     let chordInstrumentOnChange: {handleEvent: (e: Event) => void} = {
         handleEvent: function(this, e: Event) {
             current_chords_instrument = chordInstrumentFactories[this.value]();
@@ -196,13 +204,6 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
         chordInstrumentOnChange,  // TODO
         chordInstrumentsIcons, instrumentIconsBasePath
     );
-
-    chordInstrumentFactories = {
-        'PolySynth': () => {return polysynth_chords},
-        'Organ': () => {return sampledInstruments['organ']},
-        'Harmonium': () => {return sampledInstruments['harmonium']},
-        'None': () => {return silentInstrument}
-    };
 
     // chordInstrumentSelect.on('change', chordInstrumentOnChange.bind(chordInstrumentSelect));
 
