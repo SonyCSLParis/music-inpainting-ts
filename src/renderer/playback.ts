@@ -250,26 +250,32 @@ function getSheetDuration_quarters(): number {
     return maxStep;
 }
 
-function movePlaybackCursorToCurrentlyPlayingQuarter(): void {
+function updateCursorPosition(): void {
+    const currentStep: number = getCurrentStep()
+    nowPlayingCallback(null, currentStep);
+}
+
+function getCurrentStep(): number {
     // HACK should use proper typings for Tone
     const [currentBar, currentQuarter, currentSixteenth] = (
         <string>Tone.Transport.position
         ).split(":");
-    log.debug(`Jumping to position ${[currentBar, currentQuarter, currentSixteenth]}`);
+
     const sheetDuration_quarters = getSheetDuration_quarters();
+
     // FIXME assumes a Time Signature of 4/4
-    nowPlayingCallback(null,
-        (4 * parseInt(currentBar) + parseInt(currentQuarter)) % sheetDuration_quarters
-    );
+    const currentStep: number = (4*parseInt(currentBar) +
+        parseInt(currentQuarter)) % sheetDuration_quarters;
+    return currentStep;
 }
 
 export function initialize(): void {
         // initialize playback display scheduler
-        const drawCallback = (time, step) => {
+        const drawCallback = (time) => {
             // DOM modifying callback should be put in Tone.Draw scheduler!
             // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
             Tone.Draw.schedule((time) => {
-                movePlaybackCursorToCurrentlyPlayingQuarter();
+                updateCursorPosition();
             })
         };
 
@@ -279,7 +285,8 @@ export function initialize(): void {
         new Tone.Loop(drawCallback, '4n').start(0);
 }
 
-function midiRequestWithData(url: string, data=null, method:string = 'GET'): Promise<MidiConvert.MIDI>{
+function midiRequestWithData(url: string, data=null,
+    method:string = 'GET'): Promise<MidiConvert.MIDI>{
 		return new Promise<MidiConvert.MIDI>((success, fail) => {
 			var request = new XMLHttpRequest()
 			request.open(method, url)
@@ -298,7 +305,8 @@ function midiRequestWithData(url: string, data=null, method:string = 'GET'): Pro
 	}
 
 
-export function loadMidi(serverURL: string, musicXML: XMLDocument, sequenceDuration_toneTime: Tone.Time) {
+export function loadMidi(serverURL: string, musicXML: XMLDocument,
+    sequenceDuration_toneTime: Tone.Time) {
     const serializer = new XMLSerializer();
     const payload = serializer.serializeToString(musicXML);
 
