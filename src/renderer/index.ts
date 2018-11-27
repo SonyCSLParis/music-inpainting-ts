@@ -191,6 +191,7 @@ function render(configuration=defaultConfiguration) {
             granularities_quarters.map((num) => {return parseInt(num, 10);}),
             configuration['annotation_types'],
             allowOnlyOneFermata);
+        Playback.initialize();
 
         loadMusicXMLandMidi(serverUrl, 'generate').then(
             () => {
