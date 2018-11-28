@@ -1,6 +1,7 @@
-import * as Tone from 'tone'
-import * as WebMidi from 'webmidi'
-import * as log from 'loglevel'
+import * as Tone from 'tone';
+import * as WebMidi from 'webmidi';
+import * as log from 'loglevel';
+import * as Instruments from './instruments';
 
 let Nexus = require('./nexusColored')
 
@@ -15,8 +16,6 @@ export function render() {
     midiOutSelectElem.id = 'select-midiout';
     topControlsGridElem.appendChild(midiOutSelectElem);
 
-    let instrumentSelectElems = $('.CycleSelect-container[id$="instrument-select-container"]');
-
     WebMidi.enable(function (err) {
         if (err) log.error(err);
 
@@ -27,13 +26,11 @@ export function render() {
 
         function midiOutOnChange(ev) {
             if (this.value !== 'No Output') {
-                instrumentSelectElems.toggleClass('CycleSelect-disabled', true);
+                Instruments.mute(true);
                 midiOut = WebMidi.getOutputByName(this.value);
-                Tone.Master.mute = true;
             }
             else {
-                instrumentSelectElems.toggleClass('CycleSelect-disabled', false);
-                Tone.Master.mute = false;
+                Instruments.mute(false);
                 midiOut = dummyMidiOut;
             }
             log.info('Selected MIDI out: ' + this.value);
