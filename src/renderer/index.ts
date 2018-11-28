@@ -393,9 +393,6 @@ function render(configuration=defaultConfiguration) {
                                 currentXML,
                                 Tone.Time(`0:${osmd.sequenceDuration_quarters}:0`)
                             );
-                            if (configuration['use_chords_instrument']) {
-                                Playback.scheduleChordsPlayer(osmd, 2);
-                            }
                         },
                         (err) => {log.error(err); enableChanges()}
                     );
