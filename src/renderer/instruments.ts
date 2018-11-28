@@ -201,7 +201,7 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
             current_chords_instrument = chordInstrumentFactories[this.value]();
     }};
 
-    let chordInstrumentSelect = new CycleSelect(chordInstrumentSelectElem,
+    chordInstrumentSelect = new CycleSelect(chordInstrumentSelectElem,
         'instrument-select-chord',
         chordInstrumentOnChange,  // TODO
         chordInstrumentsIcons, instrumentIconsBasePath
@@ -220,7 +220,7 @@ export function renderInstrumentSelect(containerElement: HTMLElement): void {
     instrumentSelectElem.classList.add('left-column');
     containerElement.appendChild(instrumentSelectElem);
 
-    let instrumentSelect = new CycleSelect(instrumentSelectElem,
+    instrumentSelect = new CycleSelect(instrumentSelectElem,
         'instrument-select-lead',
         instrumentOnChange,
         mainInstrumentsIcons, instrumentIconsBasePath
@@ -228,4 +228,19 @@ export function renderInstrumentSelect(containerElement: HTMLElement): void {
 
     const initialInstrument = 'Piano';
     instrumentSelect.value = initialInstrument;
+}
+
+export function mute(mute: boolean) {
+    let instrumentSelectElems = $('.CycleSelect-container[id$="instrument-select-container"]');
+    let instruments = [current_instrument, current_chords_instrument];
+    if (mute) {
+        instrumentSelectElems.toggleClass('CycleSelect-disabled', true);
+        current_instrument = silentInstrument;
+        current_chords_instrument = silentInstrument;
+    }
+    else {
+        instrumentSelectElems.toggleClass('CycleSelect-disabled', false);
+        instrumentSelect.value = instrumentSelect.value;
+        chordInstrumentSelect.value = chordInstrumentSelect.value;
+    }
 }
