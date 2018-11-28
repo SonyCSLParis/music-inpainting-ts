@@ -385,8 +385,6 @@ function render(configuration=defaultConfiguration) {
                             osmd.zoom = zoom;
                             osmd.render(onClickTimestampBoxFactory);
                             enableChanges();
-
-                            console.log(currentXML);
                             resolve();
 
                             Playback.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
