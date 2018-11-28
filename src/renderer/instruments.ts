@@ -19,6 +19,8 @@ Tone.Instrument.prototype.pedalUp = function() {return this};
 
 let silentInstrument = new Tone.Instrument()
 
+// add dummy Instrument methods for simple duck typing
+Piano.prototype.triggerAttackRelease = function() {return this};
 Piano.prototype.triggerRelease = function() {return this};
 
 let piano = new Piano([21, 108], 1);
@@ -52,14 +54,6 @@ let steelpan = new Tone.PolySynth(6).set({
     }
 );
 steelpan.connect(reverb);
-
-
-function addTriggerAttackRelease_(piano: Piano) {
-    // add dummy Instrument method for simple duck typing
-    piano.triggerAttackRelease = () => {return piano};
-    return piano;
-};
-addTriggerAttackRelease_(piano);
 
 let instrumentFactories = {
     'PolySynth': () => {return polysynth},
