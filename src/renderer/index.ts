@@ -389,9 +389,11 @@ function render(configuration=defaultConfiguration) {
                             console.log(currentXML);
                             resolve();
 
+                            let sequenceDuration: Tone.Time = Tone.Time(
+                                `0:${osmd.sequenceDuration_quarters}:0`)
                             Playback.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
                                 currentXML,
-                                Tone.Time(`0:${osmd.sequenceDuration_quarters}:0`)
+                                sequenceDuration
                             );
                         },
                         (err) => {log.error(err); enableChanges()}

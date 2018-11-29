@@ -331,6 +331,10 @@ export function loadMidi(serverURL: string, musicXML: XMLDocument,
                     midiPart.dispose();
             }
 
+            Tone.Transport.loop = true;
+            Tone.Transport.loopStart = 0;
+            Tone.Transport.loopEnd = sequenceDuration_toneTime;
+
             if (!midi.header.bpm) {
                 // TODO insert warning wrong Flask server
             }
