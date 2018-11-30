@@ -73,6 +73,7 @@
     "nipplejs": "^0.7.1",
     "request": "^2.87.0",
     "require": "^2.4.20",
+    "screenfull": "^3.3.3",
     "socket.io": "^2.1.1",
     "socket.io-client": "^2.1.1",
     "source-map-support": "^0.5.6",
