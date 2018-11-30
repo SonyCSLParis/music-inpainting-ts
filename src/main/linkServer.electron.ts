@@ -61,7 +61,7 @@ function startLinkDownbeatClock(updateRate_ms: number=16) {
     link.startUpdate(updateRate_ms, (beat, phase, bpm) => {
         beat = 0 ^ beat;
         if(0 < beat - lastBeat) {
-            WindowManager.send('beat', { beat });
+            WindowManager.send(link_channel_prefix + 'beat', { beat });
             lastBeat = beat;
         }
         if(0 > phase - lastPhase) {
