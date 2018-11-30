@@ -5,8 +5,8 @@ import LinkClient from './linkClient';
 import * as ControlLabels from './controlLabels';
 
 let bpmControl;
-let minAcceptedBPM: number = 20
-let maxAcceptedBPM: number = 999
+let minAcceptedBPM: number = 30
+let maxAcceptedBPM: number = 300
 
 export function render(useSimpleSlider: boolean): void{
     if (maxAcceptedBPM < 2*minAcceptedBPM) {
@@ -34,7 +34,7 @@ export function render(useSimpleSlider: boolean): void{
         bpmControl = new Nexus.Number('#bpm-control', {
             'min': minAcceptedBPM,
             'max': maxAcceptedBPM,
-            'step': 0.01
+            'step': 1
         });
     }
     else {
