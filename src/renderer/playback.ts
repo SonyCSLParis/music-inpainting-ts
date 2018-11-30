@@ -215,7 +215,7 @@ function getCurrentMeasure(): number {
 // Set the position in the current measure to the provided phase
 // TODO(theis): should we use the `link.quantum` value?
 export function setPhaseSynchronous(): void {
-    if (Tone.Transport.state == 'started') {
+    if (Tone.Transport.state == 'started' && LinkClient.isEnabled()) {
         const currentMeasure = getCurrentMeasure().toString();
         Tone.Transport.position = currentMeasure + ':' + LinkClient.getPhaseSynchronous().toString();
     }
