@@ -1,4 +1,6 @@
 import * as Path from 'path';
+import * as screenfull from 'screenfull';
+
 
 import '../common/styles/main.scss';
 
@@ -22,7 +24,7 @@ if (COMPILE_ELECTRON) {
 
 
 export function render(containerElement: HTMLElement) {
-    let logoLinkElem = document.createElement('a');
+    let logoLinkElem = document.createElement('div');
     logoLinkElem.id = 'csl-logo-elem';
     logoLinkElem.classList.add('header-item-left');
     logoLinkElem.href = "https://www.sonycsl.co.jp/";
@@ -38,6 +40,14 @@ export function render(containerElement: HTMLElement) {
     logoElem.src = Path.join(static_correct, '/icons/sonycsl-logo.svg');
     logoElem.alt = 'Sony CSL Logo';
     logoLinkElem.appendChild(logoElem);
+
+    logoElem.addEventListener('click', () => {
+        if (screenfull.enabled) {
+            screenfull.request();
+        } else {
+            // Ignore or do something else
+        }
+    });
 
     let nameElem: HTMLElement = document.createElement('div');
     nameElem.id = 'app-title';
