@@ -192,6 +192,7 @@ function render(configuration=defaultConfiguration) {
             configuration['annotation_types'],
             allowOnlyOneFermata);
         Playback.initialize();
+        Playback.scheduleAutomaticResync();
 
         if (configuration['use_chords_instrument']) {
             Playback.scheduleChordsPlayer(osmd,

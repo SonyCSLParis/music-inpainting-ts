@@ -221,6 +221,10 @@ export function setPhaseSynchronous(): void {
     }
 }
 
+export function scheduleAutomaticResync(): void {
+    new Tone.Loop(setPhaseSynchronous, '3m').start('16n');
+}
+
 let midiParts: Tone.Part[] = [];
 
 
