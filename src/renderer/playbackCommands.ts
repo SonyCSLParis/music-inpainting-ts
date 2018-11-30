@@ -1,11 +1,13 @@
 import * as log from 'loglevel'
 // import { library, icon } from '@fortawesome/fontawesome-free'
 
-import '@fortawesome/fontawesome-free/css/all.css'
+import '@fortawesome/fontawesome-free/css/all.css';
 // library.add(icon({ prefix: 'fas', iconName: 'stop-circle' }));
 // library.add(icon({ prefix: 'fas', iconName: 'play-circle' }));
 
-import * as Playback from './playback'
+let Nexus = require('./nexusColored');
+
+import * as Playback from './playback';
 
 export function render(containerElement: HTMLElement): void{
     function playbackCallback(play: boolean) {
@@ -105,4 +107,24 @@ export function render(containerElement: HTMLElement): void{
                 pressStop();
                 break
     }}, );
+}
+
+export function renderSyncButton() {
+    let topControlsGridElem = document.getElementById('bottom-controls')
+    let linkbuttonElem: HTMLElement = document.createElement('control-item');
+    linkbuttonElem.id = 'sync-button'
+    topControlsGridElem.appendChild(linkbuttonElem);
+
+    let syncbutton = new Nexus.TextButton('#sync-button',{
+        'size': [150,50],
+        'state': false,
+        'text': 'Sync'
+    });
+
+    syncbutton.on('change', (enable) => {
+        if (enable) {
+            // Playback.getPlayNoteByMidiChannel(1, false)('', {duration: '4n', 'name': 'C5', 'midi': 60, velocity: 0.8})
+            Playback.setPhaseSynchronous();
+        }
+    });
 }
