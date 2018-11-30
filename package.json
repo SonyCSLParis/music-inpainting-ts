@@ -77,7 +77,7 @@
     "socket.io-client": "^2.1.1",
     "source-map-support": "^0.5.6",
     "teoria": "^2.5.0",
-    "tone": "^0.12.80",
+    "tone": "^13.3.11",
     "tone-piano": "0.0.12",
     "trip.js": "^3.3.3",
     "webmidi": "^2.2.0",
