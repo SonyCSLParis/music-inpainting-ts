@@ -138,7 +138,7 @@ export function attachListeners() {
 
 
     // Accessor for retrieving the current LINK tempo
-    ipcMain.on(link_channel_prefix + 'get_bpm', (event) => {
+    ipcMain.on(link_channel_prefix + 'get-bpm', (event) => {
             if (link.isEnabled()) { event.sender.send(
                     link_channel_prefix + 'bpm', link.bpm);
                 }

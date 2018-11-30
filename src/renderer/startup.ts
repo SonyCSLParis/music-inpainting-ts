@@ -113,7 +113,7 @@ export function render(renderPage: (configuration: object) => void): void {
             'size': [150,50],
             'state': false,
             'text': 'Custom (load json) (check GitHub repository for example JSON)',
-            'alternate': false
+            'alternateText': false
         });
 
         custombutton.on('change', () => {
@@ -129,7 +129,7 @@ export function render(renderPage: (configuration: object) => void): void {
         'size': [150,50],
         'state': false,
         'text': 'Start',
-        'alternate': true
+        'alternateText': true
     });
 
     startButton.on('change', () => {

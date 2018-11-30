@@ -100,7 +100,7 @@ socket.on(link_channel_prefix + 'tempo', (newBPM) => {
 
 export function setBPMtoLinkBPM_async(): void {
     if (isEnabled()) {
-        socket.emit(link_channel_prefix + 'get_bpm');
+        socket.emit(link_channel_prefix + 'get-bpm');
     }
 }
 
@@ -129,6 +129,6 @@ export function on(message, callback) {
 // Schedule a LINK dependent callback once
 export function once(message, callback) {
     socket.once(link_channel_prefix + message, () => {
-        callback();;
+        callback();
     })
 }

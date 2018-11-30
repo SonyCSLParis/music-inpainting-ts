@@ -37,14 +37,16 @@ function initAbletonLinkServer(bpm: number=120, quantum: number=4,
     let success = true
 
     link.on('tempo', (bpm) => {
+            WindowManager.send(link_channel_prefix + 'bpm', bpm);
+
             log.info('LINK: BPM changed, now ' + bpm)
-            WindowManager.send(link_channel_prefix + 'tempo', bpm);
         }
     );
 
     link.on('numPeers', (numPeers) => {
-            log.info('LINK: numPeers changed, now ' + numPeers);
             WindowManager.send(link_channel_prefix + 'numPeers', numPeers);
+
+            log.info('LINK: numPeers changed, now ' + numPeers);
         }
     );
 
@@ -92,7 +94,6 @@ export function attachListeners() {
 
 
     ipcMain.on(link_channel_prefix + 'ping', (event, _) => {
-        log.debug("Received ping!")
         if (isLinkInitialized()) {
             event.sender.send(link_channel_prefix + 'initialized-status',
                 true);
@@ -105,16 +106,18 @@ export function attachListeners() {
             event.sender.send(link_channel_prefix + 'enabled-status',
                 false);
         }
+        log.debug("Received ping!");
     })
 
     // Update LINK on tempo changes coming from the client
-    ipcMain.on(link_channel_prefix + 'tempo', (event, newBPM) => {
+    ipcMain.on(link_channel_prefix + 'bpm', (event, newBPM) => {
             // HACK perform a comparison to avoid messaging loops, since
             // the link update triggers a BPM modification message
             // from main to renderer
             if (isLinkInitialized() && link.bpm !== newBPM) {
                 let link_bpm_before = link.bpm
                 link.bpm = newBPM
+
                 log.debug("LINK: Triggered LINK tempo update:")
                 log.debug(`\tBefore: ${link_bpm_before}, now: ${newBPM}`)
             }
@@ -150,11 +153,19 @@ export function attachListeners() {
 
 
     // Accessor for retrieving the current LINK tempo
-    ipcMain.on(link_channel_prefix + 'get_bpm', (event) => {
-            if (link.isEnabled()) { event.sender.send(
+    ipcMain.on(link_channel_prefix + 'get-bpm', (event) => {
+            if (isLinkEnabled()) { event.sender.send(
                     link_channel_prefix + 'bpm', link.bpm);
                 }
             else { }
+        }
+    );
+
+    // Accessor for retrieving the current LINK phase
+    // the `phase` is equal to the advance in beats in the current Link block
+    // where the block has size `quantum` as defined at link initialization
+    ipcMain.on(link_channel_prefix + 'get-phase-sync', (event) => {
+            event.returnValue = link.phase;
         }
     );
 

@@ -387,9 +387,11 @@ function render(configuration=defaultConfiguration) {
                             enableChanges();
                             resolve();
 
+                            let sequenceDuration: Tone.Time = Tone.Time(
+                                `0:${osmd.sequenceDuration_quarters}:0`)
                             Playback.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
                                 currentXML,
-                                Tone.Time(`0:${osmd.sequenceDuration_quarters}:0`)
+                                sequenceDuration
                             );
                         },
                         (err) => {log.error(err); enableChanges()}
@@ -450,6 +452,9 @@ function render(configuration=defaultConfiguration) {
         if (useAdvancedControls) {
             // Add MIDI-out selector
             MidiOut.render();
+
+            // Add manual Link-Sync button
+            PlaybackCommands.renderSyncButton();
         }}
     );
 
