@@ -80,6 +80,9 @@ ipcRenderer.on(link_channel_prefix + 'enable-success', (_, enable_succeeded: boo
             log.info('Succesfully enabled Link');
         }
         else {log.error('Failed to enable Link')}
+// Tempo
+ipcRenderer.on(link_channel_prefix + 'bpm', (_, newBPM) => {
+        BPM.setBPM(newBPM);
     }
 )
 
@@ -93,19 +96,16 @@ ipcRenderer.on(link_channel_prefix + 'disable-success', (_, disable_succeeded) =
 )
 
 
-// Tempo
-ipcRenderer.on(link_channel_prefix + 'tempo', (_, newBPM) => {
-    BPM.setBPM(newBPM); }
-);
 
+// retrieve current BPM from Link
 export function setBPMtoLinkBPM_async(): void {
     if (isEnabled()) {
-        ipcRenderer.emit(link_channel_prefix + 'get_bpm');
+        ipcRenderer.send(link_channel_prefix + 'get-bpm');
     }
 }
 
 export function updateLinkBPM(newBPM) {
-    ipcRenderer.send(link_channel_prefix + 'tempo', newBPM);
+    ipcRenderer.send(link_channel_prefix + 'bpm', newBPM);
 }
 
 // numPeers

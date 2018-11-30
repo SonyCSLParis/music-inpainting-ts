@@ -37,8 +37,9 @@ function initAbletonLinkServer(bpm: number=120, quantum: number=4,
     let success = true
 
     link.on('tempo', (bpm) => {
+            WindowManager.send(link_channel_prefix + 'bpm', bpm);
+
             log.info('LINK: BPM changed, now ' + bpm)
-            WindowManager.send(link_channel_prefix + 'tempo', bpm);
         }
     );
 
@@ -108,7 +109,7 @@ export function attachListeners() {
     })
 
     // Update LINK on tempo changes coming from the client
-    ipcMain.on(link_channel_prefix + 'tempo', (event, newBPM) => {
+    ipcMain.on(link_channel_prefix + 'bpm', (event, newBPM) => {
             // HACK perform a comparison to avoid messaging loops, since
             // the link update triggers a BPM modification message
             // from main to renderer
@@ -150,8 +151,8 @@ export function attachListeners() {
 
 
     // Accessor for retrieving the current LINK tempo
-    ipcMain.on(link_channel_prefix + 'get_bpm', (event) => {
-            if (link.isEnabled()) { event.sender.send(
+    ipcMain.on(link_channel_prefix + 'get-bpm', (event) => {
+            if (isLinkEnabled()) { event.sender.send(
                     link_channel_prefix + 'bpm', link.bpm);
                 }
             else { }
