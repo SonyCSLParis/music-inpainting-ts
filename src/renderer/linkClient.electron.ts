@@ -4,7 +4,9 @@ import * as $ from 'jquery'
 
 let Nexus = require('./nexusColored')
 
-import * as BPM from './bpm'
+import * as BPM from './bpm';
+import * as Playback from './playback';
+
 
 let link_channel_prefix: string = require('../common/config.json')['link_channel_prefix'];
 
@@ -44,6 +46,13 @@ export async function enable() {
         link_initialized = true;
     }
     ipcRenderer.send(link_channel_prefix + 'enable');
+    ipcRenderer.once(link_channel_prefix + 'enabled-status',
+        (_, enabledStatus: boolean) => {
+            if (enabledStatus) {
+                Playback.setPhaseSynchronous();
+            }
+        }
+    );
 }
 
 export function disable(): void {
@@ -92,16 +101,29 @@ ipcRenderer.on(link_channel_prefix + 'disable-success', (_, disable_succeeded) =
             log.info('Succesfully disabled Link');
         }
         else {log.error('Failed to disable Link')}
+// Phase (synchronization)
+ipcRenderer.on(link_channel_prefix + 'phase', (_, phase) => {
+        Playback.setPhaseSynchronous();
     }
-)
+);
 
 
+export function getPhaseSynchronous(): number {
+    return ipcRenderer.sendSync(link_channel_prefix + 'get-phase-sync')
+}
 
 // retrieve current BPM from Link
 export function setBPMtoLinkBPM_async(): void {
     if (isEnabled()) {
         ipcRenderer.send(link_channel_prefix + 'get-bpm');
     }
+}
+
+// retrieve current phase from Link
+export function setPhaseToLinkPhase_async(): void {
+    // if (isEnabled()) {
+    ipcRenderer.send(link_channel_prefix + 'get-phase');
+    // }
 }
 
 export function updateLinkBPM(newBPM) {

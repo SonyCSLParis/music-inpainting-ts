@@ -206,6 +206,21 @@ export function stop(){
     })
 };
 
+// Helper function to access the current measure in the Transport
+function getCurrentMeasure(): number {
+    const currentMeasure = Tone.Transport.position.split('')[0]
+    return currentMeasure
+}
+
+// Set the position in the current measure to the provided phase
+// TODO(theis): should we use the `link.quantum` value?
+export function setPhaseSynchronous(): void {
+    if (Tone.Transport.state == 'started') {
+        const currentMeasure = getCurrentMeasure().toString();
+        Tone.Transport.position = currentMeasure + ':' + LinkClient.getPhaseSynchronous().toString();
+    }
+}
+
 let midiParts: Tone.Part[] = [];
 
 

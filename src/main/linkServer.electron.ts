@@ -161,6 +161,14 @@ export function attachListeners() {
         }
     );
 
+    // Accessor for retrieving the current LINK phase
+    // the `phase` is equal to the advance in beats in the current Link block
+    // where the block has size `quantum` as defined at link initialization
+    ipcMain.on(link_channel_prefix + 'get-phase-sync', (event) => {
+            event.returnValue = link.phase;
+        }
+    );
+
     ipcMain.on(link_channel_prefix + 'kill', () => killLink());
 }
 
