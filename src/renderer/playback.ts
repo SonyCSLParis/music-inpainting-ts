@@ -300,18 +300,19 @@ export function initialize(): void {
 function midiRequestWithData(url: string, data=null,
     method:string = 'GET'): Promise<MidiConvert.MIDI>{
 		return new Promise<MidiConvert.MIDI>((success, fail) => {
-			var request = new XMLHttpRequest()
+			let request = new XMLHttpRequest()
 			request.open(method, url)
 			request.responseType = 'arraybuffer'
 			// decode asynchronously
 			request.addEventListener('load', () => {
 				if (request.readyState === 4 && request.status === 200){
 					success(MidiConvert.parse(request.response))
-				} else {
-					fail(request.status)
+                } else {
+                    fail(request.status)
 				}
-			})
-			request.addEventListener('error', fail)
+			},
+            {once: true});
+			request.addEventListener('error', fail, {once: true})
 			request.send(data)
 		});
 	}
