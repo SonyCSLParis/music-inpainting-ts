@@ -82,31 +82,31 @@ ipcRenderer.on(link_channel_prefix + 'enabled-status', (_, enabledStatus: boolea
 });
 
 
-ipcRenderer.on(link_channel_prefix + 'enable-success', (_, enable_succeeded: boolean) => {
-        if (enable_succeeded) {
-            link_enabled = true;
-            setBPMtoLinkBPM_async();
-            log.info('Succesfully enabled Link');
-        }
-        else {log.error('Failed to enable Link')}
+// ipcRenderer.on(link_channel_prefix + 'enable-success', (_, enable_succeeded: boolean) => {
+//         if (enable_succeeded) {
+//             link_enabled = true;
+//             setBPMtoLinkBPM_async();
+//             log.info('Succesfully enabled Link');
+//         }
+//         else {log.error('Failed to enable Link')}
+//     }
+// )
+//
+// ipcRenderer.on(link_channel_prefix + 'disable-success', (_, disable_succeeded) => {
+//         if (disable_succeeded) {
+//             link_enabled = false;
+//             log.info('Succesfully disabled Link');
+//         }
+//         else {log.error('Failed to disable Link')}
+//     }
+// )
+
+
 // Tempo
 ipcRenderer.on(link_channel_prefix + 'bpm', (_, newBPM) => {
         BPM.setBPM(newBPM);
     }
-)
-
-ipcRenderer.on(link_channel_prefix + 'disable-success', (_, disable_succeeded) => {
-        if (disable_succeeded) {
-            link_enabled = false;
-            log.info('Succesfully disabled Link');
-        }
-        else {log.error('Failed to disable Link')}
-// Phase (synchronization)
-ipcRenderer.on(link_channel_prefix + 'phase', (_, phase) => {
-        Playback.setPhaseSynchronous();
-    }
 );
-
 
 export function getPhaseSynchronous(): number {
     return ipcRenderer.sendSync(link_channel_prefix + 'get-phase-sync')
@@ -117,13 +117,6 @@ export function setBPMtoLinkBPM_async(): void {
     if (isEnabled()) {
         ipcRenderer.send(link_channel_prefix + 'get-bpm');
     }
-}
-
-// retrieve current phase from Link
-export function setPhaseToLinkPhase_async(): void {
-    // if (isEnabled()) {
-    ipcRenderer.send(link_channel_prefix + 'get-phase');
-    // }
 }
 
 export function updateLinkBPM(newBPM) {
@@ -142,15 +135,15 @@ ipcRenderer.on('numPeers', (_, numPeers) => {
 
 // Schedule a LINK dependent callback
 export function on(message, callback) {
-ipcRenderer.on(link_channel_prefix + message, () => {
-    callback();;
-})
+    ipcRenderer.on(link_channel_prefix + message, () => {
+        callback();
+    })
 }
 
 
 // Schedule a LINK dependent callback once
 export function once(message, callback) {
     ipcRenderer.once(link_channel_prefix + message, () => {
-        callback();;
+        callback();
     })
 }
