@@ -132,7 +132,7 @@ export function attachListeners() {
             }
             if ( !isLinkEnabled() ) {
                 link.enable();  // enable backend LINK-server
-                startLinkDownbeatClock();
+                startLinkDownbeatClock(5);
                 setLinkEnabled(true);
                 // event.sender.send(link_channel_prefix + 'enable-success', true)
             }
