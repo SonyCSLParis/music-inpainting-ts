@@ -1,6 +1,8 @@
 // start-up module offering a splash screen inj which to select the configuration
 let Nexus = require('./nexusColored')
 
+import '../common/styles/startupSplash.scss';
+
 // defined at compile-time via webpack.DefinePlugin
 declare var COMPILE_ELECTRON: boolean;
 
@@ -28,25 +30,29 @@ export function render(renderPage: (configuration: object) => void): void {
 
     // let configurationForm: HTMLFormElement = document.createElement('form');
 
+    let serverConfigElem: HTMLDivElement = document.createElement('div');
+    serverConfigElem.id = 'server-configuration';
+    configurationWindow.appendChild(serverConfigElem);
+
     let serverIpInput: HTMLInputElement = document.createElement('input');
     serverIpInput.type = 'url';
     serverIpInput.id = 'server-ip-input';
     serverIpInput.placeholder = `Server IP (default: ${defaultConfiguration['server_ip']})`;
-    configurationWindow.appendChild(serverIpInput);
+    serverConfigElem.appendChild(serverIpInput);
 
     let serverPortInput: HTMLInputElement = document.createElement('input');
     serverPortInput.type = 'url';
     serverPortInput.id = 'server-port-input';
     serverPortInput.placeholder = `Server port (default: ${defaultConfiguration['server_port']})`;
-    configurationWindow.appendChild(serverPortInput);
+    serverConfigElem.appendChild(serverPortInput);
 
     // let serverUrlInputLabel: HTMLLabelElement = document.createElement('label');
     // serverUrlInputLabel.setAttribute('for', 'server-url-input');
     //
 
-    let deepbachButtonElem: HTMLElement = document.createElement('div');
-    deepbachButtonElem.id = 'deepbach-configuration-button'
-    configurationWindow.appendChild(deepbachButtonElem);
+    let modeConfigElem: HTMLDivElement = document.createElement('div');
+    modeConfigElem.id = 'mode-configuration';
+    configurationWindow.appendChild(modeConfigElem);
 
     let applicationModeSelectElem: HTMLSelectElement = document.createElement('select');
     applicationModeSelectElem = document.createElement('select');
@@ -62,6 +68,10 @@ export function render(renderPage: (configuration: object) => void): void {
         applicationModeOptionElem.value = applicationMode;
         applicationModeSelectElem.appendChild(applicationModeOptionElem);
     }
+
+    let deepbachButtonElem: HTMLElement = document.createElement('div');
+    deepbachButtonElem.id = 'deepbach-configuration-button'
+    modeConfigElem.appendChild(deepbachButtonElem);
 
     let deepbachbutton = new Nexus.TextButton('#deepbach-configuration-button', {
         'size': [150,50],
@@ -79,7 +89,7 @@ export function render(renderPage: (configuration: object) => void): void {
 
     let deepsheetButtonElem: HTMLElement = document.createElement('div');
     deepsheetButtonElem.id = 'deepsheet-configuration-button'
-    configurationWindow.appendChild(deepsheetButtonElem);
+    modeConfigElem.appendChild(deepsheetButtonElem);
 
     let deepsheetbutton = new Nexus.TextButton('#deepsheet-configuration-button', {
         'size': [150,50],
