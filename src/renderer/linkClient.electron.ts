@@ -36,14 +36,14 @@ export function isInitialized(): boolean {
 
 export async function enable() {
     if (!isInitialized()) {
-        log.debug("Must initialize LINK")
+        log.debug("Must initialize LINK");
         let bpm: number = BPM.getBPM();
         let quantum: number = linkQuantum;
         // hang asynchronously on this call
-        await ipcRenderer.send(link_channel_prefix + 'init', bpm, quantum)
-        link_initialized = true
+        await ipcRenderer.send(link_channel_prefix + 'init', bpm, quantum);
+        link_initialized = true;
     }
-    ipcRenderer.send(link_channel_prefix + 'enable')
+    ipcRenderer.send(link_channel_prefix + 'enable');
 }
 
 export function disable(): void {
@@ -59,17 +59,17 @@ export function kill(): void {
 
 ipcRenderer.on(link_channel_prefix + 'initialized-status',
     (_, initializedStatus: boolean) => {
+        link_initialized = initializedStatus;
         log.debug('initializedStatus:');
         log.debug(initializedStatus);
-        link_initialized = initializedStatus;
     }
 );
 
 
 ipcRenderer.on(link_channel_prefix + 'enabled-status', (_, enabledStatus: boolean) => {
-    log.debug('enabledStatus:');
-    log.debug(enabledStatus);
     link_enabled = enabledStatus;
+    log.debug(enabledStatus);
+    log.debug('enabledStatus:');
 });
 
 

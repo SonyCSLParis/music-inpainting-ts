@@ -44,8 +44,9 @@ function initAbletonLinkServer(bpm: number=120, quantum: number=4,
     );
 
     link.on('numPeers', (numPeers) => {
-            log.info('LINK: numPeers changed, now ' + numPeers);
             WindowManager.send(link_channel_prefix + 'numPeers', numPeers);
+
+            log.info('LINK: numPeers changed, now ' + numPeers);
         }
     );
 
@@ -93,7 +94,6 @@ export function attachListeners() {
 
 
     ipcMain.on(link_channel_prefix + 'ping', (event, _) => {
-        log.debug("Received ping!")
         if (isLinkInitialized()) {
             event.sender.send(link_channel_prefix + 'initialized-status',
                 true);
@@ -106,6 +106,7 @@ export function attachListeners() {
             event.sender.send(link_channel_prefix + 'enabled-status',
                 false);
         }
+        log.debug("Received ping!");
     })
 
     // Update LINK on tempo changes coming from the client
@@ -116,6 +117,7 @@ export function attachListeners() {
             if (isLinkInitialized() && link.bpm !== newBPM) {
                 let link_bpm_before = link.bpm
                 link.bpm = newBPM
+
                 log.debug("LINK: Triggered LINK tempo update:")
                 log.debug(`\tBefore: ${link_bpm_before}, now: ${newBPM}`)
             }
