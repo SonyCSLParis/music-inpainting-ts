@@ -152,9 +152,11 @@ function scrollToStep(step: number) {
         }, 10, 'linear');
     }
     else {
+        // synchronize scrolling with the tempo for smooth scrolling
+        const scrollDuration_ms = getInterbeatTime_s() * 1000;
         $(scrollElementSelector).stop(true, false).animate( {
             scrollLeft: newScrollLeft_px
-        }, computeScrollSpeed() * 1000, 'linear');
+        }, scrollDuration_ms, 'linear');
     }
 }
 
@@ -162,17 +164,19 @@ function resetScrollPosition(duration: JQuery.Duration= shortScroll) {
     scrollToStep(0);
 }
 
-function computeScrollSpeed() {
+// Return the time in seconds between beats
+function getInterbeatTime_s() {
     const currentBPM: number = Tone.Transport.bpm.value
     const interbeatTime_s = 60 / currentBPM
     return interbeatTime_s
 }
 
+// Start playback immediately at the beginning of the song
 function downbeatStartCallback() {
-    Tone.Transport.start("+0", "0:0:0")
+    Tone.Transport.start("+0", "0:0:0");
 }
 
-
+// Start playback either immediately or in sync with Link if Link is enabled
 export function play(){
     return new Promise((resolve, reject) => {
         Tone.context.resume().then(() => {
@@ -186,14 +190,16 @@ export function play(){
                 // wait for Link-socket to give downbeat signal
                 LinkClient.once('downbeat', () => {
                     downbeatStartCallback();
-                    log.info('LINK: Received `downbeat` message, starting playback');
                     resolve();
+
+                    log.info('LINK: Received `downbeat` message, starting playback');
                 });
             }
         })
     })
 };
 
+// Stop playback immediately
 export function stop(){
     Tone.context.resume().then(() => {
         Tone.Transport.stop();

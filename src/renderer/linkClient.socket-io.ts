@@ -129,6 +129,6 @@ export function on(message, callback) {
 // Schedule a LINK dependent callback once
 export function once(message, callback) {
     socket.once(link_channel_prefix + message, () => {
-        callback();;
+        callback();
     })
 }
