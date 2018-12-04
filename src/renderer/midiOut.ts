@@ -10,7 +10,7 @@ dummyMidiOut.playNote = () => {};
 
 let midiOut = dummyMidiOut;
 
-export function render() {
+export function render(useChordsInstrument: boolean = false) {
     let topControlsGridElem = document.getElementById('bottom-controls');
     let midiOutSelectElem: HTMLElement = document.createElement('control-item');
     midiOutSelectElem.id = 'select-midiout';
@@ -26,11 +26,11 @@ export function render() {
 
         function midiOutOnChange(ev) {
             if (this.value !== 'No Output') {
-                Instruments.mute(true);
+                Instruments.mute(true, useChordsInstrument);
                 midiOut = WebMidi.getOutputByName(this.value);
             }
             else {
-                Instruments.mute(false);
+                Instruments.mute(false, useChordsInstrument);
                 midiOut = dummyMidiOut;
             }
             log.info('Selected MIDI out: ' + this.value);

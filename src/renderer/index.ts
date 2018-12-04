@@ -452,7 +452,7 @@ function render(configuration=defaultConfiguration) {
     $(() => {
         if (useAdvancedControls) {
             // Add MIDI-out selector
-            MidiOut.render();
+            MidiOut.render(configuration["use_chords_instrument"]);
 
             // Add manual Link-Sync button
             PlaybackCommands.renderSyncButton();
