@@ -41,7 +41,7 @@ export function render(containerElement: HTMLElement) {
 
     let nameElem: HTMLElement = document.createElement('div');
     nameElem.id = 'app-title';
-    nameElem.innerText = 'DeepBach';
+    nameElem.innerText = 'nonoto';
     containerElement.appendChild(nameElem);
 
     if (configuration["insert_help"]) {

@@ -28,6 +28,11 @@ $CycleSelect-size: 54px;
     src: url('../fonts/Fira_Sans/FiraSans-Regular.ttf') format('truetype');
 }
 
+@font-face {
+    font-family: 'Julius';
+    src: url('../fonts/Julius_Sans_One/JuliusSansOne-Regular.ttf') format('truetype');
+}
+
 html, body {
     height: 100%;
     margin: 0;
@@ -122,6 +127,7 @@ header {
     display: flex;
 
     font-size: 1.6em;
+    font-family: 'Julius' !important;
 }
 
 #help-icon {
