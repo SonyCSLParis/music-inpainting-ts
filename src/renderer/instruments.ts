@@ -224,17 +224,21 @@ export function renderInstrumentSelect(containerElement: HTMLElement): void {
     instrumentSelect.value = initialInstrument;
 }
 
-export function mute(mute: boolean) {
+export function mute(mute: boolean, useChordsInstrument: boolean = false) {
     let instrumentSelectElems = $('.CycleSelect-container[id$="instrument-select-container"]');
     let instruments = [current_instrument, current_chords_instrument];
     if (mute) {
         instrumentSelectElems.toggleClass('CycleSelect-disabled', true);
         current_instrument = silentInstrument;
-        current_chords_instrument = silentInstrument;
+        if (useChordsInstrument) {
+            current_chords_instrument = silentInstrument;
+        }
     }
     else {
         instrumentSelectElems.toggleClass('CycleSelect-disabled', false);
         instrumentSelect.value = instrumentSelect.value;
-        chordInstrumentSelect.value = chordInstrumentSelect.value;
+        if (useChordsInstrument) {
+            chordInstrumentSelect.value = chordInstrumentSelect.value;
+        }
     }
 }
