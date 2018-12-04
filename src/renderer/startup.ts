@@ -23,6 +23,11 @@ let leadsheetConfiguration: object = cloneJSON(defaultConfiguration);
 leadsheetConfiguration["use_chords_instrument"] = true;
 leadsheetConfiguration["annotation_types"] = ["chord_selector"];
 
+let folkConfiguration: object = cloneJSON(defaultConfiguration);
+folkConfiguration["use_chords_instrument"] = false;
+folkConfiguration["annotation_types"] = [];
+folkConfiguration["granularities_quarters"] = ["1", "4", "8", "16"];
+
 export function render(renderPage: (configuration: object) => void): void {
     let configurationWindow = document.createElement('div');
     configurationWindow.id = 'configuration-selection';
@@ -60,7 +65,7 @@ export function render(renderPage: (configuration: object) => void): void {
     applicationModeSelectElem.id = 'application-mode-select';
     configurationWindow.appendChild(applicationModeSelectElem);
 
-    let applicationModes: string[] = ['chorale', 'leadsheet'];
+    let applicationModes: string[] = ['chorale', 'leadsheet', 'folk'];
     for (let applicationModeIndex=0, numModes=applicationModes.length;
         applicationModeIndex<numModes; applicationModeIndex++) {
         const applicationMode = applicationModes[applicationModeIndex];
@@ -84,6 +89,7 @@ export function render(renderPage: (configuration: object) => void): void {
     deepbachbutton.on('change', () => {
         deepbachbutton.turnOn(false);
         deepsheetbutton.turnOff(false);
+        deepfolkbutton.turnOff(false);
         applicationModeSelectElem.value = 'chorale';
     });
 
@@ -102,7 +108,27 @@ export function render(renderPage: (configuration: object) => void): void {
     deepsheetbutton.on('change', () => {
         deepsheetbutton.turnOn(false);
         deepbachbutton.turnOff(false);
+        deepfolkbutton.turnOff(false);
         applicationModeSelectElem.value = 'leadsheet';
+    });
+
+    let deepfolkButtonElem: HTMLElement = document.createElement('div');
+    deepfolkButtonElem.id = 'deepfolk-configuration-button'
+    modeConfigElem.appendChild(deepfolkButtonElem);
+
+    let deepfolkbutton = new Nexus.TextButton('#deepfolk-configuration-button', {
+        'size': [150,50],
+        'state': false,
+        'text': 'Folk songs',
+        'alternateText': 'Folk songs',
+        // 'alternate': true
+    });
+
+    deepfolkbutton.on('change', () => {
+        deepfolkbutton.turnOn(false);
+        deepsheetbutton.turnOff(false);
+        deepbachbutton.turnOff(false);
+        applicationModeSelectElem.value = 'folk';
     });
 
     if (COMPILE_ELECTRON && false){
@@ -152,6 +178,9 @@ export function render(renderPage: (configuration: object) => void): void {
             case 'leadsheet':
                 configuration = leadsheetConfiguration;
                 break;
+            case 'folk':
+                configuration = folkConfiguration;
+                break;
         }
         if (serverIpInput.value.length > 0) {
             configuration['use_local_server'] = false;
@@ -162,6 +191,7 @@ export function render(renderPage: (configuration: object) => void): void {
             configuration['server_port'] = serverPortInput.value;
         }
 
+        // clean-up the splash screen
         dispose();
 
         $(() => {
