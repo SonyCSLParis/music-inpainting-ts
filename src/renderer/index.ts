@@ -199,7 +199,9 @@ function render(configuration=defaultConfiguration) {
                 configuration['chords_midi_channel']);
         }
 
-        loadMusicXMLandMidi(serverUrl, 'generate').then(
+        // requesting the initial sheet, so can't send any sheet along
+        const sendSheetWithRequest = false;
+        loadMusicXMLandMidi(serverUrl, 'generate', sendSheetWithRequest).then(
             () => {
                 spinnerElem.style.visibility = 'hidden';
                 osmdContainerContainerContainer.classList.remove('loading');
@@ -342,7 +344,8 @@ function render(configuration=defaultConfiguration) {
     /**
      * Load a MusicXml file via xhttp request, and display its contents.
      */
-    function loadMusicXMLandMidi(serverURL: string, generationCommand: string) {
+    function loadMusicXMLandMidi(serverURL: string, generationCommand: string,
+        sendSheetWithRequest: boolean = true) {
         return new Promise((resolve, _) => {
             disableChanges();
 
@@ -351,7 +354,7 @@ function render(configuration=defaultConfiguration) {
             log.trace('Metadata:');
             log.trace(JSON.stringify(getMetadata()));
 
-            if (!generationCommand.includes('generate')) {
+            if (sendSheetWithRequest) {
                 payload_object['sheet'] = serializer.serializeToString(currentXML);
             }
 
