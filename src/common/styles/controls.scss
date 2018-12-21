@@ -1,0 +1,59 @@
+#play-button {
+    grid-row: 1;
+    grid-column: 1;
+}
+
+#play-button-label {
+    grid-row: 2;
+    grid-column: 1;
+}
+
+#granularity-select-container {
+    grid-row: 1;
+    grid-column: 2;
+}
+
+#granularity-select-label {
+    grid-row: 2;
+    grid-column: 2;
+}
+
+#instruments-grid {
+    grid-row: 1;
+    grid-column: 3;
+}
+
+#instruments-grid-label {
+    grid-row: 2;
+    grid-column: 3;
+}
+
+#bpm-control {
+    grid-row: 1;
+    grid-column: 4;
+}
+
+#bpm-control-label {
+    grid-row: 2;
+    grid-column: 4;
+}
+
+#link-button {
+    grid-row: 3;
+    grid-column: 1;
+}
+
+#sync-button {
+    grid-row: 3;
+    grid-column: 4;
+}
+
+#link-display {
+    grid-row: 3;
+    grid-column: 2;
+}
+
+#select-midiout {
+    grid-row: 3;
+    grid-column: 3;
+}

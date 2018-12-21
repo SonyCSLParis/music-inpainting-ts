@@ -61,6 +61,7 @@
   "dependencies": {
     "@types/simplebar": "^2.4.1",
     "abletonlink": "0.0.7",
+    "activity-detector": "^3.0.0",
     "ajv": "^6.5.2",
     "deep-equal": "^1.0.1",
     "es6-promise": "^4.2.4",
@@ -72,11 +73,14 @@
     "nipplejs": "^0.7.1",
     "request": "^2.87.0",
     "require": "^2.4.20",
+    "screenfull": "^3.3.3",
     "socket.io": "^2.1.1",
     "socket.io-client": "^2.1.1",
     "source-map-support": "^0.5.6",
-    "tone": "^0.12.80",
+    "teoria": "^2.5.0",
+    "tone": "^13.3.11",
     "tone-piano": "0.0.12",
+    "trip.js": "^3.3.3",
     "webmidi": "^2.2.0",
     "webpack-sources": "^1.0.1",
     "wheelnav": "^1.7.1"

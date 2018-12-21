@@ -31,7 +31,7 @@ export class ChordSelector extends AnnotationBox {
     };
 
     protected validateTimestampContainer(): void {
-        if (!this.timestampContainer.classList.contains('half-note')) {
+        if (!this.timestampContainer.classList.contains('2_quarterNote_duration')) {
             throw new EvalError("Chord selector should be associated to a half-note box");
         };
     };
@@ -43,7 +43,7 @@ export class ChordSelector extends AnnotationBox {
         if (this.useSlurSymbol) {
             notes.push(this.slur_symbol);
         }
-        
+
         return notes;
     };
 

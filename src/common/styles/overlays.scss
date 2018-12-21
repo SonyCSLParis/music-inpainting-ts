@@ -15,6 +15,14 @@ $chords-font-stack: 'Boogaloo', cursive;
             cursor: wait !important;
         }
     }
+
+    &.dragover {
+        background-color: purple;
+    }
+
+    &.dragover .notebox {
+        background-color: purple;
+    }
 }
 
 .notebox {
@@ -66,6 +74,11 @@ $chords-font-stack: 'Boogaloo', cursive;
             &:hover {
                 opacity: 0.3;
             }
+        }
+        
+        &.dragover {
+            // background-color: purple;
+            opacity: 0.3;
         }
     }
 

@@ -6,7 +6,7 @@ import * as path from 'path'
 
 let Nexus = require('./nexusColored')
 
-import CycleSelect from './cycleSelect';
+import { CycleSelect } from './cycleSelect';
 
 import { static_correct } from './staticPath'
 
@@ -19,24 +19,40 @@ Tone.Instrument.prototype.pedalUp = function() {return this};
 
 let silentInstrument = new Tone.Instrument()
 
+// add dummy Instrument methods for simple duck typing
+Piano.prototype.triggerAttackRelease = function() {return this};
+Piano.prototype.triggerRelease = function() {return this};
+
 let piano = new Piano([21, 108], 1);
 piano.setVolume('release', -25);
 piano.setVolume('pedal', -15);
 
 
-// let chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
-// let reverb = new Tone.Reverb(1.5).connect(chorus);
-// reverb.generate();
-let reverb = new Tone.Volume(0).toMaster();
+const useEffects: boolean = false;
 
-let polysynth = new Tone.PolySynth(4);
+let chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
+let reverb = new Tone.Reverb(1.5).connect(chorus);
+// let reverb = new Tone.Volume(0).toMaster();
+
+const synthOptions: object =  {
+    oscillator: {
+        type: 'triangle'  // default: 'triangle'
+    },
+    envelope: {
+        attack: 0.01,  // default: 0.005
+        decay: 0.1,  // default: 0.1
+        sustain: 0.3,  //default: 0.3
+        release: 1.7  // default: 1
+    }
+};
+
+let polysynth = new Tone.PolySynth(4, Tone.Synth, synthOptions);
 // polysynth.stealVoices = false;
-polysynth.connect(reverb);
 
-let polysynth_chords = new Tone.PolySynth(24);
-polysynth_chords.connect(reverb);
+let polysynth_chords = new Tone.PolySynth(4, Tone.Synth, synthOptions);
+polysynth_chords.set("volume", -8);
 
-let steelpan = new Tone.PolySynth(12).set({
+let steelpan = new Tone.PolySynth(6).set({
     "oscillator": {
         "type": "fatcustom",
         "partials" : [0.2, 1, 0, 0.5, 0.1],
@@ -49,15 +65,19 @@ let steelpan = new Tone.PolySynth(12).set({
         "release": 1.6}
     }
 );
-steelpan.connect(reverb);
 
-
-function addTriggerAttackRelease_(piano: Piano) {
-    // add dummy Instrument method for simple duck typing
-    piano.triggerAttackRelease = () => {return piano};
-    return piano;
-};
-addTriggerAttackRelease_(piano);
+const softSynths: Tone.Instrument[] = [polysynth, polysynth_chords, steelpan];
+if (useEffects) {
+    reverb.generate();
+    softSynths.forEach(instrument => {
+        instrument.connect(reverb)
+    });
+}
+else {
+    softSynths.forEach(instrument => {
+        instrument.toMaster()
+    });
+}
 
 let instrumentFactories = {
     'PolySynth': () => {return polysynth},
@@ -81,7 +101,6 @@ export function getCurrentInstrument() {
     return current_instrument;
 }
 
-
 let chordInstrumentSelectElem: HTMLDivElement;
 let chordInstrumentFactories;
 let chordInstrumentSelect;
@@ -96,7 +115,8 @@ export function getCurrentChordsInstrument() {
 let sampledInstruments;  // declare variables but do not load samples yet
 let instrumentSelect;
 declare var COMPILE_ELECTRON: boolean;
-export function renderDownloadButton(containerElement: HTMLElement): void {
+export function renderDownloadButton(containerElement: HTMLElement,
+    useChordsInstruments: boolean): void {
     // Manual samples loading button, to reduce network usage by only loading them
     // when requested
     let loadSamplesButtonElem: HTMLDivElement = document.createElement('div');
@@ -142,12 +162,17 @@ export function renderDownloadButton(containerElement: HTMLElement): void {
         });
         loadPromises.push(sampleLibraryLoadPromise);
 
-        let pianoLoadPromise: Promise<boolean> = piano.load();
+        let pianoLoadPromise: Promise<boolean> = piano.load(
+            path.join(static_correct,
+                'Salamander/')
+        );
         loadPromises.push(pianoLoadPromise);
 
         Promise.all(loadPromises).then(()=>{
             log.info('Finished loading the samples');
-            containerElement.classList.remove('two-columns');
+            if (!useChordsInstruments) {
+                containerElement.classList.remove('two-columns');
+            }
             loadSamplesButtonElem.remove();
             // instrumentSelect.render();
         });
@@ -162,13 +187,14 @@ export function renderDownloadButton(containerElement: HTMLElement): void {
 
 let instrumentIconsBasePath: string = path.join(static_correct, 'icons');
 let mainInstrumentsIcons = new Map([
-    ['PolySynth', '019-synthesizer.svg'],
     ['Piano', '049-piano.svg'],
+    ['PolySynth', '019-synthesizer.svg'],
+    ['Steelpan', '007-timpani.svg']
 ]);
 
 let chordInstrumentsIcons = new Map([
     ['PolySynth', '019-synthesizer.svg'],
-    ['Piano', '020-piano.svg'],
+    ['Organ', '049-piano.svg'],
 ]);
 
 export function renderChordInstrumentSelect(containerElement: HTMLElement) {
@@ -178,11 +204,7 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
     chordInstrumentSelectElem.classList.add('right-column');
     containerElement.appendChild(chordInstrumentSelectElem);
 
-    let chordInstrumentSelect = new CycleSelect(chordInstrumentSelectElem,
-        'instrument-select-chord',
-        chordInstrumentOnChange,  // TODO
-        chordInstrumentsIcons, instrumentIconsBasePath
-    );
+    current_chords_instrument = polysynth_chords;
 
     chordInstrumentFactories = {
         'PolySynth': () => {return polysynth_chords},
@@ -191,10 +213,16 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
         'None': () => {return silentInstrument}
     };
 
-    current_chords_instrument = polysynth_chords;
-    let chordInstrumentOnChange = function(this: HTMLSelectElement) {
-        current_chords_instrument = chordInstrumentFactories[this.value]();
-    };
+    let chordInstrumentOnChange: {handleEvent: (e: Event) => void} = {
+        handleEvent: function(this, e: Event) {
+            current_chords_instrument = chordInstrumentFactories[this.value]();
+    }};
+
+    chordInstrumentSelect = new CycleSelect(chordInstrumentSelectElem,
+        'instrument-select-chord',
+        chordInstrumentOnChange,  // TODO
+        chordInstrumentsIcons, instrumentIconsBasePath
+    );
 
     // chordInstrumentSelect.on('change', chordInstrumentOnChange.bind(chordInstrumentSelect));
 
@@ -205,15 +233,35 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
 export function renderInstrumentSelect(containerElement: HTMLElement): void {
     let instrumentSelectElem: HTMLElement = document.createElement('control-item');
     instrumentSelectElem.id = 'lead-instrument-select-container';
+
     instrumentSelectElem.classList.add('left-column');
     containerElement.appendChild(instrumentSelectElem);
 
-    let instrumentSelect = new CycleSelect(instrumentSelectElem,
+    instrumentSelect = new CycleSelect(instrumentSelectElem,
         'instrument-select-lead',
         instrumentOnChange,
         mainInstrumentsIcons, instrumentIconsBasePath
     );
 
-    const initialInstrument = 'PolySynth';
+    const initialInstrument = 'Piano';
     instrumentSelect.value = initialInstrument;
+}
+
+export function mute(mute: boolean, useChordsInstrument: boolean = false) {
+    let instrumentSelectElems = $('.CycleSelect-container[id$="instrument-select-container"]');
+    let instruments = [current_instrument, current_chords_instrument];
+    if (mute) {
+        instrumentSelectElems.toggleClass('CycleSelect-disabled', true);
+        current_instrument = silentInstrument;
+        if (useChordsInstrument) {
+            current_chords_instrument = silentInstrument;
+        }
+    }
+    else {
+        instrumentSelectElems.toggleClass('CycleSelect-disabled', false);
+        instrumentSelect.value = instrumentSelect.value;
+        if (useChordsInstrument) {
+            chordInstrumentSelect.value = chordInstrumentSelect.value;
+        }
+    }
 }

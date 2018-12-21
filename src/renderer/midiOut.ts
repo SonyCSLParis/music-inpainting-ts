@@ -1,6 +1,7 @@
-import * as Tone from 'tone'
-import * as WebMidi from 'webmidi'
-import * as log from 'loglevel'
+import * as Tone from 'tone';
+import * as WebMidi from 'webmidi';
+import * as log from 'loglevel';
+import * as Instruments from './instruments';
 
 let Nexus = require('./nexusColored')
 
@@ -9,13 +10,11 @@ dummyMidiOut.playNote = () => {};
 
 let midiOut = dummyMidiOut;
 
-export function render() {
+export function render(useChordsInstrument: boolean = false) {
     let topControlsGridElem = document.getElementById('bottom-controls');
     let midiOutSelectElem: HTMLElement = document.createElement('control-item');
     midiOutSelectElem.id = 'select-midiout';
     topControlsGridElem.appendChild(midiOutSelectElem);
-
-    let instrumentSelectElems = $('.CycleSelect-container[id$="instrument-select-container"]');
 
     WebMidi.enable(function (err) {
         if (err) log.error(err);
@@ -24,19 +23,19 @@ export function render() {
             'size': [150, 50],
             'options': ['No Output'].concat(WebMidi.outputs.map((output) => output.name)),
         });
+
         function midiOutOnChange(ev) {
             if (this.value !== 'No Output') {
-                instrumentSelectElems.toggleClass('CycleSelect-disabled', true);
+                Instruments.mute(true, useChordsInstrument);
                 midiOut = WebMidi.getOutputByName(this.value);
-                Tone.Master.mute = true;
             }
             else {
-                instrumentSelectElems.toggleClass('CycleSelect-disabled', false);
-                Tone.Master.mute = false;
+                Instruments.mute(false, useChordsInstrument);
                 midiOut = dummyMidiOut;
             }
             log.info('Selected MIDI out: ' + this.value);
         };
+
         midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect));
         midiOutSelect.value = 'No Output';
     });

@@ -1,0 +1,23 @@
+{
+    "control-labels": {
+        "bpm-control-label": {
+            "de": "Tempo ändern",
+            "en": "Change tempo"
+        },
+
+        "granularity-select-label": {
+            "de": "Rekompositionsdauer ändern",
+            "en": "Change generation duration"
+        },
+
+        "instruments-grid-label": {
+            "de": "Instrument ändern",
+            "en": "Change instrument"
+        },
+
+        "play-button-label": {
+            "de": "Partitur abspielen",
+            "en": "Score playback"
+        }
+    }
+}
