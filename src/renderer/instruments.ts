@@ -34,10 +34,22 @@ let chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
 let reverb = new Tone.Reverb(1.5).connect(chorus);
 // let reverb = new Tone.Volume(0).toMaster();
 
-let polysynth = new Tone.PolySynth(4);
+const synthOptions: object =  {
+    oscillator: {
+        type: 'triangle'  // default: 'triangle'
+    },
+    envelope: {
+        attack: 0.01,  // default: 0.005
+        decay: 0.1,  // default: 0.1
+        sustain: 0.3,  //default: 0.3
+        release: 1.7  // default: 1
+    }
+};
+
+let polysynth = new Tone.PolySynth(4, Tone.Synth, synthOptions);
 // polysynth.stealVoices = false;
 
-let polysynth_chords = new Tone.PolySynth(4);
+let polysynth_chords = new Tone.PolySynth(4, Tone.Synth, synthOptions);
 
 let steelpan = new Tone.PolySynth(6).set({
     "oscillator": {
