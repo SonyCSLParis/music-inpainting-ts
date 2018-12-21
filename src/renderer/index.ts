@@ -309,6 +309,7 @@ function render(configuration=defaultConfiguration) {
 
 
     function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
+        // FIXME(theis) hardcoded 4/4 time-signature
         const [timeRangeStart_quarter, timeRangeEnd_quarter] = ([timeStart, timeEnd].map(
             timeFrac => Math.round(4 * timeFrac.RealValue)))
 
