@@ -28,9 +28,16 @@
     }
 }
 
+.CycleSelect-container {
+    display: grid,
+}
+
+.CycleSelect-inner-container {
+    display: flex,
+}
+
 .CycleSelect-container, .CycleSelect-inner-container {
     position: relative;
-    display: flex;
     justify-content: center;
 
     cursor: pointer;

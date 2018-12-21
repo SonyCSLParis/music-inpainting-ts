@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import '../common/styles/cycleSelect.scss';
 
-export default class CycleSelect {
+export class CycleSelect {
     static containerCssClass: string = 'CycleSelect-container';
     static innerContainerCssClass: string = 'CycleSelect-inner-container';
     static visibleCssClass: string = 'CycleSelect-visible';
@@ -83,7 +83,7 @@ export default class CycleSelect {
     public set value(newValue: string) {
         // set the value of the <select> element and update the visuals
         if (!(this.options.includes(newValue))) {
-            throw EvalError('Unauthorized value' + newValue + ' for CycleSelector');
+            throw EvalError('Unauthorized value ' + newValue + ' for CycleSelector');
         };
         this._selectElem.value = this.options.indexOf(newValue).toString();
         this._selectElem.dispatchEvent(new Event('change'));
@@ -105,9 +105,9 @@ export default class CycleSelect {
     private populateContainer(): void {
         // append all images as <img> to the container
         let self = this;
-        this.icons.forEach((iconPath, instrumentName) => {
+        this.icons.forEach((iconPath, iconName) => {
             let imageElem = document.createElement('img');
-            imageElem.id = this.makeOptionId(instrumentName);
+            imageElem.id = this.makeOptionId(iconName);
             imageElem.src = path.join(this.basePath, iconPath);
             self.innerContainerElement.appendChild(imageElem);
         })

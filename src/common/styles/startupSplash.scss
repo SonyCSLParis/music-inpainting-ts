@@ -1,0 +1,77 @@
+#configuration-selection {
+    display: grid;
+
+    background-color: mistyrose;
+
+    // border-style: solid;
+    // border-width: thin;
+    // border-color: black;
+    // border-radius: 10px;
+
+    width: 65vw;
+    height: fit-content;
+    grid-row-gap: 2vh;
+    justify-items: center;
+
+    padding: 2em;
+
+    margin-left: auto;
+    margin-right: auto;
+
+    margin-top: 40vh;
+
+    & input {
+        width: 30vw;
+        font-size: 2vw;
+        height: 3vh;
+        text-align: center;
+    }
+
+    & > div {
+        display: grid;
+        justify-items: center;
+        grid-column-gap: 2vw;
+    }
+}
+
+#server-configuration {
+    grid-row: 1;
+}
+
+#mode-configuration {
+    grid-row: 2;
+}
+
+#server-ip-input {
+    grid-column: 1;
+}
+
+#server-port-input {
+    grid-column: 2;
+}
+
+#deepbach-configuration-button {
+    grid-column: 1;
+}
+
+#deepsheet-configuration-button {
+    grid-column: 2;
+}
+
+#deepfolk-configuration-button {
+    grid-column: 3;
+}
+
+#start-button {
+    grid-row: 3;
+
+    // center text vertically (via https://stackoverflow.com/a/2939979)
+    & div {
+        display: table-cell!important;
+        vertical-align: middle;
+    }
+}
+
+#application-mode-select {
+    position: fixed;
+}

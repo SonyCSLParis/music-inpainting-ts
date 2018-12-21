@@ -1,5 +1,11 @@
-$interface-font-stack: 'Ubuntu-Regular', sans-serif;
+$interface-font-stack: 'Fira-Sans', 'Ubuntu-Regular', sans-serif;
 $interface-font-weight: bold;
+
+$header-height: 120px;
+$bottom-controls-height: 150px;
+$advanced-controls-height: 40px;
+
+$CycleSelect-size: 54px;
 
 /*Font Awesome Fonts*/
 @font-face {
@@ -11,9 +17,20 @@ $interface-font-weight: bold;
     font-family: 'Ubuntu-Condensed';
     src: url('../fonts/Ubuntu_Condensed/UbuntuCondensed-Regular.ttf') format('truetype');
 }
+
 @font-face {
     font-family: 'Ubuntu-Regular';
     src: url('../fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Fira-Sans';
+    src: url('../fonts/Fira_Sans/FiraSans-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Julius';
+    src: url('../fonts/Julius_Sans_One/JuliusSansOne-Regular.ttf') format('truetype');
 }
 
 html, body {
@@ -41,7 +58,7 @@ div[nexus-ui] select, div[nexus-ui] input {
 header {
     position: absolute;
     width: 100%;
-    height: 90px;
+    height: $header-height;
     top: 0;
     left: 0;
 
@@ -88,6 +105,7 @@ header {
         overflow: hidden;
         // HACK Manual offset to center in header
         top: -38px;
+        width: 45px;
     }
 }
 
@@ -107,15 +125,18 @@ header {
     justify-self: inherit;
     align-self: inherit;
     display: flex;
-    font-weight: bold;
+
+    font-size: 2.3em;
+    font-family: 'Julius' !important;
 }
 
 #help-icon {
     position: relative;
-    width: 45px;
     justify-self: right;
     align-self: inherit;
     margin-right: 25px;
+    cursor: pointer;
+    font-size: x-large;
 
     &:before {
         content: "\F05A";
@@ -131,13 +152,26 @@ header {
     margin-right:25px;
 }
 
+#osmd-container-container-container {
+    height: calc(100% - #{$header-height} - #{$bottom-controls-height});
+    top: $header-height;
+}
+
+#osmd-loading-spinner {
+    position: absolute;
+    top: calc((100% - #{$header-height} - #{$bottom-controls-height})/2 + #{$header-height});
+    left: 50%;
+    margin-left: -32px;
+    margin-top: -32px;
+}
+
 #bottom-controls {
     position: absolute;
     display: inline-grid;
     width: 100%;
-    height: 90px;
+    height: $bottom-controls-height;
     grid-template-columns: repeat(4, 25%);
-    grid-template-rows: 100%;
+    grid-template-rows: 90px auto;
     align-items: center;
     justify-items: center;
 
@@ -148,6 +182,19 @@ header {
     background-color: rgb(255, 236, 249);
 
     box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
+
+    text-align: center;
+}
+
+body.advanced-controls #bottom-controls {
+    height: calc(#{$bottom-controls-height} + #{$advanced-controls-height});
+    grid-template-columns: repeat(4, 25%);
+    grid-template-rows: 80px 50px 60px;
+
+}
+
+body.advanced-controls #osmd-container-container-container {
+    height: calc(100% - #{$header-height} - #{$bottom-controls-height} - #{$advanced-controls-height});
 }
 
 control-item {
@@ -169,6 +216,15 @@ control-item {
     }
 }
 
+.disabled {
+    color: lightgray;
+    cursor: not-allowed;
+
+    & * {
+        pointer-events: none!important;
+    }
+}
+
 #lfo-controls {
     display: grid;
     width: 40%;
@@ -182,14 +238,28 @@ control-item {
 .CycleSelect-container {
     color: lightpink;
 
-    width: 54px;
-    height: 54px;
+    width: $CycleSelect-size;
+    height: $CycleSelect-size;
     border-radius: 64px;
     border-style: solid;
     border-width: thick;
 
     align-self: center;
     justify-self: center;
+}
+
+.CycleSelect-inner-container {
+    width: inherit !important;
+    height: inherit !important;
+
+    // HACK: invisble border to allow clicking on the border of the selector
+    border-radius: 64px;
+    border-style: solid;
+    border-width: thick;
+    border-color: inherit;  // fallback if no opacity support
+    border-color: rgba(0, 0, 0, 0);
+
+    top: -5px;
 }
 
 //
@@ -205,8 +275,8 @@ control-item {
 //     grid-column: 3 / span 1
 // }
 
-#select-granularity--whole-note {
-    width: 35%;
+#granularity-select-container--whole-note {
+    width: 45%;
 }
 
 .header {
@@ -219,4 +289,13 @@ control-item {
 
 .center {
     margin: auto
+}
+
+#bpm-control {
+    & svg rect {
+        transform: scaleY(0.6);
+        y: 25;
+        rx: 5;
+        ry: 10;
+    }
 }
