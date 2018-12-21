@@ -28,17 +28,16 @@ piano.setVolume('release', -25);
 piano.setVolume('pedal', -15);
 
 
+const useEffects: boolean = false;
+
 let chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
 let reverb = new Tone.Reverb(1.5).connect(chorus);
-reverb.generate();
 // let reverb = new Tone.Volume(0).toMaster();
 
 let polysynth = new Tone.PolySynth(4);
 // polysynth.stealVoices = false;
-polysynth.connect(reverb);
 
 let polysynth_chords = new Tone.PolySynth(4);
-polysynth_chords.connect(reverb);
 
 let steelpan = new Tone.PolySynth(6).set({
     "oscillator": {
@@ -53,7 +52,19 @@ let steelpan = new Tone.PolySynth(6).set({
         "release": 1.6}
     }
 );
-steelpan.connect(reverb);
+
+const softSynths: Tone.Instrument[] = [polysynth, polysynth_chords, steelpan];
+if (useEffects) {
+    reverb.generate();
+    softSynths.forEach(instrument => {
+        instrument.connect(reverb)
+    });
+}
+else {
+    softSynths.forEach(instrument => {
+        instrument.toMaster()
+    });
+}
 
 let instrumentFactories = {
     'PolySynth': () => {return polysynth},
@@ -76,7 +87,6 @@ let instrumentOnChange: {handleEvent: (e: Event) => void} = {
 export function getCurrentInstrument() {
     return current_instrument;
 }
-
 
 let chordInstrumentSelectElem: HTMLDivElement;
 let chordInstrumentFactories;
