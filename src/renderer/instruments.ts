@@ -50,6 +50,7 @@ let polysynth = new Tone.PolySynth(4, Tone.Synth, synthOptions);
 // polysynth.stealVoices = false;
 
 let polysynth_chords = new Tone.PolySynth(4, Tone.Synth, synthOptions);
+polysynth_chords.set("volume", -8);
 
 let steelpan = new Tone.PolySynth(6).set({
     "oscillator": {
