@@ -13,16 +13,21 @@ import '../common/styles/overlays.scss';
 export class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, options: object = {},
             boxDurations_quarters: number[],
-            annotationTypes: string[] = [], allowOnlyOneFermata: boolean=false) {
+            annotationTypes: string[] = [], allowOnlyOneFermata: boolean=false,
+            copyTimecontainerContent: (origin: HTMLElement, target: HTMLElement) => void) {
         super(container, options);
         this._annotationTypes = annotationTypes;
         this._boxDurations_quarters = boxDurations_quarters;
         this._allowOnlyOneFermata = allowOnlyOneFermata;
+        this.copyTimecontainerContent = copyTimecontainerContent;
     }
     private _boxDurations_quarters: number[];
 
     private _annotationTypes: string[];
     private _allowOnlyOneFermata: boolean;
+
+    private copyTimecontainerContent: (
+        (origin: HTMLElement, target: HTMLElement) => void);
 
     public get annotationTypes(): string[] {
         return this._annotationTypes;
@@ -220,6 +225,21 @@ export class eOSMD extends OpenSheetMusicDisplay {
                 cycleGranularity(scrollUp)
             }, false);
 
+
+            // add Drag'n'Drop support between timecontainers
+            div.setAttribute('draggable', 'true')
+            div.addEventListener('dragstart',
+                ondragstartTimecontainer_handler, true);
+            div.addEventListener('dragover',
+                ondragoverTimecontainer_handler, true);
+            div.addEventListener('dragenter',
+                ondragenterTimecontainer_handler, true);
+            div.addEventListener('dragleave',
+                ondragleaveTimecontainer_handler, true);
+            div.addEventListener('drop',
+                makeOndropTimecontainer_handler(this.copyTimecontainerContent),
+                true);
+
             // add div to the rendering backend's <HTMLElement> for positioning
             let inner = this.renderingBackend.getInnerElement();
             inner.appendChild(commonDiv);
@@ -399,6 +419,51 @@ function cycleGranularity(increase: boolean) {
     // trigger `onchange` callback
     granularitySelectElem.dispatchEvent(new Event('change'))
 // }
+}
+
+// Drag and Drop
+
+// Allow drag and drop of one timecontainer's content onto another
+
+function ondragstartTimecontainer_handler(event: DragEvent) {
+    // perform a copy operation of the data in the time container
+    event.dataTransfer.dropEffect = 'copy';
+    // Store the dragged container's ID to allow retrieving it from the drop
+    // target
+    const targetID: string = (<HTMLElement>event.target).id;
+    event.dataTransfer.setData("text/plain", targetID);
+}
+
+function ondragoverTimecontainer_handler(event: DragEvent) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+}
+
+function ondragenterTimecontainer_handler(event: DragEvent) {
+    (<HTMLElement>event.target).classList.add('dragover');
+}
+
+function ondragleaveTimecontainer_handler(event: DragEvent) {
+    (<HTMLElement>event.target).classList.remove('dragover');
+}
+
+function makeOndropTimecontainer_handler(copyTimecontainerContent: (
+    origin: HTMLElement, target: HTMLElement) => void) {
+    return function (event: DragEvent) {
+        // only allow drop if the source of the drag was a time-container
+        const sourceID: string = event.dataTransfer.getData("text/plain");
+        const sourceElement: HTMLElement = document.getElementById(sourceID);
+        const isValidID: boolean = sourceElement != null;
+        if (isValidID && sourceElement.classList.contains("notebox")) {
+            event.preventDefault();
+            const targetElement: HTMLElement = <HTMLElement>event.target;
+            copyTimecontainerContent(sourceElement.parentElement,
+                    targetElement.parentElement);
+
+            // clean-up after drag
+            targetElement.classList.remove('dragover');
+        }
+    }
 }
 
 export function renderZoomControls(containerElement: HTMLElement,
