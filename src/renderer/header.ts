@@ -27,12 +27,12 @@ export function render(containerElement: HTMLElement) {
     let logoLinkElem = document.createElement('div');
     logoLinkElem.id = 'csl-logo-elem';
     logoLinkElem.classList.add('header-item-left');
-    logoLinkElem.href = "https://www.sonycsl.co.jp/";
-
-    // open in new tab
-    logoLinkElem.target = '_blank';
-    // securely open tab, cf. https://stackoverflow.com/a/15551842
-    logoLinkElem.rel = "noopener noreferrer";
+    // logoLinkElem.href = "https://www.sonycsl.co.jp/";
+    //
+    // // open in new tab
+    // logoLinkElem.target = '_blank';
+    // // securely open tab, cf. https://stackoverflow.com/a/15551842
+    // logoLinkElem.rel = "noopener noreferrer";
 
     containerElement.appendChild(logoLinkElem);
 
