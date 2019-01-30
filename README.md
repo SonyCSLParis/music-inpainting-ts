@@ -1,53 +1,79 @@
-# interactive score interface
-DeepBach Electron and web application.
+![alt text](nonoto_logo.png)
 
-## Usage
-Install the [OpenSheetMusicDisplay fork](https://github.com/SonyCSLParis/opensheetmusicdisplay) which allows to have access to internal private variables such as the displayed elements.
+NONOTO is an A.I.-powered interactive score. It allows users to interact intuitively with any 
+existing music composition algorithm. In order to make this programme used by a majority of 
+artists, we 
+provide a way to integrate seamlessly NONOTO within 
+[Ableton Live](https://www.ableton.com/en/live/), and more generally, to any Digital Audio Workstation supporting 
+[Ableton Link](https://www.ableton.com/en/link/).
 
-It requires that the Flask server from
-[interactive-deep-bach](https://github.com/FlowMachinesStudio/interactive-deep-bach)
-is running.
-You should edit the configuration file at `src/common/config.json` and set
-the `server_ip` and `*_port` values to the appropriate values for your Flask
-server (e.g. `server_ip = "localhost", chorale_port=5001`).
+NONOTO is distributed as an [Electron](https://electronjs.org/) app and as a web application. 
+Currently, only the Electron application (for Linux and MacOS) can be connected to another DAW. 
 
-### Developing / interactive development server
+## Installation
 
-To launch the Electron application:
+## Electron application
+You can download the MacOS and Linux standalone applications 
+[here](https://github.com/SonyCSLParis/NONOTO/releases).
 
-```bash
-$ yarn link (in the opensheetmusicdisplay fork directory)
-$ yarn link opensheetmusicdisplay (in interactive-score-interface directory)
-$ yarn dev
+ 
+## Web application
+### Docker
+A Docker image for NONOTO is available on [Docker Hub](https://hub.docker.com/), so that you can download and launch the 
+NONOTO server with:
+```
+docker run -it -p 8080:8080 nonoto
+```
+and then connect to 127.0.0.1:8080.
+
+### Manual installation
+Install the [OpenSheetMusicDisplay fork](https://github.com/SonyCSLParis/opensheetmusicdisplay) 
+which allows to have access to internal private variables such as the displayed elements: 
+```
+cd INSTALL_DIR
+git clone https://github.com/SonyCSLParis/opensheetmusicdisplay.git
+cd opensheetmusicdisplay
+yarn install && yarn link
 ```
 
-This uses `electron-webpack`, which provides default configurations for using
-Webpack to develop Electron applications.
-
-### Building
-
-You can either compile and build the whole application as a packaged Electron
-app or bundle the client side code for usage as a standard web application
-(this is the way to go for mobile usage).
-The different build targets are provided as yarn scripts in the `package.json`
-file.
-
-#### Build and package Electron application
-
-This uses the `electron-builder` npm package which pre-configures most of the
-things.
-
-```bash
-$ yarn compile && yarn dist
+Install our [Simplebar fork](https://github.com/SonyCSLParis/simplebar):
+```
+cd INSTALL_DIR
+git clone https://github.com/SonyCSLParis/simplebar.git
+cd simplebar
+yarn install && yarn run build && yarn link
 ```
 
-*Gotcha*: Do not forget to `yarn compile` before calling `yarn dist`, otherwise
-`electron-builder` might just use the development bundle created by `yarn dev`,
-which would result in bugs (because `yarn dist` expects code bundled with the
-webpack option `mode: "PRODUCTION"`, which disables various development tools).
-
-#### Build as web bundle
-
-```bash
-$ yarn build:web  # builds the client into the `web/dist` directory
+Finally, install NONOTO with
 ```
+cd INSTALL_DIR
+git clone https://github.com/SonyCSLParis/NONOTO.git
+cd NONOTO
+yarn link opensheetmusicdisplay && yarn link simplebar
+RUN yarn install && yarn build:web
+```
+
+Once, this is done, the NONOTO server is can be started with
+```
+yarn serve:web
+```
+then, connect to 127.0.0.1:8080.
+
+By default, NONOTO uses the port 8080. We recommend to use Chrome.
+
+# Usage
+## Choosing a music composition algorithm backend
+
+NONOTO is just an interface which allows users to query music composition algorithm 
+You need to start a backend server. For the moment, only the integration with 
+[DeepBach](https://github.com/Ghadjeres/DeepBach) is provided.
+Integration with other music composition algorithms will be available soon.
+
+- 
+-  Leadsheet mode allows you to have control over chords and melody:
+![](nonoto_interface.png)
+
+
+
+### More info:
+https://nips.cc/Conferences/2018/Schedule?showEvent=12168
