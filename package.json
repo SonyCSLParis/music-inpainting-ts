@@ -1,7 +1,7 @@
 {
-  "name": "interactive-score-interface",
-  "version": "0.0.1",
-  "description": "Electron interactive application for the DeepBach generative model",
+  "name": "nonoto",
+  "version": "0.1",
+  "description": "Electron and web application for interactive music composition",
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -17,17 +17,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SonyCSLParis/interactive-score-interface.git"
+    "url": "git+https://github.com/SonyCSLParis/NONOTO.git"
   },
   "keywords": [
     "opensheetmusicdisplay",
     "vexflow",
     "deepbach"
   ],
-  "author": "Théis Bazin (theis.bazin@sony.com)",
-  "license": "MIT",
+  "author": "Théis Bazin (theis.bazin@sony.com), Hadjeres Gaëtan (gaetan.hadjeres@sony.com)",
+  "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/SonyCSLParis/interactive-score-interface/issues"
+    "url": "https://github.com/SonyCSLParis/NONOTO/issues"
   },
   "homepage": "https://github.com/opensheetmusicdisplay/webpack-usage-example#readme",
   "devDependencies": {
