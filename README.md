@@ -13,6 +13,8 @@ Currently, only the Electron application (for Linux and MacOS) can be connected 
 ## Installation
 
 ## Electron application
+*Recommended*
+
 You can download the MacOS and Linux standalone applications 
 [here](https://github.com/SonyCSLParis/NONOTO/releases).
 
@@ -62,18 +64,35 @@ then, connect to 127.0.0.1:8080.
 By default, NONOTO uses the port 8080. We recommend to use Chrome.
 
 # Usage
-## Choosing a music composition algorithm backend
 
-NONOTO is just an interface which allows users to query music composition algorithm 
-You need to start a backend server. For the moment, only the integration with 
-[DeepBach](https://github.com/Ghadjeres/DeepBach) is provided.
-Integration with other music composition algorithms will be available soon.
+Different modes are available:
+- *Folk songs mode* works with any type of score and allows the user to regenerate any part of 
+the score by clicking on it,
+- *Chorale mode* adds a way to control *fermatas* (indication of where the musical phrases 
+end in Bach chorales) 
+- *Leadsheet mode* adds a way to control and set chord progressions.
 
-- 
--  Leadsheet mode allows you to have control over chords and melody:
 ![](nonoto_interface.png)
 
+## Starting a music composition algorithm server
 
+NONOTO is just an interface which allows users to query music composition algorithm 
+You need to start a backend server. 
+
+For the moment, only the integration with 
+[DeepBach](https://github.com/Ghadjeres/DeepBach/tree/master#usage-with-nonoto) is provided.
+Integration with other music composition algorithms will be available soon.
+
+## Connexion with Ableton
+TODO 
+
+## Issues
+An up-to-date version of libstdc++6 may be needed to run the linux AppImage. 
+```
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get upgrade libstdc++6
+```
 
 ### More info:
 https://nips.cc/Conferences/2018/Schedule?showEvent=12168
