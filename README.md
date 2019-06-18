@@ -93,6 +93,3 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 sudo apt-get upgrade libstdc++6
 ```
-
-### More info:
-https://nips.cc/Conferences/2018/Schedule?showEvent=12168
