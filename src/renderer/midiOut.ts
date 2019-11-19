@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import * as WebMidi from 'webmidi';
+import WebMidi from 'webmidi';
 import * as log from 'loglevel';
 import * as Instruments from './instruments';
 
