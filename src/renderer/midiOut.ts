@@ -1,5 +1,5 @@
 import * as Tone from 'tone';
-import WebMidi from 'webmidi';
+import * as WebMidi from 'webmidi';
 import * as log from 'loglevel';
 import * as Instruments from './instruments';
 
@@ -16,18 +16,19 @@ export function render(useChordsInstrument: boolean = false) {
     midiOutSelectElem.id = 'select-midiout';
     topControlsGridElem.appendChild(midiOutSelectElem);
 
-    WebMidi.enable(function (err) {
+    (WebMidi as any).enable(function (err) {
         if (err) log.error(err);
 
         let midiOutSelect = new Nexus.Select('#select-midiout', {
             'size': [150, 50],
-            'options': ['No Output'].concat(WebMidi.outputs.map((output) => output.name)),
+            'options': ['No Output'].concat(
+                (WebMidi as any).outputs.map((output) => output.name)),
         });
 
         function midiOutOnChange(ev) {
             if (this.value !== 'No Output') {
                 Instruments.mute(true, useChordsInstrument);
-                midiOut = WebMidi.getOutputByName(this.value);
+                midiOut = (WebMidi as any).getOutputByName(this.value);
             }
             else {
                 Instruments.mute(false, useChordsInstrument);
