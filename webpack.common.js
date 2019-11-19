@@ -5,7 +5,7 @@ var CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = {
     plugins: [
         new webpack.DefinePlugin({
-            COMPILE_ELECTRON: true  // comment this for web-target
+            COMPILE_ELECTRON: true
         }),
 
         new webpack.ProvidePlugin({
@@ -17,13 +17,4 @@ module.exports = {
             jQuery: 'jquery'
         }),
     ],
-
-    // node: {
-    //   crypto: 'empty',
-    //   module: false,
-    //   clearImmediate: false,
-    //   setImmediate: false,
-    //   __dirname: false,  // false has __dirname resolve to the directory of the output file
-    //   __filename: false
-    // }
   };

@@ -51,16 +51,7 @@ module.exports = function (options) {
          use: [
            'file-loader'
          ]
-     },
-     {
-       test: /\.html$/,
-       use: [
-         'html-loader'
-        ],
-       // do not process the template with html-loader, since this breaks
-       // template variables, e.g. title
-       exclude: __dirname + '/index.html'
-   },
+      },
       // the url-loader uses DataUrls.
       // the file-loader emits files.
       {
