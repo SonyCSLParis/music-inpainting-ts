@@ -166,7 +166,6 @@ function render(configuration=defaultConfiguration) {
         * Create a container element for OpenSheetMusicDisplay...
         */
        let osmdContainer: HTMLElement;
-       let spectrogramElem: HTMLImageElement;
        $(() => {
             let osmdContainerContainer = <HTMLElement>document.createElement("div");
             osmdContainerContainer.id = 'osmd-container-container';
@@ -348,8 +347,8 @@ function render(configuration=defaultConfiguration) {
     // TODO don't create globals like this
     const serializer = new XMLSerializer();
     const parser = new DOMParser();
-    let currentCodes_top: Int32Array
-    let currentCodes_bottom: Int32Array
+    let currentCodes_top: Int32Array;
+    let currentCodes_bottom: Int32Array;
     let currentXML: XMLDocument;
 
     /**

@@ -219,7 +219,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
             // var last_click = [];
             div.addEventListener('click', onclick);
             // use bubbling and preventDefault to block window scrolling
-            div.addEventListener('wheel', function(event){
+            div.addEventListener('wheel', function(event: WheelEvent){
                 event.preventDefault();
                 let scrollUp = (-event.deltaY>=0)
                 cycleGranularity(scrollUp)
@@ -281,7 +281,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
     }
 
     public drawTimestampBoxes(onclickFactory: (startTime: Fraction,
-        endTime: Fraction) => ((event) => void)=undefined): void{
+        endTime: Fraction) => ((event: PointerEvent) => void)=undefined): void{
         // FIXME this assumes a time signature of 4/4
         let measureList = this.graphicalMusicSheet.MeasureList;
         const numMeasures: number = measureList.length;
@@ -364,7 +364,7 @@ export class eOSMD extends OpenSheetMusicDisplay {
                             }
                         }
                         let width = xEndBox - xBeginBox;
-                        let onclick = (event) => {};
+                        let onclick = (event: PointerEvent) => {};
                         if (onclickFactory) {
                             onclick = onclickFactory(currentBeginTimestamp,
                                 currentEndTimestamp)
@@ -400,6 +400,8 @@ export class eOSMD extends OpenSheetMusicDisplay {
     }
 }
 
+let Nexus = require('./nexusColored');
+
 export class Spectrogram {
     constructor(container: HTMLElement, options: object = {},
             boxDurations_quarters: number[],
@@ -409,6 +411,7 @@ export class Spectrogram {
         this.copyTimecontainerContent = copyTimecontainerContent;
     }
     public container: HTMLElement;
+    private matrix: Nexus.Sequencer = null;
 
     private _boxDurations_quarters: number[];
 
@@ -420,11 +423,13 @@ export class Spectrogram {
     }
 
     public render(onclickFactory=undefined): void {
-        this.updateContainerWidth(false);
-        this.drawTimestampBoxes(onclickFactory);
+        // this.updateContainerWidth(false);
+        if ( this.matrix !== null ) {
+            this.matrix.destroy();}
+        this.drawTimestampBoxes(onclickFactory, 32, 8);
         this.container.setAttribute('sequenceDuration_quarters',
             this.sequenceDuration_quarters.toString());
-        this.updateContainerWidth(true);
+        // this.updateContainerWidth(true);
     }
 
     // private updateContainerWidth(toContentWidth: boolean=true): void {
@@ -533,7 +538,7 @@ export class Spectrogram {
     */
     private createTimeContainer(divId: string,
         duration_quarters: number,
-        onclick: (PointerEvent) => void,
+        onclick: (arg0: PointerEvent) => void,
         timestamps: [Fraction, Fraction]): HTMLElement {
         // container for positioning the timestamp box and attached boxes
         // needed to properly filter click actions
@@ -578,7 +583,7 @@ export class Spectrogram {
 
             div.addEventListener('click', onclick);
             // use bubbling and preventDefault to block window scrolling
-            div.addEventListener('wheel', function(event){
+            div.addEventListener('wheel', function(event: WheelEvent){
                 event.preventDefault();
                 let scrollUp = (-event.deltaY>=0)
                 cycleGranularity(scrollUp)
@@ -610,122 +615,17 @@ export class Spectrogram {
     }
 
     public drawTimestampBoxes(onclickFactory: (startTime: Fraction,
-        endTime: Fraction) => ((event) => void)=undefined): void{
-        // FIXME this assumes a time signature of 4/4
-        let measureList = this.graphicalMusicSheet.MeasureList;
-        const numMeasures: number = measureList.length;
-        const pieceDuration: Fraction = this.pieceDuration;
+        endTime: Fraction) => ((event: PointerEvent) => void)=undefined,
+        numRows: number, numColumns: number): void{
+        const width: number = parseInt(this.container.getAttribute('width'));
+        const height: number = parseInt(this.container.getAttribute('height'));
 
-        function makeDurationFraction(duration_quarters: number): Fraction {
-            return new Fraction(duration_quarters, 4)
-        }
-
-        for (let measureIndex = 0; measureIndex < numMeasures; measureIndex++){
-            let measure: GraphicalMeasure = <GraphicalMeasure>measureList[measureIndex][0]
-            let beginInstructionsWidth: number = measure.beginInstructionsWidth
-
-            let sourceMeasure: SourceMeasure = measure.parentSourceMeasure;
-
-            // compute time interval covered by the measure
-            let measureStartTimestamp: Fraction = sourceMeasure.AbsoluteTimestamp;
-            let measureEndTimestamp: Fraction = Fraction.plus(measureStartTimestamp, sourceMeasure.Duration);
-
-            let musicSystem = measure.parentMusicSystem;
-
-            // cf. sizing the Cursor in OpenSheetMusicDisplay/Cursor.ts
-            let y = musicSystem.PositionAndShape.AbsolutePosition.y + musicSystem.StaffLines[0].PositionAndShape.RelativePosition.y;
-            const endY: number = musicSystem.PositionAndShape.AbsolutePosition.y +
-              musicSystem.StaffLines[musicSystem.StaffLines.length - 1].PositionAndShape.RelativePosition.y + 4.0;
-            let height = endY - y;
-
-            // for (const [timestampList, granularityName] of timestampsAndNames) {
-            this.boxDurations_quarters.forEach((boxDuration_quarters) => {
-            // for (const boxDuration_quarters of ) {
-                const boxDuration = makeDurationFraction(boxDuration_quarters);
-
-                // we start at the timestamp of the beginning of the current measure
-                // and shift by `duration` until we reach the end of the measure
-                // to generate all sub-intervals of `duration` in this measure
-                // Will generate a single interval if duration is
-                const currentBeginTimestamp = measureStartTimestamp.clone();
-                const currentEndTimestamp = Fraction.plus(currentBeginTimestamp,
-                    boxDuration);
-
-                // HACK breaks if boxDuration equal e.g. Fraction(3, 2)
-                if ( boxDuration.WholeValue > 1 && !(measureIndex % boxDuration.WholeValue == 0)) {
-                    return
-                }
-
-                // number of boxes generated for this boxDuration and this measure
-                let boxIndex: number = 0;
-                while (currentBeginTimestamp.lt(measureEndTimestamp) &&
-                    currentEndTimestamp.lte(pieceDuration)) {
-                        let xBeginBox = this.graphicalMusicSheet
-                            .calculateXPositionFromTimestamp(currentBeginTimestamp)[0]
-
-                        let xEndBox : number
-                        if (currentEndTimestamp.lt(measureEndTimestamp)) {
-                            // x-coordinates for the bounding box
-                            xEndBox = this.graphicalMusicSheet
-                                .calculateXPositionFromTimestamp(currentEndTimestamp)[0]
-                            }
-                        else {
-                            // index of the last measure contained in the current box
-                            // e.g. if durationBox is 2, we arrive in `measureIndex+1`
-                            const lastContainedMeasureIndex: number = measureIndex + boxDuration.WholeValue - 1*(boxDuration.RealValue == boxDuration.WholeValue?1:0);
-                            const lastMeasure: GraphicalMeasure = <GraphicalMeasure>measureList[lastContainedMeasureIndex][0]
-                            // reached last segment of the measure
-                            // set xRight as the x-position of the next measure bar
-                            xEndBox = (lastMeasure.PositionAndShape.AbsolutePosition.x +
-                                lastMeasure.PositionAndShape.Size.width) + 1
-                        }
-
-                        if (beginInstructionsWidth>1) {
-                            // add x-offset to compensate for the presence of special
-                            // symbols (e.g. key symbols) at the beginning of the measure
-                            if (beginInstructionsWidth > 5) {
-                                xBeginBox -= 1  // HACK hardcoded
-                                xEndBox -= 1
-                            }
-                            else {
-                                xBeginBox -= 2
-                                xEndBox -= 2
-                            }
-                        }
-                        let width = xEndBox - xBeginBox;
-                        let onclick = (event) => {};
-                        if (onclickFactory) {
-                            onclick = onclickFactory(currentBeginTimestamp,
-                                currentEndTimestamp)
-                        };
-
-                        const timecontainerID = eOSMD.makeGranularityID(
-                            boxDuration_quarters,
-                            measureIndex,
-                            boxIndex
-                        );
-
-                        if (!document.getElementById(timecontainerID)) {
-                            // the time container does not yet exist, create it
-                            this.createTimeContainer(
-                                timecontainerID,
-                                boxDuration_quarters,
-                                onclick,
-                                [currentBeginTimestamp, currentEndTimestamp]
-                            );
-                        };
-
-                        this.updateTimeContainerSize(timecontainerID,
-                            xBeginBox, y, width, height);
-
-
-                        // continue to next time container
-                        currentBeginTimestamp.Add(boxDuration);
-                        currentEndTimestamp.Add(boxDuration)
-                        boxIndex++;
-                    }
-                })
-        }
+        this.matrix = new Nexus.Sequencer(this.container.id, {
+            'size': [width, height],
+            'mode': 'toggle',
+            'rows': numRows,
+            'columns': numColumns,
+        });
     }
 }
 
