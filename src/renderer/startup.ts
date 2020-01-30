@@ -1,4 +1,4 @@
-// start-up module offering a splash screen inj which to select the configuration
+// start-up module offering a splash screen in which to select the configuration
 let Nexus = require('./nexusColored')
 
 import '../common/styles/startupSplash.scss';
@@ -13,20 +13,28 @@ function cloneJSON(obj: object): object {
 
 let defaultConfiguration: object = require('../common/config.json');
 
-// TODO don't create modes like this (goes again 12 Factor App principles)
+// TODO don't create modes like this (goes against 12 Factor App principles)
 // should have truely orthogonal configuration options
-let choraleConfiguration: object = cloneJSON(defaultConfiguration);
+let osmdConfiguration: object = cloneJSON(defaultConfiguration);
+osmdConfiguration['osmd'] = true;
+osmdConfiguration['spectrogram'] = false;
+
+let choraleConfiguration: object = cloneJSON(osmdConfiguration);
 choraleConfiguration["use_chords_instrument"] = false;
 choraleConfiguration["annotation_types"] = ["fermata"];
 
-let leadsheetConfiguration: object = cloneJSON(defaultConfiguration);
+let leadsheetConfiguration: object = cloneJSON(osmdConfiguration);
 leadsheetConfiguration["use_chords_instrument"] = true;
 leadsheetConfiguration["annotation_types"] = ["chord_selector"];
 
-let folkConfiguration: object = cloneJSON(defaultConfiguration);
+let folkConfiguration: object = cloneJSON(osmdConfiguration);
 folkConfiguration["use_chords_instrument"] = false;
 folkConfiguration["annotation_types"] = [];
 folkConfiguration["granularities_quarters"] = ["1", "4", "8", "16"];
+
+let spectrogramConfiguration: object = cloneJSON(defaultConfiguration);
+spectrogramConfiguration['osmd'] = false;
+spectrogramConfiguration['spectrogram'] = true;
 
 export function render(renderPage: (configuration: object) => void): void {
     let configurationWindow = document.createElement('div');
@@ -65,7 +73,7 @@ export function render(renderPage: (configuration: object) => void): void {
     applicationModeSelectElem.id = 'application-mode-select';
     configurationWindow.appendChild(applicationModeSelectElem);
 
-    let applicationModes: string[] = ['chorale', 'leadsheet', 'folk'];
+    let applicationModes: string[] = ['chorale', 'leadsheet', 'folk', 'spectrogram'];
     for (let applicationModeIndex=0, numModes=applicationModes.length;
         applicationModeIndex<numModes; applicationModeIndex++) {
         const applicationMode = applicationModes[applicationModeIndex];
@@ -82,14 +90,14 @@ export function render(renderPage: (configuration: object) => void): void {
         'size': [150,50],
         'state': true,
         'text': 'Chorales',
-        'alternateText': 'Chorales',
-        // 'alternate': true
+        'alternateText': 'Chorales'
     });
 
     deepbachbutton.on('change', () => {
         deepbachbutton.turnOn(false);
         deepsheetbutton.turnOff(false);
         deepfolkbutton.turnOff(false);
+        spectrogrambutton.turnOff(false);
         applicationModeSelectElem.value = 'chorale';
     });
 
@@ -101,14 +109,14 @@ export function render(renderPage: (configuration: object) => void): void {
         'size': [150,50],
         'state': false,
         'text': 'Leadsheets',
-        'alternateText': 'Leadsheets',
-        // 'alternate': true
+        'alternateText': 'Leadsheets'
     });
 
     deepsheetbutton.on('change', () => {
         deepsheetbutton.turnOn(false);
         deepbachbutton.turnOff(false);
         deepfolkbutton.turnOff(false);
+        spectrogrambutton.turnOff(false);
         applicationModeSelectElem.value = 'leadsheet';
     });
 
@@ -120,15 +128,34 @@ export function render(renderPage: (configuration: object) => void): void {
         'size': [150,50],
         'state': false,
         'text': 'Folk songs',
-        'alternateText': 'Folk songs',
-        // 'alternate': true
+        'alternateText': 'Folk songs'
     });
 
     deepfolkbutton.on('change', () => {
         deepfolkbutton.turnOn(false);
         deepsheetbutton.turnOff(false);
         deepbachbutton.turnOff(false);
+        spectrogrambutton.turnOff(false);
         applicationModeSelectElem.value = 'folk';
+    });
+
+    let spectrogrambuttonElem: HTMLElement = document.createElement('div');
+    spectrogrambuttonElem.id = 'spectrograms-configuration-button'
+    modeConfigElem.appendChild(spectrogrambuttonElem);
+
+    let spectrogrambutton = new Nexus.TextButton('#spectrograms-configuration-button', {
+        'size': [150,50],
+        'state': false,
+        'text': 'Spectrograms',
+        'alternateText': 'Spectrograms'
+    });
+
+    spectrogrambutton.on('change', () => {
+        spectrogrambutton.turnOn(false);
+        deepfolkbutton.turnOff(false);
+        deepsheetbutton.turnOff(false);
+        deepbachbutton.turnOff(false);
+        applicationModeSelectElem.value = 'spectrogram';
     });
 
     if (COMPILE_ELECTRON && false){
@@ -180,6 +207,9 @@ export function render(renderPage: (configuration: object) => void): void {
                 break;
             case 'folk':
                 configuration = folkConfiguration;
+                break;
+            case 'spectrogram':
+                configuration = spectrogramConfiguration;
                 break;
         }
         if (serverIpInput.value.length > 0) {

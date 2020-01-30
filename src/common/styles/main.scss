@@ -152,7 +152,7 @@ header {
     margin-right:25px;
 }
 
-#osmd-container-container-container {
+#main-panel {
     height: calc(100% - #{$header-height} - #{$bottom-controls-height});
     top: $header-height;
 }
@@ -193,7 +193,7 @@ body.advanced-controls #bottom-controls {
 
 }
 
-body.advanced-controls #osmd-container-container-container {
+body.advanced-controls #main-panel {
     height: calc(100% - #{$header-height} - #{$bottom-controls-height} - #{$advanced-controls-height});
 }
 

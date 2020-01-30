@@ -23,6 +23,8 @@ $.fn.exists = function() {
 
 log.setLevel(log.levels.INFO);
 
+const player = new Tone.Player();
+
 let scrollElementSelector: string = '.simplebar-content'
 
 function getTimingOffset(){
@@ -413,4 +415,8 @@ export function scheduleChordsPlayer(osmd: eOSMD, midiChannel: number) {
 
     // FIXME assumes a TimeSignature of 4/4
     new Tone.Loop(playChord, '4n').start(0);
+}
+
+export function loadAudio(audioUrl: string) {
+    return player.load(audioUrl);
 }
