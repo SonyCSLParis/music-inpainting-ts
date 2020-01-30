@@ -1,5 +1,5 @@
 // import * as nipplejs from "nipplejs";
-import { eOSMD, renderZoomControls } from './locator';
+import { eOSMD, renderZoomControls, Spectrogram } from './locator';
 import { Fraction } from 'opensheetmusicdisplay';
 import * as $ from "jquery";
 import * as WebMidi from 'webmidi';
@@ -9,6 +9,7 @@ import * as log from 'loglevel';
 import * as path from 'path';
 let Nexus = require('./nexusColored');
 import * as url from 'url';
+import * as JSZIP from 'jszip';
 
 import * as Header from './header';
 import * as PlaybackCommands from './playbackCommands';
@@ -31,6 +32,7 @@ import 'simplebar';
 import 'simplebar/packages/simplebar/src/simplebar.css';
 
 import '../common/styles/osmd.scss';
+import '../common/styles/spectrogram.scss';
 import '../common/styles/main.scss';
 import '../common/styles/controls.scss';
 import '../common/styles/disableMouse.scss';
@@ -148,129 +150,104 @@ function render(configuration=defaultConfiguration) {
     }
 
     let osmd: eOSMD;
+    let spectrogram: Spectrogram;
+    let mainPanel = <HTMLElement>document.createElement("div");
+    mainPanel.id = 'main-panel';
+    mainPanel.classList.add('loading');
+    document.body.appendChild(mainPanel);
 
-    let allowOnlyOneFermata: boolean = configuration['allow_only_one_fermata'];
-    /*
-     * Create a container element for OpenSheetMusicDisplay...
-     */
-    let osmdContainer: HTMLElement;
-    $(() => {
-        let osmdContainerContainerContainer = <HTMLElement>document.createElement("div");
-        osmdContainerContainerContainer.id = 'osmd-container-container-container';
-        osmdContainerContainerContainer.classList.add('loading');
-        osmdContainerContainerContainer.setAttribute('data-simplebar', "");
-        osmdContainerContainerContainer.setAttribute('data-simplebar-auto-hide', "false");
-        document.body.appendChild(osmdContainerContainerContainer);
+    let spinnerElem = insertLoadingSpinner(mainPanel);
 
-        let spinnerElem = insertLoadingSpinner(osmdContainerContainerContainer);
-
-        let osmdContainerContainer = <HTMLElement>document.createElement("div");
-        osmdContainerContainer.id = 'osmd-container-container';
-        osmdContainerContainerContainer.appendChild(osmdContainerContainer);
-        osmdContainer = <HTMLElement>document.createElement("div");
-        osmdContainer.id = 'osmd-container';
+    if (configuration['osmd']) {
+        mainPanel.setAttribute('data-simplebar', "");
+        mainPanel.setAttribute('data-simplebar-auto-hide', "false");
+        let allowOnlyOneFermata: boolean = configuration['allow_only_one_fermata'];
         /*
-        * ... and attach it to our HTML document's body. The document itself is a HTML5
-        * stub created by Webpack, so you won't find any actual .html sources.
+        * Create a container element for OpenSheetMusicDisplay...
         */
-        osmdContainerContainer.appendChild(osmdContainer);
+       let osmdContainer: HTMLElement;
+       let spectrogramElem: HTMLImageElement;
+       $(() => {
+            let osmdContainerContainer = <HTMLElement>document.createElement("div");
+            osmdContainerContainer.id = 'osmd-container-container';
+            mainPanel.appendChild(osmdContainerContainer);
+            osmdContainer = <HTMLElement>document.createElement("div");
+            osmdContainer.id = 'osmd-container';
+            /*
+            * ... and attach it to our HTML document's body. The document itself is a HTML5
+            * stub created by Webpack, so you won't find any actual .html sources.
+            */
+            osmdContainerContainer.appendChild(osmdContainer);
 
 
-        /*
-        * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
-        * the container we've created in the steps before. The second parameter tells OSMD
-        * not to redraw on resize.
-        */
+            /*
+            * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
+            * the container we've created in the steps before. The second parameter tells OSMD
+            * not to redraw on resize.
+            */
 
-        function copyTimecontainerContent(origin: HTMLElement, target: HTMLElement) {
-            // retrieve quarter-note positions for origin and target
-            function getContainedQuarters(timecontainer: HTMLElement): number[] {
-                return timecontainer.getAttribute('containedQuarterNotes')
-                    .split(', ')
-                    .map((x) => parseInt(x, 10))
+            function copyTimecontainerContent(origin: HTMLElement, target: HTMLElement) {
+                // retrieve quarter-note positions for origin and target
+                function getContainedQuarters(timecontainer: HTMLElement): number[] {
+                    return timecontainer.getAttribute('containedQuarterNotes')
+                        .split(', ')
+                        .map((x) => parseInt(x, 10))
+                }
+                const originContainedQuarters: number[] = getContainedQuarters(origin);
+                const targetContainedQuarters: number[] = getContainedQuarters(target);
+
+                const originStart_quarter: number = originContainedQuarters[0];
+                const targetStart_quarter: number = targetContainedQuarters[0];
+                const originEnd_quarter: number = originContainedQuarters.pop();
+                const targetEnd_quarter: number = targetContainedQuarters.pop();
+
+                const generationCommand: string = ('/copy' +
+                    `?origin_start_quarter=${originStart_quarter}` +
+                    `&origin_end_quarter=${originEnd_quarter}` +
+                    `&target_start_quarter=${targetStart_quarter}` +
+                    `&target_end_quarter=${targetEnd_quarter}`);
+                loadMusicXMLandMidi(osmd, serverUrl, generationCommand);
             }
-            const originContainedQuarters: number[] = getContainedQuarters(origin);
-            const targetContainedQuarters: number[] = getContainedQuarters(target);
 
-            const originStart_quarter: number = originContainedQuarters[0];
-            const targetStart_quarter: number = targetContainedQuarters[0];
-            const originEnd_quarter: number = originContainedQuarters.pop();
-            const targetEnd_quarter: number = targetContainedQuarters.pop();
+            let autoResize: boolean = true;
+            osmd = new eOSMD(osmdContainer,
+                {autoResize: autoResize,
+                drawingParameters: "compact",
+                drawPartNames: false
+                },
+                granularities_quarters.map((num) => {return parseInt(num, 10);}),
+                configuration['annotation_types'],
+                allowOnlyOneFermata,
+                copyTimecontainerContent);
+            Playback.initialize();
+            Playback.scheduleAutomaticResync();
 
-            const generationCommand: string = ('/copy' +
-                `?origin_start_quarter=${originStart_quarter}` +
-                `&origin_end_quarter=${originEnd_quarter}` +
-                `&target_start_quarter=${targetStart_quarter}` +
-                `&target_end_quarter=${targetEnd_quarter}`);
-            loadMusicXMLandMidi(serverUrl, generationCommand);
-        }
+            if (configuration['use_chords_instrument']) {
+                Playback.scheduleChordsPlayer(osmd,
+                    configuration['chords_midi_channel']);
+            }
+        });
+    } else if (configuration['spectrogram']) {
+        let spectrogramElem = document.createElement('img');
+        spectrogramElem.id = 'spectrogram';
+        mainPanel.appendChild(spectrogramElem);
 
-        let autoResize: boolean = true;
-        osmd = new eOSMD(osmdContainer,
-            {autoResize: autoResize,
-             drawingParameters: "compact",
-             drawPartNames: false
-            },
-            granularities_quarters.map((num) => {return parseInt(num, 10);}),
-            configuration['annotation_types'],
-            allowOnlyOneFermata,
-            copyTimecontainerContent);
-        Playback.initialize();
-        Playback.scheduleAutomaticResync();
-
-        if (configuration['use_chords_instrument']) {
-            Playback.scheduleChordsPlayer(osmd,
-                configuration['chords_midi_channel']);
-        }
+        spectrogram = new Spectrogram(spectrogramElem, {}, [1], () => {});
 
         // requesting the initial sheet, so can't send any sheet along
-        const sendSheetWithRequest = false;
-        loadMusicXMLandMidi(serverUrl, 'generate', sendSheetWithRequest).then(
+        const sendCodesWithRequest = false;
+        const initial_command = '?pitch=64&instrument_family=string&temperature=1';
+
+        loadAudioAndSpectrogram(serverUrl, 'test-generate' + initial_command,
+                                sendCodesWithRequest).then(
             () => {
                 spinnerElem.style.visibility = 'hidden';
-                osmdContainerContainerContainer.classList.remove('loading');
+                mainPanel.classList.remove('loading');
                 if ( REGISTER_IDLE_STATE_DETECTOR ) {
                     HelpTour.registerIdleStateDetector();
                 }
             });
-    })
-
-    // var options = {
-    //     zone: osmd.renderingBackend.getInnerElement(),
-    //     color: "blue"
-    // };
-    // var manager = nipplejs.create(options);
-    // var joystick_data: {};
-    // var last_click = [];
-    //
-    // manager.on('start', function(event: Event, joystick) {
-    //     disableChanges();
-    // })
-    //
-    // manager.on('end', function(event: Event, joystick) {
-    //     // console.log(joystick_data);
-    //     // console.log(osmd.boundingBoxes);
-    //     let clickedDiv = event.target; // FIXME
-    //     // console.log(clickedDiv);
-    //     let measureIndex = findMeasureIndex(last_click);
-    //     // console.log(measureIndex);
-    //
-    //     let argsGenerationUrl = ("one-measure-change" +
-    //         ('?measureIndex=' + measureIndex)
-    //     );
-    //     let argsMidiUrl = "get-midi";
-    //
-    //     //    url += '?choraleIndex=' + choraleIndex;
-    //     loadMusicXMLandMidi(url.resolve(serverUrl, argsGenerationUrl),
-    //         url.resolve(serverUrl, argsMidiUrl));
-    //     enableChanges();
-    // }, true);
-    //
-    // manager.on('move', function(evt, joystick) {
-    //     joystick_data = joystick;
-    //     last_click = joystick.position;
-    // }, true);
-
+    }
 
     function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void{
         // Strip MusicXML document of title/composer tags
@@ -291,7 +268,7 @@ function render(configuration=defaultConfiguration) {
         return containedQuarterNotesList;
     }
 
-    function getChordLabels(): object[] {
+    function getChordLabels(osmd: eOSMD): object[] {
         // return a stringified JSON object describing the current chords
         let chordLabels = [];
         for (let chordSelector of osmd.chordSelectors) {
@@ -300,15 +277,15 @@ function render(configuration=defaultConfiguration) {
         return chordLabels;
     };
 
-    function getMetadata() {
+    function getMetadata(osmd: eOSMD) {
         return {
             fermatas: getFermatas(),
-            chordLabels: getChordLabels()
+            chordLabels: getChordLabels(osmd)
         }
     }
 
 
-    function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
+    function onClickTimestampBoxFactory(osmd: eOSMD, timeStart: Fraction, timeEnd: Fraction) {
         // FIXME(theis) hardcoded 4/4 time-signature
         const [timeRangeStart_quarter, timeRangeEnd_quarter] = ([timeStart, timeEnd].map(
             timeFrac => Math.round(4 * timeFrac.RealValue)))
@@ -318,9 +295,16 @@ function render(configuration=defaultConfiguration) {
             `&time_range_end_quarter=${timeRangeEnd_quarter}`
         );
 
-        return (function (this, _) {
-            loadMusicXMLandMidi(serverUrl, argsGenerationUrl);
-        ;})
+        if ( configuration['osmd'] ) {
+            return (function (this, _) {
+                loadMusicXMLandMidi(osmd, serverUrl, argsGenerationUrl);});
+        } else if ( configuration['spectrogram'] ) {
+            const sendCodesWithRequest: boolean = true;
+            return (function (this, _) {
+                loadAudioAndSpectrogram(serverUrl, argsGenerationUrl,
+                    sendCodesWithRequest);});
+        }
+
     }
 
 
@@ -364,20 +348,74 @@ function render(configuration=defaultConfiguration) {
     // TODO don't create globals like this
     const serializer = new XMLSerializer();
     const parser = new DOMParser();
+    let currentCodes_top: Int32Array
+    let currentCodes_bottom: Int32Array
     let currentXML: XMLDocument;
 
     /**
      * Load a MusicXml file via xhttp request, and display its contents.
      */
-    function loadMusicXMLandMidi(serverURL: string, generationCommand: string,
+    function loadAudioAndSpectrogram(serverURL: string, generationCommand: string,
+        sendCodesWithRequest: boolean) {
+        return new Promise((resolve, _) => {
+            disableChanges();
+
+            let payload_object = {};
+
+            // log.trace('Metadata:');
+            // log.trace(JSON.stringify(getMetadata()));
+
+            if (sendCodesWithRequest) {
+                payload_object['top_codes'] = currentCodes_top;
+                payload_object['bottom_codes'] = currentCodes_bottom;
+            }
+
+            // register minimal error handler
+            $(document).ajaxError((error) => console.log(error));
+
+            $.get({
+                url: url.resolve(serverURL, generationCommand),
+                data: JSON.stringify(payload_object),
+                contentType: 'application/json',
+                dataType: 'json',
+                success: (jsonResponse: {}) => {
+                    const audioUrl = jsonResponse['audio']
+                    const spectrogramUrl = jsonResponse['spectrogram']
+
+                    Playback.loadAudio(audioUrl).then(() => {
+                        currentCodes_top = jsonResponse['top_codes'];
+                        currentCodes_bottom = jsonResponse['bottom_codes'];
+
+                        spectrogram.render(onClickTimestampBoxFactory);
+
+                        enableChanges();
+                        resolve();
+                    }
+                    )
+
+                    const spectrogramElem: HTMLImageElement = (
+                        <HTMLImageElement>document.getElementById('spectrogram'));
+                    spectrogramElem.src = spectrogramUrl;
+                }
+            }).done(() => {
+            })
+
+        })
+    };
+
+
+    /**
+     * Load a MusicXml file via xhttp request, and display its contents.
+     */
+    function loadMusicXMLandMidi(osmd: eOSMD, serverURL: string, generationCommand: string,
         sendSheetWithRequest: boolean = true) {
         return new Promise((resolve, _) => {
             disableChanges();
 
-            let payload_object = getMetadata();
+            let payload_object = getMetadata(osmd);
 
             log.trace('Metadata:');
-            log.trace(JSON.stringify(getMetadata()));
+            log.trace(JSON.stringify(getMetadata(osmd)));
 
             if (sendSheetWithRequest) {
                 payload_object['sheet'] = serializer.serializeToString(currentXML);
@@ -464,7 +502,7 @@ function render(configuration=defaultConfiguration) {
     $(() => {
         let insertWavInput: boolean = configuration['insert_wav_input'];
         if (insertWavInput) {
-            createWavInput(() => loadMusicXMLandMidi(serverUrl, 'get-musicxml'))
+            createWavInput(() => loadMusicXMLandMidi(osmd, serverUrl, 'get-musicxml'))
     }});
 
 
@@ -487,18 +525,19 @@ function render(configuration=defaultConfiguration) {
         }}
     );
 
-    $(() => {
-        // Insert zoom controls
-        const zoomControlsGridElem = document.createElement('div');
-        zoomControlsGridElem.id = 'osmd-zoom-controls';
-        // zoomControlsGridElem.classList.add('two-columns');
-        const osmdContainerContainerContainer = document.getElementById(
-            "osmd-container-container-container");
-        osmdContainerContainerContainer.appendChild(zoomControlsGridElem);
-        renderZoomControls(zoomControlsGridElem, osmd);
+    if ( configuration['osmd'] ) {
+        $(() => {
+            // Insert zoom controls
+            const zoomControlsGridElem = document.createElement('div');
+            zoomControlsGridElem.id = 'osmd-zoom-controls';
+            // zoomControlsGridElem.classList.add('two-columns');
+            const mainPanel = document.getElementById(
+                "main-panel");
+            mainPanel.appendChild(zoomControlsGridElem);
+            renderZoomControls(zoomControlsGridElem, osmd);
+        }
+        );
     }
-    );
-
 }
 
 

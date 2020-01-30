@@ -66,6 +66,7 @@
     "deep-equal": "^1.0.1",
     "es6-promise": "^4.2.4",
     "jquery-simple-upload": "^1.1.0",
+    "jszip": "^3.2.2",
     "loglevel": "^1.6.1",
     "midiconvert": "^0.4.7",
     "nexusui": "^2.0.7",
