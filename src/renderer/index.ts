@@ -13,7 +13,9 @@ import * as JSZIP from 'jszip';
 
 import * as Header from './header';
 import * as PlaybackCommands from './playbackCommands';
-import * as Playback from './playback';
+import { PlaybackManager } from './playback';
+import { SheetPlaybackManager } from './sheetPlayback';
+import { SpectrogramPlaybackManager } from './spectrogramPlayback';
 import * as Instruments from './instruments';
 import * as BPM from './bpm';
 import LinkClient from './linkClient';
@@ -43,6 +45,10 @@ declare var COMPILE_ELECTRON: boolean;
 declare var ohSnap: any;
 
 let defaultConfiguration = require('../common/config.json');
+
+let playbackManager: PlaybackManager;
+let sheetPlaybackManager: SheetPlaybackManager;
+let spectrogramPlaybackManager: SpectrogramPlaybackManager;
 
 function render(configuration=defaultConfiguration) {
     const granularities_quarters: string[] = (
@@ -106,7 +112,7 @@ function render(configuration=defaultConfiguration) {
 
         ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
 
-        PlaybackCommands.render(playbuttonContainerElem);
+        PlaybackCommands.render(playbuttonContainerElem, playbackManager);
     });
 
 
@@ -165,8 +171,8 @@ function render(configuration=defaultConfiguration) {
         /*
         * Create a container element for OpenSheetMusicDisplay...
         */
-       let osmdContainer: HTMLElement;
-       $(() => {
+        let osmdContainer: HTMLElement;
+        $(() => {
             let osmdContainerContainer = <HTMLElement>document.createElement("div");
             osmdContainerContainer.id = 'osmd-container-container';
             mainPanel.appendChild(osmdContainerContainer);
@@ -205,7 +211,7 @@ function render(configuration=defaultConfiguration) {
                     `&origin_end_quarter=${originEnd_quarter}` +
                     `&target_start_quarter=${targetStart_quarter}` +
                     `&target_end_quarter=${targetEnd_quarter}`);
-                loadMusicXMLandMidi(osmd, serverUrl, generationCommand);
+                loadMusicXMLandMidi(sheetPlaybackManager, osmd, serverUrl, generationCommand);
             }
 
             let autoResize: boolean = true;
@@ -218,27 +224,38 @@ function render(configuration=defaultConfiguration) {
                 configuration['annotation_types'],
                 allowOnlyOneFermata,
                 copyTimecontainerContent);
-            Playback.initialize();
-            Playback.scheduleAutomaticResync();
+            // TODO(theis): check proper way of enforcing subtype
+            sheetPlaybackManager = new SheetPlaybackManager();
+            playbackManager = sheetPlaybackManager;
 
             if (configuration['use_chords_instrument']) {
-                Playback.scheduleChordsPlayer(osmd,
+                sheetPlaybackManager.scheduleChordsPlayer(osmd,
                     configuration['chords_midi_channel']);
             }
         });
     } else if (configuration['spectrogram']) {
-        let spectrogramElem = document.createElement('img');
-        spectrogramElem.id = 'spectrogram';
-        mainPanel.appendChild(spectrogramElem);
+        let spectrogramContainerElem = document.createElement('div');
+        spectrogramContainerElem.id = 'spectrogram-container';
+        mainPanel.appendChild(spectrogramContainerElem);
 
-        spectrogram = new Spectrogram(spectrogramElem, {}, [1], () => {});
+        let spectrogramImageElem = document.createElement('img');
+        spectrogramImageElem.id = 'spectrogram-image';
+        spectrogramContainerElem.appendChild(spectrogramImageElem);
+
+        console.log("WARNING: sloppy implementation here!!! CHECK PARAMETERS")
+        spectrogram = new Spectrogram(spectrogramContainerElem, {}, [1], () => {});
+        spectrogram.render(onClickTimestampBoxFactory);
+
+        let spectrogramPlaybackManager = new SpectrogramPlaybackManager(4.,
+            spectrogram);
+        playbackManager = spectrogramPlaybackManager;
 
         // requesting the initial sheet, so can't send any sheet along
         const sendCodesWithRequest = false;
         const initial_command = '?pitch=64&instrument_family=string&temperature=1';
 
-        loadAudioAndSpectrogram(serverUrl, 'test-generate' + initial_command,
-                                sendCodesWithRequest).then(
+        loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
+                                'test-generate' + initial_command, sendCodesWithRequest).then(
             () => {
                 spinnerElem.style.visibility = 'hidden';
                 mainPanel.classList.remove('loading');
@@ -296,12 +313,13 @@ function render(configuration=defaultConfiguration) {
 
         if ( configuration['osmd'] ) {
             return (function (this, _) {
-                loadMusicXMLandMidi(osmd, serverUrl, argsGenerationUrl);});
+                loadMusicXMLandMidi(sheetPlaybackManager, osmd, serverUrl, argsGenerationUrl);});
         } else if ( configuration['spectrogram'] ) {
             const sendCodesWithRequest: boolean = true;
             return (function (this, _) {
-                loadAudioAndSpectrogram(serverUrl, argsGenerationUrl,
-                    sendCodesWithRequest);});
+                loadAudioAndSpectrogram(spectrogramPlaybackManager,
+                    serverUrl, argsGenerationUrl, sendCodesWithRequest);
+                });
         }
 
     }
@@ -354,8 +372,8 @@ function render(configuration=defaultConfiguration) {
     /**
      * Load a MusicXml file via xhttp request, and display its contents.
      */
-    function loadAudioAndSpectrogram(serverURL: string, generationCommand: string,
-        sendCodesWithRequest: boolean) {
+    function loadAudioAndSpectrogram(spectrogramPlaybackManager: SpectrogramPlaybackManager,
+            serverURL: string, generationCommand: string, sendCodesWithRequest: boolean) {
         return new Promise((resolve, _) => {
             disableChanges();
 
@@ -381,7 +399,9 @@ function render(configuration=defaultConfiguration) {
                     const audioUrl = jsonResponse['audio']
                     const spectrogramUrl = jsonResponse['spectrogram']
 
-                    Playback.loadAudio(audioUrl).then(() => {
+                    spectrogramPlaybackManager.loadAudio(audioUrl).then(() => {
+                        log.debug("Tone.js Player audio succesfully loaded!");
+                        console.log("Tone.js Player audio succesfully loaded!");
                         currentCodes_top = jsonResponse['top_codes'];
                         currentCodes_bottom = jsonResponse['bottom_codes'];
 
@@ -392,9 +412,9 @@ function render(configuration=defaultConfiguration) {
                     }
                     )
 
-                    const spectrogramElem: HTMLImageElement = (
-                        <HTMLImageElement>document.getElementById('spectrogram'));
-                    spectrogramElem.src = spectrogramUrl;
+                    const spectrogramImageElem: HTMLImageElement = (
+                        <HTMLImageElement>document.getElementById('spectrogram-image'));
+                    spectrogramImageElem.src = spectrogramUrl;
                 }
             }).done(() => {
             })
@@ -406,8 +426,9 @@ function render(configuration=defaultConfiguration) {
     /**
      * Load a MusicXml file via xhttp request, and display its contents.
      */
-    function loadMusicXMLandMidi(osmd: eOSMD, serverURL: string, generationCommand: string,
-        sendSheetWithRequest: boolean = true) {
+    function loadMusicXMLandMidi(playbackManager: SheetPlaybackManager, osmd: eOSMD,
+            serverURL: string, generationCommand: string,
+            sendSheetWithRequest: boolean = true) {
         return new Promise((resolve, _) => {
             disableChanges();
 
@@ -455,7 +476,7 @@ function render(configuration=defaultConfiguration) {
 
                             let sequenceDuration: Tone.Time = Tone.Time(
                                 `0:${osmd.sequenceDuration_quarters}:0`)
-                            Playback.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
+                            playbackManager.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
                                 currentXML,
                                 sequenceDuration
                             );
@@ -470,19 +491,21 @@ function render(configuration=defaultConfiguration) {
     };
 
     $(() => {
-        const instrumentsGridElem = document.createElement('div');
-        instrumentsGridElem.id = 'instruments-grid';
-        instrumentsGridElem.classList.add('two-columns');
-        bottomControlsGridElem.appendChild(instrumentsGridElem);
+        if ( configuration['osmd'] ) {
+            const instrumentsGridElem = document.createElement('div');
+            instrumentsGridElem.id = 'instruments-grid';
+            instrumentsGridElem.classList.add('two-columns');
+            bottomControlsGridElem.appendChild(instrumentsGridElem);
 
-        ControlLabels.createLabel(instrumentsGridElem, 'instruments-grid-label');
+            ControlLabels.createLabel(instrumentsGridElem, 'instruments-grid-label');
 
-        Instruments.renderInstrumentSelect(instrumentsGridElem);
-        if ( configuration['use_chords_instrument'] ) {
-            Instruments.renderChordInstrumentSelect(instrumentsGridElem);
-        }
-        Instruments.renderDownloadButton(instrumentsGridElem,
-            configuration['use_chords_instrument']);
+            Instruments.renderInstrumentSelect(instrumentsGridElem);
+            if ( configuration['use_chords_instrument'] ) {
+                Instruments.renderChordInstrumentSelect(instrumentsGridElem);
+            }
+            Instruments.renderDownloadButton(instrumentsGridElem,
+                configuration['use_chords_instrument']);
+            }
         }
     );
 
@@ -501,7 +524,7 @@ function render(configuration=defaultConfiguration) {
     $(() => {
         let insertWavInput: boolean = configuration['insert_wav_input'];
         if (insertWavInput) {
-            createWavInput(() => loadMusicXMLandMidi(osmd, serverUrl, 'get-musicxml'))
+            createWavInput(() => loadMusicXMLandMidi(sheetPlaybackManager, osmd, serverUrl, 'get-musicxml'))
     }});
 
 
@@ -515,12 +538,12 @@ function render(configuration=defaultConfiguration) {
     );
 
     $(() => {
-        if (useAdvancedControls) {
+        if ( useAdvancedControls && configuration['osmd'] ) {
             // Add MIDI-out selector
             MidiOut.render(configuration["use_chords_instrument"]);
 
             // Add manual Link-Sync button
-            PlaybackCommands.renderSyncButton();
+            PlaybackCommands.renderSyncButton(playbackManager);
         }}
     );
 
