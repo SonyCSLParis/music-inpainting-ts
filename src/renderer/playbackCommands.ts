@@ -7,20 +7,16 @@ import '@fortawesome/fontawesome-free/css/all.css';
 
 let Nexus = require('./nexusColored');
 
-import * as Playback from './playback';
+import { PlaybackManager } from './playback';
 
-export function render(containerElement: HTMLElement): void{
-    function playbackCallback(play: boolean) {
-        return new Promise((resolve, _) => {
-            if (play) {
-                Playback.play().then(resolve);
-            }
-            else {
-                Playback.stop();
-                Playback.resetPlaybackPositionDisplay();
-                resolve();
-            }
-        })
+export function render(containerElement: HTMLElement, playbackManager: PlaybackManager): void{
+    async function playbackCallback(play: boolean) {
+        if (play) {
+            await playbackManager.play();
+        }
+        else {
+            await playbackManager.stop();
+        }
     }
 
     let stoppedClass: string = 'fa-play-circle';
@@ -109,7 +105,7 @@ export function render(containerElement: HTMLElement): void{
     }}, );
 }
 
-export function renderSyncButton() {
+export function renderSyncButton(playbackManager: PlaybackManager) {
     let topControlsGridElem = document.getElementById('bottom-controls')
     let linkbuttonElem: HTMLElement = document.createElement('control-item');
     linkbuttonElem.id = 'sync-button'
@@ -124,7 +120,7 @@ export function renderSyncButton() {
     syncbutton.on('change', (enable) => {
         if (enable) {
             // Playback.getPlayNoteByMidiChannel(1, false)('', {duration: '4n', 'name': 'C5', 'midi': 60, velocity: 0.8})
-            Playback.setPhaseSynchronous();
+            playbackManager.synchronizeToLink();
         }
     });
 }

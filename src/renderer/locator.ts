@@ -10,6 +10,8 @@ import { ChordSelector } from './chord_selector';
 
 import '../common/styles/overlays.scss';
 
+let Nexus = require('./nexusColored');
+
 export class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, options: object = {},
             boxDurations_quarters: number[],
@@ -305,8 +307,9 @@ export class eOSMD extends OpenSheetMusicDisplay {
 
             // cf. sizing the Cursor in OpenSheetMusicDisplay/Cursor.ts
             let y = musicSystem.PositionAndShape.AbsolutePosition.y + musicSystem.StaffLines[0].PositionAndShape.RelativePosition.y;
-            const endY: number = musicSystem.PositionAndShape.AbsolutePosition.y +
-              musicSystem.StaffLines[musicSystem.StaffLines.length - 1].PositionAndShape.RelativePosition.y + 4.0;
+            const endY: number = (musicSystem.PositionAndShape.AbsolutePosition.y +
+                musicSystem.StaffLines[musicSystem.StaffLines.length - 1].PositionAndShape.RelativePosition.y
+                + 4.0);
             let height = endY - y;
 
             // for (const [timestampList, granularityName] of timestampsAndNames) {
@@ -400,8 +403,6 @@ export class eOSMD extends OpenSheetMusicDisplay {
     }
 }
 
-let Nexus = require('./nexusColored');
-
 export class Spectrogram {
     constructor(container: HTMLElement, options: object = {},
             boxDurations_quarters: number[],
@@ -411,7 +412,7 @@ export class Spectrogram {
         this.copyTimecontainerContent = copyTimecontainerContent;
     }
     public container: HTMLElement;
-    private matrix: Nexus.Sequencer = null;
+    public matrix: Nexus.Sequencer = null;
 
     private _boxDurations_quarters: number[];
 
@@ -617,8 +618,8 @@ export class Spectrogram {
     public drawTimestampBoxes(onclickFactory: (startTime: Fraction,
         endTime: Fraction) => ((event: PointerEvent) => void)=undefined,
         numRows: number, numColumns: number): void{
-        const width: number = parseInt(this.container.getAttribute('width'));
-        const height: number = parseInt(this.container.getAttribute('height'));
+        const width: number = this.container.clientWidth;
+        const height: number = this.container.clientHeight;
 
         this.matrix = new Nexus.Sequencer(this.container.id, {
             'size': [width, height],

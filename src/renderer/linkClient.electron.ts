@@ -5,7 +5,7 @@ import * as $ from 'jquery'
 let Nexus = require('./nexusColored')
 
 import * as BPM from './bpm';
-import * as Playback from './playback';
+import { PlaybackManager } from './playback';
 
 
 let link_channel_prefix: string = require('../common/config.json')['link_channel_prefix'];
@@ -36,7 +36,7 @@ export function isInitialized(): boolean {
     return link_initialized
 }
 
-export async function enable() {
+export async function enable(playbackManager: PlaybackManager) {
     if (!isInitialized()) {
         log.debug("Must initialize LINK");
         let bpm: number = BPM.getBPM();
@@ -49,7 +49,7 @@ export async function enable() {
     ipcRenderer.once(link_channel_prefix + 'enabled-status',
         (_, enabledStatus: boolean) => {
             if (enabledStatus) {
-                Playback.setPhaseSynchronous();
+                playbackManager.synchronizeToLink();
             }
         }
     );

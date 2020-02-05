@@ -1,4 +1,4 @@
-#spectrogram {
+#spectrogram-container {
     height: inherit;
     width: inherit;
     margin: auto;
@@ -8,4 +8,10 @@
     bottom: 0;
     position: absolute;
     z-index: -1;
+}
+
+#spectrogram-image {
+    height: inherit;
+    width: inherit;
+    position: absolute;
 }

@@ -155,6 +155,7 @@ header {
 #main-panel {
     height: calc(100% - #{$header-height} - #{$bottom-controls-height});
     top: $header-height;
+    z-index: 0;
 }
 
 #osmd-loading-spinner {
