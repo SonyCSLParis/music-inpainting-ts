@@ -322,9 +322,13 @@ async function render(configuration=defaultConfiguration) {
         };
     })
 
+    // TODO(theis): could use a more strict type-hint (number[][]|string[][])
+    // but this has the TS type-schecker fail, considering the map method (which
+    // receives a union type itself) non-callable
+    // see https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-3.html#caveats
     function updateConditioningMap(mask: number[][],
-            currentConditioningMap: Map<string, (number[][]|string[][])>
-            ): Map<string, (number[][]|string[][])> {
+            currentConditioningMap: Map<string, (number|string)[][]>
+            ): Map<string, (number|string)[][]> {
         // retrieve up-to-date user-selected conditioning
         const newConditioning_value = new Map()
         newConditioning_value.set('pitch', pitchControl.value)
@@ -332,7 +336,7 @@ async function render(configuration=defaultConfiguration) {
 
         for (const [ modality, conditioning_map ] of currentConditioningMap.entries()) {
             currentConditioningMap.set(modality, (
-                conditioning_map.map((row: (number[]|string[]), row_index: number) => {
+                conditioning_map.map((row: (number|string)[], row_index: number) => {
                     return row.map((currentConditioning_value: number|string, column_index: number) => {
                         if ( mask[row_index][column_index] == 1 ) {
                             return newConditioning_value.get(modality)
@@ -524,18 +528,18 @@ async function render(configuration=defaultConfiguration) {
     const parser = new DOMParser();
     let currentCodes_top: Int32Array;
     let currentCodes_bottom: Int32Array;
-    let currentConditioning_top: Map<string, (number[][]|string[][])>;
-    let currentConditioning_bottom: Map<string, (number[][]|string[][])>;
+    let currentConditioning_top: Map<string, (number|string)[][]>;
+    let currentConditioning_bottom: Map<string, (number|string)[][]>;
     let currentXML: XMLDocument;
 
-    function loadNewMap(newConditioningMap): Map<string, (number[][]|string[][])> {
+    function loadNewMap(newConditioningMap): Map<string, (number|string)[][]> {
         let conditioning_map = new Map();
         conditioning_map.set('pitch', newConditioningMap['pitch']);
         conditioning_map.set('instrument_family_str', newConditioningMap['instrument_family_str']);
         return conditioning_map
     }
 
-    function mapToObject(conditioning_map: Map<string, (number[][]|string[][])>) {
+    function mapToObject(conditioning_map: Map<string, (number|string)[][]>) {
         return {
             'pitch': conditioning_map.get('pitch'),
             'instrument_family_str': conditioning_map.get('instrument_family_str')
