@@ -119,6 +119,19 @@ header {
     }
 }
 
+.header-item-right {
+    display: flex;
+    align-self: center;
+    margin-right:25px;
+    width: fit-content;
+    justify-self: right;
+
+    & img {
+        width: auto;
+        shape-rendering: auto;
+    }
+}
+
 #app-title {
     pointer-events: none;  // disable text-selection
 
@@ -145,11 +158,6 @@ header {
         font-family: 'FontAwesome';
         position: absolute;
     }
-}
-
-.header-item-right {
-
-    margin-right:25px;
 }
 
 #main-panel {

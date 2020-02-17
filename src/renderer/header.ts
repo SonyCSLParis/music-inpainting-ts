@@ -1,15 +1,11 @@
 import * as Path from 'path';
 import * as screenfull from 'screenfull';
 
-
 import '../common/styles/main.scss';
-
 
 import { static_correct } from './staticPath';
 
 import * as HelpTour from './helpTour';
-
-let configuration = require('../common/config.json');
 
 declare var COMPILE_ELECTRON: boolean;
 if (COMPILE_ELECTRON) {
@@ -23,9 +19,9 @@ if (COMPILE_ELECTRON) {
 }
 
 
-export function render(containerElement: HTMLElement) {
+export function render(containerElement: HTMLElement, configuration) {
     let logoLinkElem = document.createElement('div');
-    logoLinkElem.id = 'csl-logo-elem';
+    logoLinkElem.id = 'csl-logo';
     logoLinkElem.classList.add('header-item-left');
     // logoLinkElem.href = "https://www.sonycsl.co.jp/";
     //
@@ -51,8 +47,25 @@ export function render(containerElement: HTMLElement) {
 
     let nameElem: HTMLElement = document.createElement('div');
     nameElem.id = 'app-title';
-    nameElem.innerText = 'nonoto';
+    nameElem.innerText = configuration['app_name'];
+
     containerElement.appendChild(nameElem);
+
+
+    if ( configuration['add_acids_logo'] ) {
+        let acidsLogoLinkElem = document.createElement('div');
+        acidsLogoLinkElem.id = 'acids-logo';
+        acidsLogoLinkElem.classList.add('header-item-right');
+
+        containerElement.appendChild(acidsLogoLinkElem);
+
+        let acidsLogoElem = document.createElement('img');
+        acidsLogoElem.src = Path.join(static_correct, '/icons/acids-flat-logo.png');
+        acidsLogoElem.alt = 'ACIDS Team Logo';
+        acidsLogoLinkElem.appendChild(acidsLogoElem);
+    }
+
+
 
     if (configuration["insert_help"]) {
         HelpTour.render(containerElement);

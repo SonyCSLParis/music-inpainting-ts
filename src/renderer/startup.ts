@@ -38,6 +38,9 @@ folkConfiguration["granularities_quarters"] = ["1", "4", "8", "16"];
 let spectrogramConfiguration: object = cloneJSON(defaultConfiguration);
 spectrogramConfiguration['osmd'] = false;
 spectrogramConfiguration['spectrogram'] = true;
+spectrogramConfiguration['app_name'] = 'notono';
+spectrogramConfiguration['add_acids_logo'] = true;
+
 
 export function render(renderPage: (configuration: object) => void): void {
     let configurationWindow = document.createElement('div');
