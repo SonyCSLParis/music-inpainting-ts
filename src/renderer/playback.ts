@@ -16,8 +16,8 @@ export interface MinimalPlaybackManager {
 
 abstract class TonePlaybackManager implements MinimalPlaybackManager {
     // adds a small delay to ensure playback as recommended in the Tone.js docs
-    protected safeStartPlayback(): Promise<unknown> {
-        return Tone.Transport.start("+0.2");
+    protected safeStartPlayback(): void {
+        Tone.Transport.start("+0.02");
     };
 
     async play() {
