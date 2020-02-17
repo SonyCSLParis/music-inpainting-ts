@@ -71,7 +71,7 @@
     "jszip": "^3.2.2",
     "loglevel": "^1.6.1",
     "midiconvert": "^0.4.7",
-    "nexusui": "^2.0.10",
+    "nexusui": "https://github.com/nexus-js/ui#4768449",
     "nipplejs": "^0.7.1",
     "request": "^2.87.0",
     "require": "^2.4.20",
