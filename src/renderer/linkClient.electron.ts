@@ -4,7 +4,7 @@ import * as $ from 'jquery'
 
 let Nexus = require('./nexusColored')
 
-import * as BPM from './bpm';
+import { BPMControl } from './numberControl';
 import { PlaybackManager } from './playback';
 
 
@@ -26,6 +26,12 @@ getState();  // necessary to now on start-up if the LINK server is already
 // beginning of a new measure (in a 4/4 time-signature setting)
 let linkQuantum: number = 4;
 
+// TODO(theis): remove module-level globals like this
+let bpmControl: BPMControl = null;
+
+export function setBPMControl(newBpmControl: BPMControl) {
+    bpmControl = newBpmControl
+}
 
 // Enable / Disable
 export function isEnabled(): boolean {
@@ -39,7 +45,7 @@ export function isInitialized(): boolean {
 export async function enable(playbackManager: PlaybackManager) {
     if (!isInitialized()) {
         log.debug("Must initialize LINK");
-        let bpm: number = BPM.getBPM();
+        let bpm: number = bpmControl.value;
         let quantum: number = linkQuantum;
         // hang asynchronously on this call
         await ipcRenderer.send(link_channel_prefix + 'init', bpm, quantum);
@@ -104,7 +110,7 @@ ipcRenderer.on(link_channel_prefix + 'enabled-status', (_, enabledStatus: boolea
 
 // Tempo
 ipcRenderer.on(link_channel_prefix + 'bpm', (_, newBPM) => {
-        BPM.setBPM(newBPM);
+        bpmControl.value = newBPM;
     }
 );
 
@@ -129,7 +135,7 @@ ipcRenderer.on('numPeers', (_, numPeers) => {
     // (https://github.com/Ableton/link/blob/master/TEST-PLAN.md)
     new Notification('DeepBach/Ableton LINK interface', {
         body: 'Number of peers changed, now ' + numPeers + ' peers'
-  })
+    })
 })
 
 
