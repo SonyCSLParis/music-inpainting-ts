@@ -3,7 +3,7 @@ import * as $ from 'jquery'
 
 let Nexus = require('./nexusColored')
 
-import * as BPM from './bpm'
+import { BPMControl } from './numberControl'
 
 let link_channel_prefix: string = require('../common/config.json')['link_channel_prefix'];
 
@@ -26,6 +26,12 @@ socket.on('connect', () => getState());
 // beginning of a new measure (in a 4/4 time-signature setting)
 let linkQuantum: number = 4;
 
+// TODO(theis): remove module-level globals like this
+let bpmControl: BPMControl = null;
+
+export function setBPMControl(newBpmControl: BPMControl) {
+    bpmControl = newBpmControl
+}
 
 // Enable / Disable
 export function isEnabled(): boolean {
@@ -39,7 +45,7 @@ export function isInitialized(): boolean {
 export function enable() {
     new Promise((resolve, reject) => {
         if (!isInitialized()) {
-            let bpm: number = BPM.getBPM();
+            let bpm: number = bpmControl.value;
             let quantum: number = linkQuantum;
             // hang asynchronously on this call
             socket.emit(link_channel_prefix + 'init', bpm, quantum,
@@ -95,7 +101,7 @@ socket.on(link_channel_prefix + 'disable-success', (disable_succeeded) => {
 
 // Tempo
 socket.on(link_channel_prefix + 'tempo', (newBPM) => {
-    BPM.setBPM(newBPM); }
+    bpmControl.value = newBPM; }
 );
 
 export function setBPMtoLinkBPM_async(): void {
@@ -114,7 +120,7 @@ socket.on('numPeers', (numPeers) => {
     // (https://github.com/Ableton/link/blob/master/TEST-PLAN.md)
     new Notification('DeepBach/Ableton LINK interface', {
         body: 'Number of peers changed, now ' + numPeers + ' peers'
-  })
+})
 })
 
 

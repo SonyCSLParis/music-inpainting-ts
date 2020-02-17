@@ -17,7 +17,7 @@ import { PlaybackManager } from './playback';
 import { SheetPlaybackManager } from './sheetPlayback';
 import { SpectrogramPlaybackManager } from './spectrogramPlayback';
 import * as Instruments from './instruments';
-import * as BPM from './bpm';
+import { NumberControl, BPMControl } from './numberControl';
 import LinkClient from './linkClient';
 import * as LinkClientCommands from './linkClientCommands';
 import * as MidiOut from './midiOut';
@@ -49,6 +49,8 @@ let defaultConfiguration = require('../common/config.json');
 let playbackManager: PlaybackManager;
 let sheetPlaybackManager: SheetPlaybackManager;
 let spectrogramPlaybackManager: SpectrogramPlaybackManager;
+let bpmControl: BPMControl;
+let pitchControl: NumberControl;
 
 function render(configuration=defaultConfiguration) {
     const granularities_quarters: string[] = (
@@ -478,7 +480,8 @@ function render(configuration=defaultConfiguration) {
                                 `0:${osmd.sequenceDuration_quarters}:0`)
                             playbackManager.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
                                 currentXML,
-                                sequenceDuration
+                                sequenceDuration,
+                                bpmControl
                             );
                         },
                         (err) => {log.error(err); enableChanges()}
@@ -507,19 +510,25 @@ function render(configuration=defaultConfiguration) {
                 configuration['use_chords_instrument']);
             }
         }
-    );
 
+    if ( configuration['osmd'] ) {
     $(() => {
         let useSimpleSlider: boolean = !useAdvancedControls;
-        BPM.render(useSimpleSlider);
+            bpmControl = new BPMControl(bottomControlsGridElem, 'bpm-control');
+            bpmControl.render(useSimpleSlider);
+
+            // link the Ableton-Link client to the BPM controller
+            LinkClient.setBPMControl(bpmControl);
+
         // set the initial tempo for the app
         // if (LinkClient.isEnabled()) {
         // // if Link is enabled, use the Link tempo
         //     LinkClient.setBPMtoLinkBPM_async();
         // }
         // else
-        { BPM.setBPM(110); }
+            { bpmControl.value  = 110; }
     });
+    }
 
     $(() => {
         let insertWavInput: boolean = configuration['insert_wav_input'];

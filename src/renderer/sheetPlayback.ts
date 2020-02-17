@@ -7,19 +7,19 @@ import * as $ from 'jquery';
 
 let Nexus = require('./nexusColored');
 
-import * as BPM from './bpm';
 import * as Instruments from './instruments';
 import * as MidiOut from './midiOut';
 import LinkClient from './linkClient';
 import * as Chord from './chord';
+import { BPMControl } from './numberControl';
 
 import { eOSMD } from './locator';
 
-let scrollElementSelector: string = '.simplebar-content'
+let scrollElementSelector: string = '.simplebar-content';
 
 function getTimingOffset(){
     return performance.now() - Tone.now() * 1000;
-}
+};
 
 export class SheetPlaybackManager extends PlaybackManager {
     private getPlayNoteByMidiChannel(midiChannel: number,
@@ -27,7 +27,7 @@ export class SheetPlaybackManager extends PlaybackManager {
         let getCurrentInstrument = Instruments.getCurrentInstrument;
         if (useChordsInstruments) {
             getCurrentInstrument = Instruments.getCurrentChordsInstrument;
-        }
+        };
 
         function playNote(time, event){
             MidiOut.getOutput().playNote(event.name, midiChannel,
@@ -39,9 +39,9 @@ export class SheetPlaybackManager extends PlaybackManager {
                 Tone.Time(event.duration).toSeconds() - 0.05, time, event.velocity);
 
             log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event));
-        }
+        };
         return playNote
-    }
+    };
 
     protected nowPlayingCallback(_: any, step: number): void {
         super.nowPlayingCallback(null, step);
@@ -264,16 +264,17 @@ export class SheetPlaybackManager extends PlaybackManager {
                         success(MidiConvert.parse(request.response))
                     } else {
                         fail(request.status)
-                    }
-                },
-                {once: true});
+                    }},
+                    {once: true}
+                );
                 request.addEventListener('error', fail, {once: true})
                 request.send(data)
             });
         }
 
     loadMidi(serverURL: string, musicXML: XMLDocument,
-        sequenceDuration_toneTime: Tone.Time) {
+        sequenceDuration_toneTime: Tone.Time,
+        bpmControl: BPMControl) {
         const serializer = new XMLSerializer();
         const payload = serializer.serializeToString(musicXML);
 
@@ -316,7 +317,7 @@ export class SheetPlaybackManager extends PlaybackManager {
                 }
 
                 // change Transport BPM back to the displayed value
-                Tone.Transport.bpm.value = BPM.getBPM();  // WARNING if bpmCounter is a floor'ed value, this is wrong
+                Tone.Transport.bpm.value = bpmControl.value;  // WARNING if bpmCounter is a floor'ed value, this is wrong
             }
         ).catch((error) => {console.log(error)})
     };
