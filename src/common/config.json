@@ -1,4 +1,6 @@
 {
+    "app_name": "nonoto",
+
     "use_local_server": true,
     "server_ip": "localhost",
     "server_port": 5000,
@@ -26,6 +28,8 @@
     "insert_help": false,
     "display_help_on_idle": false,
     "display_help_on_idle_period_ms": 10000,
+
+    "add_acids_logo": false,
 
     "link_channel_prefix": "LINK/"
 }

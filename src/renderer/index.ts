@@ -99,15 +99,8 @@ async function render(configuration=defaultConfiguration) {
     $(() => {
         let headerGridElem: HTMLElement = document.createElement('header');
         document.body.appendChild(headerGridElem);
-        Header.render(headerGridElem);
+        Header.render(headerGridElem, configuration);
     });
-
-    if ( configuration['spectrogram'] ) {
-        $(() => {
-            let appTitleElement: HTMLElement = document.getElementById('app-title');
-            appTitleElement.innerText = 'notono';
-        });
-    };
 
     let bottomControlsGridElem: HTMLDivElement;
 
