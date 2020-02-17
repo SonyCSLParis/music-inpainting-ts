@@ -63,25 +63,24 @@ export function render(containerElement: HTMLElement, playbackManager: PlaybackM
     // Initialize playback to stopped
     setPlayingClass(false);
 
-    function playCallback(play: boolean) {
+    async function playCallback(play: boolean) {
         setWaitingClass();
-        playbackCallback(play).then(() => {
-            unsetWaitingClass();
-            setPlayingClass(play);
-        })
-    }
+        await playbackCallback(play);
+        unsetWaitingClass();
+        setPlayingClass(play);
+    };
 
     function pressPlay() {
         playCallback(true);
-    }
+    };
 
     function pressStop() {
         playCallback(false);
-    }
+    };
 
     function togglePlayback() {
         playCallback(playButton.classList.contains(stoppedClass));
-    }
+    };
 
     playButton.addEventListener('click', togglePlayback);
 
@@ -103,7 +102,7 @@ export function render(containerElement: HTMLElement, playbackManager: PlaybackM
                 pressStop();
                 break
     }}, );
-}
+};
 
 export function renderSyncButton(playbackManager: PlaybackManager) {
     let topControlsGridElem = document.getElementById('bottom-controls')
