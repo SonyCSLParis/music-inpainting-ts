@@ -1,5 +1,8 @@
 // start-up module offering a splash screen in which to select the configuration
-let Nexus = require('./nexusColored')
+import * as Tone from 'tone';
+import * as StartAudioContext from 'startaudiocontext';
+
+let Nexus = require('./nexusColored');
 
 import '../common/styles/startupSplash.scss';
 
@@ -194,6 +197,8 @@ export function render(renderPage: (configuration: object) => void): void {
         'text': 'Start',
         'alternateText': true
     });
+
+    StartAudioContext(Tone.context, startButtonElem.id);
 
     startButton.on('change', () => {
         let applicationMode = applicationModeSelectElem.value;
