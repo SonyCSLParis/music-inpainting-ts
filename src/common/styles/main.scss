@@ -198,7 +198,15 @@ body.advanced-controls #main-panel {
     height: calc(100% - #{$header-height} - #{$bottom-controls-height} - #{$advanced-controls-height});
 }
 
+select {
+    font-family: inherit;
+    font-weight: bold;
+    font-size: large !important;
+    text-transform: capitalize;
+}
+
 control-item {
+    font-size: large !important;
 }
 
 .two-columns {
