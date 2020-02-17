@@ -11,10 +11,10 @@ dummyMidiOut.playNote = () => {};
 let midiOut = dummyMidiOut;
 
 export function render(useChordsInstrument: boolean = false) {
-    let topControlsGridElem = document.getElementById('bottom-controls');
+    let bottomControlsGridElem = document.getElementById('bottom-controls');
     let midiOutSelectElem: HTMLElement = document.createElement('control-item');
     midiOutSelectElem.id = 'select-midiout';
-    topControlsGridElem.appendChild(midiOutSelectElem);
+    bottomControlsGridElem.appendChild(midiOutSelectElem);
 
     (WebMidi as any).enable(function (err) {
         if (err) log.error(err);
