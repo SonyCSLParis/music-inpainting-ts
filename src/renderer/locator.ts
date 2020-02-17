@@ -10,7 +10,7 @@ import { ChordSelector } from './chord_selector';
 
 import '../common/styles/overlays.scss';
 
-let Nexus = require('./nexusColored');
+let Nexus: any = require('./nexusColored');
 
 export class eOSMD extends OpenSheetMusicDisplay {
     constructor(container: string | HTMLElement, options: object = {},
@@ -412,7 +412,11 @@ export class Spectrogram {
         this.copyTimecontainerContent = copyTimecontainerContent;
     }
     public container: HTMLElement;
-    public matrix: Nexus.Sequencer = null;
+    private sequencer = null;
+
+    public get mask(): number[][] {
+        return this.sequencer.matrix.pattern;
+    }
 
     private _boxDurations_quarters: number[];
 
@@ -423,192 +427,29 @@ export class Spectrogram {
         return this._boxDurations_quarters;
     }
 
-    public render(onclickFactory=undefined): void {
+    registerCallback(callback) {
+        this.sequencer.on('change', callback);
+    }
+
+    setPosition(timePosition: number): void {
+        this.sequencer.stepper.value = timePosition;
+    }
+
+    public render(numRows: number, numColumns: number, onclickFactory=undefined): void {
         // this.updateContainerWidth(false);
-        if ( this.matrix !== null ) {
-            this.matrix.destroy();}
-        this.drawTimestampBoxes(onclickFactory, 32, 8);
+        if ( this.sequencer !== null ) {
+            this.sequencer.destroy();}
+        this.drawTimestampBoxes(onclickFactory, numRows, numColumns);
         this.container.setAttribute('sequenceDuration_quarters',
             this.sequenceDuration_quarters.toString());
         // this.updateContainerWidth(true);
     }
-
-    // private updateContainerWidth(toContentWidth: boolean=true): void {
-    //     // HACK update width of container element to actual width of content
-    //     //
-    //     // this is necessary in order to have OSMD print the sheet with
-    //     // maximum horizontal spread
-
-    //     const superlarge_width_px: number = 10000000;
-    //     // must use a string to ensure no integer formatting is performed
-    //     // which could lead to invalid values in the CSS
-    //     const superlarge_width_px_str: string = '10000000';
-
-    //     if (!($('#osmd-container svg')[0].hasAttribute('viewBox'))) {
-    //         // OSMD renderer hasn't been initialized yet, do nothing
-    //         return;
-    //     };
-
-    //     let newWidth_px: number;
-    //     let newWidth_px_str: string;
-    //     const previousWidth_px: number = parseInt(
-    //         $('#osmd-container svg')[0].getAttribute('width'));
-    //     // let x_px_str: string;
-    //     if (toContentWidth) {
-    //         const shift: number = 0;
-    //         const sheetAbsolutePosition_px: number = this.computePositionZoom(
-    //             this.graphicalMusicSheet.MusicPages[0]
-    //             .MusicSystems[0].PositionAndShape
-    //             .AbsolutePosition.x, shift);
-    //         // x_px_str = `${sheetAbsolutePosition_px}`
-
-    //         const sheetWidth_px: number = this.computePositionZoom(
-    //             this.graphicalMusicSheet.MusicPages[0]
-    //             .MusicSystems[0].PositionAndShape.BorderRight,
-    //             shift);
-    //         const musicSystemRightBorderAbsolutePosition_px = (
-    //             sheetAbsolutePosition_px + sheetWidth_px);
-    //         // add a right margin for more pleasant display
-    //         const sheetContainerWidthWithAddedBorder_px = (
-    //             musicSystemRightBorderAbsolutePosition_px +
-    //             sheetAbsolutePosition_px);
-
-    //         newWidth_px = sheetContainerWidthWithAddedBorder_px;
-    //         newWidth_px_str = `${newWidth_px}`;
-
-    //     }
-    //     else {
-    //         newWidth_px = superlarge_width_px;
-    //         newWidth_px_str = superlarge_width_px_str;
-    //     }
-
-    //     // update the width of the container so the scrollbar operates properly
-    //     $('#osmd-container')[0].style.width = `${newWidth_px_str}px`;
-    //     // update the width of the svg so the scrollbar operates properly
-    //     $('#osmd-container svg')[0].setAttribute('width', `${newWidth_px_str}`);
-
-
-    //     // update the viewBox width to reflect the updated width
-    //     const viewBoxRatio_NewToOld = newWidth_px / previousWidth_px;
-    //     const viewBox = $('#osmd-container svg')[0].getAttribute('viewBox');
-    //     const [x_px, y_px, previousWidth_px_str, height_px] = viewBox.split(' ');
-    //     const newViewBoxWidth_px_str: string = (
-    //         viewBoxRatio_NewToOld * parseInt(previousWidth_px_str)).toString();
-    //     $('#osmd-container svg')[0].setAttribute('viewBox',
-    //         `${x_px} ${y_px} ${newViewBoxWidth_px_str} ${height_px}`);
-    // }
 
     private zoom: number = 1;
 
     // compute a position accounting for <this>'s zoom level
     private computePositionZoom(value: number, shift=0): number {
         return ((value - shift) * 10.0 * this.zoom);
-    };
-
-    // CSS class depicting the duration of a timecontainer box
-    static makeGranularityCSSClass(duration_quarters: number): string {
-        return duration_quarters.toFixed() + '_quarterNote_duration'
-    }
-
-    // Unique ID for a timecontainer box
-    static makeGranularityID(duration_quarters: number,
-        measureIndex: number, positionInMeasure: number): string {
-        return ([duration_quarters, measureIndex, positionInMeasure]
-            .map((string) => string.toFixed())
-            .join("-")
-            .concat('-timecontainer'))
-    }
-
-    /*
-    Update sizing of the box with given ID
-    */
-    private updateTimeContainerSize(divId: string,
-        x: number, y: number, width: number, height: number): void {
-        const commonDivId = divId + '-common';
-        let commonDiv = (document.getElementById(commonDivId) ||
-            document.createElement("div"));
-
-        commonDiv.style.top = this.computePositionZoom(y, 0) + 'px';
-        commonDiv.style.height = this.computePositionZoom(height, 0) + 'px';
-        commonDiv.style.left = this.computePositionZoom(x, 1) + 'px';
-        commonDiv.style.width = this.computePositionZoom(width) + 'px';
-    }
-
-    /*
-    Create an overlay box with given shape and assign it the given divClass
-    */
-    private createTimeContainer(divId: string,
-        duration_quarters: number,
-        onclick: (arg0: PointerEvent) => void,
-        timestamps: [Fraction, Fraction]): HTMLElement {
-        // container for positioning the timestamp box and attached boxes
-        // needed to properly filter click actions
-        const commonDivId = divId + '-common';
-        let commonDiv = (document.getElementById(commonDivId) ||
-            document.createElement("div"));
-        let div = (document.getElementById(divId) ||
-            document.createElement("div"));
-
-        if (commonDiv.id !== commonDivId) {
-            // the div has no ID set yet: was created in this call
-            commonDiv.id = commonDivId;
-            commonDiv.classList.add('timecontainer');
-            commonDiv.classList.add(
-                eOSMD.makeGranularityCSSClass(duration_quarters));
-
-            div.id = divId;
-            div.classList.add('notebox');
-            div.classList.add('available');
-            // div.classList.add(divClass);
-
-            // FIXME constrains granularity
-            let containedQuarterNotes = [];
-            let quarterNoteStart = Math.floor(timestamps[0].RealValue * 4);
-            let quarterNoteEnd = Math.floor(timestamps[1].RealValue*4);
-            for (let i=quarterNoteStart; i<quarterNoteEnd; i++) {
-                containedQuarterNotes.push(i);
-            };
-            commonDiv.setAttribute('containedQuarterNotes',
-                containedQuarterNotes.toString().replace(/,/g, ' '));
-            // div.setAttribute('containedQuarterNotes',
-            //     commonDiv.getAttribute('containedQuarterNotes'));
-
-            let granularitySelect: HTMLSelectElement = <HTMLSelectElement>$('#granularity-select-container select')[0];
-            const currentGranularity: number = parseInt(
-                granularitySelect.options
-                [parseInt(granularitySelect.value)]
-                .innerText);
-            if (currentGranularity == duration_quarters) {
-                div.classList.add('active');
-            };
-
-            div.addEventListener('click', onclick);
-            // use bubbling and preventDefault to block window scrolling
-            div.addEventListener('wheel', function(event: WheelEvent){
-                event.preventDefault();
-                let scrollUp = (-event.deltaY>=0)
-                cycleGranularity(scrollUp)
-            }, false);
-
-            // add Drag'n'Drop support between timecontainers
-            div.setAttribute('draggable', 'true')
-            div.addEventListener('dragstart',
-                ondragstartTimecontainer_handler, true);
-            div.addEventListener('dragover',
-                ondragoverTimecontainer_handler, true);
-            div.addEventListener('dragenter',
-                ondragenterTimecontainer_handler, true);
-            div.addEventListener('dragleave',
-                ondragleaveTimecontainer_handler, true);
-            div.addEventListener('drop',
-                makeOndropTimecontainer_handler(this.copyTimecontainerContent),
-                true);
-
-            this.container.appendChild(commonDiv);
-            commonDiv.appendChild(div);
-        }
-
-        return div;
     };
 
     public get sequenceDuration_quarters(): number {
@@ -621,7 +462,7 @@ export class Spectrogram {
         const width: number = this.container.clientWidth;
         const height: number = this.container.clientHeight;
 
-        this.matrix = new Nexus.Sequencer(this.container.id, {
+        this.sequencer = new Nexus.Sequencer(this.container.id, {
             'size': [width, height],
             'mode': 'toggle',
             'rows': numRows,

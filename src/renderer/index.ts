@@ -51,8 +51,12 @@ let sheetPlaybackManager: SheetPlaybackManager;
 let spectrogramPlaybackManager: SpectrogramPlaybackManager;
 let bpmControl: BPMControl;
 let pitchControl: NumberControl;
+let instrumentSelect: CycleSelect;
+let vqvaeLayerSelect: CycleSelect;
 
-function render(configuration=defaultConfiguration) {
+async function render(configuration=defaultConfiguration) {
+    await Tone.start();
+
     const granularities_quarters: string[] = (
         (<string[]>configuration['granularities_quarters']).sort(
             (a, b) => {return parseInt(a) - parseInt(b)}));
@@ -96,7 +100,14 @@ function render(configuration=defaultConfiguration) {
         let headerGridElem: HTMLElement = document.createElement('header');
         document.body.appendChild(headerGridElem);
         Header.render(headerGridElem);
-    })
+    });
+
+    if ( configuration['spectrogram'] ) {
+        $(() => {
+            let appTitleElement: HTMLElement = document.getElementById('app-title');
+            appTitleElement.innerText = 'notono';
+        });
+    };
 
     let bottomControlsGridElem: HTMLDivElement;
 
@@ -107,20 +118,44 @@ function render(configuration=defaultConfiguration) {
     });
 
     $(() => {
-        let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
-        playbuttonContainerElem.id = 'play-button';
+        if ( configuration['osmd'] ) {
+            GranularitySelect.renderGranularitySelect(bottomControlsGridElem,
+                granularities_quarters);
+        }
+        else if ( configuration['spectrogram'] ) {
+            let vqvaeLayerIcons: Map<string, string> = new Map([
+                ['bottom', 'paint-brush-small.svg'],
+                ['top', 'paint-roller.svg'],
+                ['top-eraser', 'edit-tools.svg']
+            ])
 
-        bottomControlsGridElem.appendChild(playbuttonContainerElem);
+            let vqvaeLayerDimensions: Map<string, [number, number]> = new Map([
+                ['bottom', [64, 8]],
+                ['top', [32, 4]],
+                ['eraser-top', [32, 4]]
+            ])
 
-        ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
+            let iconsBasePath: string = path.join(static_correct, 'icons');
 
-        PlaybackCommands.render(playbuttonContainerElem, playbackManager);
-    });
+            let granularitySelectContainerElem: HTMLElement = document.createElement('control-item');
+            granularitySelectContainerElem.id = 'vqvae-layer-select-container';
+            bottomControlsGridElem.appendChild(granularitySelectContainerElem);
 
+            ControlLabels.createLabel(granularitySelectContainerElem,
+                'vqvae-layer-select-label');
 
-    $(() => {
-        GranularitySelect.renderGranularitySelect(bottomControlsGridElem,
-            granularities_quarters);
+            function vqvaeLayerOnChange(ev) {
+                let newLayer: string = <string>this.value.split('-')[0];
+                let [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(newLayer);
+                spectrogramPlaybackManager.spectrogramLocator.render(newNumRows, newNumColumns);
+            };
+
+            vqvaeLayerSelect = new CycleSelect(granularitySelectContainerElem,
+                'vqvae-layer-select',
+                {handleEvent: vqvaeLayerOnChange},
+                vqvaeLayerIcons,
+                iconsBasePath);
+        }
     });
 
 
@@ -157,115 +192,242 @@ function render(configuration=defaultConfiguration) {
         return spinnerElem
     }
 
-    let osmd: eOSMD;
-    let spectrogram: Spectrogram;
-    let mainPanel = <HTMLElement>document.createElement("div");
-    mainPanel.id = 'main-panel';
-    mainPanel.classList.add('loading');
-    document.body.appendChild(mainPanel);
-
-    let spinnerElem = insertLoadingSpinner(mainPanel);
-
-    if (configuration['osmd']) {
-        mainPanel.setAttribute('data-simplebar', "");
-        mainPanel.setAttribute('data-simplebar-auto-hide', "false");
-        let allowOnlyOneFermata: boolean = configuration['allow_only_one_fermata'];
-        /*
-        * Create a container element for OpenSheetMusicDisplay...
-        */
-        let osmdContainer: HTMLElement;
+    if ( configuration['spectrogram'] ) {
         $(() => {
-            let osmdContainerContainer = <HTMLElement>document.createElement("div");
-            osmdContainerContainer.id = 'osmd-container-container';
-            mainPanel.appendChild(osmdContainerContainer);
-            osmdContainer = <HTMLElement>document.createElement("div");
-            osmdContainer.id = 'osmd-container';
+            let bottomControlsGridElem = document.getElementById('bottom-controls');
+            pitchControl = new NumberControl(bottomControlsGridElem,
+                'pitch-control', [24, 84], 60);
+            pitchControl.render();
+
+            let instrumentSelectElem: HTMLElement = document.createElement('control-item');
+            instrumentSelectElem.id = 'instrument-control';
+            bottomControlsGridElem.appendChild(instrumentSelectElem);
+            instrumentSelect = new Nexus.Select('#instrument-control', {
+                'size': [150, 50],
+                'options': ['bass', 'brass', 'flute',
+                    'guitar', 'keyboard', 'mallet', 'organ',
+                    'reed', 'string', 'synth_lead', 'vocal'
+                ],
+                'value': 'organ',
+            });
+            ControlLabels.createLabel(instrumentSelectElem, 'instrument-control-label');
+        });
+    };
+
+    let osmd: eOSMD;
+    $(() => {
+        let mainPanel = <HTMLElement>document.createElement("div");
+        mainPanel.id = 'main-panel';
+        mainPanel.classList.add('loading');
+        document.body.appendChild(mainPanel);
+
+        let spinnerElem = insertLoadingSpinner(mainPanel);
+
+        if (configuration['osmd']) {
+            mainPanel.setAttribute('data-simplebar', "");
+            mainPanel.setAttribute('data-simplebar-auto-hide', "false");
+            let allowOnlyOneFermata: boolean = configuration['allow_only_one_fermata'];
             /*
-            * ... and attach it to our HTML document's body. The document itself is a HTML5
-            * stub created by Webpack, so you won't find any actual .html sources.
+            * Create a container element for OpenSheetMusicDisplay...
             */
-            osmdContainerContainer.appendChild(osmdContainer);
+            let osmdContainer: HTMLElement;
+            $(() => {
+                let osmdContainerContainer = <HTMLElement>document.createElement("div");
+                osmdContainerContainer.id = 'osmd-container-container';
+                mainPanel.appendChild(osmdContainerContainer);
+                osmdContainer = <HTMLElement>document.createElement("div");
+                osmdContainer.id = 'osmd-container';
+                /*
+                * ... and attach it to our HTML document's body. The document itself is a HTML5
+                * stub created by Webpack, so you won't find any actual .html sources.
+                */
+                osmdContainerContainer.appendChild(osmdContainer);
 
 
-            /*
-            * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
-            * the container we've created in the steps before. The second parameter tells OSMD
-            * not to redraw on resize.
-            */
+                /*
+                * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
+                * the container we've created in the steps before. The second parameter tells OSMD
+                * not to redraw on resize.
+                */
 
-            function copyTimecontainerContent(origin: HTMLElement, target: HTMLElement) {
-                // retrieve quarter-note positions for origin and target
-                function getContainedQuarters(timecontainer: HTMLElement): number[] {
-                    return timecontainer.getAttribute('containedQuarterNotes')
-                        .split(', ')
-                        .map((x) => parseInt(x, 10))
-                }
-                const originContainedQuarters: number[] = getContainedQuarters(origin);
-                const targetContainedQuarters: number[] = getContainedQuarters(target);
+                function copyTimecontainerContent(origin: HTMLElement, target: HTMLElement) {
+                    // retrieve quarter-note positions for origin and target
+                    function getContainedQuarters(timecontainer: HTMLElement): number[] {
+                        return timecontainer.getAttribute('containedQuarterNotes')
+                            .split(', ')
+                            .map((x) => parseInt(x, 10))
+                    }
+                    const originContainedQuarters: number[] = getContainedQuarters(origin);
+                    const targetContainedQuarters: number[] = getContainedQuarters(target);
 
-                const originStart_quarter: number = originContainedQuarters[0];
-                const targetStart_quarter: number = targetContainedQuarters[0];
-                const originEnd_quarter: number = originContainedQuarters.pop();
-                const targetEnd_quarter: number = targetContainedQuarters.pop();
+                    const originStart_quarter: number = originContainedQuarters[0];
+                    const targetStart_quarter: number = targetContainedQuarters[0];
+                    const originEnd_quarter: number = originContainedQuarters.pop();
+                    const targetEnd_quarter: number = targetContainedQuarters.pop();
 
-                const generationCommand: string = ('/copy' +
+                    const generationCommand: string = ('/copy' +
                     `?origin_start_quarter=${originStart_quarter}` +
                     `&origin_end_quarter=${originEnd_quarter}` +
                     `&target_start_quarter=${targetStart_quarter}` +
                     `&target_end_quarter=${targetEnd_quarter}`);
-                loadMusicXMLandMidi(sheetPlaybackManager, osmd, serverUrl, generationCommand);
-            }
+                    loadMusicXMLandMidi(sheetPlaybackManager, osmd, serverUrl, generationCommand);
+                }
 
-            let autoResize: boolean = true;
-            osmd = new eOSMD(osmdContainer,
-                {autoResize: autoResize,
-                drawingParameters: "compact",
-                drawPartNames: false
-                },
-                granularities_quarters.map((num) => {return parseInt(num, 10);}),
-                configuration['annotation_types'],
-                allowOnlyOneFermata,
-                copyTimecontainerContent);
-            // TODO(theis): check proper way of enforcing subtype
-            sheetPlaybackManager = new SheetPlaybackManager();
-            playbackManager = sheetPlaybackManager;
+                let autoResize: boolean = true;
+                osmd = new eOSMD(osmdContainer,
+                    {autoResize: autoResize,
+                        drawingParameters: "compact",
+                        drawPartNames: false
+                    },
+                    granularities_quarters.map((num) => {return parseInt(num, 10);}),
+                    configuration['annotation_types'],
+                    allowOnlyOneFermata,
+                    copyTimecontainerContent
+                );
+                // TODO(theis): check proper way of enforcing subtype
+                sheetPlaybackManager = new SheetPlaybackManager();
+                playbackManager = sheetPlaybackManager;
 
-            if (configuration['use_chords_instrument']) {
+                if (configuration['use_chords_instrument']) {
                 sheetPlaybackManager.scheduleChordsPlayer(osmd,
                     configuration['chords_midi_channel']);
-            }
-        });
-    } else if (configuration['spectrogram']) {
-        let spectrogramContainerElem = document.createElement('div');
-        spectrogramContainerElem.id = 'spectrogram-container';
-        mainPanel.appendChild(spectrogramContainerElem);
+                }
+            });
+        } else if (configuration['spectrogram']) {
+            let spectrogramContainerElem = document.createElement('div');
+            spectrogramContainerElem.id = 'spectrogram-container';
+            mainPanel.appendChild(spectrogramContainerElem);
 
-        let spectrogramImageElem = document.createElement('img');
-        spectrogramImageElem.id = 'spectrogram-image';
-        spectrogramContainerElem.appendChild(spectrogramImageElem);
+            let spectrogramImageElem = document.createElement('img');
+            spectrogramImageElem.id = 'spectrogram-image';
+            spectrogramContainerElem.appendChild(spectrogramImageElem);
 
-        console.log("WARNING: sloppy implementation here!!! CHECK PARAMETERS")
-        spectrogram = new Spectrogram(spectrogramContainerElem, {}, [1], () => {});
-        spectrogram.render(onClickTimestampBoxFactory);
+            console.log("WARNING: sloppy implementation here!!! CHECK PARAMETERS")
+            let spectrogram = new Spectrogram(spectrogramContainerElem, {}, [1], () => {});
 
-        let spectrogramPlaybackManager = new SpectrogramPlaybackManager(4.,
-            spectrogram);
-        playbackManager = spectrogramPlaybackManager;
+            spectrogramPlaybackManager = new SpectrogramPlaybackManager(4.,
+                spectrogram);
+            playbackManager = spectrogramPlaybackManager;
 
-        // requesting the initial sheet, so can't send any sheet along
-        const sendCodesWithRequest = false;
-        const initial_command = '?pitch=64&instrument_family=string&temperature=1';
+            vqvaeLayerSelect.value = 'top';  // trigger correct rendering of the spectrogram grid
+            const sendCodesWithRequest = false;
+            const initial_command = ('?pitch=' + pitchControl.value.toString()
+                + '&instrument_family_str=' + instrumentSelect.value
+                + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
+                + '&temperature=1');
 
-        loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
-                                'test-generate' + initial_command, sendCodesWithRequest).then(
-            () => {
+            loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
+                'test-generate' + initial_command, sendCodesWithRequest).then(
+                    () => {
                 spinnerElem.style.visibility = 'hidden';
                 mainPanel.classList.remove('loading');
                 if ( REGISTER_IDLE_STATE_DETECTOR ) {
                     HelpTour.registerIdleStateDetector();
                 }
             });
+            // });
+        };
+    })
+
+    function updateConditioningMap(mask: number[][],
+            currentConditioningMap: Map<string, (number[][]|string[][])>
+            ): Map<string, (number[][]|string[][])> {
+        // retrieve up-to-date user-selected conditioning
+        const newConditioning_value = new Map()
+        newConditioning_value.set('pitch', pitchControl.value)
+        newConditioning_value.set('instrument_family_str', instrumentSelect.value)
+
+        for (const [ modality, conditioning_map ] of currentConditioningMap.entries()) {
+            currentConditioningMap.set(modality, (
+                conditioning_map.map((row: (number[]|string[]), row_index: number) => {
+                    return row.map((currentConditioning_value: number|string, column_index: number) => {
+                        if ( mask[row_index][column_index] == 1 ) {
+                            return newConditioning_value.get(modality)
+                        }
+                        else {
+                            return currentConditioning_value
+                        }
+                    })
+                })))
+        };
+
+        return currentConditioningMap
     }
+
+    if ( configuration['spectrogram'] ) {
+        $(() => {
+            let regenerationCallback = (
+                (v) => {
+                    let mask = spectrogramPlaybackManager.spectrogramLocator.mask;
+                    switch ( vqvaeLayerSelect.value ) {
+                        case "top": {
+                            currentConditioning_top = updateConditioningMap(
+                                mask, currentConditioning_top
+                            );
+                            break;
+                        };
+                        case "bottom": {
+                            currentConditioning_bottom = updateConditioningMap(
+                                mask, currentConditioning_bottom
+                            );
+                            break;
+                        }
+                    }
+
+                    let sendCodesWithRequest = true;
+                    const generationParameters = ('?pitch=' + pitchControl.value.toString()
+                        + '&instrument_family_str=' + instrumentSelect.value
+                        + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
+                        + '&temperature=1'
+                        + '&eraser_amplitude=0.1');
+                    const split_tool_select = vqvaeLayerSelect.value.split('-')
+                    let command;
+                    switch ( split_tool_select.length ) {
+                        case 1: {command = 'timerange-change'; break;};
+                        case 2: {if ( split_tool_select[1] == 'eraser') {
+                            command = 'erase'}
+                            else { throw EvalError };
+                            break;};
+                        default: { throw EvalError; };
+                    }
+                    loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
+                        command + generationParameters, sendCodesWithRequest, mask);
+                }
+            )
+            // spectrogramPlaybackManager.spectrogramLocator.registerCallback(regenerationCallback);
+
+            let spectrogramContainerElem = document.getElementById('spectrogram-container');
+            spectrogramContainerElem.addEventListener('click', regenerationCallback);
+
+            let regeneratebuttonContainerElem: HTMLElement = document.createElement('control-item');
+            regeneratebuttonContainerElem.id = 'regenerate-button';
+            bottomControlsGridElem.appendChild(regeneratebuttonContainerElem);
+
+            $(() => {
+                let regeneratebutton = new Nexus.TextButton('#regenerate-button', {
+                    'size': [150,50],
+                    'text': 'Regenerate',
+                });
+
+                regeneratebutton.on('change', (enable) => {
+                    if ( enable ) {
+                        regenerationCallback(enable);
+                    }});
+            })
+        });
+    };
+
+    $(() => {
+        let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
+        playbuttonContainerElem.id = 'play-button';
+
+        bottomControlsGridElem.appendChild(playbuttonContainerElem);
+
+        ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
+
+        PlaybackCommands.render(playbuttonContainerElem, playbackManager);
+    });
+
 
     function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void{
         // Strip MusicXML document of title/composer tags
@@ -369,54 +531,75 @@ function render(configuration=defaultConfiguration) {
     const parser = new DOMParser();
     let currentCodes_top: Int32Array;
     let currentCodes_bottom: Int32Array;
+    let currentConditioning_top: Map<string, (number[][]|string[][])>;
+    let currentConditioning_bottom: Map<string, (number[][]|string[][])>;
     let currentXML: XMLDocument;
+
+    function loadNewMap(newConditioningMap): Map<string, (number[][]|string[][])> {
+        let conditioning_map = new Map();
+        conditioning_map.set('pitch', newConditioningMap['pitch']);
+        conditioning_map.set('instrument_family_str', newConditioningMap['instrument_family_str']);
+        return conditioning_map
+    }
+
+    function mapToObject(conditioning_map: Map<string, (number[][]|string[][])>) {
+        return {
+            'pitch': conditioning_map.get('pitch'),
+            'instrument_family_str': conditioning_map.get('instrument_family_str')
+        };
+    };
 
     /**
      * Load a MusicXml file via xhttp request, and display its contents.
      */
     function loadAudioAndSpectrogram(spectrogramPlaybackManager: SpectrogramPlaybackManager,
-            serverURL: string, generationCommand: string, sendCodesWithRequest: boolean) {
+            serverURL: string, generationCommand: string, sendCodesWithRequest: boolean,
+            mask: number[][] = null) {
         return new Promise((resolve, _) => {
             disableChanges();
 
             let payload_object = {};
 
-            // log.trace('Metadata:');
-            // log.trace(JSON.stringify(getMetadata()));
-
             if (sendCodesWithRequest) {
-                payload_object['top_codes'] = currentCodes_top;
-                payload_object['bottom_codes'] = currentCodes_bottom;
+                payload_object['top_code'] = currentCodes_top;
+                payload_object['bottom_code'] = currentCodes_bottom;
+                payload_object['top_conditioning'] = mapToObject(
+                    currentConditioning_top);
+                payload_object['bottom_conditioning'] = mapToObject(
+                    currentConditioning_bottom);
             }
+            if ( mask !== null ) {
+                // send the mask with low-frequencies first
+                payload_object['mask'] = mask.reverse();
+            };
 
-            // register minimal error handler
-            $(document).ajaxError((error) => console.log(error));
-
-            $.get({
+            $.post({
                 url: url.resolve(serverURL, generationCommand),
                 data: JSON.stringify(payload_object),
                 contentType: 'application/json',
                 dataType: 'json',
                 success: (jsonResponse: {}) => {
-                    const audioUrl = jsonResponse['audio']
-                    const spectrogramUrl = jsonResponse['spectrogram']
+                    const newCodes_top = jsonResponse['top_code']
+                    const newCodes_bottom = jsonResponse['bottom_code']
+                    const newConditioning_top = loadNewMap(
+                        jsonResponse['top_conditioning'])
+                    const newConditioning_bottom = loadNewMap(
+                        jsonResponse['bottom_conditioning'])
 
-                    spectrogramPlaybackManager.loadAudio(audioUrl).then(() => {
-                        log.debug("Tone.js Player audio succesfully loaded!");
-                        console.log("Tone.js Player audio succesfully loaded!");
-                        currentCodes_top = jsonResponse['top_codes'];
-                        currentCodes_bottom = jsonResponse['bottom_codes'];
+                    const audioPromise = getAudioRequest(spectrogramPlaybackManager, serverURL,
+                        newCodes_top, newCodes_bottom);
+                    const spectrogramImagePromise = getSpectrogramImageRequest(
+                        spectrogramPlaybackManager, serverURL, newCodes_top, newCodes_bottom);
 
-                        spectrogram.render(onClickTimestampBoxFactory);
+                    Promise.all([audioPromise, spectrogramImagePromise]).then(() => {
+                        currentCodes_top = newCodes_top;
+                        currentCodes_bottom = newCodes_bottom;
+                        currentConditioning_top = newConditioning_top;
+                        currentConditioning_bottom = newConditioning_bottom;
 
                         enableChanges();
                         resolve();
-                    }
-                    )
-
-                    const spectrogramImageElem: HTMLImageElement = (
-                        <HTMLImageElement>document.getElementById('spectrogram-image'));
-                    spectrogramImageElem.src = spectrogramUrl;
+                    });
                 }
             }).done(() => {
             })
@@ -424,6 +607,65 @@ function render(configuration=defaultConfiguration) {
         })
     };
 
+    function getAudioRequest(spectrogramPlaybackManager: SpectrogramPlaybackManager,
+            serverURL: string, top_code: number[][], bottom_code: number[][]) {
+        return new Promise((resolve, _) => {
+            let payload_object = {};
+
+            payload_object['top_code'] = top_code;
+            payload_object['bottom_code'] = bottom_code;
+
+            const generationCommand: string = '/get-audio';
+            $.post({
+                url: url.resolve(serverURL, generationCommand),
+                data: JSON.stringify(payload_object),
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                contentType: 'application/json',
+                success: (blob: Blob) => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    spectrogramPlaybackManager.loadAudio(blobUrl).then(() => {
+                        log.debug("Tone.js Player audio succesfully loaded!");
+
+                        vqvaeLayerSelect.value = vqvaeLayerSelect.value;
+
+                        URL.revokeObjectURL(blobUrl);
+                        resolve();
+                    });
+                }
+            }).done(() => {})
+        })
+    }
+
+    function getSpectrogramImageRequest(spectrogramPlaybackManager: SpectrogramPlaybackManager,
+            serverURL: string, top_code: number[][], bottom_code: number[][]) {
+        return new Promise((resolve, _) => {
+            let payload_object = {};
+
+            payload_object['top_code'] = top_code;
+            payload_object['bottom_code'] = bottom_code;
+
+            const generationCommand: string = '/get-spectrogram-image';
+            $.post({
+                url: url.resolve(serverURL, generationCommand),
+                data: JSON.stringify(payload_object),
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                contentType: 'application/json',
+                success: (blob) => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    const spectrogramImageElem: HTMLImageElement = (
+                        <HTMLImageElement>document.getElementById('spectrogram-image'));
+                    spectrogramImageElem.src = blobUrl;
+                    $(() => {URL.revokeObjectURL(blobUrl);})
+                    resolve();
+                }
+            }).done(() => {
+            })
+        })
+    }
 
     /**
      * Load a MusicXml file via xhttp request, and display its contents.
@@ -442,9 +684,6 @@ function render(configuration=defaultConfiguration) {
             if (sendSheetWithRequest) {
                 payload_object['sheet'] = serializer.serializeToString(currentXML);
             }
-
-            // register minimal error handler
-            $(document).ajaxError((error) => console.log(error));
 
             $.post({
                 url: url.resolve(serverURL, generationCommand),
@@ -493,8 +732,8 @@ function render(configuration=defaultConfiguration) {
         })
     };
 
-    $(() => {
-        if ( configuration['osmd'] ) {
+    if ( configuration['osmd'] ) {
+        $(() => {
             const instrumentsGridElem = document.createElement('div');
             instrumentsGridElem.id = 'instruments-grid';
             instrumentsGridElem.classList.add('two-columns');
@@ -508,26 +747,26 @@ function render(configuration=defaultConfiguration) {
             }
             Instruments.renderDownloadButton(instrumentsGridElem,
                 configuration['use_chords_instrument']);
-            }
-        }
+        });
+    }
 
     if ( configuration['osmd'] ) {
-    $(() => {
-        let useSimpleSlider: boolean = !useAdvancedControls;
+        $(() => {
+            let useSimpleSlider: boolean = !useAdvancedControls;
             bpmControl = new BPMControl(bottomControlsGridElem, 'bpm-control');
             bpmControl.render(useSimpleSlider);
 
             // link the Ableton-Link client to the BPM controller
             LinkClient.setBPMControl(bpmControl);
 
-        // set the initial tempo for the app
-        // if (LinkClient.isEnabled()) {
-        // // if Link is enabled, use the Link tempo
-        //     LinkClient.setBPMtoLinkBPM_async();
-        // }
-        // else
+            // set the initial tempo for the app
+            // if (LinkClient.isEnabled()) {
+            // // if Link is enabled, use the Link tempo
+            //     LinkClient.setBPMtoLinkBPM_async();
+            // }
+            // else
             { bpmControl.value  = 110; }
-    });
+        });
     }
 
     $(() => {
@@ -571,8 +810,10 @@ function render(configuration=defaultConfiguration) {
     }
 }
 
-
 $(() => {
+    // register minimal error handler
+    $(document).ajaxError((error) => console.log(error));
+
     SplashScreen.render(render);
 });
 

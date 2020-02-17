@@ -6,41 +6,32 @@ import { Spectrogram } from "./locator";
 let Nexus = require('./nexusColored');
 
 export class SpectrogramPlaybackManager extends PlaybackManager {
-    private spectrogramLocator: Spectrogram;
+    readonly spectrogramLocator: Spectrogram;
     private player: Tone.Player = new Tone.Player().toMaster();
 
     protected setPlaybackPositionDisplay(timePosition: number): void {
-        this.spectrogramLocator.matrix.stepper.value = timePosition;
+        this.spectrogramLocator.setPosition(timePosition);
     }
 
     protected getCurrentDisplayTimestep(): number {
         return 0;
     }
 
-    // override safety delay
-    protected async safeStartPlayback() {
-        await this.startPlaybackNowFromBeginning();
-        console.log("Playback started!");
-    };
-
     private schedulePlaybackLoop() {
-        console.log("Hellloooooooooo");
         this.player.sync(Tone.Transport);
-        this.player.start(0.01);
-        this.player.loop = true;
-        this.player.setLoopPoints(0, this.player.buffer.duration);
-
+        Tone.Transport.setLoopPoints(0, 4);
+        Tone.Transport.loop = true;
+        this.player.start(0).stop(3.99);
     };
 
-    // loadAudio(serverURL: string, command: string, codes: [[number]]): void {
-
-    // };
-
-    loadAudio(audioURL: string): Promise<unknown> {
-        return this.player.load(audioURL);
+    async loadAudio(audioURL: string): Promise<void> {
+        await this.player.load(audioURL);
+        // await Tone.context.resume();
+        // this.player.pause();
+        // this.player.play();
     };
 
-    loadSpectrogram(serverURL: string, command: string, codes: [[number]]): void {
+    loadSpectrogram(serverURL: string, command: string, codes: number[][]): void {
 
     }
 

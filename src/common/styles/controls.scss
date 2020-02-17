@@ -8,12 +8,12 @@
     grid-column: 1;
 }
 
-#granularity-select-container {
+#granularity-select-container, #vqvae-layer-select-container {
     grid-row: 1;
     grid-column: 2;
 }
 
-#granularity-select-label {
+#granularity-select-label, #vqvae-layer-select-label {
     grid-row: 2;
     grid-column: 2;
 }
@@ -28,14 +28,24 @@
     grid-column: 3;
 }
 
-#bpm-control {
+#bpm-control, #pitch-control {
     grid-row: 1;
     grid-column: 4;
 }
 
-#bpm-control-label {
+#bpm-control-label, #pitch-control-label {
     grid-row: 2;
     grid-column: 4;
+}
+
+#instrument-control {
+    grid-row: 1;
+    grid-column: 3;
+}
+
+#instrument-control-label {
+    grid-row: 2;
+    grid-column: 3;
 }
 
 #link-button {
@@ -56,4 +66,9 @@
 #select-midiout {
     grid-row: 3;
     grid-column: 3;
+}
+
+#regenerate-button {
+    grid-row: 3;
+    grid-column: 4;
 }
