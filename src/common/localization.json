@@ -5,6 +5,18 @@
             "en": "Change tempo"
         },
 
+        "pitch-control-label": {
+            "en": "Change pitch constraint"
+        },
+
+        "instrument-control-label": {
+            "en": "Change instrument constraint"
+        },
+
+        "instrument-family-control-label": {
+            "en": "Select instrument family"
+        },
+
         "granularity-select-label": {
             "de": "Rekompositionsdauer ändern",
             "en": "Change generation duration"
@@ -18,6 +30,10 @@
         "play-button-label": {
             "de": "Partitur abspielen",
             "en": "Score playback"
+        },
+
+        "vqvae-layer-select-label": {
+            "en": "Select brush type"
         }
     }
 }

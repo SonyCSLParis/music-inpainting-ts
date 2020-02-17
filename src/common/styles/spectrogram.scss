@@ -1,5 +1,5 @@
 #spectrogram-container {
-    height: inherit;
+    height: 75%;
     width: inherit;
     margin: auto;
 
@@ -14,4 +14,8 @@
     height: inherit;
     width: inherit;
     position: absolute;
+}
+
+#spectrogram-container div {
+    opacity: 0.3;
 }
