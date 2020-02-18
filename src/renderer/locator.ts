@@ -404,12 +404,22 @@ export class eOSMD extends OpenSheetMusicDisplay {
 }
 
 export class Spectrogram {
+    protected resizeTimeoutDuration: number = 10;
+    protected resizeTimeout: NodeJS.Timeout;
+
     constructor(container: HTMLElement, options: object = {},
             boxDurations_quarters: number[],
             copyTimecontainerContent: (origin: HTMLElement, target: HTMLElement) => void) {
         this.container = container;
         this._boxDurations_quarters = boxDurations_quarters;
         this.copyTimecontainerContent = copyTimecontainerContent;
+
+        window.addEventListener('resize', (uiEvent: UIEvent) => {
+            clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = setTimeout(() => {
+                this.render(this.numRows, this.numColumns);},
+                this.resizeTimeoutDuration)
+        })
     }
     public container: HTMLElement;
     private sequencer = null;
@@ -435,6 +445,14 @@ export class Spectrogram {
         this.sequencer.stepper.value = timePosition;
     }
 
+    protected get numRows(): number {
+        return this.sequencer.rows;
+    };
+
+    protected get numColumns(): number {
+        return this.sequencer.columns;
+    };
+
     public render(numRows: number, numColumns: number, onclickFactory=undefined): void {
         // this.updateContainerWidth(false);
         if ( this.sequencer !== null ) {
@@ -459,15 +477,16 @@ export class Spectrogram {
     public drawTimestampBoxes(onclickFactory: (startTime: Fraction,
         endTime: Fraction) => ((event: PointerEvent) => void)=undefined,
         numRows: number, numColumns: number): void{
-        const width: number = this.container.clientWidth;
-        const height: number = this.container.clientHeight;
+            const spectrogramImageElem: HTMLImageElement = this.container.getElementsByTagName('img')[0];
+            const width: number = spectrogramImageElem.clientWidth;
+            const height: number = spectrogramImageElem.clientHeight;
 
-        this.sequencer = new Nexus.Sequencer(this.container.id, {
-            'size': [width, height],
-            'mode': 'toggle',
-            'rows': numRows,
-            'columns': numColumns,
-        });
+            this.sequencer = new Nexus.Sequencer(this.container.id, {
+                'size': [width, height],
+                'mode': 'toggle',
+                'rows': numRows,
+                'columns': numColumns,
+            });
     }
 }
 
