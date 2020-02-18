@@ -406,6 +406,8 @@ export class eOSMD extends OpenSheetMusicDisplay {
 export class Spectrogram {
     protected resizeTimeoutDuration: number = 10;
     protected resizeTimeout: NodeJS.Timeout;
+    public container: HTMLElement;
+    private sequencer = null;
 
     constructor(container: HTMLElement, options: object = {},
             boxDurations_quarters: number[],
@@ -421,8 +423,6 @@ export class Spectrogram {
                 this.resizeTimeoutDuration)
         })
     }
-    public container: HTMLElement;
-    private sequencer = null;
 
     public get mask(): number[][] {
         return this.sequencer.matrix.pattern;
