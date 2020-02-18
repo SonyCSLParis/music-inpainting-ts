@@ -119,15 +119,14 @@ async function render(configuration=defaultConfiguration) {
         }
         else if ( configuration['spectrogram'] ) {
             let vqvaeLayerIcons: Map<string, string> = new Map([
-                ['bottom', 'paint-brush-small.svg'],
-                ['top', 'paint-roller.svg'],
+                ['bottom-brush', 'paint-brush-small.svg'],
+                ['top-brush', 'paint-roller.svg'],
                 ['top-eraser', 'edit-tools.svg']
             ])
 
             let vqvaeLayerDimensions: Map<string, [number, number]> = new Map([
                 ['bottom', [64, 8]],
-                ['top', [32, 4]],
-                ['eraser-top', [32, 4]]
+                ['top', [32, 4]]
             ])
 
             let iconsBasePath: string = path.join(static_correct, 'icons');
@@ -316,7 +315,7 @@ async function render(configuration=defaultConfiguration) {
                 spectrogram);
             playbackManager = spectrogramPlaybackManager;
 
-            vqvaeLayerSelect.value = 'top';  // trigger correct rendering of the spectrogram grid
+            vqvaeLayerSelect.value = 'top-brush';  // trigger correct rendering of the spectrogram grid
             const sendCodesWithRequest = false;
             const initial_command = ('?pitch=' + pitchControl.value.toString()
                 + '&instrument_family_str=' + instrumentSelect.value
@@ -394,21 +393,27 @@ async function render(configuration=defaultConfiguration) {
                     const split_tool_select = vqvaeLayerSelect.value.split('-')
                     let command;
                     switch ( split_tool_select.length ) {
-                        case 1: {command = 'timerange-change'; break;};
-                        case 2: {if ( split_tool_select[1] == 'eraser') {
-                            command = 'erase'}
-                            else { throw EvalError };
-                            break;};
+                        case 1: {  throw EvalError; };
+                        case 2: {
+                            switch ( split_tool_select[1] ) {
+                                case 'eraser': {
+                                    command = 'erase';
+                                    break;
+                                };
+                                case 'brush': {
+                                    command = 'timerange-change';
+                                    break;
+                                };
+                            };
+                            break;
+                        };
                         default: { throw EvalError; };
                     }
                     loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
                         command + generationParameters, sendCodesWithRequest, mask);
                 }
             )
-            // spectrogramPlaybackManager.spectrogramLocator.registerCallback(regenerationCallback);
-
-            let spectrogramContainerElem = document.getElementById('spectrogram-container');
-            spectrogramContainerElem.addEventListener('click', regenerationCallback);
+            spectrogramPlaybackManager.spectrogramLocator.registerCallback(regenerationCallback);
 
             let regeneratebuttonContainerElem: HTMLElement = document.createElement('control-item');
             regeneratebuttonContainerElem.id = 'regenerate-button';
@@ -500,17 +505,11 @@ async function render(configuration=defaultConfiguration) {
     }
 
 
-    function toggleBusyClass(toggleBusy: boolean): void {
-        let noteboxes = $('.notebox')
-        if (toggleBusy) {
-            noteboxes.addClass('busy');
-            noteboxes.removeClass('available');
+    function toggleBusyClass(state: boolean): void {
+        $('.notebox').toggleClass('busy', state);
+        $('.notebox').toggleClass('available', !state);
+        $('#spectrogram-container').toggleClass('busy', state);
         }
-        else {
-            noteboxes.removeClass('busy');
-            noteboxes.addClass('available');
-        }
-    }
 
 
     function blockall(e) {

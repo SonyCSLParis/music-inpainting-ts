@@ -7,6 +7,13 @@
     bottom: 0;
     position: absolute;
     z-index: -1;
+
+    &.busy {
+        cursor: wait !important;
+        & * {
+            pointer-events: none !important;
+        }
+    }
 }
 
 #spectrogram-image {
@@ -15,6 +22,6 @@
     position: absolute;
 }
 
-#spectrogram-container div {
+#spectrogram-container-interface-container div {
     opacity: 0.3;
 }
