@@ -287,6 +287,18 @@ async function render(configuration=defaultConfiguration) {
                 sheetPlaybackManager.scheduleChordsPlayer(osmd,
                     configuration['chords_midi_channel']);
                 }
+                $(() => {
+                    // requesting the initial sheet, so can't send any sheet along
+                    const sendSheetWithRequest = false;
+                    loadMusicXMLandMidi(sheetPlaybackManager, osmd, serverUrl,
+                    'generate', sendSheetWithRequest).then(() => {
+                        spinnerElem.style.visibility = 'hidden';
+                        mainPanel.classList.remove('loading');
+                        if ( REGISTER_IDLE_STATE_DETECTOR ) {
+                            HelpTour.registerIdleStateDetector();
+                        }
+                    });
+                });
             });
         } else if (configuration['spectrogram']) {
             let spectrogramContainerElem = document.createElement('div');
@@ -314,13 +326,13 @@ async function render(configuration=defaultConfiguration) {
             loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
                 'test-generate' + initial_command, sendCodesWithRequest).then(
                     () => {
-                spinnerElem.style.visibility = 'hidden';
-                mainPanel.classList.remove('loading');
-                if ( REGISTER_IDLE_STATE_DETECTOR ) {
-                    HelpTour.registerIdleStateDetector();
-                }
-            });
-            // });
+                        spinnerElem.style.visibility = 'hidden';
+                        mainPanel.classList.remove('loading');
+                        if ( REGISTER_IDLE_STATE_DETECTOR ) {
+                            HelpTour.registerIdleStateDetector();
+                        };
+                    }
+                );
         };
     })
 
