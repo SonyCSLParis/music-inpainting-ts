@@ -253,15 +253,16 @@ export class SheetPlaybackManager extends PlaybackManager {
     }
 
     private midiRequestWithData(url: string, data=null,
-        method:string = 'GET'): Promise<MidiConvert.MIDI>{
-            return new Promise<MidiConvert.MIDI>((success, fail) => {
+        method:string = 'GET'): Promise<[MidiConvert.MIDI, string]>{
+            return new Promise<[MidiConvert.MIDI, string]>((success, fail) => {
                 let request = new XMLHttpRequest()
                 request.open(method, url)
                 request.responseType = 'arraybuffer'
                 // decode asynchronously
                 request.addEventListener('load', () => {
                     if (request.readyState === 4 && request.status === 200){
-                        success(MidiConvert.parse(request.response))
+                        let blobURL: string = URL.createObjectURL(request.response);
+                        success([MidiConvert.parse(request.response), blobURL])
                     } else {
                         fail(request.status)
                     }},
@@ -272,54 +273,57 @@ export class SheetPlaybackManager extends PlaybackManager {
             });
         }
 
-    loadMidi(serverURL: string, musicXML: XMLDocument,
+    async loadMidi(serverURL: string, musicXML: XMLDocument,
         sequenceDuration_toneTime: Tone.Time,
-        bpmControl: BPMControl) {
+        bpmControl: BPMControl): Promise<string> {
         const serializer = new XMLSerializer();
         const payload = serializer.serializeToString(musicXML);
 
         $(document).ajaxError((error) => console.log(error));
 
-        this.midiRequestWithData(serverURL, payload, 'POST').then(function (midi) {
-                for (let midiPartIndex=0, numMidiParts=this.midiParts.length;
-                    midiPartIndex < numMidiParts; midiPartIndex++) {
-                        let midiPart = this.midiParts.pop();
-                        midiPart.dispose();
-                }
-
-                Tone.Transport.loop = true;
-                Tone.Transport.loopStart = 0;
-                Tone.Transport.loopEnd = sequenceDuration_toneTime;
-
-                if (!midi.header.bpm) {
-                    // TODO insert warning wrong Flask server
-                }
-                if (!midi.header.timeSignature) {
-                    // TODO insert warning wrong Flask server
-                    // TODO create a test for the flask server
-                }
-                // must set the Transport BPM to that of the midi for proper scheduling
-                // TODO(theis): this will probably lead to phase-drift if repeated
-                // updates are performed successively, should catch up somehow on
-                // the desynchronisation introduced by this temporary tempo change
-                Tone.Transport.bpm.value = midi.header.bpm;
-
-                // Required for Tone.Time conversions to properly work
-                Tone.Transport.timeSignature = midi.header.timeSignature;
-
-                const numTracks = midi.tracks.length;
-                for (let trackIndex=0; trackIndex < numTracks; trackIndex++){
-                    const track = midi.tracks[trackIndex];
-                    // midiChannels start at 1
-                    const midiChannel = trackIndex + 1;
-                    this.scheduleTrackToInstrument(sequenceDuration_toneTime, track,
-                        midiChannel);
-                }
-
-                // change Transport BPM back to the displayed value
-                Tone.Transport.bpm.value = bpmControl.value;  // WARNING if bpmCounter is a floor'ed value, this is wrong
+        const midiBlobURL = this.midiRequestWithData(serverURL, payload, 'POST').then(([midi, blobURL])  => {
+            console.log([midi, blobURL])
+            for (let midiPartIndex=0, numMidiParts=this.midiParts.length;
+                midiPartIndex < numMidiParts; midiPartIndex++) {
+                    let midiPart = this.midiParts.pop();
+                    midiPart.dispose();
             }
-        ).catch((error) => {console.log(error)})
+
+            Tone.Transport.loop = true;
+            Tone.Transport.loopStart = 0;
+            Tone.Transport.loopEnd = sequenceDuration_toneTime;
+
+            if (!midi.header.bpm) {
+                // TODO insert warning wrong Flask server
+            }
+            if (!midi.header.timeSignature) {
+                // TODO insert warning wrong Flask server
+                // TODO create a test for the flask server
+            }
+            // must set the Transport BPM to that of the midi for proper scheduling
+            // TODO(theis): this will probably lead to phase-drift if repeated
+            // updates are performed successively, should catch up somehow on
+            // the desynchronisation introduced by this temporary tempo change
+            Tone.Transport.bpm.value = midi.header.bpm;
+
+            // Required for Tone.Time conversions to properly work
+            Tone.Transport.timeSignature = midi.header.timeSignature;
+
+            const numTracks = midi.tracks.length;
+            for (let trackIndex=0; trackIndex < numTracks; trackIndex++){
+                const track = midi.tracks[trackIndex];
+                // midiChannels start at 1
+                const midiChannel = trackIndex + 1;
+                this.scheduleTrackToInstrument(sequenceDuration_toneTime, track,
+                    midiChannel);
+            }
+
+            // change Transport BPM back to the displayed value
+            Tone.Transport.bpm.value = bpmControl.value;  // WARNING if bpmCounter is a floor'ed value, this is wrong
+            return blobURL
+        }).catch((error) => {console.log(error); return '';})
+
+        return midiBlobURL;
     };
 
     scheduleChordsPlayer(osmd: eOSMD, midiChannel: number) {
