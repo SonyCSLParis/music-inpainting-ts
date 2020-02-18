@@ -20,6 +20,7 @@ import * as Instruments from './instruments';
 import { NumberControl, BPMControl } from './numberControl';
 import LinkClient from './linkClient';
 import * as LinkClientCommands from './linkClientCommands';
+import { DownloadButton } from './downloadCommand';
 import * as MidiOut from './midiOut';
 import * as HelpTour from './helpTour';
 import { createLFOControls } from './lfo';
@@ -53,6 +54,7 @@ let bpmControl: BPMControl;
 let pitchControl: NumberControl;
 let instrumentSelect: CycleSelect;
 let vqvaeLayerSelect: CycleSelect;
+let downloadButton: DownloadButton;
 
 async function render(configuration=defaultConfiguration) {
     await Tone.start();
@@ -621,13 +623,15 @@ async function render(configuration=defaultConfiguration) {
                 },
                 contentType: 'application/json',
                 success: (blob: Blob) => {
+                    downloadButton.revokeBlobURL();
+
                     const blobUrl = URL.createObjectURL(blob);
                     spectrogramPlaybackManager.loadAudio(blobUrl).then(() => {
                         log.debug("Tone.js Player audio succesfully loaded!");
 
                         vqvaeLayerSelect.value = vqvaeLayerSelect.value;
 
-                        URL.revokeObjectURL(blobUrl);
+                        downloadButton.targetURL = blobUrl;
                         resolve();
                     });
                 }
@@ -705,20 +709,23 @@ async function render(configuration=defaultConfiguration) {
                     // save current zoom level to restore it after load
                     const zoom = osmd.zoom;
                     osmd.load(currentXML).then(
-                        () => {
+                        async () => {
                             // restore pre-load zoom level
                             osmd.zoom = zoom;
                             osmd.render(onClickTimestampBoxFactory);
-                            enableChanges();
-                            resolve();
 
                             let sequenceDuration: Tone.Time = Tone.Time(
                                 `0:${osmd.sequenceDuration_quarters}:0`)
-                            playbackManager.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
+                            const midiBlobURL = await playbackManager.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
                                 currentXML,
                                 sequenceDuration,
                                 bpmControl
                             );
+                            downloadButton.revokeBlobURL();
+                            downloadButton.targetURL = midiBlobURL;
+
+                            enableChanges();
+                            resolve();
                         },
                         (err) => {log.error(err); enableChanges()}
                     );
@@ -772,6 +779,11 @@ async function render(configuration=defaultConfiguration) {
             createWavInput(() => loadMusicXMLandMidi(sheetPlaybackManager, osmd, serverUrl, 'get-musicxml'))
     }});
 
+    $(() => {
+        let bottomControlsGridElem = document.getElementById('bottom-controls')
+        downloadButton = new DownloadButton(bottomControlsGridElem,
+            configuration);
+    });
 
     $(() => {
         LinkClient.kill();
