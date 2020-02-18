@@ -406,13 +406,20 @@ export class eOSMD extends OpenSheetMusicDisplay {
 export class Spectrogram {
     protected resizeTimeoutDuration: number = 10;
     protected resizeTimeout: NodeJS.Timeout;
-    public container: HTMLElement;
+    readonly container: HTMLElement;
+    readonly interfaceContainer: HTMLElement;
     private sequencer = null;
 
     constructor(container: HTMLElement, options: object = {},
             boxDurations_quarters: number[],
             copyTimecontainerContent: (origin: HTMLElement, target: HTMLElement) => void) {
         this.container = container;
+
+        // necessary to handle 'busy' state cursor change and pointer events disabling
+        this.interfaceContainer = document.createElement('div');
+        this.interfaceContainer.id = this.container.id + '-interface-container';
+        this.container.appendChild(this.interfaceContainer);
+
         this._boxDurations_quarters = boxDurations_quarters;
         this.copyTimecontainerContent = copyTimecontainerContent;
 
@@ -437,8 +444,9 @@ export class Spectrogram {
         return this._boxDurations_quarters;
     }
 
-    registerCallback(callback) {
+    registerCallback(callback: (ev: any) => void) {
         this.sequencer.on('change', callback);
+        this.interfaceContainer.addEventListener('click', callback);
     }
 
     setPosition(timePosition: number): void {
@@ -481,7 +489,7 @@ export class Spectrogram {
             const width: number = spectrogramImageElem.clientWidth;
             const height: number = spectrogramImageElem.clientHeight;
 
-            this.sequencer = new Nexus.Sequencer(this.container.id, {
+            this.sequencer = new Nexus.Sequencer(this.interfaceContainer.id, {
                 'size': [width, height],
                 'mode': 'toggle',
                 'rows': numRows,

@@ -42,6 +42,7 @@ $chords-font-stack: 'Boogaloo', cursive;
     &.active {
         opacity: 0.1;
 
+        // TODO(theis): clean-up, remove redundant .available class, only keep .busy
         &.available {
             pointer-events: auto;
             &:hover{
@@ -75,7 +76,7 @@ $chords-font-stack: 'Boogaloo', cursive;
                 opacity: 0.3;
             }
         }
-        
+
         &.dragover {
             // background-color: purple;
             opacity: 0.3;
