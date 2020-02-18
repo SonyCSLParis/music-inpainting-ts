@@ -617,6 +617,80 @@ async function render(configuration=defaultConfiguration) {
         })
     };
 
+    function dropHandler(ev: DragEvent) {
+        console.log('File(s) dropped');
+
+        // Prevent default behavior (Prevent file from being opened)
+        ev.preventDefault();
+
+        if (ev.dataTransfer.items) {
+            // Use DataTransferItemList interface to access the file(s)
+            for (var i = 0; i < ev.dataTransfer.items.length; i++) {
+            // If dropped items aren't files, reject them
+            if (ev.dataTransfer.items[i].kind === 'file') {
+                var file = ev.dataTransfer.items[i].getAsFile();
+                console.log('... file[' + i + '].name = ' + file.name);
+                const generationParameters = (
+                    '?pitch=' + pitchControl.value.toString()
+                    + '&instrument_family_str=' + instrumentSelect.value);
+                sendAudio(file, spectrogramPlaybackManager, serverUrl,
+                    'analyze-audio' + generationParameters);
+                return  // only send the first file
+            }
+            }
+        } else {
+            // Use DataTransfer interface to access the file(s)
+            for (var i = 0; i < ev.dataTransfer.files.length; i++) {
+                console.log('... file[' + i + '].name = ' + ev.dataTransfer.files[i].name);
+            }
+        }
+    };
+
+    function sendAudio(audioBlob: Blob, spectrogramPlaybackManager: SpectrogramPlaybackManager,
+        serverURL: string, generationCommand: string) {
+    return new Promise((resolve, _) => {
+        disableChanges();
+
+        let payload_object = {};
+
+        let form = new FormData();
+        form.append('audio', audioBlob);
+
+        $.post({
+            url: url.resolve(serverURL, generationCommand),
+            data: form,
+            contentType: false,
+            dataType: 'json',
+            processData: false,
+            success: (jsonResponse: {}) => {
+                const newCodes_top = jsonResponse['top_code']
+                const newCodes_bottom = jsonResponse['bottom_code']
+                const newConditioning_top = loadNewMap(
+                    jsonResponse['top_conditioning'])
+                const newConditioning_bottom = loadNewMap(
+                    jsonResponse['bottom_conditioning'])
+
+                const audioPromise = getAudioRequest(spectrogramPlaybackManager, serverURL,
+                    newCodes_top, newCodes_bottom);
+                const spectrogramImagePromise = getSpectrogramImageRequest(
+                    spectrogramPlaybackManager, serverURL, newCodes_top, newCodes_bottom);
+
+                Promise.all([audioPromise, spectrogramImagePromise]).then(() => {
+                    currentCodes_top = newCodes_top;
+                    currentCodes_bottom = newCodes_bottom;
+                    currentConditioning_top = newConditioning_top;
+                    currentConditioning_bottom = newConditioning_bottom;
+
+                    enableChanges();
+                    resolve();
+                });
+            }
+        }).done(() => {
+        })
+
+    })
+};
+
     function getAudioRequest(spectrogramPlaybackManager: SpectrogramPlaybackManager,
             serverURL: string, top_code: number[][], bottom_code: number[][]) {
         return new Promise((resolve, _) => {
@@ -828,6 +902,17 @@ async function render(configuration=defaultConfiguration) {
         }
         );
     }
+
+    $(() => {
+        // disable drop events on whole window
+        window.addEventListener("dragover", function(e) {
+            e.preventDefault(); }, false);
+        window.addEventListener("drop", function(e) {
+            e.preventDefault();}, false);
+
+        // register file drop handler
+        document.body.addEventListener('drop', dropHandler);
+    })
 }
 
 $(() => {
