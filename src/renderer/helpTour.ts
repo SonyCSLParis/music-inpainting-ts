@@ -23,14 +23,16 @@ function makeHTMLContent(german: string, english: string) {
 // TODO contents should depend on AnnotationBox type used
 const tripContents: object[] = [
         // div[id$='-note-0-0']
-        { sel: "#whole-note-0-0-common",
-          content: makeHTMLContent(noteboxHelp_german, noteboxHelp_english),
-          position : "e",
+        {
+            sel: "#whole-note-0-0-common",
+            content: makeHTMLContent(noteboxHelp_german, noteboxHelp_english),
+            position : "e",
             // expose: true
         },
-        { sel: "#quarter-note-1-3-common-Fermata",
-          content: makeHTMLContent(fermataboxHelp_german, fermataboxHelp_english),
-          position : "s",
+        {
+            sel: "#quarter-note-1-3-common-Fermata",
+            content: makeHTMLContent(fermataboxHelp_german, fermataboxHelp_english),
+            position : "s",
             // expose: true,
         },
         // { sel: '#app-title', content: "Press play to listen to the generated music!",
@@ -56,7 +58,7 @@ const trip = new Trip(tripContents,
         showNavigation : true,
         // showCloseBox : true,
         delay : 10000,
-  }
+    }
 );
 
 let tripLoopInterval: any;
@@ -90,22 +92,22 @@ function outsideClickListener(event) {
     }
 };
 
- function initHideOnClickOutside() {
-     // Attach an event listener to the whole document that detects clicks
-     // out of the containing div and closes the selector in that case
-     // Bind this callback when the selector is activated and unbind it when
-     // it is closed
+function initHideOnClickOutside() {
+    // Attach an event listener to the whole document that detects clicks
+    // out of the containing div and closes the selector in that case
+    // Bind this callback when the selector is activated and unbind it when
+    // it is closed
 
-     // must add a delay so that the initial click is
-     // setTimeout(() => {
+    // must add a delay so that the initial click is
+    // setTimeout(() => {
     document.addEventListener('click', outsideClickListener);
-     // },
-     // 100);
- };
+    // },
+    // 100);
+};
 
- function removeClickListener() {
-     document.removeEventListener('click', outsideClickListener)
- };
+function removeClickListener() {
+    document.removeEventListener('click', outsideClickListener)
+};
 
 export function render(containerElement: HTMLElement) {
     let helpElem: HTMLAnchorElement = document.createElement('a');
@@ -130,7 +132,7 @@ export function registerIdleStateDetector(): void {
     });
 
     activityDetector.on('idle', () => {
-    	console.log('The user is not interacting with the page');
+        console.log('The user is not interacting with the page');
         startTripLoop();
     });
 
