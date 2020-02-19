@@ -267,7 +267,8 @@ export class SheetPlaybackManager extends PlaybackManager {
                 // decode asynchronously
                 request.addEventListener('load', () => {
                     if (request.readyState === 4 && request.status === 200) {
-                        const blob = new Blob([request.response]);
+                        const blob = new Blob([request.response],
+                            {type: 'audio/x-midi'});
                         const blobURL: string = URL.createObjectURL(blob);
                         success([MidiConvert.parse(request.response), blobURL])
                     } else {
