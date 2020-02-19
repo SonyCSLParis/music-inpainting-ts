@@ -266,8 +266,9 @@ export class SheetPlaybackManager extends PlaybackManager {
                 request.responseType = 'arraybuffer'
                 // decode asynchronously
                 request.addEventListener('load', () => {
-                    if (request.readyState === 4 && request.status === 200){
-                        let blobURL: string = URL.createObjectURL(request.response);
+                    if (request.readyState === 4 && request.status === 200) {
+                        const blob = new Blob([request.response]);
+                        const blobURL: string = URL.createObjectURL(blob);
                         success([MidiConvert.parse(request.response), blobURL])
                     } else {
                         fail(request.status)
@@ -288,7 +289,6 @@ export class SheetPlaybackManager extends PlaybackManager {
         $(document).ajaxError((error) => console.log(error));
 
         const midiBlobURL = this.midiRequestWithData(serverURL, payload, 'POST').then(([midi, blobURL])  => {
-            console.log([midi, blobURL])
             for (let midiPartIndex=0, numMidiParts=this.midiParts.length;
                 midiPartIndex < numMidiParts; midiPartIndex++) {
                     let midiPart = this.midiParts.pop();
