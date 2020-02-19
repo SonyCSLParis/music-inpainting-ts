@@ -120,7 +120,7 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
 
     // Quick-and-dirty automatic phase-locking to Ableton Link
     protected scheduleAutomaticResync() {
-        new Tone.Loop(this.synchronizeToLink, '3m').start('16n');
+        new Tone.Loop(() => {this.synchronizeToLink()}, '3m').start('16n');
     };
 };
 

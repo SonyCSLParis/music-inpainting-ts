@@ -889,7 +889,8 @@ async function render(configuration=defaultConfiguration) {
             MidiOut.render(configuration["use_chords_instrument"]);
 
             // Add manual Link-Sync button
-            PlaybackCommands.renderSyncButton(playbackManager);
+            const bottomControlsGridElem = document.getElementById('bottom-controls')
+            PlaybackCommands.renderSyncButton(bottomControlsGridElem);
         }}
     );
 
