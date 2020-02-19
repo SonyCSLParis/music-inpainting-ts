@@ -1,3 +1,5 @@
+// <reference path='./jquery-exists.d.ts'/>
+
 import { PlaybackManager } from './playback';
 
 import * as Tone from 'tone';
@@ -16,6 +18,10 @@ import { BPMControl } from './numberControl';
 import { eOSMD } from './locator';
 
 let scrollElementSelector: string = '.simplebar-content';
+
+$.fn.exists = function() {
+    return this.length !== 0;
+}
 
 function getTimingOffset(){
     return performance.now() - Tone.now() * 1000;
