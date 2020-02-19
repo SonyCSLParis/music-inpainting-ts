@@ -8,7 +8,7 @@ export class DownloadButton {
     readonly downloadElem: HTMLAnchorElement;
     protected readonly interface;  // Nexus.TextButton;
 
-    constructor(parent: HTMLElement, configuration: {}) {
+    constructor(parent: HTMLElement, configuration: {}, defaultFilename: string = '') {
         this.parent = parent;
 
         this.container = document.createElement('control-item');
@@ -18,7 +18,7 @@ export class DownloadButton {
         // create invisible anchor element to handle download logic
         this.downloadElem = document.createElement('a');
         this.downloadElem.id = 'download-button';
-        this.downloadElem.setAttribute('download', '');
+        this.downloadElem.setAttribute('download', defaultFilename);
         this.downloadElem.setAttribute('visible', 'false');
         this.container.appendChild(this.downloadElem);
 
@@ -51,6 +51,10 @@ export class DownloadButton {
 
     get targetURL(): string {
         return this.downloadElem.href;
+    }
+
+    set filename(newFilename: string) {
+        this.downloadElem.setAttribute('download', newFilename);
     }
 
     revokeBlobURL(): void {

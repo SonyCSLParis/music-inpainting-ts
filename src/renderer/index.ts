@@ -812,6 +812,7 @@ async function render(configuration=defaultConfiguration) {
                             );
                             downloadButton.revokeBlobURL();
                             downloadButton.targetURL = midiBlobURL;
+                            downloadButton.filename = 'deepsheet.mid';
 
                             enableChanges();
                             resolve();
