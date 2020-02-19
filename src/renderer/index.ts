@@ -281,6 +281,7 @@ async function render(configuration=defaultConfiguration) {
                 // TODO(theis): check proper way of enforcing subtype
                 sheetPlaybackManager = new SheetPlaybackManager();
                 playbackManager = sheetPlaybackManager;
+                PlaybackCommands.setPlaybackManager(sheetPlaybackManager);
 
                 if (configuration['use_chords_instrument']) {
                 sheetPlaybackManager.scheduleChordsPlayer(osmd,
@@ -314,6 +315,7 @@ async function render(configuration=defaultConfiguration) {
             spectrogramPlaybackManager = new SpectrogramPlaybackManager(4.,
                 spectrogram);
             playbackManager = spectrogramPlaybackManager;
+            PlaybackCommands.setPlaybackManager(spectrogramPlaybackManager);
 
             vqvaeLayerSelect.value = 'top-brush';  // trigger correct rendering of the spectrogram grid
             const sendCodesWithRequest = false;
@@ -434,14 +436,16 @@ async function render(configuration=defaultConfiguration) {
     };
 
     $(() => {
-        let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
-        playbuttonContainerElem.id = 'play-button';
+        $(() => {
+            let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
+            playbuttonContainerElem.id = 'play-button';
 
-        bottomControlsGridElem.appendChild(playbuttonContainerElem);
+            bottomControlsGridElem.appendChild(playbuttonContainerElem);
 
-        ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
+            ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
 
-        PlaybackCommands.render(playbuttonContainerElem, playbackManager);
+            PlaybackCommands.render(playbuttonContainerElem);
+        });
     });
 
 
