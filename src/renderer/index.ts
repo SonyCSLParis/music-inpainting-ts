@@ -213,31 +213,31 @@ async function render(configuration=defaultConfiguration) {
         let mainPanel = <HTMLElement>document.createElement("div");
         mainPanel.id = 'main-panel';
         mainPanel.classList.add('loading');
+        if (configuration['osmd']) {
+            mainPanel.setAttribute('data-simplebar', "");
+            mainPanel.setAttribute('data-simplebar-auto-hide', "false");
+        }
         document.body.appendChild(mainPanel);
 
         let spinnerElem = insertLoadingSpinner(mainPanel);
 
         if (configuration['osmd']) {
-            mainPanel.setAttribute('data-simplebar', "");
-            mainPanel.setAttribute('data-simplebar-auto-hide', "false");
             let allowOnlyOneFermata: boolean = configuration['allow_only_one_fermata'];
             /*
             * Create a container element for OpenSheetMusicDisplay...
             */
+            let osmdContainerContainer = <HTMLElement>document.createElement("div");
+            osmdContainerContainer.id = 'osmd-container-container';
+            mainPanel.appendChild(osmdContainerContainer);
             let osmdContainer: HTMLElement;
+            osmdContainer = <HTMLElement>document.createElement("div");
+            osmdContainer.id = 'osmd-container';
+            /*
+            * ... and attach it to our HTML document's body. The document itself is a HTML5
+            * stub created by Webpack, so you won't find any actual .html sources.
+            */
+            osmdContainerContainer.appendChild(osmdContainer);
             $(() => {
-                let osmdContainerContainer = <HTMLElement>document.createElement("div");
-                osmdContainerContainer.id = 'osmd-container-container';
-                mainPanel.appendChild(osmdContainerContainer);
-                osmdContainer = <HTMLElement>document.createElement("div");
-                osmdContainer.id = 'osmd-container';
-                /*
-                * ... and attach it to our HTML document's body. The document itself is a HTML5
-                * stub created by Webpack, so you won't find any actual .html sources.
-                */
-                osmdContainerContainer.appendChild(osmdContainer);
-
-
                 /*
                 * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
                 * the container we've created in the steps before. The second parameter tells OSMD
@@ -481,7 +481,7 @@ async function render(configuration=defaultConfiguration) {
     }
 
 
-    function onClickTimestampBoxFactory(osmd: eOSMD, timeStart: Fraction, timeEnd: Fraction) {
+    function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
         // FIXME(theis) hardcoded 4/4 time-signature
         const [timeRangeStart_quarter, timeRangeEnd_quarter] = ([timeStart, timeEnd].map(
             timeFrac => Math.round(4 * timeFrac.RealValue)))
