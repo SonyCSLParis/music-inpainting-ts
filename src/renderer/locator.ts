@@ -565,8 +565,15 @@ function makeOndropTimecontainer_handler(copyTimecontainerContent: (
     }
 }
 
-export function renderZoomControls(containerElement: HTMLElement,
-    osmd_target: eOSMD): void {
+// TODO replace this with using a Promise<eOSMD> in the renderZoomControl function
+let zoomTargetOSMD;
+export function registerZoomTarget(osmd: eOSMD) {
+    zoomTargetOSMD = osmd;
+};
+
+export async function renderZoomControls(containerElement: HTMLElement,
+    osmd_target_promise: Promise<eOSMD>): Promise<void> {
+    // let osmd_target = await osmd_target_promise;
     let zoomOutButton = document.createElement('i');
     let zoomInButton = document.createElement('i');
     containerElement.appendChild(zoomOutButton);
@@ -588,13 +595,13 @@ export function renderZoomControls(containerElement: HTMLElement,
     });
 
     zoomOutButton.addEventListener('click', function() {
-        osmd_target.zoom /= 1.2;
-        osmd_target.render();
-        log.info(`OSMD zoom level now: ${osmd_target.zoom}`);
+        zoomTargetOSMD.zoom /= 1.2;
+        zoomTargetOSMD.render();
+        log.info(`OSMD zoom level now: ${zoomTargetOSMD.zoom}`);
     })
     zoomInButton.addEventListener('click', function() {
-        osmd_target.zoom *= 1.2;
-        osmd_target.render();
-        log.info(`OSMD zoom level now: ${osmd_target.zoom}`);
+        zoomTargetOSMD.zoom *= 1.2;
+        zoomTargetOSMD.render();
+        log.info(`OSMD zoom level now: ${zoomTargetOSMD.zoom}`);
     })
 }

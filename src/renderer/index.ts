@@ -1,5 +1,5 @@
 // import * as nipplejs from "nipplejs";
-import { eOSMD, renderZoomControls, Spectrogram } from './locator';
+import { eOSMD, renderZoomControls, Spectrogram, registerZoomTarget } from './locator';
 import { Fraction } from 'opensheetmusicdisplay';
 import * as $ from "jquery";
 import * as WebMidi from 'webmidi';
@@ -282,6 +282,7 @@ async function render(configuration=defaultConfiguration) {
                 sheetPlaybackManager = new SheetPlaybackManager();
                 playbackManager = sheetPlaybackManager;
                 PlaybackCommands.setPlaybackManager(sheetPlaybackManager);
+                registerZoomTarget(osmd);
 
                 if (configuration['use_chords_instrument']) {
                 sheetPlaybackManager.scheduleChordsPlayer(osmd,
@@ -904,7 +905,7 @@ async function render(configuration=defaultConfiguration) {
             const mainPanel = document.getElementById(
                 "main-panel");
             mainPanel.appendChild(zoomControlsGridElem);
-            renderZoomControls(zoomControlsGridElem, osmd);
+            renderZoomControls(zoomControlsGridElem, new Promise((resolve) => {resolve(osmd)}));
         }
         );
     }
