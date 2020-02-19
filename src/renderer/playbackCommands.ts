@@ -9,7 +9,13 @@ let Nexus = require('./nexusColored');
 
 import { PlaybackManager } from './playback';
 
-export function render(containerElement: HTMLElement, playbackManager: PlaybackManager): void{
+let playbackManager: PlaybackManager;
+
+export function setPlaybackManager(newPlaybackManager: PlaybackManager): void {
+    playbackManager = newPlaybackManager
+}
+
+export function render(containerElement: HTMLElement): void{
     async function playbackCallback(play: boolean) {
         if (play) {
             await playbackManager.play();
