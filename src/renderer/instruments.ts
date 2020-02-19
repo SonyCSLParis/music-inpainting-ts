@@ -23,7 +23,7 @@ let silentInstrument = new Tone.Instrument()
 Piano.prototype.triggerAttackRelease = function() {return this};
 Piano.prototype.triggerRelease = function() {return this};
 
-let piano = new Piano([21, 108], 1);
+let piano = new Piano([21, 108], 1, {context: Tone.context});
 piano.setVolume('release', -25);
 piano.setVolume('pedal', -15);
 
