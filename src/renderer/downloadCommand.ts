@@ -1,12 +1,12 @@
 import { throws, AssertionError } from "assert";
 
-let Nexus = require('./nexusColored');
+let Nexus: any = require('./nexusColored');
 
 export class DownloadButton {
     protected readonly parent: HTMLElement;
     protected readonly container: HTMLElement;
     readonly downloadElem: HTMLAnchorElement;
-    protected readonly interface: Nexus.TextButton;
+    protected readonly interface;  // Nexus.TextButton;
 
     constructor(parent: HTMLElement, configuration: {}) {
         this.parent = parent;
