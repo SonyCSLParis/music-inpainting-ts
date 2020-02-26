@@ -116,4 +116,11 @@ export class BPMControl extends NumberControl {
         }
     };
 
+    // must also subclass getter if subclassing setter,
+    // see https://stackoverflow.com/a/28951055
+    // otherwise return value is `undefined`
+    get value(): number {
+        return super.value
+    }
+
 }
