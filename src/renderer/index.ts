@@ -1,5 +1,5 @@
 // import * as nipplejs from "nipplejs";
-import { eOSMD, renderZoomControls, Spectrogram } from './locator';
+import { eOSMD, renderZoomControls, Spectrogram, registerZoomTarget } from './locator';
 import { Fraction } from 'opensheetmusicdisplay';
 import * as $ from "jquery";
 import 'jquery-awesome-cursor';
@@ -301,6 +301,8 @@ async function render(configuration=defaultConfiguration) {
                 // TODO(theis): check proper way of enforcing subtype
                 sheetPlaybackManager = new SheetPlaybackManager();
                 playbackManager = sheetPlaybackManager;
+                PlaybackCommands.setPlaybackManager(sheetPlaybackManager);
+                registerZoomTarget(osmd);
 
                 if (configuration['use_chords_instrument']) {
                 sheetPlaybackManager.scheduleChordsPlayer(osmd,
@@ -334,6 +336,7 @@ async function render(configuration=defaultConfiguration) {
             spectrogramPlaybackManager = new SpectrogramPlaybackManager(4.,
                 spectrogram);
             playbackManager = spectrogramPlaybackManager;
+            PlaybackCommands.setPlaybackManager(spectrogramPlaybackManager);
 
             vqvaeLayerSelect.value = 'top-brush';  // trigger correct rendering of the spectrogram grid
             const sendCodesWithRequest = false;
@@ -454,14 +457,16 @@ async function render(configuration=defaultConfiguration) {
     };
 
     $(() => {
-        let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
-        playbuttonContainerElem.id = 'play-button';
+        $(() => {
+            let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
+            playbuttonContainerElem.id = 'play-button';
 
-        bottomControlsGridElem.appendChild(playbuttonContainerElem);
+            bottomControlsGridElem.appendChild(playbuttonContainerElem);
 
-        ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
+            ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
 
-        PlaybackCommands.render(playbuttonContainerElem, playbackManager);
+            PlaybackCommands.render(playbuttonContainerElem);
+        });
     });
 
 
@@ -828,6 +833,7 @@ async function render(configuration=defaultConfiguration) {
                             );
                             downloadButton.revokeBlobURL();
                             downloadButton.targetURL = midiBlobURL;
+                            downloadButton.filename = 'deepsheet.mid';
 
                             enableChanges();
                             resolve();
@@ -905,7 +911,8 @@ async function render(configuration=defaultConfiguration) {
             MidiOut.render(configuration["use_chords_instrument"]);
 
             // Add manual Link-Sync button
-            PlaybackCommands.renderSyncButton(playbackManager);
+            const bottomControlsGridElem = document.getElementById('bottom-controls')
+            PlaybackCommands.renderSyncButton(bottomControlsGridElem);
         }}
     );
 
@@ -918,7 +925,7 @@ async function render(configuration=defaultConfiguration) {
             const mainPanel = document.getElementById(
                 "main-panel");
             mainPanel.appendChild(zoomControlsGridElem);
-            renderZoomControls(zoomControlsGridElem, osmd);
+            renderZoomControls(zoomControlsGridElem, new Promise((resolve) => {resolve(osmd)}));
         }
         );
     }

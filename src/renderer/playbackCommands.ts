@@ -9,7 +9,13 @@ let Nexus = require('./nexusColored');
 
 import { PlaybackManager } from './playback';
 
-export function render(containerElement: HTMLElement, playbackManager: PlaybackManager): void{
+let playbackManager: PlaybackManager;
+
+export function setPlaybackManager(newPlaybackManager: PlaybackManager): void {
+    playbackManager = newPlaybackManager
+}
+
+export function render(containerElement: HTMLElement): void{
     async function playbackCallback(play: boolean) {
         if (play) {
             await playbackManager.play();
@@ -104,11 +110,10 @@ export function render(containerElement: HTMLElement, playbackManager: PlaybackM
     }}, );
 };
 
-export function renderSyncButton(playbackManager: PlaybackManager) {
-    let topControlsGridElem = document.getElementById('bottom-controls')
+export function renderSyncButton(container: HTMLElement) {
     let linkbuttonElem: HTMLElement = document.createElement('control-item');
     linkbuttonElem.id = 'sync-button'
-    topControlsGridElem.appendChild(linkbuttonElem);
+    container.appendChild(linkbuttonElem);
 
     let syncbutton = new Nexus.TextButton('#sync-button',{
         'size': [150,50],
@@ -116,7 +121,7 @@ export function renderSyncButton(playbackManager: PlaybackManager) {
         'text': 'Sync'
     });
 
-    syncbutton.on('change', (enable) => {
+    syncbutton.on('change', (enable: Boolean) => {
         if (enable) {
             // Playback.getPlayNoteByMidiChannel(1, false)('', {duration: '4n', 'name': 'C5', 'midi': 60, velocity: 0.8})
             playbackManager.synchronizeToLink();
