@@ -2,6 +2,7 @@
 import { eOSMD, renderZoomControls, Spectrogram } from './locator';
 import { Fraction } from 'opensheetmusicdisplay';
 import * as $ from "jquery";
+import 'jquery-awesome-cursor';
 import * as WebMidi from 'webmidi';
 import * as MidiConvert from "midiconvert";
 import * as Tone from 'tone';
@@ -142,6 +143,25 @@ async function render(configuration=defaultConfiguration) {
                 let newLayer: string = <string>this.value.split('-')[0];
                 let [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(newLayer);
                 spectrogramPlaybackManager.spectrogramLocator.render(newNumRows, newNumColumns);
+
+                // change cursor
+                switch ( this.value ) {
+                    case 'bottom-brush': {
+                        // $(spectrogramPlaybackManager.spectrogramLocator.container.id
+                        //     ).awesomeCursor('paint-brush');
+                        break;
+                    }
+                    case 'top-brush': {
+                        // $(spectrogramPlaybackManager.spectrogramLocator.container.id
+                        //     ).awesomeCursor('paint-roller')
+                        break;
+                    }
+                    case 'eraser-top': {
+                        // spectrogramPlaybackManager.spectrogramLocator.container.('')
+                        // $('spectrogram-image').attr('eraser');
+                        break;
+                    }
+                }
             };
 
             vqvaeLayerSelect = new CycleSelect(granularitySelectContainerElem,
@@ -509,7 +529,7 @@ async function render(configuration=defaultConfiguration) {
         $('.notebox').toggleClass('busy', state);
         $('.notebox').toggleClass('available', !state);
         $('#spectrogram-container').toggleClass('busy', state);
-        }
+    }
 
 
     function blockall(e) {
