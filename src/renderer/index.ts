@@ -506,15 +506,14 @@ async function render(configuration=defaultConfiguration) {
                     serverUrl, argsGenerationUrl, sendCodesWithRequest);
                 });
         }
-
     }
 
-
     function toggleBusyClass(state: boolean): void {
+        $('body').toggleClass('busy', state);
         $('.notebox').toggleClass('busy', state);
         $('.notebox').toggleClass('available', !state);
         $('#spectrogram-container').toggleClass('busy', state);
-        }
+    }
 
 
     function blockall(e) {

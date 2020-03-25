@@ -48,6 +48,10 @@ body {
     -webkit-tap-highlight-color: transparent;
 
     user-select: none;
+
+    &.busy {
+        cursor: wait !important;
+    }
 }
 
 div[nexus-ui] select, div[nexus-ui] input {
