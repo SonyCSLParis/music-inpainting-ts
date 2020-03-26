@@ -444,9 +444,17 @@ export class Spectrogram {
         return this._boxDurations_quarters;
     }
 
-    registerCallback(callback: (ev: any) => void) {
-        this.sequencer.on('change', callback);
-        this.interfaceContainer.addEventListener('click', callback);
+    public registerCallback(callback: (ev: any) => void) {
+        let self = this;
+        let registerReleaseCallback = () => {
+            // call the actual callback on pointer release to allow for click and drag
+            document.addEventListener('pointerup',
+                (v) => { if ( !this.isEmpty() ) {callback(v)}},
+                {'once': true}  // eventListener removed after being called
+            );
+        }
+
+        this.interfaceContainer.addEventListener('pointerdown', registerReleaseCallback);
     }
 
     setPosition(timePosition: number): void {
@@ -462,13 +470,20 @@ export class Spectrogram {
     };
 
     public render(numRows: number, numColumns: number, onclickFactory=undefined): void {
-        // this.updateContainerWidth(false);
         if ( this.sequencer !== null ) {
             this.sequencer.destroy();}
         this.drawTimestampBoxes(onclickFactory, numRows, numColumns);
         this.container.setAttribute('sequenceDuration_quarters',
             this.sequenceDuration_quarters.toString());
-        // this.updateContainerWidth(true);
+    }
+
+    public clear(): void {
+        this.sequencer.matrix.populate.all(0);
+    }
+
+    public isEmpty(): boolean {
+        return this.mask.reduce(
+            (acc, val) => acc + val.reduce((acc, val) => acc+val, 0), 0) == 0
     }
 
     private zoom: number = 1;
@@ -479,6 +494,7 @@ export class Spectrogram {
     };
 
     public get sequenceDuration_quarters(): number {
+        // TODO(theis): check this, does it make any sense to have this attribute?
         return 2;
     }
 
