@@ -394,7 +394,7 @@ async function render(configuration=defaultConfiguration) {
                         + '&temperature=1'
                         + '&eraser_amplitude=0.1');
                     const split_tool_select = vqvaeLayerSelect.value.split('-')
-                    let command;
+                    let command: string;
                     switch ( split_tool_select.length ) {
                         case 1: {  throw EvalError; };
                         case 2: {
@@ -428,7 +428,7 @@ async function render(configuration=defaultConfiguration) {
                     'text': 'Regenerate',
                 });
 
-                regeneratebutton.on('change', (enable) => {
+                regeneratebutton.on('change', (enable: boolean) => {
                     if ( enable ) {
                         regenerationCallback(enable);
                     }});
@@ -543,13 +543,14 @@ async function render(configuration=defaultConfiguration) {
     // TODO don't create globals like this
     const serializer = new XMLSerializer();
     const parser = new DOMParser();
-    let currentCodes_top: Int32Array;
-    let currentCodes_bottom: Int32Array;
+    let currentCodes_top: number[][];
+    let currentCodes_bottom: number[][];
     let currentConditioning_top: Map<string, (number|string)[][]>;
     let currentConditioning_bottom: Map<string, (number|string)[][]>;
     let currentXML: XMLDocument;
 
-    function loadNewMap(newConditioningMap): Map<string, (number|string)[][]> {
+    function loadNewMap(newConditioningMap: Map<string, (number|string)[][]>
+            ): Map<string, (number|string)[][]> {
         let conditioning_map = new Map();
         conditioning_map.set('pitch', newConditioningMap['pitch']);
         conditioning_map.set('instrument_family_str', newConditioningMap['instrument_family_str']);
@@ -563,76 +564,117 @@ async function render(configuration=defaultConfiguration) {
         };
     };
 
+    async function updateAudio(audioBlob: Blob): Promise<void> {
+        // clear previous blob URL
+        downloadButton.revokeBlobURL();
+
+        // allocate new local blobURL for the received audio
+        const blobUrl = URL.createObjectURL(audioBlob);
+
+        return spectrogramPlaybackManager.loadAudio(blobUrl).then(() => {
+            log.debug("Tone.js Player audio succesfully loaded!");
+            downloadButton.targetURL = blobUrl;
+        });
+    };
+
+    async function updateSpectrogramImage(imageBlob: Blob): Promise<void> {
+        return new Promise((resolve, _) => {
+            const blobUrl = URL.createObjectURL(imageBlob);
+            const spectrogramImageElem: HTMLImageElement = (
+                <HTMLImageElement>document.getElementById('spectrogram-image'));
+            spectrogramImageElem.src = blobUrl;
+            $(() => {URL.revokeObjectURL(blobUrl); resolve();})
+        });
+    };
+
+    async function updateAudioAndImage(audioPromise: Promise<Blob>,
+            spectrogramImagePromise: Promise<Blob>): Promise<void> {
+        return await Promise.all([audioPromise, spectrogramImagePromise]).then(
+            // unpack the received results and update the interface
+            ([audioBlob, spectrogramImageBlob]: [Blob, Blob]) => {
+                updateAudio(audioBlob);
+                updateSpectrogramImage(spectrogramImageBlob);
+            }
+        );
+    };
+
     /**
      * Load a MusicXml file via xhttp request, and display its contents.
      */
-    function loadAudioAndSpectrogram(spectrogramPlaybackManager: SpectrogramPlaybackManager,
+    async function loadAudioAndSpectrogram(spectrogramPlaybackManager: SpectrogramPlaybackManager,
             serverURL: string, generationCommand: string, sendCodesWithRequest: boolean,
-            mask: number[][] = null) {
-        return new Promise((resolve, _) => {
-            disableChanges();
+            mask: number[][] = null): Promise<void> {
+        disableChanges();
 
-            let payload_object = {};
+        let payload_object = {};
 
-            if (sendCodesWithRequest) {
-                payload_object['top_code'] = currentCodes_top;
-                payload_object['bottom_code'] = currentCodes_bottom;
-                payload_object['top_conditioning'] = mapToObject(
-                    currentConditioning_top);
-                payload_object['bottom_conditioning'] = mapToObject(
-                    currentConditioning_bottom);
-            }
-            if ( mask !== null ) {
-                // send the mask with low-frequencies first
-                payload_object['mask'] = mask.reverse();
-            };
+        if (sendCodesWithRequest) {
+            payload_object['top_code'] = currentCodes_top;
+            payload_object['bottom_code'] = currentCodes_bottom;
+            payload_object['top_conditioning'] = mapToObject(
+                currentConditioning_top);
+            payload_object['bottom_conditioning'] = mapToObject(
+                currentConditioning_bottom);
+        }
+        if ( mask !== null ) {
+            // send the mask with low-frequencies first
+            payload_object['mask'] = mask.reverse();
+        };
 
-            $.post({
+        let newCodes_top: number[][];
+        let newCodes_bottom: number[][];
+        let newConditioning_top: Map<string, (string | number)[][]>;
+        let newConditioning_bottom: Map<string, (string | number)[][]>;
+
+        try {
+            const jsonResponse = await $.post({
                 url: url.resolve(serverURL, generationCommand),
                 data: JSON.stringify(payload_object),
                 contentType: 'application/json',
                 dataType: 'json',
-                success: (jsonResponse: {}) => {
-                    const newCodes_top = jsonResponse['top_code']
-                    const newCodes_bottom = jsonResponse['bottom_code']
-                    const newConditioning_top = loadNewMap(
-                        jsonResponse['top_conditioning'])
-                    const newConditioning_bottom = loadNewMap(
-                        jsonResponse['bottom_conditioning'])
-
-                    const audioPromise = getAudioRequest(spectrogramPlaybackManager, serverURL,
-                        newCodes_top, newCodes_bottom);
-                    const spectrogramImagePromise = getSpectrogramImageRequest(
-                        spectrogramPlaybackManager, serverURL, newCodes_top, newCodes_bottom);
-
-                    Promise.all([audioPromise, spectrogramImagePromise]).then(() => {
-                        currentCodes_top = newCodes_top;
-                        currentCodes_bottom = newCodes_bottom;
-                        currentConditioning_top = newConditioning_top;
-                        currentConditioning_bottom = newConditioning_bottom;
-
-                        enableChanges();
-                        resolve();
-                    });
-                }
-            }).done(() => {
             })
 
-        })
+            newCodes_top = jsonResponse['top_code']
+            newCodes_bottom = jsonResponse['bottom_code']
+            newConditioning_top = loadNewMap(
+                jsonResponse['top_conditioning'])
+            newConditioning_bottom = loadNewMap(
+                jsonResponse['bottom_conditioning'])
+
+            const audioPromise = getAudioRequest(spectrogramPlaybackManager, serverURL,
+                newCodes_top, newCodes_bottom);
+            const spectrogramImagePromise = getSpectrogramImageRequest(
+                spectrogramPlaybackManager, serverURL, newCodes_top, newCodes_bottom);
+
+            await updateAudioAndImage(audioPromise, spectrogramImagePromise);
+        }
+        catch(e) {
+            console.log(e);
+            spectrogramPlaybackManager.spectrogramLocator.clear();
+            enableChanges();
+            return
+        }
+
+        currentCodes_top = newCodes_top;
+        currentCodes_bottom = newCodes_bottom;
+        currentConditioning_top = newConditioning_top;
+        currentConditioning_bottom = newConditioning_bottom;
+
+        spectrogramPlaybackManager.spectrogramLocator.clear();
+        enableChanges();
     };
 
-    function dropHandler(ev: DragEvent) {
-        console.log('File(s) dropped');
-
+    function dropHandler(e: DragEvent) {
         // Prevent default behavior (Prevent file from being opened)
-        ev.preventDefault();
+        e.preventDefault();
+        e.stopPropagation();
 
-        if (ev.dataTransfer.items) {
+        if (e.dataTransfer.items) {
             // Use DataTransferItemList interface to access the file(s)
-            for (var i = 0; i < ev.dataTransfer.items.length; i++) {
+            for (var i = 0; i < e.dataTransfer.items.length; i++) {
             // If dropped items aren't files, reject them
-            if (ev.dataTransfer.items[i].kind === 'file') {
-                var file = ev.dataTransfer.items[i].getAsFile();
+            if (e.dataTransfer.items[i].kind === 'file') {
+                var file = e.dataTransfer.items[i].getAsFile();
                 console.log('... file[' + i + '].name = ' + file.name);
                 const generationParameters = (
                     '?pitch=' + pitchControl.value.toString()
@@ -644,15 +686,14 @@ async function render(configuration=defaultConfiguration) {
             }
         } else {
             // Use DataTransfer interface to access the file(s)
-            for (var i = 0; i < ev.dataTransfer.files.length; i++) {
-                console.log('... file[' + i + '].name = ' + ev.dataTransfer.files[i].name);
+            for (var i = 0; i < e.dataTransfer.files.length; i++) {
+                console.log('... file[' + i + '].name = ' + e.dataTransfer.files[i].name);
             }
         }
     };
 
-    function sendAudio(audioBlob: Blob, spectrogramPlaybackManager: SpectrogramPlaybackManager,
-        serverURL: string, generationCommand: string) {
-    return new Promise((resolve, _) => {
+    async function sendAudio(audioBlob: Blob, spectrogramPlaybackManager: SpectrogramPlaybackManager,
+            serverURL: string, generationCommand: string) {
         disableChanges();
 
         let payload_object = {};
@@ -660,100 +701,82 @@ async function render(configuration=defaultConfiguration) {
         let form = new FormData();
         form.append('audio', audioBlob);
 
-        $.post({
-            url: url.resolve(serverURL, generationCommand),
-            data: form,
-            contentType: false,
-            dataType: 'json',
-            processData: false,
-            success: (jsonResponse: {}) => {
-                const newCodes_top = jsonResponse['top_code']
-                const newCodes_bottom = jsonResponse['bottom_code']
-                const newConditioning_top = loadNewMap(
-                    jsonResponse['top_conditioning'])
-                const newConditioning_bottom = loadNewMap(
-                    jsonResponse['bottom_conditioning'])
+        let newCodes_top: number[][];
+        let newCodes_bottom: number[][];
+        let newConditioning_top: Map<string, (string | number)[][]>;
+        let newConditioning_bottom: Map<string, (string | number)[][]>;
 
-                const audioPromise = getAudioRequest(spectrogramPlaybackManager, serverURL,
-                    newCodes_top, newCodes_bottom);
-                const spectrogramImagePromise = getSpectrogramImageRequest(
-                    spectrogramPlaybackManager, serverURL, newCodes_top, newCodes_bottom);
+        try {
+            const jsonResponse = await $.post({
+                url: url.resolve(serverURL, generationCommand),
+                data: form,
+                contentType: false,
+                dataType: 'json',
+                processData: false,
+            })
 
-                Promise.all([audioPromise, spectrogramImagePromise]).then(() => {
-                    currentCodes_top = newCodes_top;
-                    currentCodes_bottom = newCodes_bottom;
-                    currentConditioning_top = newConditioning_top;
-                    currentConditioning_bottom = newConditioning_bottom;
+            newCodes_top = jsonResponse['top_code']
+            newCodes_bottom = jsonResponse['bottom_code']
+            newConditioning_top = loadNewMap(
+                jsonResponse['top_conditioning'])
+            newConditioning_bottom = loadNewMap(
+                jsonResponse['bottom_conditioning'])
 
-                    enableChanges();
-                    resolve();
-                });
-            }
-        }).done(() => {
-        })
+            const audioPromise = getAudioRequest(spectrogramPlaybackManager, serverURL,
+                newCodes_top, newCodes_bottom);
+            const spectrogramImagePromise = getSpectrogramImageRequest(
+                spectrogramPlaybackManager, serverURL, newCodes_top, newCodes_bottom);
 
-    })
-};
+            await updateAudioAndImage(audioPromise, spectrogramImagePromise);
+        }
+        catch(e) {
+            console.log(e);
+            spectrogramPlaybackManager.spectrogramLocator.clear();
+            enableChanges();
+            return
+        }
 
-    function getAudioRequest(spectrogramPlaybackManager: SpectrogramPlaybackManager,
-            serverURL: string, top_code: number[][], bottom_code: number[][]) {
-        return new Promise((resolve, _) => {
-            let payload_object = {};
+        currentCodes_top = newCodes_top;
+        currentCodes_bottom = newCodes_bottom;
+        currentConditioning_top = newConditioning_top;
+        currentConditioning_bottom = newConditioning_bottom;
 
-            payload_object['top_code'] = top_code;
-            payload_object['bottom_code'] = bottom_code;
+        spectrogramPlaybackManager.spectrogramLocator.clear();
+        enableChanges();
+    };
 
-            const generationCommand: string = '/get-audio';
-            $.post({
+    async function getAudioRequest(spectrogramPlaybackManager: SpectrogramPlaybackManager,
+            serverURL: string, top_code: number[][], bottom_code: number[][]): Promise<Blob> {
+        let payload_object = {};
+        payload_object['top_code'] = top_code;
+        payload_object['bottom_code'] = bottom_code;
+
+        const generationCommand: string = '/get-audio';
+        return $.post({
                 url: url.resolve(serverURL, generationCommand),
                 data: JSON.stringify(payload_object),
                 xhrFields: {
                     responseType: 'blob'
                 },
-                contentType: 'application/json',
-                success: (blob: Blob) => {
-                    downloadButton.revokeBlobURL();
-
-                    const blobUrl = URL.createObjectURL(blob);
-                    spectrogramPlaybackManager.loadAudio(blobUrl).then(() => {
-                        log.debug("Tone.js Player audio succesfully loaded!");
-
-                        vqvaeLayerSelect.value = vqvaeLayerSelect.value;
-
-                        downloadButton.targetURL = blobUrl;
-                        resolve();
-                    });
-                }
-            }).done(() => {})
-        })
+                contentType: 'application/json'
+            })
     }
 
-    function getSpectrogramImageRequest(spectrogramPlaybackManager: SpectrogramPlaybackManager,
-            serverURL: string, top_code: number[][], bottom_code: number[][]) {
-        return new Promise((resolve, _) => {
-            let payload_object = {};
+    async function getSpectrogramImageRequest(spectrogramPlaybackManager: SpectrogramPlaybackManager,
+            serverURL: string, top_code: number[][], bottom_code: number[][]): Promise<Blob> {
+        let payload_object = {};
 
-            payload_object['top_code'] = top_code;
-            payload_object['bottom_code'] = bottom_code;
+        payload_object['top_code'] = top_code;
+        payload_object['bottom_code'] = bottom_code;
 
-            const generationCommand: string = '/get-spectrogram-image';
-            $.post({
-                url: url.resolve(serverURL, generationCommand),
-                data: JSON.stringify(payload_object),
-                xhrFields: {
-                    responseType: 'blob'
-                },
-                contentType: 'application/json',
-                success: (blob) => {
-                    const blobUrl = URL.createObjectURL(blob);
-                    const spectrogramImageElem: HTMLImageElement = (
-                        <HTMLImageElement>document.getElementById('spectrogram-image'));
-                    spectrogramImageElem.src = blobUrl;
-                    $(() => {URL.revokeObjectURL(blobUrl);})
-                    resolve();
-                }
-            }).done(() => {
-            })
+        const generationCommand: string = '/get-spectrogram-image';
+        return $.post({
+            url: url.resolve(serverURL, generationCommand),
+            data: JSON.stringify(payload_object),
+            xhrFields: {
+                responseType: 'blob'
+            },
+            contentType: 'application/json',
         })
     }
 
@@ -910,12 +933,6 @@ async function render(configuration=defaultConfiguration) {
     }
 
     $(() => {
-        // disable drop events on whole window
-        window.addEventListener("dragover", function(e) {
-            e.preventDefault(); }, false);
-        window.addEventListener("drop", function(e) {
-            e.preventDefault();}, false);
-
         // register file drop handler
         document.body.addEventListener('drop', dropHandler);
     })
@@ -928,5 +945,12 @@ $(() => {
     SplashScreen.render(render);
 });
 
+$(() => {
+    // disable drop events on whole window
+    window.addEventListener("dragover", function(e) {
+        e.preventDefault(); e.stopPropagation();}, false);
+    window.addEventListener("drop", function(e) {
+        e.preventDefault(); e.stopPropagation();}, false);
+})
 
 if (module.hot) { }
