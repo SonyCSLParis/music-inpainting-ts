@@ -6,6 +6,7 @@ module.exports = {
     plugins: [
         new webpack.DefinePlugin({
             'COMPILE_ELECTRON': true,
+            'SPECTROGRAM_ONLY': false,
             'DEFAULT_SERVER_IP': JSON.stringify('localhost')
         }),
 

@@ -9,6 +9,7 @@
     "start": "electron ./app/main.js",
     "link-osmd": "yarn link opensheetmusicdisplay",
     "build:web": "webpack --config webpack.web.js",
+    "build:notono_web": "webpack --config webpack.notono_web.js",
     "serve:web": "http-server ./web/dist",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
