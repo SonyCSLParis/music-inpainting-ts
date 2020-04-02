@@ -8,6 +8,7 @@ import '../common/styles/startupSplash.scss';
 
 // defined at compile-time via webpack.DefinePlugin
 declare var COMPILE_ELECTRON: boolean;
+declare var SPECTROGRAM_ONLY: boolean;
 declare var DEFAULT_SERVER_IP: string;
 
 // via https://stackoverflow.com/a/17632779/
@@ -91,81 +92,91 @@ export function render(renderPage: (configuration: object) => void): void {
         applicationModeSelectElem.appendChild(applicationModeOptionElem);
     }
 
-    let deepbachButtonElem: HTMLElement = document.createElement('div');
-    deepbachButtonElem.id = 'deepbach-configuration-button'
-    modeConfigElem.appendChild(deepbachButtonElem);
+    let deepbachbutton;
+    let deepfolkbutton;
+    let deepsheetbutton;
+    let spectrogrambutton;
 
-    let deepbachbutton = new Nexus.TextButton('#deepbach-configuration-button', {
-        'size': [150,50],
-        'state': true,
-        'text': 'Chorales',
-        'alternateText': 'Chorales'
-    });
+    if ( !SPECTROGRAM_ONLY ) {
+        let deepbachButtonElem: HTMLElement = document.createElement('div');
+        deepbachButtonElem.id = 'deepbach-configuration-button'
+        modeConfigElem.appendChild(deepbachButtonElem);
 
-    deepbachbutton.on('change', () => {
-        deepbachbutton.turnOn(false);
-        deepsheetbutton.turnOff(false);
-        deepfolkbutton.turnOff(false);
-        spectrogrambutton.turnOff(false);
-        applicationModeSelectElem.value = 'chorale';
-    });
+        deepbachbutton = new Nexus.TextButton('#deepbach-configuration-button', {
+            'size': [150,50],
+            'state': true,
+            'text': 'Chorales',
+            'alternateText': 'Chorales'
+        });
 
-    let deepsheetButtonElem: HTMLElement = document.createElement('div');
-    deepsheetButtonElem.id = 'deepsheet-configuration-button'
-    modeConfigElem.appendChild(deepsheetButtonElem);
+        deepbachbutton.on('change', () => {
+            deepbachbutton.turnOn(false);
+            deepsheetbutton.turnOff(false);
+            deepfolkbutton.turnOff(false);
+            spectrogrambutton.turnOff(false);
+            applicationModeSelectElem.value = 'chorale';
+        });
 
-    let deepsheetbutton = new Nexus.TextButton('#deepsheet-configuration-button', {
-        'size': [150,50],
-        'state': false,
-        'text': 'Leadsheets',
-        'alternateText': 'Leadsheets'
-    });
+        let deepsheetButtonElem: HTMLElement = document.createElement('div');
+        deepsheetButtonElem.id = 'deepsheet-configuration-button'
+        modeConfigElem.appendChild(deepsheetButtonElem);
 
-    deepsheetbutton.on('change', () => {
-        deepsheetbutton.turnOn(false);
-        deepbachbutton.turnOff(false);
-        deepfolkbutton.turnOff(false);
-        spectrogrambutton.turnOff(false);
-        applicationModeSelectElem.value = 'leadsheet';
-    });
+        deepsheetbutton = new Nexus.TextButton('#deepsheet-configuration-button', {
+            'size': [150,50],
+            'state': false,
+            'text': 'Leadsheets',
+            'alternateText': 'Leadsheets'
+        });
 
-    let deepfolkButtonElem: HTMLElement = document.createElement('div');
-    deepfolkButtonElem.id = 'deepfolk-configuration-button'
-    modeConfigElem.appendChild(deepfolkButtonElem);
+        deepsheetbutton.on('change', () => {
+            deepsheetbutton.turnOn(false);
+            deepbachbutton.turnOff(false);
+            deepfolkbutton.turnOff(false);
+            spectrogrambutton.turnOff(false);
+            applicationModeSelectElem.value = 'leadsheet';
+        });
 
-    let deepfolkbutton = new Nexus.TextButton('#deepfolk-configuration-button', {
-        'size': [150,50],
-        'state': false,
-        'text': 'Folk songs',
-        'alternateText': 'Folk songs'
-    });
+        let deepfolkButtonElem: HTMLElement = document.createElement('div');
+        deepfolkButtonElem.id = 'deepfolk-configuration-button'
+        modeConfigElem.appendChild(deepfolkButtonElem);
 
-    deepfolkbutton.on('change', () => {
-        deepfolkbutton.turnOn(false);
-        deepsheetbutton.turnOff(false);
-        deepbachbutton.turnOff(false);
-        spectrogrambutton.turnOff(false);
-        applicationModeSelectElem.value = 'folk';
-    });
+        deepfolkbutton = new Nexus.TextButton('#deepfolk-configuration-button', {
+            'size': [150,50],
+            'state': false,
+            'text': 'Folk songs',
+            'alternateText': 'Folk songs'
+        });
 
-    let spectrogrambuttonElem: HTMLElement = document.createElement('div');
-    spectrogrambuttonElem.id = 'spectrograms-configuration-button'
-    modeConfigElem.appendChild(spectrogrambuttonElem);
+        deepfolkbutton.on('change', () => {
+            deepfolkbutton.turnOn(false);
+            deepsheetbutton.turnOff(false);
+            deepbachbutton.turnOff(false);
+            spectrogrambutton.turnOff(false);
+            applicationModeSelectElem.value = 'folk';
+        });
 
-    let spectrogrambutton = new Nexus.TextButton('#spectrograms-configuration-button', {
-        'size': [150,50],
-        'state': false,
-        'text': 'Spectrograms',
-        'alternateText': 'Spectrograms'
-    });
+        let spectrogrambuttonElem: HTMLElement = document.createElement('div');
+        spectrogrambuttonElem.id = 'spectrograms-configuration-button'
+        modeConfigElem.appendChild(spectrogrambuttonElem);
 
-    spectrogrambutton.on('change', () => {
-        spectrogrambutton.turnOn(false);
-        deepfolkbutton.turnOff(false);
-        deepsheetbutton.turnOff(false);
-        deepbachbutton.turnOff(false);
+        spectrogrambutton = new Nexus.TextButton('#spectrograms-configuration-button', {
+            'size': [150,50],
+            'state': false,
+            'text': 'Spectrograms',
+            'alternateText': 'Spectrograms'
+        });
+
+        spectrogrambutton.on('change', () => {
+            spectrogrambutton.turnOn(false);
+            deepfolkbutton.turnOff(false);
+            deepsheetbutton.turnOff(false);
+            deepbachbutton.turnOff(false);
+            applicationModeSelectElem.value = 'spectrogram';
+        });
+    }
+    else {
         applicationModeSelectElem.value = 'spectrogram';
-    });
+    }
 
     if (COMPILE_ELECTRON && false){
         // open native file system 'open-file' dialog
