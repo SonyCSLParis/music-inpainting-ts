@@ -160,18 +160,9 @@ async function render(configuration=defaultConfiguration) {
         }
     });
 
-
     let serverPort: number = configuration['server_port'];
-    let serverIp: string;
-    let useLocalServer: boolean = configuration["use_local_server"];
-    if (useLocalServer) {
-        serverIp = 'localhost';
-    }
-    else {
-        serverIp = configuration['server_ip'];
-    }
+    let serverIp: string = configuration['server_ip'];
     let serverUrl = `http://${serverIp}:${serverPort}/`;
-
 
     function insertLoadingSpinner(container: HTMLElement): HTMLElement {
         let spinnerElem: HTMLElement = document.createElement('i');
