@@ -16,7 +16,7 @@ function cloneJSON(obj: object): object {
     return JSON.parse(JSON.stringify(obj));
 }
 
-let defaultConfiguration: object = require('../common/config.json');
+let defaultConfiguration: object = require('../common/default_config.json');
 defaultConfiguration['server_ip'] = DEFAULT_SERVER_IP;
 
 
