@@ -8,6 +8,7 @@ import '../common/styles/startupSplash.scss';
 
 // defined at compile-time via webpack.DefinePlugin
 declare var COMPILE_ELECTRON: boolean;
+declare var DEFAULT_SERVER_IP: string;
 
 // via https://stackoverflow.com/a/17632779/
 function cloneJSON(obj: object): object {
@@ -15,9 +16,11 @@ function cloneJSON(obj: object): object {
 }
 
 let defaultConfiguration: object = require('../common/config.json');
+defaultConfiguration['server_ip'] = DEFAULT_SERVER_IP;
+
 
 // TODO don't create modes like this (goes against 12 Factor App principles)
-// should have truely orthogonal configuration options
+// should have truly orthogonal configuration options
 let osmdConfiguration: object = cloneJSON(defaultConfiguration);
 osmdConfiguration['osmd'] = true;
 osmdConfiguration['spectrogram'] = false;
@@ -221,11 +224,9 @@ export function render(renderPage: (configuration: object) => void): void {
                 break;
         }
         if (serverIpInput.value.length > 0) {
-            configuration['use_local_server'] = false;
             configuration['server_ip'] = serverIpInput.value;
         }
         if (serverPortInput.value.length > 0) {
-            configuration['use_local_server'] = false;
             configuration['server_port'] = serverPortInput.value;
         }
 
