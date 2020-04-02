@@ -45,7 +45,7 @@ declare var COMPILE_ELECTRON: boolean;
 
 declare var ohSnap: any;
 
-let defaultConfiguration = require('../common/config.json');
+let defaultConfiguration = require('../common/default_config.json');
 
 let playbackManager: PlaybackManager;
 let sheetPlaybackManager: SheetPlaybackManager;

@@ -5,7 +5,7 @@ let Nexus = require('./nexusColored')
 
 import { BPMControl } from './numberControl'
 
-let link_channel_prefix: string = require('../common/config.json')['link_channel_prefix'];
+let link_channel_prefix: string = require('../common/default_config.json')['link_channel_prefix'];
 
 import * as io from 'socket.io-client';
 // connect to the Ableton Link Node.js server

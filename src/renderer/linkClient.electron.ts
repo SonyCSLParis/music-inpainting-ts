@@ -8,7 +8,7 @@ import { BPMControl } from './numberControl';
 import { PlaybackManager } from './playback';
 
 
-let link_channel_prefix: string = require('../common/config.json')['link_channel_prefix'];
+let link_channel_prefix: string = require('../common/default_config.json')['link_channel_prefix'];
 
 let link_initialized: boolean = false;
 let link_enabled: boolean = false;
