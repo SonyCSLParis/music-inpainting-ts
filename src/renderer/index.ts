@@ -16,8 +16,8 @@ import * as PlaybackCommands from './playbackCommands';
 import { PlaybackManager } from './playback';
 import { SpectrogramPlaybackManager } from './spectrogramPlayback';
 import { NumberControl, BPMControl } from './numberControl';
-import LinkClient from './linkClient';
-import * as LinkClientCommands from './linkClientCommands';
+// import LinkClient from './linkClient';
+// import * as LinkClientCommands from './linkClientCommands';
 import { DownloadButton } from './downloadCommand';
 import * as HelpTour from './helpTour';
 import { createLFOControls } from './lfo';
@@ -622,24 +622,22 @@ async function render(configuration=defaultConfiguration) {
     });
 
     $(() => {
-        LinkClient.kill();
-        if (useAdvancedControls) {
-            // Insert LINK client controls
-            LinkClientCommands.render();
-            LinkClientCommands.renderDownbeatDisplay();
-        }}
+        // LinkClient.kill();
+        // if (useAdvancedControls) {
+        //     // Insert LINK client controls
+        //     LinkClientCommands.render();
+        //     LinkClientCommands.renderDownbeatDisplay();
+        // }
+    }
     );
 
-    $(() => {
-        if ( useAdvancedControls && configuration['osmd'] ) {
-            // Add MIDI-out selector
-            MidiOut.render(configuration["use_chords_instrument"]);
-
-            // Add manual Link-Sync button
-            const bottomControlsGridElem = document.getElementById('bottom-controls')
-            PlaybackCommands.renderSyncButton(bottomControlsGridElem);
-        }}
-    );
+    // $(() => {
+    //     if ( useAdvancedControls ) {
+    //         // Add manual Link-Sync button
+    //         const bottomControlsGridElem = document.getElementById('bottom-controls')
+    //         PlaybackCommands.renderSyncButton(bottomControlsGridElem);
+    //     }}
+    // );
 
     $(() => {
         // register file drop handler
