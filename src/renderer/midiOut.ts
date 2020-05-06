@@ -1,7 +1,6 @@
 import * as Tone from 'tone';
 import * as WebMidi from 'webmidi';
 import * as log from 'loglevel';
-import * as Instruments from './instruments';
 
 let Nexus = require('./nexusColored')
 
@@ -27,11 +26,9 @@ export function render(useChordsInstrument: boolean = false) {
 
         function midiOutOnChange(ev) {
             if (this.value !== 'No Output') {
-                Instruments.mute(true, useChordsInstrument);
                 midiOut = (WebMidi as any).getOutputByName(this.value);
             }
             else {
-                Instruments.mute(false, useChordsInstrument);
                 midiOut = dummyMidiOut;
             }
             log.info('Selected MIDI out: ' + this.value);
