@@ -153,3 +153,7 @@ export function once(message, callback) {
         callback();
     })
 }
+
+export function init() {
+
+}
