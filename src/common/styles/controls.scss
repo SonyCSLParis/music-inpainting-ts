@@ -1,6 +1,15 @@
 #play-button {
     grid-row: 1;
     grid-column: 1;
+
+    & > .playing {
+        color: #A3BCF9;
+    }
+
+    & > .stopped {
+        color: #58A4B0;
+    }
+
 }
 
 #play-button-label {
