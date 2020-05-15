@@ -113,6 +113,9 @@ export class Spectrogram {
                 'rows': numRows,
                 'columns': numColumns,
             });
+            // make the matrix overlay transparent
+            this.sequencer.colorize("accent", "rgba(255, 255, 255, 1)");
+            this.sequencer.colorize("fill", "rgba(255, 255, 255, 0.4)");
     }
 }
 
