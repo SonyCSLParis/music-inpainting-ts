@@ -26,9 +26,6 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
 
     async loadAudio(audioURL: string): Promise<void> {
         await this.player.load(audioURL);
-        // await Tone.context.resume();
-        // this.player.pause();
-        // this.player.play();
     };
 
     loadSpectrogram(serverURL: string, command: string, codes: number[][]): void {
