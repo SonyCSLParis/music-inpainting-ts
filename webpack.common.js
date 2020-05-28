@@ -10,6 +10,9 @@ module.exports = {
             'SPECTROGRAM_ONLY': false,
             'DEFAULT_SERVER_IP': 'window.location.hostname',
             'DEFAULT_SERVER_PORT': 'window.location.port',
+            'INSERT_RECAPTCCHA': false,
+            'RECAPTCHA_SITEKEY': null,
+            'RECAPTCHA_VERIFICATION_ADRESS': null
         }),
 
         new webpack.ProvidePlugin({
