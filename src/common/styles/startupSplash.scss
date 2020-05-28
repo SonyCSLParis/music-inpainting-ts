@@ -33,6 +33,12 @@
         justify-items: center;
         grid-column-gap: 2vw;
     }
+
+    &.no-server-config {
+        & #server-port-input, & #server-ip-input{
+            visibility: hidden;
+        }
+    }
 }
 
 #server-configuration {

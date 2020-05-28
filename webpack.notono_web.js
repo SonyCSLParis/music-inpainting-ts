@@ -18,6 +18,7 @@ module.exports = my_merge(web, {
     plugins: [
         new webpack.DefinePlugin({
             'SPECTROGRAM_ONLY': true,
+            'DISABLE_SERVER_INPUT': true,
         }),
     ]
 });

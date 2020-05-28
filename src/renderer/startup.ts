@@ -10,6 +10,8 @@ import '../common/styles/startupSplash.scss';
 declare var COMPILE_ELECTRON: boolean;
 declare var SPECTROGRAM_ONLY: boolean;
 declare var DEFAULT_SERVER_IP: string;
+declare var DEFAULT_SERVER_PORT: string;
+declare const DISABLE_SERVER_INPUT: boolean;
 
 // via https://stackoverflow.com/a/17632779/
 function cloneJSON(obj: object): object {
@@ -18,6 +20,7 @@ function cloneJSON(obj: object): object {
 
 let defaultConfiguration: object = require('../common/default_config.json');
 defaultConfiguration['server_ip'] = DEFAULT_SERVER_IP;
+defaultConfiguration['server_port'] = DEFAULT_SERVER_PORT;
 
 
 // TODO don't create modes like this (goes against 12 Factor App principles)
@@ -51,23 +54,26 @@ export function render(renderPage: (configuration: object) => void): void {
     configurationWindow.id = 'configuration-selection';
     document.body.appendChild(configurationWindow);
 
-    // let configurationForm: HTMLFormElement = document.createElement('form');
+    let serverConfigElem: HTMLDivElement;
+    let serverIpInput: HTMLInputElement;
+    let serverPortInput: HTMLInputElement;
+    if ( !DISABLE_SERVER_INPUT ) {
+        serverConfigElem = document.createElement('div');
+        serverConfigElem.id = 'server-configuration';
+        configurationWindow.appendChild(serverConfigElem);
 
-    let serverConfigElem: HTMLDivElement = document.createElement('div');
-    serverConfigElem.id = 'server-configuration';
-    configurationWindow.appendChild(serverConfigElem);
+        serverIpInput = document.createElement('input');
+        serverIpInput.type = 'url';
+        serverIpInput.id = 'server-ip-input';
+        serverIpInput.placeholder = `Server IP (default: ${defaultConfiguration['server_ip']})`;
+        serverConfigElem.appendChild(serverIpInput);
 
-    let serverIpInput: HTMLInputElement = document.createElement('input');
-    serverIpInput.type = 'url';
-    serverIpInput.id = 'server-ip-input';
-    serverIpInput.placeholder = `Server IP (default: ${defaultConfiguration['server_ip']})`;
-    serverConfigElem.appendChild(serverIpInput);
-
-    let serverPortInput: HTMLInputElement = document.createElement('input');
-    serverPortInput.type = 'url';
-    serverPortInput.id = 'server-port-input';
-    serverPortInput.placeholder = `Server port (default: ${defaultConfiguration['server_port']})`;
-    serverConfigElem.appendChild(serverPortInput);
+        serverPortInput = document.createElement('input');
+        serverPortInput.type = 'url';
+        serverPortInput.id = 'server-port-input';
+        serverPortInput.placeholder = `Server port (default: ${defaultConfiguration['server_port']})`;
+        serverConfigElem.appendChild(serverPortInput);
+    }
 
     // let serverUrlInputLabel: HTMLLabelElement = document.createElement('label');
     // serverUrlInputLabel.setAttribute('for', 'server-url-input');
