@@ -51,8 +51,38 @@ let instrumentSelect: CycleSelect;
 let vqvaeLayerSelect: CycleSelect;
 let downloadButton: DownloadButton;
 
+function toggleBusyClass(state: boolean): void {
+    $('body').toggleClass('busy', state);
+    $('.notebox').toggleClass('busy', state);
+    $('.notebox').toggleClass('available', !state);
+    $('#spectrogram-container').toggleClass('busy', state);
+}
+
+function blockall(e) {
+    // block propagation of events in bubbling/capturing
+    e.stopPropagation();
+    e.preventDefault();
+}
+
+function disableChanges(): void {
+    toggleBusyClass(true);
+    $('.timecontainer').addClass('busy');
+    $('.timecontainer').each(function() {
+        this.addEventListener("click", blockall, true);}
+    )
+}
+
+function enableChanges(): void {
+    $('.timecontainer').each(function() {
+        this.removeEventListener("click", blockall, true);}
+    )
+    $('.timecontainer').removeClass('busy');
+    toggleBusyClass(false);
+}
+
 async function render(configuration=defaultConfiguration) {
     await Tone.start();
+    disableChanges();
 
     let COMPILE_MUSEUM_VERSION: boolean = true;
 
@@ -187,7 +217,6 @@ async function render(configuration=defaultConfiguration) {
     $(() => {
         let mainPanel = <HTMLElement>document.createElement("div");
         mainPanel.id = 'main-panel';
-        mainPanel.classList.add('loading');
         document.body.appendChild(mainPanel);
 
         let spinnerElem = insertLoadingSpinner(mainPanel);
@@ -218,8 +247,7 @@ async function render(configuration=defaultConfiguration) {
         loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
             'sample-from-dataset' + initial_command, sendCodesWithRequest).then(
                 () => {
-                    spinnerElem.style.visibility = 'hidden';
-                    mainPanel.classList.remove('loading');
+                    enableChanges();
                     if ( REGISTER_IDLE_STATE_DETECTOR ) {
                         HelpTour.registerIdleStateDetector();
                     };
@@ -321,39 +349,6 @@ async function render(configuration=defaultConfiguration) {
             PlaybackCommands.render(playbuttonContainerElem);
         });
     });
-
-
-    function toggleBusyClass(state: boolean): void {
-        $('body').toggleClass('busy', state);
-        $('.notebox').toggleClass('busy', state);
-        $('.notebox').toggleClass('available', !state);
-        $('#spectrogram-container').toggleClass('busy', state);
-    }
-
-
-    function blockall(e) {
-        // block propagation of events in bubbling/capturing
-        e.stopPropagation();
-        e.preventDefault();
-    }
-
-
-    function disableChanges(): void {
-        toggleBusyClass(true);
-        $('.timecontainer').addClass('busy');
-        $('.timecontainer').each(function() {
-            this.addEventListener("click", blockall, true);}
-        )
-    }
-
-
-    function enableChanges(): void {
-        $('.timecontainer').each(function() {
-            this.removeEventListener("click", blockall, true);}
-        )
-        $('.timecontainer').removeClass('busy');
-        toggleBusyClass(false);
-    }
 
     // TODO don't create globals like this
     let currentCodes_top: number[][];
