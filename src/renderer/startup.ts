@@ -11,7 +11,12 @@ declare var COMPILE_ELECTRON: boolean;
 declare var SPECTROGRAM_ONLY: boolean;
 declare var DEFAULT_SERVER_IP: string;
 declare var DEFAULT_SERVER_PORT: string;
+declare const INSERT_RECAPTCHA: boolean;
+declare const RECAPTCHA_SITEKEY: string;
+declare const RECAPTCHA_VERIFICATION_ADRESS: string;
 declare const DISABLE_SERVER_INPUT: boolean;
+
+declare var grecaptcha: any;
 
 // via https://stackoverflow.com/a/17632779/
 function cloneJSON(obj: object): object {
@@ -79,31 +84,32 @@ export function render(renderPage: (configuration: object) => void): void {
     // serverUrlInputLabel.setAttribute('for', 'server-url-input');
     //
 
-    let modeConfigElem: HTMLDivElement = document.createElement('div');
-    modeConfigElem.id = 'mode-configuration';
-    configurationWindow.appendChild(modeConfigElem);
+    let modeConfigElem: HTMLDivElement;
+    let applicationModeSelectElem: HTMLSelectElement;
+    if (!SPECTROGRAM_ONLY) {
+        modeConfigElem = document.createElement('div');
+        modeConfigElem.id = 'mode-configuration';
+        configurationWindow.appendChild(modeConfigElem);
 
-    let applicationModeSelectElem: HTMLSelectElement = document.createElement('select');
-    applicationModeSelectElem = document.createElement('select');
-    applicationModeSelectElem.style.visibility = 'hidden';
-    applicationModeSelectElem.id = 'application-mode-select';
-    configurationWindow.appendChild(applicationModeSelectElem);
+        applicationModeSelectElem = document.createElement('select');
+        applicationModeSelectElem.style.visibility = 'hidden';
+        applicationModeSelectElem.id = 'application-mode-select';
+        configurationWindow.appendChild(applicationModeSelectElem);
 
-    let applicationModes: string[] = ['chorale', 'leadsheet', 'folk', 'spectrogram'];
-    for (let applicationModeIndex=0, numModes=applicationModes.length;
-        applicationModeIndex<numModes; applicationModeIndex++) {
-        const applicationMode = applicationModes[applicationModeIndex];
-        let applicationModeOptionElem = document.createElement('option');
-        applicationModeOptionElem.value = applicationMode;
-        applicationModeSelectElem.appendChild(applicationModeOptionElem);
-    }
+        let applicationModes: string[] = ['chorale', 'leadsheet', 'folk', 'spectrogram'];
+        for (let applicationModeIndex=0, numModes=applicationModes.length;
+            applicationModeIndex<numModes; applicationModeIndex++) {
+            const applicationMode = applicationModes[applicationModeIndex];
+            let applicationModeOptionElem = document.createElement('option');
+            applicationModeOptionElem.value = applicationMode;
+            applicationModeSelectElem.appendChild(applicationModeOptionElem);
+        }
 
-    let deepbachbutton;
-    let deepfolkbutton;
-    let deepsheetbutton;
-    let spectrogrambutton;
+        let deepbachbutton;
+        let deepfolkbutton;
+        let deepsheetbutton;
+        let spectrogrambutton;
 
-    if ( !SPECTROGRAM_ONLY ) {
         let deepbachButtonElem: HTMLElement = document.createElement('div');
         deepbachButtonElem.id = 'deepbach-configuration-button'
         modeConfigElem.appendChild(deepbachButtonElem);
@@ -180,9 +186,6 @@ export function render(renderPage: (configuration: object) => void): void {
             applicationModeSelectElem.value = 'spectrogram';
         });
     }
-    else {
-        applicationModeSelectElem.value = 'spectrogram';
-    }
 
     if (COMPILE_ELECTRON && false){
         // open native file system 'open-file' dialog
@@ -210,21 +213,14 @@ export function render(renderPage: (configuration: object) => void): void {
         });
     }
 
-    let startButtonElem: HTMLElement = document.createElement('div');
-    startButtonElem.id = 'start-button';
-    configurationWindow.appendChild(startButtonElem);
-
-    let startButton = new Nexus.TextButton('#start-button',{
-        'size': [150,50],
-        'state': false,
-        'text': 'Start',
-        'alternateText': true
-    });
-
-    StartAudioContext(Tone.context, startButtonElem.id);
-
-    startButton.on('change', () => {
-        let applicationMode = applicationModeSelectElem.value;
+    function getCurrentConfiguration() {
+        let applicationMode: string;
+        if (!SPECTROGRAM_ONLY) {
+            applicationMode = applicationModeSelectElem.value;
+        }
+        else {
+            applicationMode = 'spectrogram';
+        }
         let configuration;
         switch (applicationMode) {
             case 'chorale':
@@ -240,20 +236,78 @@ export function render(renderPage: (configuration: object) => void): void {
                 configuration = spectrogramConfiguration;
                 break;
         }
-        if (serverIpInput.value.length > 0) {
+        if (!DISABLE_SERVER_INPUT && serverIpInput.value.length > 0) {
             configuration['server_ip'] = serverIpInput.value;
         }
-        if (serverPortInput.value.length > 0) {
+        if (!DISABLE_SERVER_INPUT && serverPortInput.value.length > 0) {
             configuration['server_port'] = serverPortInput.value;
         }
 
+        return configuration;
+    }
+
+    function disposeAndStart() {
         // clean-up the splash screen
         dispose();
+        renderPage(getCurrentConfiguration());
+    }
 
-        $(() => {
-            renderPage(configuration);
+    function renderStartButton() {
+        let startButtonElem: HTMLElement = document.createElement('div');
+        startButtonElem.id = 'start-button';
+        configurationWindow.appendChild(startButtonElem);
+
+        let startButton = new Nexus.TextButton('#start-button', {
+            'size': [150,50],
+            'state': false,
+            'text': 'Start',
+            'alternateText': true
         });
-    })
+
+        StartAudioContext(Tone.context, startButtonElem.id);
+
+        startButton.on('change', disposeAndStart);
+    }
+
+    if ( INSERT_RECAPTCHA ) {
+        async function getResponseCaptcha(recaptchaResponse: string) {
+            const jsonResponse = await verifyCaptcha(recaptchaResponse);
+            if ( jsonResponse['success'] ) {
+                disposeAndStart();
+            }
+        }
+
+        async function verifyCaptcha(recaptchaResponse: string) {
+            const jsonResponse = await $.post({
+                url: RECAPTCHA_VERIFICATION_ADRESS,
+                data: JSON.stringify({
+                    'recaptchaResponse': recaptchaResponse
+                }),
+                contentType: 'application/json',
+                dataType: 'json',
+            })
+
+            return jsonResponse
+        }
+
+        let recaptchaElem: HTMLDivElement = document.createElement('div');
+        recaptchaElem.id = 'g-recaptcha';
+        recaptchaElem.classList.add("g-recaptcha");
+        recaptchaElem.setAttribute('data-sitekey', RECAPTCHA_SITEKEY);
+        recaptchaElem.setAttribute('data-theme', 'light');
+        recaptchaElem.setAttribute('data-callback', 'getResponseCaptcha');
+        window['getResponseCaptcha'] = getResponseCaptcha.bind(this);
+        configurationWindow.appendChild(recaptchaElem);
+
+        grecaptcha.render('g-recaptcha', {
+            'sitekey': RECAPTCHA_SITEKEY,
+            'theme': 'light',
+            'callback': 'getResponseCaptcha'
+        });
+    }
+    else {
+        renderStartButton();
+    }
 }
 
 function dispose() {
