@@ -216,7 +216,7 @@ async function render(configuration=defaultConfiguration) {
             + '&temperature=1');
 
         loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
-            'test-generate' + initial_command, sendCodesWithRequest).then(
+            'sample-from-dataset' + initial_command, sendCodesWithRequest).then(
                 () => {
                     spinnerElem.style.visibility = 'hidden';
                     mainPanel.classList.remove('loading');
