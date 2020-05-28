@@ -10,7 +10,7 @@
     "link-osmd": "yarn link opensheetmusicdisplay",
     "build:web": "webpack --config webpack.web.js",
     "build:notono_web": "webpack --config webpack.notono_web.js",
-    "serve:web": "http-server ./web/dist",
+    "serve:web": "http-server -p 8080 -P http://localhost:5000 ./web/dist",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dev": "yarn link-osmd && electron-webpack dev",
