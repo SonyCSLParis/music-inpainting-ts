@@ -6,8 +6,10 @@ module.exports = {
     plugins: [
         new webpack.DefinePlugin({
             'COMPILE_ELECTRON': true,
+            'DISABLE_SERVER_INPUT': false,
             'SPECTROGRAM_ONLY': false,
-            'DEFAULT_SERVER_IP': JSON.stringify('localhost')
+            'DEFAULT_SERVER_IP': 'window.location.hostname',
+            'DEFAULT_SERVER_PORT': 'window.location.port',
         }),
 
         new webpack.ProvidePlugin({
