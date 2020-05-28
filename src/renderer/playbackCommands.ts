@@ -25,38 +25,37 @@ export function render(containerElement: HTMLElement): void{
         }
     }
 
-    let stoppedClass: string = 'fa-play-circle';
-    let playingClass: string = 'fa-stop-circle';
+    let stoppedClasses: string[] = ['stopped', 'fa-play-circle'];
+    let playingClasses: string[] = ['playing', 'fa-stop-circle'];
     let waitingClass: string = 'fa-circle-notch';
 
     let mainIconSize: string = 'fa-4x';
 
     let playButton = document.createElement('i');
+    playButton.id = 'play-button';
     containerElement.appendChild(playButton)
     playButton.classList.add('fas');
     playButton.classList.add(mainIconSize);
     playButton.style.alignSelf = 'inherit';
     playButton.style.cursor = 'pointer';
-    // FIXME not super visible
-    playButton.style.color = 'lightpink';
 
     function setPlayingClass(isPlaying: boolean) {
         // Update Play/Stop CSS classes
         unsetWaitingClass();
         if (isPlaying) {
-            playButton.classList.add(playingClass);
-            playButton.classList.remove(stoppedClass);
+            playButton.classList.add(...playingClasses);
+            playButton.classList.remove(...stoppedClasses);
         }
         else {
-            playButton.classList.add(stoppedClass);
-            playButton.classList.remove(playingClass);
+            playButton.classList.add(...stoppedClasses);
+            playButton.classList.remove(...playingClasses);
         }
     }
     function setWaitingClass() {
         // Replace the playback icon with a rotating 'wait' icon until
         // playback state correctly updated
-        playButton.classList.remove(playingClass);
-        playButton.classList.remove(stoppedClass);
+        playButton.classList.remove(...playingClasses);
+        playButton.classList.remove(...stoppedClasses);
 
         playButton.classList.add('fa-spin');  // spinning icon
         playButton.classList.add(waitingClass);
@@ -85,7 +84,7 @@ export function render(containerElement: HTMLElement): void{
     };
 
     function togglePlayback() {
-        playCallback(playButton.classList.contains(stoppedClass));
+        playCallback(playButton.classList.contains(stoppedClasses[0]));
     };
 
     playButton.addEventListener('click', togglePlayback);

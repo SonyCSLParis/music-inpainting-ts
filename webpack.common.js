@@ -5,7 +5,9 @@ var CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = {
     plugins: [
         new webpack.DefinePlugin({
-            COMPILE_ELECTRON: true
+            'COMPILE_ELECTRON': true,
+            'SPECTROGRAM_ONLY': false,
+            'DEFAULT_SERVER_IP': JSON.stringify('localhost')
         }),
 
         new webpack.ProvidePlugin({

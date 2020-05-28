@@ -7,7 +7,7 @@ import * as WindowManager from './windowManager'
 // Code for Ableton-LINK server
 
 let pattern_synchronization_duration_quarters = 4.
-let link_channel_prefix: string = require('../common/config.json')['link_channel_prefix'];
+let link_channel_prefix: string = require('../common/default_config.json')['link_channel_prefix'];
 let link = undefined;
 let link_enabled: boolean = false;
 

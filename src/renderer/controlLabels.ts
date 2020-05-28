@@ -1,4 +1,4 @@
-let configuration = require('../common/config.json');
+let configuration = require('../common/default_config.json');
 let localizations = require('../common/localization.json');
 
 export function createLabel(controlElem: HTMLElement, id: string) {
