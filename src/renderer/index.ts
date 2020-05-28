@@ -14,7 +14,7 @@ import * as JSZIP from 'jszip';
 import * as Header from './header';
 import * as PlaybackCommands from './playbackCommands';
 import { PlaybackManager } from './playback';
-import { SpectrogramPlaybackManager } from './spectrogramPlayback';
+import { SpectrogramPlaybackManager, renderFadeInControl } from './spectrogramPlayback';
 import { NumberControl, BPMControl } from './numberControl';
 // import LinkClient from './linkClient';
 // import * as LinkClientCommands from './linkClientCommands';
@@ -627,6 +627,14 @@ async function render(configuration=defaultConfiguration) {
         // register file drop handler
         document.body.addEventListener('drop', dropHandler);
     })
+
+    $(() => {
+        let bottomControlsGridElem = document.getElementById('bottom-controls');
+        let fadeInControlElement: HTMLElement = document.createElement('control-item');
+        fadeInControlElement.id = 'fade-in-control';
+        bottomControlsGridElem.appendChild(fadeInControlElement);
+        renderFadeInControl(fadeInControlElement, spectrogramPlaybackManager);
+    });
 }
 
 $(() => {
