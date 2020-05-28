@@ -306,22 +306,6 @@ async function render(configuration=defaultConfiguration) {
                 }
             )
             spectrogramPlaybackManager.spectrogramLocator.registerCallback(regenerationCallback);
-
-            let regeneratebuttonContainerElem: HTMLElement = document.createElement('control-item');
-            regeneratebuttonContainerElem.id = 'regenerate-button';
-            bottomControlsGridElem.appendChild(regeneratebuttonContainerElem);
-
-            $(() => {
-                let regeneratebutton = new Nexus.TextButton('#regenerate-button', {
-                    'size': [150,50],
-                    'text': 'Regenerate',
-                });
-
-                regeneratebutton.on('change', (enable: boolean) => {
-                    if ( enable ) {
-                        regenerationCallback(enable);
-                    }});
-            })
         });
     };
 
