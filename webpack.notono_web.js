@@ -18,6 +18,16 @@ module.exports = my_merge(web, {
     plugins: [
         new webpack.DefinePlugin({
             'SPECTROGRAM_ONLY': true,
+            'DISABLE_SERVER_INPUT': true,
+            'INSERT_RECAPTCHA': true,
+            'RECAPTCHA_SITEKEY': JSON.stringify('6Leab_MUAAAAAP7_u_MTF96FH0-8kLtfNTZiD3yu'),
+            'RECAPTCHA_VERIFICATION_ADRESS': JSON.stringify('http://ec2-63-33-36-17.eu-west-1.compute.amazonaws.com:8081/verify')
+        }),
+
+        new HtmlWebpackPlugin({
+            template: 'src/common/template.html',
+            title: 'NOTONO',
+            favicon: 'src/common/images/favicon.ico'
         }),
     ]
 });

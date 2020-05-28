@@ -3,7 +3,7 @@ $interface-font-weight: bold;
 
 $header-height: 120px;
 $bottom-controls-height: 150px;
-$advanced-controls-height: 40px;
+$advanced-controls-height: 50px;
 
 $CycleSelect-size: 54px;
 
@@ -51,6 +51,10 @@ body {
 
     &.busy {
         cursor: wait !important;
+
+        & #osmd-loading-spinner {
+            visibility: visible;
+        }
     }
 }
 
@@ -184,6 +188,7 @@ header {
     left: 50%;
     margin-left: -32px;
     margin-top: -32px;
+    visibility: hidden;
 }
 
 #bottom-controls {
