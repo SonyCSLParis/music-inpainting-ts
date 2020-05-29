@@ -13,7 +13,7 @@ declare var DEFAULT_SERVER_IP: string;
 declare var DEFAULT_SERVER_PORT: string;
 declare const INSERT_RECAPTCHA: boolean;
 declare const RECAPTCHA_SITEKEY: string;
-declare const RECAPTCHA_VERIFICATION_ADRESS: string;
+declare const RECAPTCHA_VERIFICATION_ADDRESS: string;
 declare const DISABLE_SERVER_INPUT: boolean;
 
 declare var grecaptcha: any;
@@ -279,7 +279,7 @@ export function render(renderPage: (configuration: object) => void): void {
 
         async function verifyCaptcha(recaptchaResponse: string) {
             const jsonResponse = await $.post({
-                url: RECAPTCHA_VERIFICATION_ADRESS,
+                url: RECAPTCHA_VERIFICATION_ADDRESS,
                 data: JSON.stringify({
                     'recaptchaResponse': recaptchaResponse
                 }),
