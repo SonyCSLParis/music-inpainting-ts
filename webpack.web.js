@@ -14,20 +14,20 @@ module.exports = merge.smartStrategy({plugins: 'prepend',})(common, {
     entry: './src/renderer/index.ts',
 
     output: {
-      path: path.join(__dirname, 'web/dist'),
-      filename: 'index.bundle.js'
+        path: path.join(__dirname, 'web/dist'),
+        filename: 'index.bundle.js'
     },
 
     // Currently we need to add '.ts' to the resolve.extensions array.
     resolve: {
-      extensions: ['.ts', '.js', '.css', '.scss'],
-      modules: ['node_modules', 'styles', '../opensheetmusicdisplay',
+        extensions: ['.ts', '.js', '.css', '.scss'],
+        modules: ['node_modules', 'styles', '../opensheetmusicdisplay',
         './tonejs-instruments', 'src/common'],
       // exclude: ['**/*.electron.ts'],
-      symlinks: true,
-      alias: {
-          common: path.resolve(__dirname, 'src/common')
-      }
+        symlinks: true,
+        alias: {
+            common: path.resolve(__dirname, 'src/common')
+        }
     },
 
     // Source maps support ('inline-source-map' also works)
@@ -82,8 +82,8 @@ module.exports = merge.smartStrategy({plugins: 'prepend',})(common, {
             // as it provides a global JQuery
             // TODO(theis, maybe): alternative method
             // http://reactkungfu.com/2015/10/integrating-jquery-chosen-with-webpack-using-imports-loader/
-                $: 'jquery',
-                jQuery: 'jquery'
+            $: 'jquery',
+            jQuery: 'jquery'
         }),
         //example on how to add ressources
         new CopyWebpackPlugin([
@@ -95,7 +95,7 @@ module.exports = merge.smartStrategy({plugins: 'prepend',})(common, {
                 from: path.join(__dirname, 'static'),
                 to: 'static'
             }
-      ])
+        ])
     ],
 
     node: {
