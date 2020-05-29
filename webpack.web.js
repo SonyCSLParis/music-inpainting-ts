@@ -73,7 +73,10 @@ module.exports = merge.smartStrategy({plugins: 'prepend',})(common, {
         }),
 
         new HtmlWebpackPlugin({
-            template: 'src/common/template.html',
+            meta: {
+                // Fixes 300ms delay on touch + reduce size on mobile for better display
+                'viewport': "width=device-width, initial-scale=0.5, maximum-scale=1.0, user-scalable=no, target-densityDpi=medium-dpi"
+            },
             title: 'DeepBach',
             favicon: 'src/common/images/favicon.ico'
         }),

@@ -270,7 +270,14 @@ export function render(renderPage: (configuration: object) => void): void {
     }
 
     if ( INSERT_RECAPTCHA ) {
-        async function getResponseCaptcha(recaptchaResponse: string) {
+        // load recaptcha library asynchronously
+        let recaptcha_script: HTMLScriptElement = document.createElement('script');
+        recaptcha_script.src = "https://www.google.com/recaptcha/api.js";
+        recaptcha_script.defer = true;
+        recaptcha_script.async = true;
+        document.head.appendChild(recaptcha_script);
+
+        async function onreceiveRecaptchaResponse(recaptchaResponse: string) {
             const jsonResponse = await verifyCaptcha(recaptchaResponse);
             if ( jsonResponse['success'] ) {
                 disposeAndStart();
@@ -295,15 +302,9 @@ export function render(renderPage: (configuration: object) => void): void {
         recaptchaElem.classList.add("g-recaptcha");
         recaptchaElem.setAttribute('data-sitekey', RECAPTCHA_SITEKEY);
         recaptchaElem.setAttribute('data-theme', 'light');
-        recaptchaElem.setAttribute('data-callback', 'getResponseCaptcha');
-        window['getResponseCaptcha'] = getResponseCaptcha.bind(this);
+        recaptchaElem.setAttribute('data-callback', 'onreceiveRecaptchaResponse');
+        window['onreceiveRecaptchaResponse'] = onreceiveRecaptchaResponse.bind(this);
         configurationWindow.appendChild(recaptchaElem);
-
-        grecaptcha.render('g-recaptcha', {
-            'sitekey': RECAPTCHA_SITEKEY,
-            'theme': 'light',
-            'callback': 'getResponseCaptcha'
-        });
     }
     else {
         renderStartButton();
