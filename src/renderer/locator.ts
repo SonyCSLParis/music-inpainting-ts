@@ -1,5 +1,4 @@
-import * as $ from 'jquery';
-import * as log from 'loglevel';
+import $ from 'jquery';
 import 'nipplejs';
 
 import '../common/styles/overlays.scss';

@@ -17,7 +17,9 @@ module.exports = {
         // TODO(theis, maybe): alternative method
         // http://reactkungfu.com/2015/10/integrating-jquery-chosen-with-webpack-using-imports-loader/
             $: 'jquery',
-            jQuery: 'jquery'
+            jQuery: 'jquery',
+            'window.$': 'jquery',
+            'window.jQuery': 'jquery',
         }),
     ],
 };
