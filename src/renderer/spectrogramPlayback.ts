@@ -7,7 +7,7 @@ let Nexus = require('./nexusColored');
 
 export class SpectrogramPlaybackManager extends PlaybackManager {
     readonly spectrogramLocator: Spectrogram;
-    private player: Tone.Player = new Tone.Player().toMaster();
+    private player: Tone.Player = new Tone.Player().toDestination();
 
     protected setPlaybackPositionDisplay(timePosition: number): void {
         this.spectrogramLocator.setPosition(timePosition);
@@ -18,7 +18,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     }
 
     private schedulePlaybackLoop() {
-        this.player.sync(Tone.Transport);
+        this.player.sync();
         Tone.Transport.setLoopPoints(0, 4);
         Tone.Transport.loop = true;
         // stoping playback at every loop ensures that potential new audio

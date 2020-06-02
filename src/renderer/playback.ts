@@ -21,7 +21,7 @@ abstract class TonePlaybackManager implements MinimalPlaybackManager {
     };
 
     async play() {
-        await Tone.context.resume();
+        await Tone.getContext().resume();
         // start the normal way
         this.safeStartPlayback();
     };
@@ -31,7 +31,7 @@ abstract class TonePlaybackManager implements MinimalPlaybackManager {
     };
 
     async stop()  {
-        await Tone.context.resume();
+        await Tone.getContext().resume();
         this.stopSound();
     };
 }
@@ -58,9 +58,9 @@ abstract class VisualPlaybackManager extends TonePlaybackManager {
         const drawCallback = (time) => {
             // DOM modifying callback should be put in Tone.Draw scheduler!
             // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
-            Tone.Draw.schedule((time) => {
-                this.updateCursorPosition();
-            })
+            Tone.Draw.schedule(
+                () => {this.updateCursorPosition();},
+                time)
         };
 
         // schedule quarter-notes clock
@@ -82,13 +82,13 @@ abstract class VisualPlaybackManager extends TonePlaybackManager {
 
 abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
     // Start playback immediately at the beginning of the song
-    protected startPlaybackNowFromBeginning(): Promise<unknown> {
-        return Tone.Transport.start("+0.03", "0:0:0");
+    protected startPlaybackNowFromBeginning(): void {
+        Tone.Transport.start("+0.03", "0:0:0");
     }
 
     // Start playback either immediately or in sync with Link if Link is enabled
     async play(){
-        await Tone.context.resume();
+        await Tone.getContext().resume();
         if (!(LinkClient.isEnabled())) {
             // start the normal way
             this.safeStartPlayback();
@@ -114,8 +114,8 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
 
     // Helper function to access the current measure in the Transport
     protected getCurrentMeasure(): number {
-        const currentMeasure = Tone.Transport.position.split('')[0];
-        return currentMeasure
+        const currentMeasure = Tone.Transport.position.toString().split('')[0];
+        return parseInt(currentMeasure);
     };
 
     // Quick-and-dirty automatic phase-locking to Ableton Link
