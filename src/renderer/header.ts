@@ -38,10 +38,8 @@ export function render(containerElement: HTMLElement, configuration) {
     logoLinkElem.appendChild(logoElem);
 
     logoElem.addEventListener('click', () => {
-        if (screenfull.enabled) {
+        if (screenfull.isEnabled) {
             screenfull.request();
-        } else {
-            // Ignore or do something else
         }
     });
 
