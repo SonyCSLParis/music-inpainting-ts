@@ -249,7 +249,7 @@ export function render(renderPage: (configuration: object) => void): void {
         renderPage(getCurrentConfiguration());
     }
 
-    function renderStartButton() {
+    async function renderStartButton() {
         let startButtonElem: HTMLElement = document.createElement('div');
         startButtonElem.id = 'start-button';
         configurationWindow.appendChild(startButtonElem);
@@ -261,9 +261,10 @@ export function render(renderPage: (configuration: object) => void): void {
             'alternateText': true
         });
 
-        StartAudioContext(Tone.context, startButtonElem.id);
-
-        startButton.on('change', disposeAndStart);
+        startButton.on('change', async () => {
+            await Tone.start();
+            disposeAndStart()
+        });
     }
 
     if ( globalConfiguration['insert_recaptcha'] ) {
