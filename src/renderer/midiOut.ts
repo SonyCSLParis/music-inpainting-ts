@@ -1,13 +1,10 @@
 import * as Tone from 'tone';
-import * as WebMidi from 'webmidi';
+import WebMidi, {Output} from 'webmidi';
 import * as log from 'loglevel';
 
 let Nexus = require('./nexusColored')
 
-let dummyMidiOut = new Tone.Instrument();
-dummyMidiOut.playNote = () => {};
-
-let midiOut = dummyMidiOut;
+let midiOut: false | Output = false;
 
 export function render(useChordsInstrument: boolean = false) {
     let bottomControlsGridElem = document.getElementById('bottom-controls');
@@ -15,21 +12,24 @@ export function render(useChordsInstrument: boolean = false) {
     midiOutSelectElem.id = 'select-midiout';
     bottomControlsGridElem.appendChild(midiOutSelectElem);
 
-    (WebMidi as any).enable(function (err) {
+    WebMidi.enable(function (err) {
         if (err) log.error(err);
 
         let midiOutSelect = new Nexus.Select('#select-midiout', {
             'size': [150, 50],
             'options': ['No Output'].concat(
-                (WebMidi as any).outputs.map((output) => output.name)),
+                WebMidi.outputs.map((output) => output.name)),
         });
 
-        function midiOutOnChange(ev) {
+        function midiOutOnChange(_: any): void {
             if (this.value !== 'No Output') {
-                midiOut = (WebMidi as any).getOutputByName(this.value);
+                if (!(WebMidi.getOutputByName(this.value))) {
+                    log.warn('Midi output ' + this.value + ' not found');
+                }
+                midiOut = WebMidi.getOutputByName(this.value);
             }
             else {
-                midiOut = dummyMidiOut;
+                midiOut = false;
             }
             log.info('Selected MIDI out: ' + this.value);
         };
@@ -40,6 +40,6 @@ export function render(useChordsInstrument: boolean = false) {
 }
 
 
-export function getOutput() {
+export function getOutput(): false | Output {
     return midiOut
 }
