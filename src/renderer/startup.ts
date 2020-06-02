@@ -1,6 +1,7 @@
 // start-up module offering a splash screen in which to select the configuration
+// this menu also allows to properly start the AudioContext upon the user
+// clicking on the start button
 import * as Tone from 'tone';
-import * as StartAudioContext from 'startaudiocontext';
 
 let Nexus = require('./nexusColored');
 
@@ -8,29 +9,23 @@ import '../common/styles/startupSplash.scss';
 
 // defined at compile-time via webpack.DefinePlugin
 declare var COMPILE_ELECTRON: boolean;
-declare var SPECTROGRAM_ONLY: boolean;
-declare var DEFAULT_SERVER_IP: string;
-declare var DEFAULT_SERVER_PORT: string;
-declare const INSERT_RECAPTCHA: boolean;
-declare const RECAPTCHA_SITEKEY: string;
-declare const RECAPTCHA_VERIFICATION_ADDRESS: string;
-declare const DISABLE_SERVER_INPUT: boolean;
-
-declare var grecaptcha: any;
+declare const DEFAULT_SERVER_IP: string;
+declare const DEFAULT_SERVER_PORT: string;
 
 // via https://stackoverflow.com/a/17632779/
 function cloneJSON(obj: object): object {
     return JSON.parse(JSON.stringify(obj));
 }
 
-let defaultConfiguration: object = require('../common/default_config.json');
+import defaultConfiguration from '../common/default_config.json';
 defaultConfiguration['server_ip'] = DEFAULT_SERVER_IP;
 defaultConfiguration['server_port'] = DEFAULT_SERVER_PORT;
-
+import customConfiguration from '../../config.json';
+let globalConfiguration = {...defaultConfiguration, ...customConfiguration};
 
 // TODO don't create modes like this (goes against 12 Factor App principles)
 // should have truly orthogonal configuration options
-let osmdConfiguration: object = cloneJSON(defaultConfiguration);
+let osmdConfiguration: object = cloneJSON(globalConfiguration);
 osmdConfiguration['osmd'] = true;
 osmdConfiguration['spectrogram'] = false;
 
@@ -47,7 +42,7 @@ folkConfiguration["use_chords_instrument"] = false;
 folkConfiguration["annotation_types"] = [];
 folkConfiguration["granularities_quarters"] = ["1", "4", "8", "16"];
 
-let spectrogramConfiguration: object = cloneJSON(defaultConfiguration);
+let spectrogramConfiguration: object = cloneJSON(globalConfiguration);
 spectrogramConfiguration['osmd'] = false;
 spectrogramConfiguration['spectrogram'] = true;
 spectrogramConfiguration['app_name'] = 'notono';
@@ -62,7 +57,7 @@ export function render(renderPage: (configuration: object) => void): void {
     let serverConfigElem: HTMLDivElement;
     let serverIpInput: HTMLInputElement;
     let serverPortInput: HTMLInputElement;
-    if ( !DISABLE_SERVER_INPUT ) {
+    if ( !globalConfiguration['disable_server_input'] ) {
         serverConfigElem = document.createElement('div');
         serverConfigElem.id = 'server-configuration';
         configurationWindow.appendChild(serverConfigElem);
@@ -70,13 +65,13 @@ export function render(renderPage: (configuration: object) => void): void {
         serverIpInput = document.createElement('input');
         serverIpInput.type = 'url';
         serverIpInput.id = 'server-ip-input';
-        serverIpInput.placeholder = `Server IP (default: ${defaultConfiguration['server_ip']})`;
+        serverIpInput.placeholder = `Server IP (default: ${globalConfiguration['server_ip']})`;
         serverConfigElem.appendChild(serverIpInput);
 
         serverPortInput = document.createElement('input');
         serverPortInput.type = 'url';
         serverPortInput.id = 'server-port-input';
-        serverPortInput.placeholder = `Server port (default: ${defaultConfiguration['server_port']})`;
+        serverPortInput.placeholder = `Server port (default: ${globalConfiguration['server_port']})`;
         serverConfigElem.appendChild(serverPortInput);
     }
 
@@ -86,7 +81,7 @@ export function render(renderPage: (configuration: object) => void): void {
 
     let modeConfigElem: HTMLDivElement;
     let applicationModeSelectElem: HTMLSelectElement;
-    if (!SPECTROGRAM_ONLY) {
+    if (!globalConfiguration['spectrogram_only']) {
         modeConfigElem = document.createElement('div');
         modeConfigElem.id = 'mode-configuration';
         configurationWindow.appendChild(modeConfigElem);
@@ -215,7 +210,7 @@ export function render(renderPage: (configuration: object) => void): void {
 
     function getCurrentConfiguration() {
         let applicationMode: string;
-        if (!SPECTROGRAM_ONLY) {
+        if (!globalConfiguration['spectrogram_only']) {
             applicationMode = applicationModeSelectElem.value;
         }
         else {
@@ -236,11 +231,13 @@ export function render(renderPage: (configuration: object) => void): void {
                 configuration = spectrogramConfiguration;
                 break;
         }
-        if (!DISABLE_SERVER_INPUT && serverIpInput.value.length > 0) {
-            configuration['server_ip'] = serverIpInput.value;
-        }
-        if (!DISABLE_SERVER_INPUT && serverPortInput.value.length > 0) {
-            configuration['server_port'] = serverPortInput.value;
+        if ( !globalConfiguration['disable_server_input'] ) {
+            if ( serverIpInput.value.length > 0 ) {
+                configuration['server_ip'] = serverIpInput.value;
+            };
+            if ( serverPortInput.value.length > 0 ) {
+                configuration['server_port'] = serverPortInput.value;
+            };
         }
 
         return configuration;
@@ -269,7 +266,7 @@ export function render(renderPage: (configuration: object) => void): void {
         startButton.on('change', disposeAndStart);
     }
 
-    if ( INSERT_RECAPTCHA ) {
+    if ( globalConfiguration['insert_recaptcha'] ) {
         // load recaptcha library asynchronously
         let recaptcha_script: HTMLScriptElement = document.createElement('script');
         recaptcha_script.src = "https://www.google.com/recaptcha/api.js";
@@ -286,7 +283,7 @@ export function render(renderPage: (configuration: object) => void): void {
 
         async function verifyCaptcha(recaptchaResponse: string) {
             const jsonResponse = await $.post({
-                url: RECAPTCHA_VERIFICATION_ADDRESS,
+                url: globalConfiguration['recaptcha_verification_address'],
                 data: JSON.stringify({
                     'recaptchaResponse': recaptchaResponse
                 }),
@@ -300,7 +297,7 @@ export function render(renderPage: (configuration: object) => void): void {
         let recaptchaElem: HTMLDivElement = document.createElement('div');
         recaptchaElem.id = 'g-recaptcha';
         recaptchaElem.classList.add("g-recaptcha");
-        recaptchaElem.setAttribute('data-sitekey', RECAPTCHA_SITEKEY);
+        recaptchaElem.setAttribute('data-sitekey', globalConfiguration['recaptcha_sitekey']);
         recaptchaElem.setAttribute('data-theme', 'light');
         recaptchaElem.setAttribute('data-callback', 'onreceiveRecaptchaResponse');
         window['onreceiveRecaptchaResponse'] = onreceiveRecaptchaResponse.bind(this);
