@@ -82,7 +82,6 @@ function enableChanges(): void {
 }
 
 async function render(configuration=defaultConfiguration) {
-    await Tone.start();
     disableChanges();
 
     let COMPILE_MUSEUM_VERSION: boolean = true;
