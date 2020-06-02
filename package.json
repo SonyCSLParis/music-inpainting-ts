@@ -86,7 +86,7 @@
     "tone": "^14.5.28",
     "tone-piano": "0.0.12",
     "trip.js": "^3.3.3",
-    "webmidi": "^2.2.0",
+    "webmidi": "^2.3.0",
     "webpack-sources": "^1.0.1",
     "wheelnav": "^1.7.1"
   },
