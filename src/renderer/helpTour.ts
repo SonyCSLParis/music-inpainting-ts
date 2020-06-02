@@ -1,4 +1,4 @@
-import * as $ from "jquery";
+import $ from "jquery";
 import createActivityDetector from 'activity-detector';
 
 import "trip.js/dist/trip.css";
