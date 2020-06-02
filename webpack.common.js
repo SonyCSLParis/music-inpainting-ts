@@ -1,18 +1,14 @@
 let webpack = require('webpack')
-var HtmlWebpackPlugin = require('html-webpack-plugin');
-var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
     plugins: [
         new webpack.DefinePlugin({
             'COMPILE_ELECTRON': true,
-            'DISABLE_SERVER_INPUT': false,
-            'SPECTROGRAM_ONLY': false,
+            // allows to inline this expression to retrieve host details at runtime as default
             'DEFAULT_SERVER_IP': 'window.location.hostname',
+            // defaults to communicating with the http-server for the flask server as well,
+            // uses the proxy option of http-server
             'DEFAULT_SERVER_PORT': 'window.location.port',
-            'INSERT_RECAPTCHA': false,
-            'RECAPTCHA_SITEKEY': null,
-            'RECAPTCHA_VERIFICATION_ADDRESS': null
         }),
 
         new webpack.ProvidePlugin({

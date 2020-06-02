@@ -3,7 +3,6 @@
 
 let webpack = require('webpack')
 var HtmlWebpackPlugin = require('html-webpack-plugin');
-var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const merge = require('webpack-merge');
 const web = require('./webpack.web.js');
@@ -20,8 +19,6 @@ merged_defines = merge.strategy(
             'SPECTROGRAM_ONLY': true,
             'DISABLE_SERVER_INPUT': true,
             'INSERT_RECAPTCHA': true,
-            'RECAPTCHA_SITEKEY': JSON.stringify('6Leab_MUAAAAAP7_u_MTF96FH0-8kLtfNTZiD3yu'),
-            'RECAPTCHA_VERIFICATION_ADDRESS': JSON.stringify('http://ec2-63-33-36-17.eu-west-1.compute.amazonaws.com:8081/verify')
         }),
     ]
 });

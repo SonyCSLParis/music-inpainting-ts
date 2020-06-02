@@ -9,7 +9,9 @@
       "noImplicitAny": false,
       "removeComments": true,
       "declaration": true,
-      "sourceMap": true
+      "sourceMap": true,
+      "resolveJsonModule": true,
+      "esModuleInterop": true
   },
   "allowSyntheticDefaultImports": true,
   "awesomeTypescriptLoaderOptions": {},

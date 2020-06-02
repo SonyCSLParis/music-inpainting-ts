@@ -1,7 +1,7 @@
 {
     "app_name": "nonoto",
 
-    "server_port": 5000,
+    "disable_server_parameters_input": false,
 
     "annotation_types": ["fermata"],
 
@@ -29,5 +29,13 @@
 
     "add_acids_logo": false,
 
-    "link_channel_prefix": "LINK/"
+    "link_channel_prefix": "LINK/",
+
+    "spectrogram_only": false,
+
+    "insert_recaptcha": false,
+    "recaptcha_sitekey": "6Leab_MUAAAAAP7_u_MTF96FH0-8kLtfNTZiD3yu",
+    "recaptcha_verification_address": "http://ec2-63-33-36-17.eu-west-1.compute.amazonaws.com:8081/verify",
+
+    "enable_anonymous_mode": false
 }
