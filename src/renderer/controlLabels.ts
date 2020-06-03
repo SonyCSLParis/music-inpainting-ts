@@ -2,7 +2,7 @@ let configuration = require('../common/default_config.json');
 let localizations = require('../common/localization.json');
 
 export function createLabel(controlElem: HTMLElement, id: string) {
-    let labelElem: HTMLElement = document.createElement('control-item');
+    let labelElem: HTMLElement = document.createElement('control-label');
     labelElem.id = id;
     let controlLabel: string = `<b>${
         localizations['control-labels'][id][configuration["main_language"]]}</b>`;

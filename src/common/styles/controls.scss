@@ -1,3 +1,11 @@
+control-item {
+    filter: drop-shadow(0px 0px 0.7px rgba(0, 0, 0, 0.3)); // rgba(88,164,176,0.9));
+}
+
+control-item, control-label {
+    font-size: large !important;
+}
+
 #play-button {
     grid-row: 1;
     grid-column: 1;

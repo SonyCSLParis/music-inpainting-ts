@@ -105,7 +105,7 @@ export function render(renderPage: (configuration: object) => void): void {
         let deepsheetbutton;
         let spectrogrambutton;
 
-        let deepbachButtonElem: HTMLElement = document.createElement('div');
+        let deepbachButtonElem: HTMLElement = document.createElement('control-item');
         deepbachButtonElem.id = 'deepbach-configuration-button'
         modeConfigElem.appendChild(deepbachButtonElem);
 
@@ -124,7 +124,7 @@ export function render(renderPage: (configuration: object) => void): void {
             applicationModeSelectElem.value = 'chorale';
         });
 
-        let deepsheetButtonElem: HTMLElement = document.createElement('div');
+        let deepsheetButtonElem: HTMLElement = document.createElement('control-item');
         deepsheetButtonElem.id = 'deepsheet-configuration-button'
         modeConfigElem.appendChild(deepsheetButtonElem);
 
@@ -143,7 +143,7 @@ export function render(renderPage: (configuration: object) => void): void {
             applicationModeSelectElem.value = 'leadsheet';
         });
 
-        let deepfolkButtonElem: HTMLElement = document.createElement('div');
+        let deepfolkButtonElem: HTMLElement = document.createElement('control-item');
         deepfolkButtonElem.id = 'deepfolk-configuration-button'
         modeConfigElem.appendChild(deepfolkButtonElem);
 
@@ -162,7 +162,7 @@ export function render(renderPage: (configuration: object) => void): void {
             applicationModeSelectElem.value = 'folk';
         });
 
-        let spectrogrambuttonElem: HTMLElement = document.createElement('div');
+        let spectrogrambuttonElem: HTMLElement = document.createElement('control-item');
         spectrogrambuttonElem.id = 'spectrograms-configuration-button'
         modeConfigElem.appendChild(spectrogrambuttonElem);
 
@@ -185,7 +185,7 @@ export function render(renderPage: (configuration: object) => void): void {
     if (COMPILE_ELECTRON && false){
         // open native file system 'open-file' dialog
 
-        let customButtonElem: HTMLElement = document.createElement('div');
+        let customButtonElem: HTMLElement = document.createElement('control-item');
         customButtonElem.id = 'custom-configuration-button'
         configurationWindow.appendChild(customButtonElem);
 
@@ -250,7 +250,7 @@ export function render(renderPage: (configuration: object) => void): void {
     }
 
     async function renderStartButton() {
-        let startButtonElem: HTMLElement = document.createElement('div');
+        let startButtonElem: HTMLElement = document.createElement('control-item');
         startButtonElem.id = 'start-button';
         configurationWindow.appendChild(startButtonElem);
 

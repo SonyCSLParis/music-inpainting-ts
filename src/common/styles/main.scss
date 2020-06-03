@@ -82,10 +82,14 @@ header {
     margin: auto;
 }
 
-@media screen and (min-width: 500px) {
-    header {
-        display: inline-grid;
-        grid-template-columns: repeat(3, 1fr);
+.header-item-left {
+    filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+.header-item-right {
+    filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.1));
+}
+
     }
 
     .header-item-left {
@@ -157,6 +161,8 @@ header {
 
     font-size: 2.3em;
     font-family: 'Julius' !important;
+
+    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.1));
 }
 
 #help-icon {
@@ -228,10 +234,6 @@ select {
     font-weight: bold;
     font-size: large !important;
     text-transform: capitalize;
-}
-
-control-item {
-    font-size: large !important;
 }
 
 .two-columns {
