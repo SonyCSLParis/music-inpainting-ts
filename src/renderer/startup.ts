@@ -51,28 +51,37 @@ spectrogramConfiguration['add_acids_logo'] = true;
 
 export function render(renderPage: (configuration: object) => void): void {
     let configurationWindow = document.createElement('div');
+    configurationWindow.classList.add('centeredXY');
     configurationWindow.id = 'configuration-selection';
     document.body.appendChild(configurationWindow);
 
     let serverConfigElem: HTMLDivElement;
+    let serverIpContainer: HTMLDivElement;
     let serverIpInput: HTMLInputElement;
+    let serverPortContainer: HTMLDivElement;
     let serverPortInput: HTMLInputElement;
     if ( !globalConfiguration['disable_server_input'] ) {
         serverConfigElem = document.createElement('div');
         serverConfigElem.id = 'server-configuration';
         configurationWindow.appendChild(serverConfigElem);
 
+        serverIpContainer = document.createElement('div');
+        serverIpContainer.id = 'server-ip-container';
+        serverConfigElem.appendChild(serverIpContainer);
         serverIpInput = document.createElement('input');
         serverIpInput.type = 'url';
         serverIpInput.id = 'server-ip-input';
-        serverIpInput.placeholder = `Server IP (default: ${globalConfiguration['server_ip']})`;
-        serverConfigElem.appendChild(serverIpInput);
+        serverIpInput.placeholder = `${globalConfiguration['server_ip']}`;
+        serverIpContainer.appendChild(serverIpInput);
 
+        serverPortContainer = document.createElement('div');
+        serverPortContainer.id = 'server-port-container';
+        serverConfigElem.appendChild(serverPortContainer);
         serverPortInput = document.createElement('input');
         serverPortInput.type = 'url';
         serverPortInput.id = 'server-port-input';
-        serverPortInput.placeholder = `Server port (default: ${globalConfiguration['server_port']})`;
-        serverConfigElem.appendChild(serverPortInput);
+        serverPortInput.placeholder = `${globalConfiguration['server_port']}`;
+        serverPortContainer.appendChild(serverPortInput);
     }
 
     // let serverUrlInputLabel: HTMLLabelElement = document.createElement('label');
@@ -258,12 +267,13 @@ export function render(renderPage: (configuration: object) => void): void {
             'size': [150,50],
             'state': false,
             'text': 'Start',
-            'alternateText': true
+            // required to put the button in 'toggle' mode
+            'alternateText': 'Start',
         });
 
         startButton.on('change', async () => {
             await Tone.start();
-            disposeAndStart()
+            disposeAndStart();
         });
     }
 
