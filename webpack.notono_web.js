@@ -14,13 +14,7 @@ merged_defines = merge.strategy(
 )(web, {
     mode: 'production',
 
-    plugins: [
-        new webpack.DefinePlugin({
-            'SPECTROGRAM_ONLY': true,
-            'DISABLE_SERVER_INPUT': true,
-            'INSERT_RECAPTCHA': true,
-        }),
-    ]
+    devtool: false
 });
 
 module.exports = merge(

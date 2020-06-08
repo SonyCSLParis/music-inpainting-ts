@@ -18,8 +18,7 @@ merged_defines = merge.strategy(
 
     plugins: [
         new webpack.DefinePlugin({
-            'ENABLE_ANONYMOUS_MODE': true,
-            'INSERT_RECAPTCHA': false
+            'ENABLE_ANONYMOUS_MODE': true
         }),
     ]
 });
