@@ -11,6 +11,7 @@ import '../common/styles/startupSplash.scss';
 declare var COMPILE_ELECTRON: boolean;
 declare const DEFAULT_SERVER_IP: string;
 declare const DEFAULT_SERVER_PORT: string;
+declare const ENABLE_ANONYMOUS_MODE: boolean;
 
 // via https://stackoverflow.com/a/17632779/
 function cloneJSON(obj: object): object {
@@ -46,7 +47,15 @@ let spectrogramConfiguration: object = cloneJSON(globalConfiguration);
 spectrogramConfiguration['osmd'] = false;
 spectrogramConfiguration['spectrogram'] = true;
 spectrogramConfiguration['app_name'] = 'notono';
-spectrogramConfiguration['add_acids_logo'] = true;
+spectrogramConfiguration['acids_logo'] = true;
+
+
+if ( ENABLE_ANONYMOUS_MODE ) {
+    spectrogramConfiguration['app_name'] = 'VQ-Inpainting';
+    spectrogramConfiguration['sony_logo'] = false;
+    spectrogramConfiguration['acids_logo'] = false;
+    document.body.classList.add('anonymous-mode');
+}
 
 
 export function render(renderPage: (configuration: object) => void): void {

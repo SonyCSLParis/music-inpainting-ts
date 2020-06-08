@@ -92,6 +92,20 @@ header {
     }
 }
 
+body.anonymous-mode {
+    header {
+        grid-template-rows: auto !important;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    #app-title {
+        grid-row: 1;
+        grid-column: 2;
+        font-size: min(5vh, 10vw) !important;
+    }
+}
+
+
 .header-item-left {
     filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.1));
 }
@@ -128,6 +142,7 @@ header picture, header img {
 
 #app-title {
     user-select: none;
+    white-space: nowrap;
     cursor: default;
 
     display: flex;
