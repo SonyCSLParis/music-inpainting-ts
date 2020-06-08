@@ -223,8 +223,7 @@ async function render(configuration=defaultConfiguration) {
         spectrogramImageElem.id = 'spectrogram-image';
         spectrogramContainerElem.appendChild(spectrogramImageElem);
 
-        console.log("WARNING: sloppy implementation here!!! CHECK PARAMETERS")
-        let spectrogram = new Spectrogram(spectrogramContainerElem, {}, [1], () => {});
+        let spectrogram = new Spectrogram(spectrogramContainerElem);
 
         spectrogramPlaybackManager = new SpectrogramPlaybackManager(4.,
             spectrogram);

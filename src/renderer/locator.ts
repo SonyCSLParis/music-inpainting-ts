@@ -12,18 +12,13 @@ export class Spectrogram {
     readonly interfaceContainer: HTMLElement;
     private sequencer = null;
 
-    constructor(container: HTMLElement, options: object = {},
-            boxDurations_quarters: number[],
-            copyTimecontainerContent: (origin: HTMLElement, target: HTMLElement) => void) {
+    constructor(container: HTMLElement, options: object = {}) {
         this.container = container;
 
         // necessary to handle 'busy' state cursor change and pointer events disabling
         this.interfaceContainer = document.createElement('div');
         this.interfaceContainer.id = this.container.id + '-interface-container';
         this.container.appendChild(this.interfaceContainer);
-
-        this._boxDurations_quarters = boxDurations_quarters;
-        this.copyTimecontainerContent = copyTimecontainerContent;
 
         window.addEventListener('resize', (uiEvent: UIEvent) => {
             clearTimeout(this.resizeTimeout);
