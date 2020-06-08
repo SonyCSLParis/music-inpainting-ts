@@ -9,6 +9,7 @@ module.exports = {
             // defaults to communicating with the http-server for the flask server as well,
             // uses the proxy option of http-server
             'DEFAULT_SERVER_PORT': 'window.location.port',
+            'ENABLE_ANONYMOUS_MODE': true,
         }),
 
         new webpack.ProvidePlugin({
