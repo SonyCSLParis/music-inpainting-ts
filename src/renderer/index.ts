@@ -2,7 +2,6 @@
 import { Spectrogram } from './locator';
 import { Fraction } from 'opensheetmusicdisplay';
 import $ from "jquery";
-import 'jquery-awesome-cursor';
 import * as WebMidi from 'webmidi';
 import * as MidiConvert from "midiconvert";
 import * as Tone from 'tone';
