@@ -1,11 +1,9 @@
 // Simple module to store and share the color parameters for Nexus UI
 
-import * as Nexus from 'nexusui'
+import * as Nexus from 'nexusui';
+import colors from '../common/styles/mixins/_colors.scss';
 
-// TODO: use CSS classes!
-// this will allow to share the colors with non-Nexus UI elements, e.g. icons
-
-Nexus.colors.accent = '#A3BCF9';
-Nexus.colors.fill = '#58A4B0';
+Nexus.colors.accent = colors.active_control;
+Nexus.colors.fill = colors.idle_control;
 
 export = Nexus

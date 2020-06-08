@@ -1,0 +1,11 @@
+$body-background: #C8DADF;
+$panes-background: #BEB9D4;
+
+$idle-control: #58A4B0;
+$active-control: #A3BCF9;
+
+:export {
+    // see https://github.com/css-modules/icss
+    idle_control: $idle_control;
+    active_control: $active_control;
+}
