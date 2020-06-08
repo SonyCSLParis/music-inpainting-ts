@@ -68,14 +68,10 @@
 
 #server-configuration {
     &:before {
-        content: '';
-        display: none;
-        @media screen and (max-width: 400px) {
-            display: inline-block;
-            content: "Server configuration";
-        }
+        grid-row: 1;
+        content: "Server configuration";
+        grid-column: 1/-1;
         width: 100%;
-        // margin-right: auto;
     }
 
     display: grid;
@@ -99,9 +95,9 @@
 
 #server-ip-container:before {
     content: "IP";
-    @media screen and (min-width: 400px) {
-        content: "Server IP";
-    }
+    // @media screen and (min-width: 400px) {
+    //     content: "Server IP";
+    // }
     display: inline-block;
     width: 35%;
     margin-right: auto;
@@ -109,9 +105,9 @@
 }
 #server-port-container:before {
     content: "Port";
-    @media screen and (min-width: 400px) {
-        content: "Server port";
-    }
+    // @media screen and (min-width: 400px) {
+    //     content: "Server port";
+    // }
     display: inline-block;
     width: 35%;
 }
