@@ -11,5 +11,9 @@ module.exports = function(config) {
       cssLoader.options.modules = false
     })
 
-    return merge.smart(common, config)
+    return merge.smart(merge(common, {
+      target: "electron-preload",
+
+      output: (process.env.NODE_ENV === 'production' ? {filename: 'renderer.prod.js'} : {}),
+    }), config)
   };
