@@ -169,8 +169,12 @@ async function render(configuration=defaultConfiguration) {
         }
     });
 
-    let serverPort: number = configuration['server_port'];
     let serverIp: string = configuration['server_ip'];
+    if (serverIp.charAt(serverIp.length-1) == '/') {
+        // strip irrelevant slash at end of IP or address
+        serverIp = serverIp.substring(0, serverIp.length-1);
+    }
+    let serverPort: number = configuration['server_port'];
     let serverUrl = `http://${serverIp}:${serverPort}/`;
 
     function insertLoadingSpinner(container: HTMLElement): HTMLElement {
