@@ -1,0 +1,154 @@
+@use "mixins/measures";
+@use "mixins/colors";
+
+header {
+    position: absolute;
+    display: grid;
+    width: 100%;
+    height: measures.$header-height;
+    top: 0;
+    left: 0;
+
+    background-color: colors.$panes-background;
+    opacity: 1;
+    box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.21);
+    font-size: 25px;
+
+    align-self: center;
+    justify-self: center;
+    margin: auto;
+
+    justify-items: center;
+    align-items: center;
+}
+
+@media screen and (max-width: 500px) {
+    header {
+        grid-template-rows: 15% 40% 30% 15%;
+        grid-template-columns: repeat(5, 20%);
+    }
+
+    #app-title {
+        grid-row: 2;
+        grid-column: 3;
+        font-size: 11vw !important;
+    }
+
+    .header-item-left, .header-item-right {
+        grid-row: 3;
+        justify-self: center;
+        margin: none;
+    }
+
+    .header-item-left {
+        grid-column: 2;
+    }
+
+    .header-item-right {
+        grid-column: 4;
+    }
+
+    #help-icon {
+        // Hide text content, display only icon
+        // via [https://stackoverflow.com/a/471538]
+        text-indent: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        // HACK Manual offset to center in header
+        top: -38px;
+        width: 45px;
+    }
+}
+
+@media screen and (min-width: 500px) {
+    header {
+        grid-template-rows: auto;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .header-item-left {
+        grid-row: 1;
+        grid-column: 1;
+        margin-left: 25px;
+        justify-self: left;
+    }
+
+    #app-title {
+        grid-row: 1;
+        grid-column: 2;
+    }
+
+    .header-item-right {
+        grid-row: 1;
+        grid-column: 3;
+        margin-right: 25px;
+        justify-self: right;
+
+        & img {
+            display: block;
+            max-height: 40px;
+            max-width: 160px;
+        }
+    }
+}
+
+.header-item-left {
+    filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+.header-item-right {
+    filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+.header-item-left, .header-item-right {
+    display: flex;
+    align-self: center;
+
+    & img {
+        width: 100%;
+        shape-rendering: auto;
+    }
+}
+
+header picture, header img {
+    height: inherit;
+}
+
+.logo {
+    @media screen and (max-width: 700px) {
+        width: 40px;
+        height: 23px;
+    }
+
+    @media screen and (min-width: 700px) {
+        width: 160px;
+        height: 50px;
+    }
+}
+
+#app-title {
+    user-select: none;
+    cursor: default;
+
+    display: flex;
+
+    font-size: 2.3em;
+    font-family: 'Julius' !important;
+}
+
+#help-icon {
+    position: relative;
+    justify-self: right;
+    align-self: inherit;
+    margin-right: 25px;
+    cursor: pointer;
+    font-size: x-large;
+
+    &:before {
+        content: "\F05A";
+        left: -30px;
+        top: 0;
+        font-family: 'FontAwesome';
+        position: absolute;
+    }
+}

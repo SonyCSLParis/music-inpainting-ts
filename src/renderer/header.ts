@@ -2,6 +2,7 @@ import * as Path from 'path';
 import * as screenfull from 'screenfull';
 
 import '../common/styles/main.scss';
+import '../common/styles/header.scss';
 
 import { static_correct } from './staticPath';
 
@@ -20,24 +21,32 @@ if (COMPILE_ELECTRON) {
 
 
 export function render(containerElement: HTMLElement, configuration) {
-    let logoLinkElem = document.createElement('div');
-    logoLinkElem.id = 'csl-logo';
-    logoLinkElem.classList.add('header-item-left');
-    // logoLinkElem.href = "https://www.sonycsl.co.jp/";
+    let cslLogoLinkElem = document.createElement('a');
+    cslLogoLinkElem.id = 'csl-logo';
+    cslLogoLinkElem.classList.add('header-item-left');
+    // cslLogoLinkElem.href = "https://www.sonycsl.co.jp/";
     //
     // // open in new tab
-    // logoLinkElem.target = '_blank';
+    // cslLogoLinkElem.target = '_blank';
     // // securely open tab, cf. https://stackoverflow.com/a/15551842
-    // logoLinkElem.rel = "noopener noreferrer";
+    // cslLogoLinkElem.rel = "noopener noreferrer";
 
-    containerElement.appendChild(logoLinkElem);
+    containerElement.appendChild(cslLogoLinkElem);
 
-    let logoElem = document.createElement('img');
-    logoElem.src = Path.join(static_correct, '/icons/sonycsl-logo.svg');
-    logoElem.alt = 'Sony CSL Logo';
-    logoLinkElem.appendChild(logoElem);
+    let cslLogoContainerElem = document.createElement('picture');
+    cslLogoContainerElem.classList.add('logo');
+    cslLogoLinkElem.appendChild(cslLogoContainerElem);
+    let CslLargeLogoElem = document.createElement('source');
+    CslLargeLogoElem.type = "image/svg+xml";
+    CslLargeLogoElem.media = "(min-width: 700px)";
+    CslLargeLogoElem.srcset = Path.join(static_correct, '/icons/logos/sonycsl-logo.svg');
+    cslLogoContainerElem.appendChild(CslLargeLogoElem);
+    let CslSmallLogoElem = document.createElement('img');
+    CslSmallLogoElem.src = Path.join(static_correct, '/icons/logos/sonycsl-logo-no_text.svg');
+    CslSmallLogoElem.alt = 'Sony CSL Logo';
+    cslLogoContainerElem.appendChild(CslSmallLogoElem);
 
-    logoElem.addEventListener('click', () => {
+    cslLogoLinkElem.addEventListener('click', () => {
         if (screenfull.isEnabled) {
             screenfull.request();
         }
@@ -49,18 +58,25 @@ export function render(containerElement: HTMLElement, configuration) {
 
     containerElement.appendChild(nameElem);
 
-
     if ( configuration['add_acids_logo'] ) {
-        let acidsLogoLinkElem = document.createElement('div');
+        let acidsLogoLinkElem = document.createElement('a');
         acidsLogoLinkElem.id = 'acids-logo';
         acidsLogoLinkElem.classList.add('header-item-right');
 
         containerElement.appendChild(acidsLogoLinkElem);
 
-        let acidsLogoElem = document.createElement('img');
-        acidsLogoElem.src = Path.join(static_correct, '/icons/acids-flat-logo.png');
-        acidsLogoElem.alt = 'ACIDS Team Logo';
-        acidsLogoLinkElem.appendChild(acidsLogoElem);
+        let acidsLogoContainerElem = document.createElement('picture');
+        acidsLogoContainerElem.classList.add('logo');
+        acidsLogoLinkElem.appendChild(acidsLogoContainerElem);
+        let acidsLargeLogoElem = document.createElement('source');
+        acidsLargeLogoElem.type = "image/png";
+        acidsLargeLogoElem.media = "(min-width: 700px)";
+        acidsLargeLogoElem.srcset = Path.join(static_correct, '/icons/logos/acids-flat-logo.png');
+        acidsLogoContainerElem.appendChild(acidsLargeLogoElem);
+        let acidsSmallLogoElem = document.createElement('img');
+        acidsSmallLogoElem.src = Path.join(static_correct, '/icons/logos/acids-flat-logo-no_text.png');
+        acidsSmallLogoElem.alt = 'ACIDS Team Logo';
+        acidsLogoContainerElem.appendChild(acidsSmallLogoElem);
     }
 
 
