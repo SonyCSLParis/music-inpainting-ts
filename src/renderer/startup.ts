@@ -69,7 +69,7 @@ export function render(renderPage: (configuration: object) => void): void {
     let serverIpInput: HTMLInputElement;
     let serverPortContainer: HTMLDivElement;
     let serverPortInput: HTMLInputElement;
-    if ( !globalConfiguration['disable_server_input'] ) {
+    if ( !globalConfiguration['disable_server_parameters_input'] ) {
         serverConfigElem = document.createElement('div');
         serverConfigElem.id = 'server-configuration';
         configurationWindow.appendChild(serverConfigElem);
