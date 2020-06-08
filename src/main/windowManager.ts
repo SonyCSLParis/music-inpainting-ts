@@ -9,9 +9,20 @@ const isDevelopment = process.env.NODE_ENV !== 'production'
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow: BrowserWindow;
 
+import defaultConfiguration from '../common/default_config.json';
+import customConfiguration from '../../config.json';
+let globalConfiguration = {...defaultConfiguration, ...customConfiguration};
+
 export function createWindow() {
   // Create the browser window.
-  mainWindow = new BrowserWindow()
+  mainWindow = new BrowserWindow({
+    title: globalConfiguration['app_name'],
+    webPreferences: process.env.NODE_ENV === 'development'
+        ? { nodeIntegration: true }
+        : {
+            preload: path.join(__dirname, 'dist/renderer.prod.js')
+          }
+    })
 
   if (isDevelopment) {
     mainWindow.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`)
@@ -25,8 +36,6 @@ export function createWindow() {
       slashes: true
     }))
   }
-  // TODO(theis) Remove this!
-  mainWindow.webContents.openDevTools()
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
@@ -37,9 +46,9 @@ export function createWindow() {
   })
 
   mainWindow.webContents.on('devtools-opened', () => {
-      mainWindow.focus()
+      mainWindow.focus();
       setImmediate(() => {
-          mainWindow.focus()
+          mainWindow.focus();
       })
   })
 }
