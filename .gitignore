@@ -86,3 +86,4 @@ downloadedIcons/
 src/**/*.d.ts
 
 .DS_Store
+.vscode/
