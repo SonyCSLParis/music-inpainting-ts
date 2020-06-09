@@ -12,6 +12,7 @@ declare var COMPILE_ELECTRON: boolean;
 declare const DEFAULT_SERVER_IP: string;
 declare const DEFAULT_SERVER_PORT: string;
 declare const ENABLE_ANONYMOUS_MODE: boolean;
+const isDevelopment: boolean = process.env.NODE_ENV !== 'production';
 
 // via https://stackoverflow.com/a/17632779/
 function cloneJSON(obj: object): object {
@@ -249,7 +250,7 @@ export function render(renderPage: (configuration: object) => void): void {
                 configuration = spectrogramConfiguration;
                 break;
         }
-        if ( !globalConfiguration['disable_server_input'] ) {
+        if ( !globalConfiguration['disable_server_parameters_input'] ) {
             if ( serverIpInput.value.length > 0 ) {
                 configuration['server_ip'] = serverIpInput.value;
             };
@@ -262,9 +263,10 @@ export function render(renderPage: (configuration: object) => void): void {
     }
 
     function disposeAndStart() {
+        let currentConfiguration = getCurrentConfiguration();
         // clean-up the splash screen
         dispose();
-        renderPage(getCurrentConfiguration());
+        renderPage(currentConfiguration);
     }
 
     async function renderStartButton() {
@@ -302,8 +304,15 @@ export function render(renderPage: (configuration: object) => void): void {
         }
 
         async function verifyCaptcha(recaptchaResponse: string) {
+            const currentConfiguration = getCurrentConfiguration();
+            const recaptchaVerificationIp = (
+                globalConfiguration['recaptcha_verification_ip']
+                || currentConfiguration['server_ip']);
+            const recaptchaVerificationPort: number = globalConfiguration['recaptcha_verification_port'];
+            const recaptchaVerificationCommand: string = globalConfiguration['recaptcha_verification_command'];
+            const recaptchaVerificationUrl: string = `http://${recaptchaVerificationIp}:${recaptchaVerificationPort}/${recaptchaVerificationCommand}`;
             const jsonResponse = await $.post({
-                url: globalConfiguration['recaptcha_verification_address'],
+                url: recaptchaVerificationUrl,
                 data: JSON.stringify({
                     'recaptchaResponse': recaptchaResponse
                 }),
@@ -317,8 +326,16 @@ export function render(renderPage: (configuration: object) => void): void {
         let recaptchaElem: HTMLDivElement = document.createElement('div');
         recaptchaElem.id = 'g-recaptcha';
         recaptchaElem.classList.add("g-recaptcha");
-        recaptchaElem.setAttribute('data-sitekey', globalConfiguration['recaptcha_sitekey']);
-        recaptchaElem.setAttribute('data-theme', 'light');
+
+        // special all-access development key provided at:
+        // https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do
+        const recaptchaDevSitekey: string = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+        const recaptchaSitekey: string = (!isDevelopment
+            ? (globalConfiguration['recaptcha_sitekey'])
+            : recaptchaDevSitekey);
+        recaptchaElem.setAttribute('data-sitekey', recaptchaSitekey);
+
+        recaptchaElem.setAttribute('data-theme', 'dark');
         recaptchaElem.setAttribute('data-callback', 'onreceiveRecaptchaResponse');
         window['onreceiveRecaptchaResponse'] = onreceiveRecaptchaResponse.bind(this);
         configurationWindow.appendChild(recaptchaElem);
