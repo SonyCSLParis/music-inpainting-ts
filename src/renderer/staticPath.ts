@@ -5,7 +5,7 @@ import * as path from 'path';
 declare var COMPILE_ELECTRON: boolean;
 
 const isWeb = !COMPILE_ELECTRON;
-const isDevelopment = process.env.NODE_ENV !== 'production'
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
 // variable gets created by electron-webpack
 // points to the `static` resources directory
