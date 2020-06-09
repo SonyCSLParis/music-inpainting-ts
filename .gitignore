@@ -78,6 +78,7 @@ tonejs-instruments*
 # compiled application
 app/
 web/
+build/
 
 # downloaded icon packs
 downloadedIcons/
