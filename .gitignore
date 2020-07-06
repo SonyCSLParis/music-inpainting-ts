@@ -88,3 +88,6 @@ src/**/*.d.ts
 
 .DS_Store
 .vscode/
+
+# ignore changes to the local configuration file
+config.json
