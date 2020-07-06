@@ -128,9 +128,11 @@ async function render(configuration=defaultConfiguration) {
 
     $(() => {
         let vqvaeLayerIcons: Map<string, string> = new Map([
-                ['bottom-brush', 'paint-brush-small.svg'],
-                ['top-brush', 'paint-roller.svg'],
-                ['top-eraser', 'edit-tools.svg']
+                ['top-brush', 'paint-brush-small.svg'],
+                ['bottom-brush', 'paint-roller.svg'],
+                ['top-brush-random', 'paint-brush-small-random.svg'],
+                ['bottom-brush-random', 'paint-roller-random.svg'],
+                ['top-eraser', 'edit-tools.svg'],
             ])
 
         let vqvaeLayerDimensions: Map<string, [number, number]> = new Map([
@@ -308,10 +310,8 @@ async function render(configuration=defaultConfiguration) {
                         + '&eraser_amplitude=0.1');
                     const split_tool_select = vqvaeLayerSelect.value.split('-')
                     let command: string;
-                    switch ( split_tool_select.length ) {
-                        case 1: {  throw EvalError; };
-                        case 2: {
-                            switch ( split_tool_select[1] ) {
+                    if ( split_tool_select.length >= 2 ) {
+                        switch ( split_tool_select[1] ) {
                                 case 'eraser': {
                                     command = 'erase';
                                     break;
@@ -320,11 +320,16 @@ async function render(configuration=defaultConfiguration) {
                                     command = 'timerange-change';
                                     break;
                                 };
-                            };
-                            break;
                         };
-                        default: { throw EvalError; };
                     }
+                    else {
+                        throw EvalError;
+                    }
+
+                    generationParameters += '&uniform_sampling=' + (
+                        ( split_tool_select.length == 3 && split_tool_select[2] == 'random' )
+                    ).toString();
+
                     loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
                         command + generationParameters, sendCodesWithRequest, mask);
                 }
