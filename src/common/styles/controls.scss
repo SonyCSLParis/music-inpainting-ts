@@ -8,6 +8,10 @@ control-item {
     border-radius: 4px !important;
 }
 
+control-item * {
+    color: colors.$idle-control;
+}
+
 control-item, control-label {
     font-size: large !important;
 }
