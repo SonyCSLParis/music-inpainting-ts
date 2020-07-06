@@ -1,6 +1,5 @@
 // import * as nipplejs from "nipplejs";
 import { Spectrogram } from './locator';
-import { Fraction } from 'opensheetmusicdisplay';
 import $ from "jquery";
 import * as WebMidi from 'webmidi';
 import * as MidiConvert from "midiconvert";
