@@ -15,8 +15,8 @@
     "serve:web_anonymous": "http-server -p 8080 -P http://localhost:5000 ./web/dist_anonymous",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "dev": "yarn link-osmd && electron-webpack dev",
-    "compile": "yarn link-osmd && electron-webpack"
+    "dev": "electron-webpack dev",
+    "compile": "electron-webpack"
   },
   "repository": {
     "type": "git",
