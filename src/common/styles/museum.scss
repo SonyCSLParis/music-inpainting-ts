@@ -5,17 +5,6 @@
 //     pointer-events: none!important;
 // }
 
-// Disable y-scrolling
-[data-simplebar="init"] .simplebar-scroll-content, [data-simplebar="init"] .simplebar-content {
-    overflow-y: hidden;
-    overflow-x: scroll;
-}
-
-.simplebar-scroll-content .simplebar-content {
-    overflow-x: scroll;
-    overflow-y: hidden;
-}
-
 div.trip-block {
     min-width: 400px;
     max-width: 20vw!important;
