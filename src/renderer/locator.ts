@@ -9,6 +9,7 @@ export class Spectrogram {
     protected resizeTimeoutDuration: number = 10;
     protected resizeTimeout: NodeJS.Timeout;
     readonly container: HTMLElement;
+    readonly shadowContainer: HTMLElement;
     readonly interfaceContainer: HTMLElement;
     private sequencer = null;
 
@@ -20,10 +21,14 @@ export class Spectrogram {
         this.interfaceContainer.id = this.container.id + '-interface-container';
         this.container.appendChild(this.interfaceContainer);
 
+        this.shadowContainer = document.createElement('div');
+        this.shadowContainer.id = this.container.id + '-shadow-container';
+        this.interfaceContainer.appendChild(this.shadowContainer);
+
         window.addEventListener('resize', (uiEvent: UIEvent) => {
             clearTimeout(this.resizeTimeout);
             this.resizeTimeout = setTimeout(() => {
-                this.render(this.numRows, this.numColumns);},
+                this.render(this.numRows, this.numColumns, this.numColumnsTop);},
                 this.resizeTimeoutDuration)
         })
     }
@@ -66,12 +71,17 @@ export class Spectrogram {
         return this.sequencer.columns;
     };
 
-    public render(numRows: number, numColumns: number, onclickFactory=undefined): void {
+    protected numColumnsTop: number = 4;
+
+    public vqvaeTimestepsTop: number = 4;
+
+    public render(numRows: number, numColumns: number, numColumnsTop: number,
+            onclickFactory=undefined): void {
         if ( this.sequencer !== null ) {
             this.sequencer.destroy();}
-        this.drawTimestampBoxes(onclickFactory, numRows, numColumns);
-        this.container.setAttribute('sequenceDuration_quarters',
-            this.sequenceDuration_quarters.toString());
+        this.drawTimestampBoxes(onclickFactory, numRows, numColumns, numColumnsTop);
+        // this.container.setAttribute('sequenceDuration_quarters',
+        //     this.vqvaeTimestepsTop.toString());
     }
 
     public clear(): void {
@@ -79,6 +89,7 @@ export class Spectrogram {
     }
 
     public isEmpty(): boolean {
+        // check if the mask contains at least one active cell to regenerate
         return this.mask.reduce(
             (acc, val) => acc + val.reduce((acc, val) => acc+val, 0), 0) == 0
     }
@@ -90,15 +101,10 @@ export class Spectrogram {
         return ((value - shift) * 10.0 * this.zoom);
     };
 
-    public get sequenceDuration_quarters(): number {
-        // TODO(theis): check this, does it make any sense to have this attribute?
-        return 2;
-    }
-
     public drawTimestampBoxes(onclickFactory: undefined,
-        numRows: number, numColumns: number): void{
+        numRows: number, numColumns: number, numColumnsTop: number): void{
             const spectrogramImageElem: HTMLImageElement = this.container.getElementsByTagName('img')[0];
-            const width: number = spectrogramImageElem.clientWidth;
+            const width: number = this.interfaceContainer.clientWidth;
             const height: number = spectrogramImageElem.clientHeight;
 
             this.sequencer = new Nexus.Sequencer(this.interfaceContainer.id, {
@@ -107,9 +113,37 @@ export class Spectrogram {
                 'rows': numRows,
                 'columns': numColumns,
             });
+            this.numColumnsTop = numColumnsTop;
             // make the matrix overlay transparent
             this.sequencer.colorize("accent", "rgba(255, 255, 255, 1)");
             this.sequencer.colorize("fill", "rgba(255, 255, 255, 0.4)");
+
+            const snapPointsContainer = document.getElementById('snap-points');
+            // clear existing snap points
+            while (snapPointsContainer.firstChild) {
+                snapPointsContainer.removeChild(snapPointsContainer.lastChild);
+            }
+
+            // TODO, FIXME, HACK(theis): super hacky creation of snap points
+            // relies on 'simplebar's kinda glitchy handling of CSS scroll-snap,
+            // see: https://github.com/Grsmto/simplebar/issues/437
+            const numScrollSteps = this.vqvaeTimestepsTop - numColumnsTop;
+            console.log("numColumnsTop: " + numColumnsTop);
+            console.log("vqvaeTimestepsTop: " + this.vqvaeTimestepsTop);
+            console.log("numScrollSteps: " + numScrollSteps);
+            Array(2 * numScrollSteps).fill(0).forEach(
+                () => {
+                    let snapElem = document.createElement('snap');
+                    snapPointsContainer.appendChild(snapElem);
+            });
+
+            // update image scaling to match snap points
+            const timeStepWidth_px: number = width / numColumnsTop;
+            spectrogramImageElem.width = timeStepWidth_px * this.vqvaeTimestepsTop;
+            snapPointsContainer.style.width = (timeStepWidth_px * this.vqvaeTimestepsTop).toString() + 'px';
+
+            // TODO(theis): must adapt the spectrogram's image size to the resulting grid's size
+            // since the grid size is rounded up to the number of rows and columns
     }
 }
 

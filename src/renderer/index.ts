@@ -27,14 +27,16 @@ import * as ControlLabels from './controlLabels';
 import { createWavInput } from './file_upload';
 import * as SplashScreen from './startup';
 
-// import 'simplebar';
-// import 'simplebar/packages/simplebar/src/simplebar.css';
+import 'simplebar';
+import 'simplebar/src/simplebar.css';
 
 import '../common/styles/osmd.scss';
 import '../common/styles/spectrogram.scss';
 import '../common/styles/main.scss';
 import '../common/styles/controls.scss';
+import '../common/styles/simplebar.scss';
 import '../common/styles/disableMouse.scss';
+import { isNull } from 'util';
 
 // defined at compile-time via webpack.DefinePlugin
 declare var COMPILE_ELECTRON: boolean;
@@ -50,6 +52,17 @@ let pitchControl: NumberControl;
 let instrumentSelect: CycleSelect;
 let vqvaeLayerSelect: CycleSelect;
 let downloadButton: DownloadButton;
+
+function triggerInterfaceRefresh(): void {
+    vqvaeLayerSelect.value = vqvaeLayerSelect.value;
+};
+
+// TODO don't create globals like this
+let currentCodes_top: number[][] = null;
+let currentCodes_bottom: number[][] = null;
+let currentConditioning_top: Map<string, (number|string)[][]> = null;
+let currentConditioning_bottom: Map<string, (number|string)[][]> = null;
+let currentXML: XMLDocument;
 
 function toggleBusyClass(state: boolean): void {
     $('body').toggleClass('busy', state);
@@ -152,7 +165,9 @@ async function render(configuration=defaultConfiguration) {
         function vqvaeLayerOnChange(ev) {
             let newLayer: string = <string>this.value.split('-')[0];
             let [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(newLayer);
-            spectrogramPlaybackManager.spectrogramLocator.render(newNumRows, newNumColumns);
+            let [_, numColumnsTop] = vqvaeLayerDimensions.get('top');
+            spectrogramPlaybackManager.spectrogramLocator.render(newNumRows, newNumColumns,
+                numColumnsTop);
         };
 
         vqvaeLayerSelect = new CycleSelect(granularitySelectContainerElem,
@@ -224,14 +239,26 @@ async function render(configuration=defaultConfiguration) {
         spectrogramContainerElem.id = 'spectrogram-container';
         mainPanel.appendChild(spectrogramContainerElem);
 
+        let spectrogramImageContainerElem = document.createElement('div');
+        spectrogramImageContainerElem.id = 'spectrogram-image-container';
+        spectrogramImageContainerElem.toggleAttribute('data-simplebar', true);
+        // spectrogramImageContainerElem.setAttribute('data-simplebar-auto-hide', "false");
+        // spectrogramImageContainerElem.setAttribute('force-visible', 'x');
+        spectrogramContainerElem.appendChild(spectrogramImageContainerElem);
+
+        let spectrogramPictureElem = document.createElement('picture');
+        spectrogramPictureElem.id = 'spectrogram-picture';
+        spectrogramImageContainerElem.appendChild(spectrogramPictureElem);
         let spectrogramImageElem = document.createElement('img');
         spectrogramImageElem.id = 'spectrogram-image';
-        spectrogramContainerElem.appendChild(spectrogramImageElem);
+        spectrogramPictureElem.appendChild(spectrogramImageElem);
+        let spectrogramSnapPointsElem = document.createElement('div');
+        spectrogramSnapPointsElem.id = 'snap-points';
+        spectrogramPictureElem.appendChild(spectrogramSnapPointsElem);
 
         let spectrogram = new Spectrogram(spectrogramContainerElem);
 
-        spectrogramPlaybackManager = new SpectrogramPlaybackManager(4.,
-            spectrogram);
+        spectrogramPlaybackManager = new SpectrogramPlaybackManager(spectrogram);
         playbackManager = spectrogramPlaybackManager;
         PlaybackCommands.setPlaybackManager(spectrogramPlaybackManager);
 
@@ -240,7 +267,8 @@ async function render(configuration=defaultConfiguration) {
         const initial_command = ('?pitch=' + pitchControl.value.toString()
             + '&instrument_family_str=' + instrumentSelect.value
             + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
-            + '&temperature=1');
+            + '&temperature=1'
+            + '&duration_top=4');
 
         loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
             'sample-from-dataset' + initial_command, sendCodesWithRequest).then(
@@ -282,11 +310,31 @@ async function render(configuration=defaultConfiguration) {
         return currentConditioningMap
     }
 
+    function getCurrentSpectrogramPositionTopLayer(): number {
+        const spectrogramImageContainerElem = document.getElementById('spectrogram-image-container');
+        const scrollElem = spectrogramImageContainerElem.getElementsByClassName('simplebar-content-wrapper')[0];
+        const isScrollable: boolean = (scrollElem.scrollWidth - scrollElem.clientWidth) > 0;
+        if (!isScrollable) {
+            return 0
+        }
+        else {
+            const currentScrollRatio = scrollElem.scrollLeft / (scrollElem.scrollWidth - scrollElem.clientWidth);
+            const spectrogramPictureElem = document.getElementById('spectrogram-picture');
+            const snapContainerWidth = document.getElementById('snap-points').clientWidth;
+            const snapColumnWidth = spectrogramPictureElem.getElementsByTagName('snap')[0].clientWidth * 2;
+            // TODO(theis): pretty hacky
+            return Math.round((snapContainerWidth * currentScrollRatio) / snapColumnWidth);
+        }
+    }
+
     if ( configuration['spectrogram'] ) {
         $(() => {
             let regenerationCallback = (
                 (v) => {
                     let mask = spectrogramPlaybackManager.spectrogramLocator.mask;
+                    let startIndexTop: number = getCurrentSpectrogramPositionTopLayer();
+                    console.log(startIndexTop);
+
                     switch ( vqvaeLayerSelect.value ) {
                         case "top": {
                             currentConditioning_top = updateConditioningMap(
@@ -303,11 +351,12 @@ async function render(configuration=defaultConfiguration) {
                     }
 
                     let sendCodesWithRequest = true;
-                    const generationParameters = ('?pitch=' + pitchControl.value.toString()
+                    let generationParameters = ('?pitch=' + pitchControl.value.toString()
                         + '&instrument_family_str=' + instrumentSelect.value
                         + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
                         + '&temperature=1'
-                        + '&eraser_amplitude=0.1');
+                        + '&eraser_amplitude=0.1'
+                        + '&start_index_top=' + startIndexTop);
                     const split_tool_select = vqvaeLayerSelect.value.split('-')
                     let command: string;
                     if ( split_tool_select.length >= 2 ) {
@@ -350,13 +399,6 @@ async function render(configuration=defaultConfiguration) {
             PlaybackCommands.render(playbuttonContainerElem);
         });
     });
-
-    // TODO don't create globals like this
-    let currentCodes_top: number[][];
-    let currentCodes_bottom: number[][];
-    let currentConditioning_top: Map<string, (number|string)[][]>;
-    let currentConditioning_bottom: Map<string, (number|string)[][]>;
-    let currentXML: XMLDocument;
 
     function loadNewMap(newConditioningMap: Map<string, (number|string)[][]>
             ): Map<string, (number|string)[][]> {
@@ -469,6 +511,8 @@ async function render(configuration=defaultConfiguration) {
         currentConditioning_top = newConditioning_top;
         currentConditioning_bottom = newConditioning_bottom;
 
+        spectrogramPlaybackManager.spectrogramLocator.vqvaeTimestepsTop = currentCodes_top[0].length;
+        triggerInterfaceRefresh();
         spectrogramPlaybackManager.spectrogramLocator.clear();
         enableChanges();
     };
@@ -550,6 +594,8 @@ async function render(configuration=defaultConfiguration) {
         currentConditioning_top = newConditioning_top;
         currentConditioning_bottom = newConditioning_bottom;
 
+        spectrogramPlaybackManager.spectrogramLocator.vqvaeTimestepsTop = currentCodes_top[0].length;
+        triggerInterfaceRefresh();
         spectrogramPlaybackManager.spectrogramLocator.clear();
         enableChanges();
     };
@@ -646,6 +692,6 @@ $(() => {
         e.preventDefault(); e.stopPropagation();}, false);
     window.addEventListener("drop", function(e) {
         e.preventDefault(); e.stopPropagation();}, false);
-})
+});
 
 if (module.hot) { }

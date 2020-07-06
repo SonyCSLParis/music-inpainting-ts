@@ -25,50 +25,6 @@
     width: 10000000px;  // HACK infinite width
 }
 
-.simplebar-track {
-    &.vertical {
-        pointer-events: none;
-        visibility: hidden !important;
-    }
-
-    &.horizontal {
-        border-radius: 20px;
-        // border-color: black;
-        // border-style: solid;
-        margin-left: 10%;
-        margin-right: 10%;
-        // width: 100%;
-        height: 30px;
-        bottom: 60px;
-        background-color: #ffc7cf;  // lighter pink // lightpink;
-
-        // prevent visual glitches when updating the sheet where the scrollbar
-        // goes beyond the available area
-        overflow: hidden;
-    }
-}
-
-.simplebar-scrollbar {
-    pointer-events: auto;
-    background-color: #009ceb;  // light blue
-    height: 100% !important;
-    border-radius: 20px;
-    top: 0 !important;
-
-    &.vertical {
-        pointer-events: none;
-    }
-
-    &:before {
-        background: none;
-    }
-
-    &:hover {
-        cursor: pointer;
-        background-color: #1fb4ff; // lighter blue // #ffc7cf;  // lighter pink
-    }
-}
-
 #osmd-zoom-controls {
     position: absolute;
     right: 1em;
