@@ -8,6 +8,8 @@ export class DownloadButton {
     readonly downloadElem: HTMLAnchorElement;
     protected readonly interface;  // Nexus.TextButton;
 
+    protected mainIconSize: string = 'fa-3x';
+
     constructor(parent: HTMLElement, configuration: {}, defaultFilename: string = '') {
         this.parent = parent;
 
@@ -22,27 +24,12 @@ export class DownloadButton {
         this.downloadElem.setAttribute('visible', 'false');
         this.container.appendChild(this.downloadElem);
 
-        let interface_text: string;
-        if ( configuration['osmd'] ) {
-            interface_text = 'Save MIDI' }
-        else if ( configuration['spectrogram'] ) {
-            interface_text = 'Save .wav'
-        }
-        else { throw EvalError("Unexpected configuration object") }
-        this.interface = new Nexus.TextButton('#' + this.container.id, {
-            'size': [150,50],
-            'state': false,
-            'text': interface_text
-        });
-
-        this.interface.on('change', (value: string) => {
-            if ( value ) {
-                // trigger download
-                this.downloadElem.click();
-                this.interface.flip(false);
-            }
-            else {};
-        });
+        this.interface = document.createElement('i');
+        this.interface.id = 'download-button-icon';
+        this.interface.classList.add('fas');
+        this.interface.classList.add('fa-download');
+        this.interface.classList.add(this.mainIconSize);
+        this.downloadElem.appendChild(this.interface);
     }
 
     set targetURL(downloadURL: string) {
