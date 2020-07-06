@@ -50,3 +50,7 @@ sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 sudo apt-get upgrade libstdc++6
 ```
+
+## Credits
+
+Icons made by [Freepik](https://www.flaticon.com/authors/freepik) from [www.flaticon.com].
