@@ -8,8 +8,13 @@ NONOTO is distributed as an [Electron](https://electronjs.org/) app and as a web
 
 ### Manual installation
 
-We recommended using the `nvm` installation manager for Node.js.
+We recommended using the `nvm` installation manager for Node.js, available
+[here](https://github.com/nvm-sh/nvm#installing-and-updating).
+NOTONO is currently developed with Node.js version `14.5.0`.
+
 We use the `yarn` package manager, you can install it [here](https://classic.yarnpkg.com/fr/docs/install/).
+
+NOTONO can then be installed as follows:
 
 ```
 git clone https://github.com/SonyCSLParis/NONOTO.git
