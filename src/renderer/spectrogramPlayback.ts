@@ -51,7 +51,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     protected switchPlayers() {
         const currentScheduledValue: number = this.crossFade.fade.getValueAtTime(this.crossFadeOffset);
         const newValue: number = Math.round(1 - currentScheduledValue);  // round ensures binary values
-        this.crossFade.fade.exponentialRampTo(newValue, this.crossFadeDuration);
+        this.crossFade.fade.linearRampTo(newValue, this.crossFadeDuration);
     }
 
     // initialize the Transport loop and synchronize the two players
