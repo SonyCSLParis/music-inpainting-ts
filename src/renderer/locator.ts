@@ -128,9 +128,6 @@ export class Spectrogram {
             // relies on 'simplebar's kinda glitchy handling of CSS scroll-snap,
             // see: https://github.com/Grsmto/simplebar/issues/437
             const numScrollSteps = this.vqvaeTimestepsTop - numColumnsTop;
-            console.log("numColumnsTop: " + numColumnsTop);
-            console.log("vqvaeTimestepsTop: " + this.vqvaeTimestepsTop);
-            console.log("numScrollSteps: " + numScrollSteps);
             Array(2 * numScrollSteps).fill(0).forEach(
                 () => {
                     let snapElem = document.createElement('snap');
