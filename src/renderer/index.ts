@@ -140,10 +140,10 @@ async function render(configuration=defaultConfiguration) {
 
     $(() => {
         let vqvaeLayerIcons: Map<string, string> = new Map([
-                ['top-brush', 'paint-brush-small.svg'],
-                ['bottom-brush', 'paint-roller.svg'],
-                ['top-brush-random', 'paint-brush-small-random.svg'],
-                ['bottom-brush-random', 'paint-roller-random.svg'],
+                ['top-brush', 'paint-roller.svg'],
+                ['bottom-brush', 'paint-brush-small.svg'],
+                ['top-brush-random', 'paint-roller-random.svg'],
+                ['bottom-brush-random', 'paint-brush-small-random.svg'],
                 ['top-eraser', 'edit-tools.svg'],
             ])
 
