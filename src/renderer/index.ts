@@ -332,7 +332,6 @@ async function render(configuration=defaultConfiguration) {
                 (v) => {
                     let mask = spectrogramPlaybackManager.spectrogramLocator.mask;
                     let startIndexTop: number = getCurrentSpectrogramPositionTopLayer();
-                    console.log(startIndexTop);
 
                     switch ( vqvaeLayerSelect.value ) {
                         case "top": {
