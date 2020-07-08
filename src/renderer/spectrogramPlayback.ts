@@ -12,8 +12,8 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     private player_A: Tone.Player = new Tone.Player().connect(this.crossFade.a);
     private player_B: Tone.Player = new Tone.Player().connect(this.crossFade.b);
 
-    protected crossFadeDuration: Tone.Unit.Time = "0.5";
-    protected crossFadeOffset: Tone.Unit.Time = "+1";
+    protected crossFadeDuration: Tone.Unit.Time = "1";
+    protected crossFadeOffset: Tone.Unit.Time = "+1.5";
 
     public get duration_s(): number {
         return this.currentPlayer().buffer.duration;
