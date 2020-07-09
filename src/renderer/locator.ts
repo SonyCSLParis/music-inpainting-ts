@@ -124,11 +124,8 @@ export class Spectrogram {
                 snapPointsContainer.removeChild(snapPointsContainer.lastChild);
             }
 
-            // TODO, FIXME, HACK(theis): super hacky creation of snap points
-            // relies on 'simplebar's kinda glitchy handling of CSS scroll-snap,
-            // see: https://github.com/Grsmto/simplebar/issues/437
-            const numScrollSteps = this.vqvaeTimestepsTop - numColumnsTop;
-            Array(2 * numScrollSteps).fill(0).forEach(
+            const numScrollSteps = this.vqvaeTimestepsTop - numColumnsTop + 1;
+            Array(numScrollSteps).fill(0).forEach(
                 () => {
                     let snapElem = document.createElement('snap');
                     snapPointsContainer.appendChild(snapElem);
@@ -136,8 +133,11 @@ export class Spectrogram {
 
             // update image scaling to match snap points
             const timeStepWidth_px: number = width / numColumnsTop;
-            spectrogramImageElem.width = timeStepWidth_px * this.vqvaeTimestepsTop;
-            snapPointsContainer.style.width = (timeStepWidth_px * this.vqvaeTimestepsTop).toString() + 'px';
+            spectrogramImageElem.width = Math.floor(
+                timeStepWidth_px * this.vqvaeTimestepsTop);
+            snapPointsContainer.style.width = Math.round(
+                timeStepWidth_px * numScrollSteps
+                ).toString() + 'px';
 
             // TODO(theis): must adapt the spectrogram's image size to the resulting grid's size
             // since the grid size is rounded up to the number of rows and columns

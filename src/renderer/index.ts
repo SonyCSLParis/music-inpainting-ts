@@ -318,11 +318,10 @@ async function render(configuration=defaultConfiguration) {
         }
         else {
             const currentScrollRatio = scrollElem.scrollLeft / (scrollElem.scrollWidth - scrollElem.clientWidth);
-            const spectrogramPictureElem = document.getElementById('spectrogram-picture');
-            const snapContainerWidth = document.getElementById('snap-points').clientWidth;
-            const snapColumnWidth = spectrogramPictureElem.getElementsByTagName('snap')[0].clientWidth * 2;
-            // TODO(theis): pretty hacky
-            return Math.round((snapContainerWidth * currentScrollRatio) / snapColumnWidth);
+            const numSnapElems: number = document.getElementById('snap-points').getElementsByTagName('snap').length;
+            // snaps happen on <snap>'s left boundaries
+            const numSnapLocations: number = numSnapElems - 1;
+            return Math.round(currentScrollRatio * numSnapLocations);
         }
     }
 
