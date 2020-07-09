@@ -63,7 +63,7 @@ $spectrogram-height: 45vh;
             scroll-snap-align: start;
             display: inline-flex;
             flex: 1;
-            background: red;
+            visibility: hidden;
         }
     }
 
@@ -92,6 +92,8 @@ $spectrogram-height: 45vh;
 #snap-points {
     margin-left: -5vw;
     display: flex;
+    height: 1px;
+    visibility: hidden;
 }
 
 #spectrogram-container-shadow-container {
