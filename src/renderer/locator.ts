@@ -125,6 +125,8 @@ export class Spectrogram {
             }
 
             const numScrollSteps = this.vqvaeTimestepsTop - numColumnsTop + 1;
+
+            this.toggleNoscroll(numScrollSteps == 1);
             Array(numScrollSteps).fill(0).forEach(
                 () => {
                     let snapElem = document.createElement('snap');
@@ -141,6 +143,11 @@ export class Spectrogram {
 
             // TODO(theis): must adapt the spectrogram's image size to the resulting grid's size
             // since the grid size is rounded up to the number of rows and columns
+    }
+
+    protected toggleNoscroll(force?: boolean): void {
+        // when set, prevents the scroll-bar from appearing
+        this.container.classList.toggle('no-scroll', force)
     }
 }
 

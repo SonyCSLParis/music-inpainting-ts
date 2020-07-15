@@ -28,6 +28,11 @@ $spectrogram-height: 45vh;
         position: absolute;
         left: 0;
     }
+
+    &.no-scroll .simplebar-track.simplebar-horizontal {
+        display: none;
+        visibility: hidden;
+    }
 }
 
 #spectrogram-image-container {
