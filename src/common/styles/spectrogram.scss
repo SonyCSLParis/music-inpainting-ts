@@ -134,16 +134,17 @@ $spectrogram-height: 45vh;
         left: -5vw;
         content:
             radial-gradient(ellipse farthest-corner at right,
-                transparent 0,
+                transparent 0%,
                 rgba(colors.$body-background, 1) 70%,
             );
     }
 
     &:after {
-        right: -5vw;content:
-        radial-gradient(ellipse farthest-corner at left,
-            transparent 0,
-            rgba(colors.$body-background, 1) 70%,
+        right: -5vw;
+        content:
+            radial-gradient(ellipse farthest-corner at left,
+                transparent 0%,
+                rgba(colors.$body-background, 1) 70%,
         );
     }
     div {
