@@ -66,6 +66,7 @@
     "webpack-json-loader": "^1.0.0"
   },
   "dependencies": {
+    "abletonlink": "^0.1.1",
     "activity-detector": "^3.0.0",
     "ajv": "^6.5.2",
     "deep-equal": "^2.0.3",

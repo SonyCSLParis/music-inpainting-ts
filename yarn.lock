@@ -1205,6 +1205,14 @@ abbrev@1:
   resolved "https://registry.yarnpkg.com/abbrev/-/abbrev-1.1.1.tgz#f8f2c887ad10bf67f634f005b6987fed3179aac8"
   integrity sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==
 
+abletonlink@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/abletonlink/-/abletonlink-0.1.1.tgz#03b3f2999f17d4f21a230d78acfaab20e0ceaaa5"
+  integrity sha512-w4oN/gCTqb+nNiNgJmHFlycM/xT3oUvRLRZix3brDRX8ZwoM3PAypD0Dj9jlpBbJ6pT3d9okBPZuC2WxywIOvA==
+  dependencies:
+    bindings "^1.5.0"
+    node-addon-api "^2.0.0"
+
 accepts@~1.3.4, accepts@~1.3.5, accepts@~1.3.7:
   version "1.3.7"
   resolved "https://registry.yarnpkg.com/accepts/-/accepts-1.3.7.tgz#531bc726517a3b2b41f850021c6cc15eaab507cd"
