@@ -104,6 +104,10 @@ export class Spectrogram {
     public drawTimestampBoxes(onclickFactory: undefined,
         numRows: number, numColumns: number, numColumnsTop: number): void{
             const spectrogramImageElem: HTMLImageElement = this.container.getElementsByTagName('img')[0];
+
+            // restore default height for spectrogram image
+            spectrogramImageElem.style.removeProperty('height');
+
             const width: number = this.interfaceContainer.clientWidth;
             const height: number = spectrogramImageElem.clientHeight;
 
@@ -141,8 +145,11 @@ export class Spectrogram {
                 timeStepWidth_px * numScrollSteps
                 ).toString() + 'px';
 
-            // TODO(theis): must adapt the spectrogram's image size to the resulting grid's size
+            // adapt the spectrogram's image size to the resulting grid's size
             // since the grid size is rounded up to the number of rows and columns
+            spectrogramImageElem.style.height = (
+                this.interfaceContainer.clientHeight.toString()
+                + 'px');
     }
 
     protected toggleNoscroll(force?: boolean): void {
