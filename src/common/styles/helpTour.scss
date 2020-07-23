@@ -1,0 +1,30 @@
+.trip-exposed {
+    background: none;
+    z-index: 10000 !important;
+    box-shadow: 0 0 0 100vmax rgba(0,0,0,.5) !important;
+    opacity: initial !important;
+    pointer-events: none;
+    border-radius: 10px;
+    // border: thick solid mistyrose;
+}
+
+#help-icon {
+    top: 1.5vh;
+    right: 1.5vw;
+    position: absolute;
+    justify-self: right;
+    align-self: inherit;
+    // margin-right: 25px;
+    cursor: pointer;
+    font-size: xx-large;
+    opacity: 0.2;
+
+    &:hover {
+        opacity: 1;
+    }
+
+    &:before {
+        content: "\F05A";
+        font-family: 'FontAwesome';
+    }
+}

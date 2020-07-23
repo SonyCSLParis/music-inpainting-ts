@@ -2,11 +2,15 @@ import $ from "jquery";
 import createActivityDetector from 'activity-detector';
 
 import "trip.js/dist/trip.css";
+import '../common/styles/helpTour.scss';
 
 var Trip = require('trip.js');
 
-// TODO move helpTour to localizations file
+const localizations = require('../common/localization.json');
+const helpContents = localizations["help"];
 
+
+// TODO move helpTour to localizations file
 let noteboxHelp_german: string = "Tippen Sie auf die <b>blauen Kästen</b> des \
 Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen"
 let noteboxHelp_english: string = "Touch the <b>blue boxes</b> to trigger a \
@@ -16,54 +20,89 @@ let fermataboxHelp_german: string = 'Tippen Sie auf die <b>gestrichelten Kästch
 eine <b>Fermata</b> zu setzen. Damit kann die Struktur des Chorales kontrolliert werden';
 let fermataboxHelp_english: string = 'Touch the <b>dotted boxes</b> to position an intermediate <b>fermata</b>. It allows to structure the chorale'
 
-function makeHTMLContent(german: string, english: string) {
-    return `${german}<br><br><i>${english}</i><br><br>`
+function makeMultilingualHTMLContent(contents: object, languages: string[]) {
+    switch (languages.length) {
+        case 2:
+            return `${contents[languages[0]]}<br><br><i>${contents[languages[1]]}</i><br><br>`
+        case 1:
+            return `${contents[languages[0]]}<br><br>`
+        default:
+            throw new Error("Unexpected number of languages to use, either 1 or 2 simultaneous languages are supported.");
+    }
 }
 
 // TODO contents should depend on AnnotationBox type used
-const tripContents: object[] = [
-        // div[id$='-note-0-0']
+// const tripContents_nonoto: object[] = [
+//         // div[id$='-note-0-0']
+//         {
+//             sel: "#whole-note-0-0-common",
+//             content: makeMultilingualHTMLContent(noteboxHelp_german, noteboxHelp_english),
+//             position : "e",
+//             // expose: true
+//         },
+//         {
+//             sel: "#quarter-note-1-3-common-Fermata",
+//             content: makeMultilingualHTMLContent(fermataboxHelp_german, fermataboxHelp_english),
+//             position : "s",
+//             // expose: true,
+//         },
+//         // { sel: '#app-title', content: "Press play to listen to the generated music!",
+//         //     position: 'n'}
+//     ]
+
+function makeMultilingualTripContents_notono(languages: string[]): object[] {
+    return [
         {
-            sel: "#whole-note-0-0-common",
-            content: makeHTMLContent(noteboxHelp_german, noteboxHelp_english),
-            position : "e",
-            // expose: true
-        },
-        {
-            sel: "#quarter-note-1-3-common-Fermata",
-            content: makeHTMLContent(fermataboxHelp_german, fermataboxHelp_english),
+            sel: "#spectrogram-container-shadow-container",
+            content: makeMultilingualHTMLContent(helpContents["notono"]["spectrogram_interaction"],
+                languages),
             position : "s",
-            // expose: true,
+            expose: true
         },
-        // { sel: '#app-title', content: "Press play to listen to the generated music!",
-        //     position: 'n'}
+        {
+            sel: "#constraints-gridspan",
+            content: makeMultilingualHTMLContent(helpContents["notono"]["constraints"],
+                languages),
+            position : "n",
+            expose: true
+        },
+        {
+            sel: "#edit-tools-gridspan",
+            content: makeMultilingualHTMLContent(helpContents["notono"]["edit_tools"],
+                languages),
+            position : "n",
+            expose: true
+        },
     ]
+}
 
 const tripDelay_ms: number = 10000;
 
-const totalTripDuration_ms: number = tripDelay_ms * tripContents.length;
+function getTotalTripDuration_ms(tripContents: object[]): number {
+    return tripDelay_ms * tripContents.length;
+}
 
-const trip = new Trip(tripContents,
-    {
-        showSteps: true,
-        onStart: initHideOnClickOutside,
-        onEnd: removeClickListener,
-        onTripStop: removeClickListener,
-        overlayZIndex: 0,
-        nextLabel: '→',
-        prevLabel: '←',
-        skipLabel: '',
-        finishLabel: 'x',
-        tripTheme: 'white',
-        showNavigation : true,
-        // showCloseBox : true,
-        delay : 10000,
-    }
-);
+const tripOptions = {
+    showSteps: true,
+    // onStart: initHideOnClickOutside,
+    // onEnd: removeClickListener,
+    // onTripStop: removeClickListener,
+    overlayZIndex: 100,
+    nextLabel: '→',
+    prevLabel: '←',
+    skipLabel: '',
+    finishLabel: 'x',
+    tripTheme: 'white',
+    showNavigation : true,
+    // showCloseBox : true,
+    delay : 10000,
+};
+
+export const trip = new Trip(makeMultilingualTripContents_notono(["en"]), tripOptions);
 
 let tripLoopInterval: any;
 
-function startTripLoop() {
+function startTripLoop(trip: typeof Trip) {
     // starts the help tour in a looping fashion
 
     function intervalTripLoop() {
@@ -72,7 +111,7 @@ function startTripLoop() {
                 trip.start();
             // }
         },
-        totalTripDuration_ms + 500)
+        getTotalTripDuration_ms(trip.tripData) + 500)
     }
     trip.start();
     intervalTripLoop();
@@ -114,7 +153,7 @@ export function render(containerElement: HTMLElement) {
     containerElement.appendChild(helpElem);
 
     helpElem.id = 'help-icon';
-    helpElem.innerHTML = 'Hilfe / <i>Help</i>';
+    helpElem.title = 'Help';
 
     helpElem.addEventListener('click', function(event) {
         // stops event from trigerring outsideClickListener registered onTripStart
@@ -124,7 +163,7 @@ export function render(containerElement: HTMLElement) {
     }, true);
 }
 
-export function registerIdleStateDetector(): void {
+export function registerIdleStateDetector(trip: typeof Trip): void {
     const activityDetector = createActivityDetector({
         timeToIdle: 2 * 1000 * 60,  // launch after 2 minutes of inactivity
         autoInit: true,
@@ -133,7 +172,7 @@ export function registerIdleStateDetector(): void {
 
     activityDetector.on('idle', () => {
         console.log('The user is not interacting with the page');
-        startTripLoop();
+        startTripLoop(trip);
     });
 
     activityDetector.on('active', () => {

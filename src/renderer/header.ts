@@ -82,12 +82,6 @@ export function render(containerElement: HTMLElement, configuration) {
         acidsSmallLogoElem.alt = 'ACIDS Team Logo';
         acidsLogoContainerElem.appendChild(acidsSmallLogoElem);
     }
-
-
-
-    if (configuration["insert_help"]) {
-        HelpTour.render(containerElement);
-    }
 }
 
 if (module.hot) {}

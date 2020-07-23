@@ -32,8 +32,28 @@
             "en": "Sound playback"
         },
 
-        "vqvae-layer-select-label": {
+        "edit-tool-select-label": {
             "en": "Select brush type"
+        }
+    },
+
+    "help": {
+        "notono": {
+            "spectrogram_interaction": {
+                "en": "Click on the cells of this grid to regenerate the underlying zone in the <b>spectrogram</b>.<br><br>You can activate multiple cells at once by clicking and dragging on the grid."
+            },
+
+            "drag-n-drop": {
+                "en": "You can also <b>drag and drop</b> a sound file from your computer anywhere onto the app to import it and transform it thereafter.<br><br>Imported sounds will be automatically cropped to <b>1min</b>."
+            },
+
+            "constraints": {
+                "en": "These icons define the <b>constraints</b> used when performing regeneration operations.<br><br>Set the values then select a region of the spectrogram to regenerate it with the chosen options."
+            },
+
+            "edit_tools": {
+                "en": "Selects the <b>edit tool</b> for regeneration.<br><br>Hover over the icons to see more details for each tool."
+            }
         }
     }
 }

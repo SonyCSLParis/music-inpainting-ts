@@ -136,6 +136,16 @@ async function render(configuration=defaultConfiguration) {
         bottomControlsGridElem = document.createElement('div');
         bottomControlsGridElem.id = 'bottom-controls';
         document.body.appendChild(bottomControlsGridElem);
+
+        // create element for highlighting control grid spans in help
+        const constraintsSpanElem = document.createElement('div');
+        constraintsSpanElem.id = "constraints-gridspan";
+        constraintsSpanElem.classList.add('gridspan');
+        bottomControlsGridElem.appendChild(constraintsSpanElem);
+        const editToolsGridspanElem = document.createElement('div');
+        editToolsGridspanElem.id = "edit-tools-gridspan";
+        editToolsGridspanElem.classList.add('gridspan');
+        bottomControlsGridElem.appendChild(editToolsGridspanElem);
     });
 
     $(() => {
@@ -155,11 +165,11 @@ async function render(configuration=defaultConfiguration) {
         let iconsBasePath: string = path.join(static_correct, 'icons');
 
         let granularitySelectContainerElem: HTMLElement = document.createElement('control-item');
-        granularitySelectContainerElem.id = 'vqvae-layer-select-container';
+        granularitySelectContainerElem.id = 'edit-tool-select-container';
         bottomControlsGridElem.appendChild(granularitySelectContainerElem);
 
         ControlLabels.createLabel(granularitySelectContainerElem,
-            'vqvae-layer-select-label');
+            'edit-tool-select-label');
 
         function vqvaeLayerOnChange(ev) {
             let newLayer: string = <string>this.value.split('-')[0];
@@ -170,7 +180,7 @@ async function render(configuration=defaultConfiguration) {
         };
 
         vqvaeLayerSelect = new CycleSelect(granularitySelectContainerElem,
-            'vqvae-layer-select',
+            'edit-tool-select',
             {handleEvent: vqvaeLayerOnChange},
             vqvaeLayerIcons,
             iconsBasePath);
@@ -274,7 +284,7 @@ async function render(configuration=defaultConfiguration) {
                 () => {
                     enableChanges();
                     if ( REGISTER_IDLE_STATE_DETECTOR ) {
-                        HelpTour.registerIdleStateDetector();
+                        HelpTour.registerIdleStateDetector(HelpTour.trip);
                     };
                 }
             );
