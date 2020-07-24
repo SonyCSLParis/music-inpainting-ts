@@ -132,8 +132,8 @@ select {
 .CycleSelect-container {
     color: colors.$idle-control;
 
-    width: $CycleSelect-size;
-    height: $CycleSelect-size;
+    width: measures.$CycleSelect-size;
+    height: measures.$CycleSelect-size;
     border-radius: 64px;
     border-style: solid;
     border-width: thick;
@@ -146,7 +146,7 @@ select {
     width: inherit !important;
     height: inherit !important;
 
-    // HACK: invisble border to allow clicking on the border of the selector
+    // HACK: invisible border to allow clicking on the border of the selector
     border-radius: 64px;
     border-style: solid;
     border-width: thick;
