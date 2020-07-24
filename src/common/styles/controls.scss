@@ -15,6 +15,13 @@ control-item * {
 control-item, control-label {
     font-size: large !important;
 }
+control-item {
+    font-weight: 500;
+}
+
+control-label {
+    font-weight: 400;
+}
 
 #play-button {
     grid-row: 1;
