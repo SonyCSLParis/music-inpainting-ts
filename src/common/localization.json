@@ -1,39 +1,47 @@
 {
     "control-labels": {
         "bpm-control-label": {
-            "de": "Tempo ändern",
-            "en": "Change tempo"
+            "de": "Tempo",
+            "en": "Tempo"
         },
 
         "pitch-control-label": {
-            "en": "Change pitch constraint"
+            "en": "Pitch constraint"
         },
 
         "instrument-control-label": {
-            "en": "Change instrument constraint"
+            "en": "Instrument constraint"
         },
 
         "instrument-family-control-label": {
-            "en": "Select instrument family"
+            "en": "Instrument family"
         },
 
         "granularity-select-label": {
-            "de": "Rekompositionsdauer ändern",
-            "en": "Change generation duration"
+            "de": "Rekompositionsdauer",
+            "en": "Regeneration duration"
         },
 
         "instruments-grid-label": {
-            "de": "Instrument ändern",
-            "en": "Change instrument"
+            "de": "Instrument",
+            "en": "Instrument"
         },
 
         "play-button-label": {
             "de": "Partitur abspielen",
-            "en": "Sound playback"
+            "en": "Playback"
         },
 
         "edit-tool-select-label": {
-            "en": "Select brush type"
+            "en": "Editing tool"
+        },
+
+        "download-button-label": {
+            "en": "Download"
+        },
+
+        "fade-in-control-label": {
+            "en": "Declicking fade-in"
         }
     },
 

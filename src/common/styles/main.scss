@@ -82,7 +82,7 @@ $main-panel-height-advanced-controls: calc(100% - #{measures.$header-height + me
 body.advanced-controls #bottom-controls {
     height: measures.$bottom-controls-height + measures.$advanced-controls-height;
     grid-template-columns: repeat(4, 25%);
-    grid-template-rows: 80px 50px 60px;
+    grid-template-rows: 5fr 1fr 5fr 1fr 1vh;
 }
 
 body.advanced-controls #main-panel {

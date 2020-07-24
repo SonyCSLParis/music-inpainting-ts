@@ -650,6 +650,8 @@ async function render(configuration=defaultConfiguration) {
         let bottomControlsGridElem = document.getElementById('bottom-controls')
         downloadButton = new DownloadButton(bottomControlsGridElem,
             configuration);
+
+        ControlLabels.createLabel(bottomControlsGridElem, 'download-button-label');
     });
 
     $(() => {
@@ -681,6 +683,7 @@ async function render(configuration=defaultConfiguration) {
         fadeInControlElement.id = 'fade-in-control';
         bottomControlsGridElem.appendChild(fadeInControlElement);
         renderFadeInControl(fadeInControlElement, spectrogramPlaybackManager);
+        ControlLabels.createLabel(fadeInControlElement, 'fade-in-control-label');
     });
 
     $(() => {
