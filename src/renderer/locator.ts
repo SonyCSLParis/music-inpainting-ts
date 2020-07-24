@@ -5,15 +5,23 @@ import '../common/styles/overlays.scss';
 
 let Nexus: any = require('./nexusColored');
 
-export class Spectrogram {
-    protected resizeTimeoutDuration: number = 10;
+export class Locator {
+
+}
+
+export class Spectrogram extends Locator {
     protected resizeTimeout: NodeJS.Timeout;
     readonly container: HTMLElement;
     readonly shadowContainer: HTMLElement;
     readonly interfaceContainer: HTMLElement;
     private sequencer = null;
 
+    get interfaceElement(): HTMLDivElement {
+        return this.sequencer.element;
+    }
+
     constructor(container: HTMLElement, options: object = {}) {
+        super();
         this.container = container;
 
         // necessary to handle 'busy' state cursor change and pointer events disabling
@@ -155,6 +163,40 @@ export class Spectrogram {
     protected toggleNoscroll(force?: boolean): void {
         // when set, prevents the scroll-bar from appearing
         this.container.classList.toggle('no-scroll', force)
+    }
+
+    // triggers an animation to catch the user's eye
+    public callToAction(numCells: number): void {
+        function delay(ms: number): Promise<void> {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        let promise = Promise.resolve();
+        const interval: number = 100;
+
+        const randomIndexes: number[] = Array(numCells).fill(0).map(
+            () => {return Math.floor(Math.random() * (this.numRows * this.numColumns))}
+        );
+
+        randomIndexes.forEach((index) => {
+            const element = this.interfaceElement.children.item(index);
+
+            promise = promise.then(() => {
+                element.classList.add('highlight');
+                return delay(interval);
+            });
+        });
+
+        promise.then(() => {
+            setTimeout(() => {
+                randomIndexes.forEach((index) => {
+                    const element = this.interfaceElement.children.item(index);
+                    element.classList.remove('highlight');
+                });
+            },
+            4 * interval * numCells  // FIXME(theis): hardcoded
+            );
+        });
     }
 }
 

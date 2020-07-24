@@ -1,8 +1,10 @@
 import $ from "jquery";
 import createActivityDetector from 'activity-detector';
+import { Spectrogram, Locator } from "./locator";
 
 import "trip.js/dist/trip.css";
 import '../common/styles/helpTour.scss';
+import { isNull } from "util";
 
 var Trip = require('trip.js');
 
@@ -10,175 +12,250 @@ const localizations = require('../common/localization.json');
 const helpContents = localizations["help"];
 
 
-// TODO move helpTour to localizations file
-let noteboxHelp_german: string = "Tippen Sie auf die <b>blauen Kästen</b> des \
-Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen"
-let noteboxHelp_english: string = "Touch the <b>blue boxes</b> to trigger a \
-<b>regeneration</b> of the underlying portion of the score"
+export abstract class myTrip {
+    protected trip: typeof Trip;
+    protected languages: string[];
+    readonly locator: Locator;
+    protected tripDelay_ms: number = 10000;
+    // launches help tour automatically after two minutes of idle state
+    readonly inactivityDetectorDelay: number = 2 * 1000 * 60;
 
-let fermataboxHelp_german: string = 'Tippen Sie auf die <b>gestrichelten Kästchen</b>, um \
-eine <b>Fermata</b> zu setzen. Damit kann die Struktur des Chorales kontrolliert werden';
-let fermataboxHelp_english: string = 'Touch the <b>dotted boxes</b> to position an intermediate <b>fermata</b>. It allows to structure the chorale'
+    constructor(languages: string[], locator: Locator, inactivityDetectorDelay?: number) {
+        this.languages = languages;
+        this.locator = locator;
+        this.inactivityDetectorDelay = inactivityDetectorDelay;
 
-function makeMultilingualHTMLContent(contents: object, languages: string[]) {
-    switch (languages.length) {
-        case 2:
-            return `${contents[languages[0]]}<br><br><i>${contents[languages[1]]}</i><br><br>`
-        case 1:
-            return `${contents[languages[0]]}<br><br>`
-        default:
-            throw new Error("Unexpected number of languages to use, either 1 or 2 simultaneous languages are supported.");
+        const tripContents = this.makeContents();
+        this.trip = new Trip(tripContents, this.tripOptions);
+
+        if (!isNull(this.inactivityDetectorDelay)) {
+            this.registerIdleStateDetector();
+        }
+    }
+
+    protected tripOptions = {
+        showSteps: true,
+        // onStart: initHideOnClickOutside,
+        // onEnd: removeClickListener,
+        // onTripStop: removeClickListener,
+        overlayZIndex: 100,
+        nextLabel: '→',
+        prevLabel: '←',
+        skipLabel: '',
+        finishLabel: 'x',
+        // tripTheme: 'white',
+        showNavigation : true,
+        showCloseBox: true,
+        showHeader: true,
+        // showCloseBox : true,
+        delay : this.tripDelay_ms,
+        onEnd: this.tripCleanup
+    };
+
+    protected abstract makeContents(): void;
+
+    // clean-up modifications made to the DOM if the trip is exited mid-run
+    protected tripCleanup(): void {};
+
+    protected makeHTMLContent(contents: object) {
+        switch (this.languages.length) {
+            case 2:
+                return `${contents[this.languages[0]]}<br><br><i>${contents[this.languages[1]]}</i><br><br>`
+            case 1:
+                return `${contents[this.languages[0]]}<br><br>`
+            default:
+                throw new Error("Unexpected number of languages to use, either 1 or 2 simultaneous languages are supported.");
+        }
+    }
+
+    get totalTripDuration_ms(): number {
+        return this.tripDelay_ms * this.trip.tripContents.length;
+    }
+
+    private loopInterval: NodeJS.Timeout;
+
+    public startLoop(): void {
+        // starts the help tour in a looping fashion
+        const self = this;
+
+        function intervalTripLoop() {
+            self.loopInterval = setInterval(() => {
+                // if (looping) {
+                    this.trip.start();
+                    // }
+                },
+                self.totalTripDuration_ms + 500)
+            }
+            self.trip.start();
+            intervalTripLoop();
+    }
+
+    protected stopLoop() {
+        // stops the help tour from looping
+        clearInterval(this.loopInterval);
+    }
+
+    public renderIcon(containerElement: HTMLElement) {
+        let helpElem: HTMLAnchorElement = document.createElement('a');
+        containerElement.appendChild(helpElem);
+
+        helpElem.id = 'help-icon';
+        helpElem.title = 'Help';
+
+        const self = this;
+        helpElem.addEventListener('click', function(event) {
+            // stops event from trigerring outsideClickListener registered onTripStart
+            event.stopPropagation();
+
+            self.trip.start()
+        }, true);
+    }
+
+    protected outsideClickListener(event) {
+        let target: HTMLElement = event.target;
+        if (!$(target).closest($('div.trip-block')).length) {
+            this.stopLoop();
+            this.trip.stop();
+        }
+    };
+
+    protected initHideOnClickOutside() {
+        // Attach an event listener to the whole document that detects clicks
+        // out of the containing div and closes the selector in that case
+        // Bind this callback when the selector is activated and unbind it when
+        // it is closed
+
+        // must add a delay so that the initial click is
+        // setTimeout(() => {
+            document.addEventListener('click', this.outsideClickListener);
+            // },
+            // 100);
+        };
+
+    protected removeClickListener() {
+        document.removeEventListener('click', this.outsideClickListener)
+    };
+
+
+    public registerIdleStateDetector(): void {
+        const activityDetector = createActivityDetector({
+            timeToIdle: this.inactivityDetectorDelay,
+            autoInit: true,
+            inactivityEvents: [],
+        });
+
+        activityDetector.on('idle', () => {
+            console.log('The user is not interacting with the page');
+            this.startLoop();
+        });
+
+        activityDetector.on('active', () => {
+            console.log('The user is interacting with the page');
+            this.stopLoop();
+        })
     }
 }
 
-// TODO contents should depend on AnnotationBox type used
-// const tripContents_nonoto: object[] = [
-//         // div[id$='-note-0-0']
-//         {
-//             sel: "#whole-note-0-0-common",
-//             content: makeMultilingualHTMLContent(noteboxHelp_german, noteboxHelp_english),
-//             position : "e",
-//             // expose: true
-//         },
-//         {
-//             sel: "#quarter-note-1-3-common-Fermata",
-//             content: makeMultilingualHTMLContent(fermataboxHelp_german, fermataboxHelp_english),
-//             position : "s",
-//             // expose: true,
-//         },
-//         // { sel: '#app-title', content: "Press play to listen to the generated music!",
-//         //     position: 'n'}
-//     ]
-
-function makeMultilingualTripContents_notono(languages: string[]): object[] {
-    return [
-        {
-            sel: "#spectrogram-container-shadow-container",
-            content: makeMultilingualHTMLContent(helpContents["notono"]["spectrogram_interaction"],
-                languages),
-            position : "s",
-            expose: true
-        },
-        {
-            sel: "#constraints-gridspan",
-            content: makeMultilingualHTMLContent(helpContents["notono"]["constraints"],
-                languages),
-            position : "n",
-            expose: true
-        },
-        {
-            sel: "#edit-tools-gridspan",
-            content: makeMultilingualHTMLContent(helpContents["notono"]["edit_tools"],
-                languages),
-            position : "n",
-            expose: true
-        },
-    ]
-}
-
-const tripDelay_ms: number = 10000;
-
-function getTotalTripDuration_ms(tripContents: object[]): number {
-    return tripDelay_ms * tripContents.length;
-}
-
-const tripOptions = {
-    showSteps: true,
-    // onStart: initHideOnClickOutside,
-    // onEnd: removeClickListener,
-    // onTripStop: removeClickListener,
-    overlayZIndex: 100,
-    nextLabel: '→',
-    prevLabel: '←',
-    skipLabel: '',
-    finishLabel: 'x',
-    tripTheme: 'white',
-    showNavigation : true,
-    // showCloseBox : true,
-    delay : 10000,
-};
-
-export const trip = new Trip(makeMultilingualTripContents_notono(["en"]), tripOptions);
-
-let tripLoopInterval: any;
-
-function startTripLoop(trip: typeof Trip) {
-    // starts the help tour in a looping fashion
-
-    function intervalTripLoop() {
-        tripLoopInterval = setInterval(() => {
-            // if (looping) {
-                trip.start();
-            // }
-        },
-        getTotalTripDuration_ms(trip.tripData) + 500)
+class NonotoTrip extends myTrip {
+    protected makeContents(): object[] {
+        // TODO contents should depend on AnnotationBox type used
+        return [
+            {
+                sel: "#play-button-gridspan",
+                content: this.makeHTMLContent(helpContents["general"]["play_button"]),
+                position : "e",
+                expose: true,
+                header: "Playback"
+            },
+            {
+                sel: "#whole-note-0-0-common",
+                content: this.makeHTMLContent(helpContents["nonoto"]["note_box"]),
+                position : "e",
+                // expose: true
+            },
+            {
+                sel: "#quarter-note-1-3-common-Fermata",
+                content: this.makeHTMLContent(helpContents["nonoto"]["fermata_box"]),
+                position : "s",
+                // expose: true,
+            },
+            // {
+            //     sel: "#main-panel",
+            //     content: this.makeHTMLContent(helpContents["notono"]["drag-n-drop"]),
+            //     position : "screen-center",
+            //     header: "Audio drag'n'drop",
+            //     animation: "fadeInLeft",
+            //     expose: true
+            // },
+        ]
     }
-    trip.start();
-    intervalTripLoop();
 }
 
-function stopTripLoop() {
-    // stops the help tour from looping
-    clearInterval(tripLoopInterval);
-}
+export class NotonoTrip extends myTrip {
+    readonly locator: Spectrogram;
 
-
-function outsideClickListener(event) {
-    let target: HTMLElement = event.target;
-    if (!$(target).closest($('div.trip-block')).length) {
-        stopTripLoop();
-        trip.stop();
+    protected makeContents(): object[] {
+        return [
+            {
+                sel: "#play-button-gridspan",
+                content: this.makeHTMLContent(helpContents["general"]["play_button"]),
+                position : "e",
+                expose: true,
+                header: "Playback"
+            },
+            {
+                sel: "#spectrogram-container-shadow-container",
+                content: this.makeHTMLContent(helpContents["notono"]["spectrogram_general"]),
+                position : "s",
+                expose: true,
+                header: "Spectrogram 1: General",
+                onTripStart: function () {$('#spectrogram-container-interface-container')[0].children[1].classList.add('trip-hide');},
+                onTripEnd: function () {$('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hide');}
+            },
+            {
+                sel: "#spectrogram-container-shadow-container",
+                content: this.makeHTMLContent(helpContents["notono"]["spectrogram_interaction"]),
+                position : "s",
+                expose: true,
+                header: "Spectrogram transformations",
+                onTripStart: () => this.locator.callToAction(6)
+            },
+            {
+                sel: "#constraints-gridspan",
+                content: this.makeHTMLContent(helpContents["notono"]["constraints"]),
+                position : "n",
+                expose: true,
+                header: "Model constraints"
+            },
+            {
+                sel: "#edit-tools-gridspan",
+                content: this.makeHTMLContent(helpContents["notono"]["edit_tools"]),
+                position : "n",
+                expose: true,
+                header: "Edit tools"
+            },
+            {
+                sel: "#download-button-gridspan",
+                content: this.makeHTMLContent(helpContents["notono"]["download"]),
+                position : "ne",
+                header: "Downloading",
+                expose: true
+            },
+            {
+                sel: "#main-panel",
+                content: this.makeHTMLContent(helpContents["notono"]["drag-n-drop"]),
+                position : "screen-center",
+                header: "Audio drag'n'drop",
+                animation: "fadeInLeft",
+                expose: true
+            },
+        ]
     }
-};
 
-function initHideOnClickOutside() {
-    // Attach an event listener to the whole document that detects clicks
-    // out of the containing div and closes the selector in that case
-    // Bind this callback when the selector is activated and unbind it when
-    // it is closed
-
-    // must add a delay so that the initial click is
-    // setTimeout(() => {
-    document.addEventListener('click', outsideClickListener);
-    // },
-    // 100);
-};
-
-function removeClickListener() {
-    document.removeEventListener('click', outsideClickListener)
-};
-
-export function render(containerElement: HTMLElement) {
-    let helpElem: HTMLAnchorElement = document.createElement('a');
-    containerElement.appendChild(helpElem);
-
-    helpElem.id = 'help-icon';
-    helpElem.title = 'Help';
-
-    helpElem.addEventListener('click', function(event) {
-        // stops event from trigerring outsideClickListener registered onTripStart
-        event.stopPropagation();
-
-        trip.start()
-    }, true);
-}
-
-export function registerIdleStateDetector(trip: typeof Trip): void {
-    const activityDetector = createActivityDetector({
-        timeToIdle: 2 * 1000 * 60,  // launch after 2 minutes of inactivity
-        autoInit: true,
-        inactivityEvents: [],
-    });
-
-    activityDetector.on('idle', () => {
-        console.log('The user is not interacting with the page');
-        startTripLoop(trip);
-    });
-
-    activityDetector.on('active', () => {
-        console.log('The user is interacting with the page');
-        stopTripLoop();
-    })
+    // clean-up modifications to the DOM if the trip is exited mid-run
+    protected tripCleanup(): void {
+        $('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hide');
+    }
 }
 
 if (module.hot) {}

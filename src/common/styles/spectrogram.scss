@@ -147,8 +147,19 @@ $spectrogram-height: 45vh;
                 rgba(colors.$body-background, 1) 70%,
         );
     }
-    div {
+    div span {
         z-index: 100;
         opacity: 0.3;
+    }
+}
+
+.highlight {
+    animation: 500ms ease-in-out 100ms 2 alternate none highlight;
+}
+
+@keyframes highlight {
+    to {
+        opacity: 0.4;
+        background-color: white;
     }
 }

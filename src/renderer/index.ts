@@ -18,7 +18,7 @@ import { NumberControl, BPMControl } from './numberControl';
 // import LinkClient from './linkClient';
 // import * as LinkClientCommands from './linkClientCommands';
 import { DownloadButton } from './downloadCommand';
-import * as HelpTour from './helpTour';
+import { myTrip, NotonoTrip } from './helpTour';
 import { createLFOControls } from './lfo';
 import { CycleSelect } from './cycleSelect';
 import { static_correct} from './staticPath';
@@ -51,6 +51,7 @@ let pitchControl: NumberControl;
 let instrumentSelect: CycleSelect;
 let vqvaeLayerSelect: CycleSelect;
 let downloadButton: DownloadButton;
+let helpTrip: myTrip;
 
 function triggerInterfaceRefresh(): void {
     vqvaeLayerSelect.value = vqvaeLayerSelect.value;
@@ -283,9 +284,6 @@ async function render(configuration=defaultConfiguration) {
             'sample-from-dataset' + initial_command, sendCodesWithRequest).then(
                 () => {
                     enableChanges();
-                    if ( REGISTER_IDLE_STATE_DETECTOR ) {
-                        HelpTour.registerIdleStateDetector(HelpTour.trip);
-                    };
                 }
             );
     })
@@ -684,6 +682,19 @@ async function render(configuration=defaultConfiguration) {
         bottomControlsGridElem.appendChild(fadeInControlElement);
         renderFadeInControl(fadeInControlElement, spectrogramPlaybackManager);
     });
+
+    $(() => {
+        if (configuration["insert_help"]) {
+            // initialize help menu
+            helpTrip = new NotonoTrip(
+                [configuration["main_language"]],
+                spectrogramPlaybackManager.spectrogramLocator,
+                REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : null
+            );
+
+            helpTrip.renderIcon(document.getElementById('main-panel'));
+        }
+    })
 }
 
 $(() => {

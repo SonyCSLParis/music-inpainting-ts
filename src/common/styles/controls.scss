@@ -84,9 +84,20 @@ control-label {
 
 .gridspan {
     // visibility: hidden;
+    position: absolute;
     pointer-events: none;
     width: 100%;
     height: 100%;
+}
+
+#play-button-gridspan {
+    grid-row: 1/3;
+    grid-column: 1/2;
+}
+
+#download-button-gridspan {
+    grid-row: 3/4;
+    grid-column: 1/2;
 }
 
 #constraints-gridspan {
