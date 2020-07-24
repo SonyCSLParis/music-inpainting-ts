@@ -1,36 +1,8 @@
 @use "mixins/colors";
 @use "mixins/measures";
-
-$interface-font-stack: 'Fira-Sans', 'Ubuntu-Regular', sans-serif;
-$interface-font-weight: bold;
+@use "mixins/fonts";
 
 $CycleSelect-size: 54px;
-
-/*Font Awesome Fonts*/
-@font-face {
-    font-family: 'FontAwesome';
-    src: url('../../../node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf') format('truetype');
-}
-
-@font-face {
-    font-family: 'Ubuntu-Condensed';
-    src: url('../fonts/Ubuntu_Condensed/UbuntuCondensed-Regular.ttf') format('truetype');
-}
-
-@font-face {
-    font-family: 'Ubuntu-Regular';
-    src: url('../fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
-}
-
-@font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-Regular.ttf') format('truetype');
-}
-
-@font-face {
-    font-family: 'Julius';
-    src: url('../fonts/Julius_Sans_One/JuliusSansOne-Regular.ttf') format('truetype');
-}
 
 html, body {
     height: 100%;
@@ -40,7 +12,7 @@ html, body {
 
 body {
     background-color: colors.$body-background;
-    font-family: $interface-font-stack;
+    font-family: fonts.$interface-font-stack;
 
     // disable blue box over objects on touch
     -webkit-tap-highlight-color: rgba(0,0,0,0);
@@ -57,9 +29,16 @@ body {
     }
 }
 
-div[nexus-ui] select, div[nexus-ui] input {
-    font-family: $interface-font-stack !important;
-    font-weight: $interface-font-weight !important;
+[nexus-ui] select *, [nexus-ui] input * {
+    font-family: fonts.$interface-font-stack !important;
+}
+
+[nexus-ui] * {
+    font-weight: fonts.$interface-font-weight !important;
+}
+
+[nexus-ui] input {
+    font-weight: 700 !important;
 }
 
 $main-panel-height: calc(100% - #{measures.$header-height + measures.$bottom-controls-height});
