@@ -138,11 +138,23 @@ async function render(configuration=defaultConfiguration) {
         bottomControlsGridElem.id = 'bottom-controls';
         document.body.appendChild(bottomControlsGridElem);
 
+
+        const playButtonGridspanElem = document.createElement('div');
+        playButtonGridspanElem.id = "play-button-gridspan";
+        playButtonGridspanElem.classList.add('gridspan');
+        bottomControlsGridElem.appendChild(playButtonGridspanElem);
+
+        const downloadButtonGridspanElem = document.createElement('div');
+        downloadButtonGridspanElem.id = "download-button-gridspan";
+        downloadButtonGridspanElem.classList.add('gridspan');
+        bottomControlsGridElem.appendChild(downloadButtonGridspanElem);
+
         // create element for highlighting control grid spans in help
         const constraintsSpanElem = document.createElement('div');
         constraintsSpanElem.id = "constraints-gridspan";
         constraintsSpanElem.classList.add('gridspan');
         bottomControlsGridElem.appendChild(constraintsSpanElem);
+
         const editToolsGridspanElem = document.createElement('div');
         editToolsGridspanElem.id = "edit-tools-gridspan";
         editToolsGridspanElem.classList.add('gridspan');
