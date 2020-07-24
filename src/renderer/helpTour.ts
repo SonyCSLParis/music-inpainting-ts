@@ -249,6 +249,12 @@ export class NotonoTrip extends myTrip {
                 animation: "fadeInLeft",
                 expose: true
             },
+            {
+                sel: "#main-panel",
+                content: this.makeHTMLContent(helpContents["general"]["attributions"]),
+                position : "screen-center",
+                header: "Attributions/Licenses",
+            },
         ]
     }
 
