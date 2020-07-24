@@ -10,6 +10,7 @@ export class Locator {
 }
 
 export class Spectrogram extends Locator {
+    protected resizeTimeoutDuration: number = 2;
     protected resizeTimeout: NodeJS.Timeout;
     readonly container: HTMLElement;
     readonly shadowContainer: HTMLElement;
