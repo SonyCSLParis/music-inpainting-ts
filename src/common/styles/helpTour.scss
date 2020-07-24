@@ -1,12 +1,12 @@
-@use "mixins/fonts";
+@use "mixins/colors";
+
 .trip-exposed {
     background: none;
     z-index: 10000 !important;
-    box-shadow: 0 0 0 100vmax rgba(0,0,0,.5) !important;
+    box-shadow: 0 0 0 150vmax rgba(0,0,0,.5) !important;
     opacity: initial !important;
     pointer-events: none;
     border-radius: 10px;
-    // border: thick solid mistyrose;
 }
 
 #help-icon {
@@ -28,4 +28,34 @@
         content: "\F05A";
         font-family: 'FontAwesome';
     }
+}
+
+.trip-block {
+    position: sticky;  // prevents blocks from overflowing the viewport
+    background: darken(colors.$panes-background, 50%) !important;
+    font-weight: normal;
+    color: white !important;
+}
+
+.trip-progress-steps {
+    border-color: gray !important;
+}
+
+.trip-content {
+    padding-top: 0.75rem;
+}
+
+.trip-header {
+    font-size: large;
+    font-weight: 600;
+    border-bottom: thin solid gray;
+    padding-bottom: 0.5rem;
+}
+
+.trip-close {
+    font-size: large !important;
+}
+
+.trip-hide {
+    opacity: 10% !important;
 }
