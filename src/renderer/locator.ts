@@ -117,13 +117,15 @@ export class SpectrogramLocator extends Locator {
 
     public drawTimestampBoxes(onclickFactory: undefined,
         numRows: number, numColumns: number, numColumnsTop: number): void{
+            const spectrogramImageContainerElem: HTMLElement = document.getElementById(
+                'spectrogram-image-container');
             const spectrogramImageElem: HTMLImageElement = this.container.getElementsByTagName('img')[0];
 
             // restore default height for spectrogram image
-            spectrogramImageElem.style.removeProperty('height');
+            spectrogramImageContainerElem.style.removeProperty('height');
 
             const width: number = this.interfaceContainer.clientWidth;
-            const height: number = spectrogramImageElem.clientHeight;
+            const height: number = spectrogramImageContainerElem.clientHeight;
 
             this.sequencer = new Nexus.Sequencer(this.interfaceContainer.id, {
                 'size': [width, height],
@@ -162,6 +164,9 @@ export class SpectrogramLocator extends Locator {
             // adapt the spectrogram's image size to the resulting grid's size
             // since the grid size is rounded up to the number of rows and columns
             spectrogramImageElem.style.height = (
+                this.interfaceContainer.clientHeight.toString()
+                + 'px');
+            spectrogramImageContainerElem.style.height = (
                 this.interfaceContainer.clientHeight.toString()
                 + 'px');
     }
