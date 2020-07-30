@@ -308,7 +308,6 @@ async function render(configuration=defaultConfiguration) {
         playbackManager = spectrogramPlaybackManager;
         PlaybackCommands.setPlaybackManager(spectrogramPlaybackManager);
 
-        vqvaeLayerSelect.value = 'top-brush';  // trigger correct rendering of the spectrogram grid
         const sendCodesWithRequest = false;
         const initial_command = ('?pitch=' + pitchControl.value.toString()
             + '&instrument_family_str=' + instrumentSelect.value
