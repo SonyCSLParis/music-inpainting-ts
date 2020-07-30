@@ -6,11 +6,11 @@
         },
 
         "pitch-control-label": {
-            "en": "Pitch constraint"
+            "en": "Pitch"
         },
 
         "instrument-control-label": {
-            "en": "Instrument constraint"
+            "en": "Instrument"
         },
 
         "instrument-family-control-label": {
@@ -33,7 +33,7 @@
         },
 
         "edit-tool-select-label": {
-            "en": "Editing tool"
+            "en": "Tool"
         },
 
         "download-button-label": {
@@ -41,7 +41,7 @@
         },
 
         "fade-in-control-label": {
-            "en": "Declicking fade-in"
+            "en": "Declick"
         }
     },
 
@@ -93,7 +93,7 @@
             },
 
             "fade-in": {
-                "en": "Use this knob to add a slight <b>fade-in</b> to the audio playback. This can reduce fatigue for your ears during long sessions with sounds containing strong attacks. <br><br>Note that this fade-in is not applied when storing sounds via the download button, letting you control any processing in your DAW."
+                "en": "Adds a slight <b>fade-in</b> to the audio playback. This can reduce fatigue for your ears during long sessions with sounds containing strong attacks. <br><br>Note that this fade-in is not applied when storing sounds via the download button, letting you control any processing in your DAW."
             }
         }
     }

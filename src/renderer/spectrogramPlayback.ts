@@ -92,17 +92,12 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
 
 export function renderFadeInControl(element: HTMLElement, spectrogramPlaybackManager:
         SpectrogramPlaybackManager) {
-    var fadeInControl = new Nexus.Dial(element.id,{
-        'size': [64, 64],
-        'interaction': 'vertical',
-        'mode': 'relative',
-        'min': 0,
-        'max': 0.2,
-        'step': 0.001,
-        'value': 0
+    var fadeInControl = new Nexus.Toggle(element.id,{
+        'size': [40, 20],
+        'state': false
     });
-
-    fadeInControl.on('change', function(fadeIn_duration_s: number) {
-        spectrogramPlaybackManager.setFadeIn(fadeIn_duration_s)
+    let fadeIn_duration_s: number = 0.010;
+    fadeInControl.on('change', function(useFadeIn: boolean) {
+        spectrogramPlaybackManager.setFadeIn(useFadeIn ? fadeIn_duration_s : 0);
     });
 }
