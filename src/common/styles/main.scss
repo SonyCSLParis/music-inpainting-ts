@@ -79,10 +79,16 @@ $main-panel-height-advanced-controls: calc(100% - #{measures.$header-height + me
     text-align: center;
 }
 
-body.advanced-controls #bottom-controls {
-    height: measures.$bottom-controls-height + measures.$advanced-controls-height;
-    grid-template-columns: repeat(4, 25%);
-    grid-template-rows: 5fr 1fr 5fr 1fr 1vh;
+body.help-tour-on, body.advanced-controls {
+    #bottom-controls {
+        height: calc(#{measures.$bottom-controls-height} + #{measures.$advanced-controls-height});
+        grid-template-columns: repeat(4, 25%);
+        grid-template-rows: 5fr 1fr 5fr 1fr 1vh;
+    }
+
+    control-item.advanced, control-label.advanced {
+        opacity: 1;
+    }
 }
 
 body.advanced-controls #main-panel {

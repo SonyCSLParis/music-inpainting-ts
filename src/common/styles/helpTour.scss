@@ -9,6 +9,16 @@
     border-radius: 10px;
 }
 
+div.trip-overlay {
+    // disable Trip.js dark overlay
+    display: none !important;
+}
+
+.trip-exposed-container {
+    // push container up to ensure the box-shadow displays properly
+    z-index: 10 !important;
+}
+
 #help-icon {
     top: 1.5vh;
     right: 1.5vw;

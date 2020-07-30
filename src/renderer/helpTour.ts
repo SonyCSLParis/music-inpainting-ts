@@ -49,13 +49,33 @@ export abstract class myTrip {
         showHeader: true,
         // showCloseBox : true,
         delay : this.tripDelay_ms,
-        onEnd: this.tripCleanup
+        onEnd: this.tripCleanup,
+        onTripStart: (tripIndex: number, tripObject: any  // TODO(theis): add proper typing
+            ) => {
+            if (tripObject.expose && tripObject.hasOwnProperty('exposeContainer') ) {
+                const containerElement = document.getElementById(tripObject.exposeContainer)
+                this.toggleExpose(containerElement, true)
+            }
+        },
+        onTripEnd: (tripIndex: number, tripObject: any  // TODO(theis): add proper typing
+        ) => {
+            if (tripObject.expose && tripObject.hasOwnProperty('exposeContainer') ) {
+                const containerElement = document.getElementById(tripObject.exposeContainer)
+                this.toggleExpose(containerElement, false)
+            }
+        },
     };
 
     protected abstract makeContents(): void;
 
     // clean-up modifications made to the DOM if the trip is exited mid-run
-    protected tripCleanup(): void {};
+    protected tripCleanup(): void {
+        document.body.classList.remove('help-tour-on');
+    };
+
+    protected toggleExpose(element: HTMLElement, force?: boolean) {
+        element.classList.toggle('trip-exposed-container', force)
+    }
 
     protected makeHTMLContent(contents: object) {
         switch (this.languages.length) {
@@ -106,6 +126,7 @@ export abstract class myTrip {
         helpElem.addEventListener('click', function(event) {
             // stops event from trigerring outsideClickListener registered onTripStart
             event.stopPropagation();
+            document.body.classList.add('help-tour-on');
 
             self.trip.start()
         }, true);
@@ -200,8 +221,9 @@ export class NotonoTrip extends myTrip {
                 sel: "#play-button-gridspan",
                 content: this.makeHTMLContent(helpContents["general"]["play_button"]),
                 position : "e",
+                header: "Playback",
                 expose: true,
-                header: "Playback"
+                exposeContainer: 'bottom-controls',
             },
             {
                 sel: "#spectrogram-container-shadow-container",
@@ -209,8 +231,14 @@ export class NotonoTrip extends myTrip {
                 position : "s",
                 expose: true,
                 header: "Spectrogram 1: General",
-                onTripStart: function () {$('#spectrogram-container-interface-container')[0].children[1].classList.add('trip-hide');},
-                onTripEnd: function () {$('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hide');}
+                onTripStart: () => {
+                    $('#spectrogram-container-interface-container')[0].children[1].classList.add('trip-hide');
+                    this.toggleExpose(document.getElementById('main-panel'), true);
+                },
+                onTripEnd: () => {
+                    $('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hide');
+                    this.toggleExpose(document.getElementById('main-panel'), false);
+                }
             },
             {
                 sel: "#spectrogram-container-shadow-container",
@@ -218,28 +246,45 @@ export class NotonoTrip extends myTrip {
                 position : "s",
                 expose: true,
                 header: "Spectrogram transformations",
-                onTripStart: () => this.locator.callToAction(6)
+                onTripStart: () => {
+                    this.locator.callToAction(6)
+                    this.toggleExpose(document.getElementById('main-panel'), true);
+                },
+                onTripEnd: () => {
+                    this.toggleExpose(document.getElementById('main-panel'), false);
+                }
             },
             {
                 sel: "#constraints-gridspan",
                 content: this.makeHTMLContent(helpContents["notono"]["constraints"]),
                 position : "n",
+                header: "Model constraints",
                 expose: true,
-                header: "Model constraints"
+                exposeContainer: 'bottom-controls',
             },
             {
                 sel: "#edit-tools-gridspan",
                 content: this.makeHTMLContent(helpContents["notono"]["edit_tools"]),
                 position : "n",
+                header: "Edit tools",
                 expose: true,
-                header: "Edit tools"
+                exposeContainer: 'bottom-controls',
             },
             {
                 sel: "#download-button-gridspan",
                 content: this.makeHTMLContent(helpContents["notono"]["download"]),
                 position : "ne",
                 header: "Downloading",
-                expose: true
+                expose: true,
+                exposeContainer: 'bottom-controls',
+            },
+            {
+                sel: "#fade-in-control-gridspan",
+                content: this.makeHTMLContent(helpContents["notono"]["fade-in"]),
+                position : "nw",
+                header: "Declick / Fade-In",
+                expose: true,
+                exposeContainer: 'bottom-controls'
             },
             {
                 sel: "#main-panel",
@@ -247,7 +292,8 @@ export class NotonoTrip extends myTrip {
                 position : "screen-center",
                 header: "Audio drag'n'drop",
                 animation: "fadeInLeft",
-                expose: true
+                expose: true,
+                exposeContainer: 'bottom-controls'
             },
             {
                 sel: "#main-panel",
@@ -260,6 +306,7 @@ export class NotonoTrip extends myTrip {
 
     // clean-up modifications to the DOM if the trip is exited mid-run
     protected tripCleanup(): void {
+        super.tripCleanup();
         $('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hide');
     }
 }

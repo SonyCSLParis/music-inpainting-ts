@@ -102,7 +102,7 @@ control-label {
 }
 
 #download-button-gridspan {
-    grid-row: 3/4;
+    grid-row: 3/5;
     grid-column: 1/2;
 }
 
@@ -148,6 +148,11 @@ control-label {
 
 #fade-in-control {
     grid-row: 3;
+    grid-column: 4;
+}
+
+#fade-in-control-gridspan {
+    grid-row: 3/5;
     grid-column: 4;
 }
 
