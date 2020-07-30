@@ -1,6 +1,6 @@
 import $ from "jquery";
 import createActivityDetector from 'activity-detector';
-import { Spectrogram, Locator } from "./locator";
+import { SpectrogramLocator, Locator } from "./locator";
 
 import "trip.js/dist/trip.css";
 import '../common/styles/helpTour.scss';
@@ -192,7 +192,7 @@ class NonotoTrip extends myTrip {
 }
 
 export class NotonoTrip extends myTrip {
-    readonly locator: Spectrogram;
+    readonly locator: SpectrogramLocator;
 
     protected makeContents(): object[] {
         return [

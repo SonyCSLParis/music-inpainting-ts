@@ -1,12 +1,12 @@
 import * as Tone from 'tone';
 
 import { PlaybackManager } from "./playback";
-import { Spectrogram } from "./locator";
+import { SpectrogramLocator } from "./locator";
 
 let Nexus = require('./nexusColored');
 
 export class SpectrogramPlaybackManager extends PlaybackManager {
-    readonly spectrogramLocator: Spectrogram;
+    readonly spectrogramLocator: SpectrogramLocator;
     // initialize crossfade to play player A
     private crossFade: Tone.CrossFade = new Tone.CrossFade(0).toDestination();
     private player_A: Tone.Player = new Tone.Player().connect(this.crossFade.a);
@@ -16,7 +16,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     // look-ahead duration to retrieve the state of the crossfade after potential fading operations
     protected crossFadeOffset: Tone.Unit.Time = "+1.5";
 
-    constructor(spectrogramLocator: Spectrogram) {
+    constructor(spectrogramLocator: SpectrogramLocator) {
         super();
         this.spectrogramLocator = spectrogramLocator;
 

@@ -1,5 +1,5 @@
 // import * as nipplejs from "nipplejs";
-import { Spectrogram } from './locator';
+import { SpectrogramLocator } from './locator';
 import $ from "jquery";
 import * as WebMidi from 'webmidi';
 import * as MidiConvert from "midiconvert";
@@ -278,7 +278,7 @@ async function render(configuration=defaultConfiguration) {
         spectrogramSnapPointsElem.id = 'snap-points';
         spectrogramPictureElem.appendChild(spectrogramSnapPointsElem);
 
-        let spectrogram = new Spectrogram(spectrogramContainerElem);
+        let spectrogram = new SpectrogramLocator(spectrogramContainerElem);
 
         spectrogramPlaybackManager = new SpectrogramPlaybackManager(spectrogram);
         playbackManager = spectrogramPlaybackManager;
