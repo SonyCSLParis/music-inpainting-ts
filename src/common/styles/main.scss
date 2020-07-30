@@ -2,8 +2,6 @@
 @use "mixins/measures";
 @use "mixins/fonts";
 
-$CycleSelect-size: 54px;
-
 html, body {
     height: 100%;
     margin: 0;
@@ -13,12 +11,14 @@ html, body {
 body {
     background-color: colors.$body-background;
     font-family: fonts.$interface-font-stack;
+    transition: all 0.1s ease-in;
 
     // disable blue box over objects on touch
     -webkit-tap-highlight-color: rgba(0,0,0,0);
     -webkit-tap-highlight-color: transparent;
 
     user-select: none;
+    z-index: 0;
 
     &.busy {
         cursor: wait !important;
@@ -45,29 +45,74 @@ $main-panel-height: calc(100% - #{measures.$header-height + measures.$bottom-con
 $main-panel-height-advanced-controls: calc(100% - #{measures.$header-height + measures.$bottom-controls-height + measures.$advanced-controls-height});
 
 #main-panel {
-    height: $main-panel-height;
+    height: measures.$main-panel-height;
     top: measures.$header-height;
     z-index: 0;
 }
 
 #osmd-loading-spinner {
     position: absolute;
-    top: calc(#{$main-panel-height}/2 + #{measures.$header-height});
+    top: calc(#{measures.$main-panel-height}/2);
     left: 50%;
     margin-left: -32px;
     margin-top: -32px;
     display: none;
 }
 
+$expand-tab-height: max(0.5vh, 40px);
+$trapezoid-perspective-transform:  perspective(#{$expand-tab-height}) rotateX(2deg);
+
 #bottom-controls {
+    .expand-tab {
+        position: absolute;
+        cursor: pointer;
+        width: 50%;
+        height: $expand-tab-height;
+        top: calc(0px - #{$expand-tab-height});
+
+        content: "⬆";
+
+        font-size: large;
+        display: flex;
+        align-content: center;
+        justify-content: center;
+        transition: all 0.1s ease-in;
+        left: 50%;
+        z-index: -1;
+        border-radius: 5px 5px 0 0;
+
+        background-color: darken(colors.$panes-background, 10%);
+        transform: translate(-50%, 0) $trapezoid-perspective-transform;
+
+        @media (hover: hover) {
+            // enable show on hover if device supports hovering;
+            height: calc(#{$expand-tab-height} / 2);;
+            top: calc(0px - #{$expand-tab-height} / 2);
+            // translateZ is used to ensure the content is behind the parent container
+            // this is required since the parent container creates a stacking context
+            // furthermore the Z-axis translation should happen before the trapezoid transform,
+            // otherwise it messes up the perspective
+            transform: translateZ(-100px) translate(-50%, 0) $trapezoid-perspective-transform;
+        }
+
+        &:hover {
+            // transform: translate(-50%, 0);
+            height: $expand-tab-height;
+            top: calc(0px - #{$expand-tab-height});
+        }
+    }
+
     position: absolute;
-    display: inline-grid;
+    display: grid;
+    transform-style: preserve-3D;
     width: 100%;
     height: measures.$bottom-controls-height;
+    transition: height 0.4s ease-in-out;
     grid-template-columns: repeat(4, 25%);
     grid-template-rows: 90px auto;
     align-items: center;
     justify-items: center;
+    z-index: 0;
 
     bottom: 0;
     left: 0;
@@ -79,6 +124,16 @@ $main-panel-height-advanced-controls: calc(100% - #{measures.$header-height + me
     text-align: center;
 }
 
+body.help-tour-on .expand-tab {
+    // disable advanced controls expansion tab when browsing the help menu
+    visibility: hidden;
+}
+
+
+control-item.advanced, control-label.advanced {
+    opacity: 0;
+    transition: opacity 0.2s ease-in;
+}
 body.help-tour-on, body.advanced-controls {
     #bottom-controls {
         height: calc(#{measures.$bottom-controls-height} + #{measures.$advanced-controls-height});
@@ -92,7 +147,7 @@ body.help-tour-on, body.advanced-controls {
 }
 
 body.advanced-controls #main-panel {
-    height: $main-panel-height-advanced-controls;
+    height: measures.$main-panel-height-with-advanced-controls;
 }
 
 select {
@@ -135,45 +190,12 @@ select {
     text-align: center;
 }
 
-.CycleSelect-container {
-    color: colors.$idle-control;
-
-    width: measures.$CycleSelect-size;
-    height: measures.$CycleSelect-size;
-    border-radius: 64px;
-    border-style: solid;
-    border-width: thick;
-
-    align-self: center;
-    justify-self: center;
-}
-
-.CycleSelect-inner-container {
-    width: inherit !important;
-    height: inherit !important;
-
-    // HACK: invisible border to allow clicking on the border of the selector
-    border-radius: 64px;
-    border-style: solid;
-    border-width: thick;
-    border-color: inherit;  // fallback if no opacity support
-    border-color: rgba(0, 0, 0, 0);
-
-    top: -5px;
-}
-
 #granularity-select-container--whole-note {
     width: 45%;
 }
 
 #edit-tool-select-container--top, #edit-tool-select-container--bottom {
     width: 60%;
-}
-
-.header {
-    padding: 1em;
-    position: absolute;
-    left: 50%;
 }
 
 .center {

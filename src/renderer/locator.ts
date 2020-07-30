@@ -93,6 +93,11 @@ export class SpectrogramLocator extends Locator {
         //     this.vqvaeTimestepsTop.toString());
     }
 
+    // re-render with current parameters
+    public refresh(): void {
+        this.render(this.numRows, this.numColumns, this.numColumnsTop)
+    }
+
     public clear(): void {
         this.sequencer.matrix.populate.all(0);
     }

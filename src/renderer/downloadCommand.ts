@@ -10,11 +10,13 @@ export class DownloadButton {
 
     protected mainIconSize: string = 'fa-3x';
 
-    constructor(parent: HTMLElement, configuration: {}, defaultFilename: string = '') {
+    constructor(parent: HTMLElement, configuration: {}, defaultFilename: string = '',
+            isAdvancedControl: boolean = false) {
         this.parent = parent;
 
         this.container = document.createElement('control-item');
-        this.container.id = 'download-button-container'
+        this.container.id = 'download-button-container';
+        this.container.classList.toggle('advanced', isAdvancedControl);
         this.parent.appendChild(this.container);
 
         // create invisible anchor element to handle download logic

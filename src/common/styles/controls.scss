@@ -10,6 +10,20 @@ control-item {
     border-radius: 4px !important;
 }
 
+[nexus-ui] {
+    select, input {
+        font-size: min(7vw, 15px) !important;
+    }
+    select {
+        width: min(120px, 20vw) !important;
+    }
+    input {
+        width: min(18vw, 45px) !important;
+    }
+}
+
+
+
 control-item:hover {
     filter: brightness(1.03) $main-filter;
 }
@@ -18,8 +32,8 @@ control-item * {
     color: colors.$idle-control;
 }
 
-control-item, control-label {
-    font-size: large !important;
+control-item {
+    font-size: calc(min(10px + 0.5vw, 1em)) !important;
 }
 control-item {
     font-weight: 500;
@@ -27,6 +41,8 @@ control-item {
 
 control-label {
     font-weight: 400;
+
+    font-size: calc(min(10px + 1vw, 1.1em));
 }
 
 #play-button {

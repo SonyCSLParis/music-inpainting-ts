@@ -2,6 +2,8 @@ $header-height: 120px;
 $bottom-controls-height: 140px;
 $advanced-controls-height: 70px;
 
-$spectrogram-width: 90vw;
+$main-panel-height: calc(100vh - (#{$header-height} + #{$bottom-controls-height}));
+$main-panel-height-with-advanced-controls: calc(100vh - (#{$header-height} + #{$bottom-controls-height} + #{$advanced-controls-height}));
 
-$CycleSelect-size: 54px;
+
+$CycleSelect-size: min(calc(30px + 1.5vw), 54px);
