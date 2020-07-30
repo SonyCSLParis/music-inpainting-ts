@@ -22,74 +22,32 @@ header {
     align-items: center;
 }
 
-@media screen and (max-width: 500px) {
-    header {
-        grid-template-rows: 15% 40% 30% 15%;
-        grid-template-columns: repeat(5, 20%);
-    }
-
-    #app-title {
-        grid-row: 2;
-        grid-column: 3;
-        font-size: 11vw !important;
-    }
-
-    .header-item-left, .header-item-right {
-        grid-row: 3;
-        justify-self: center;
-        margin: none;
-    }
-
-    .header-item-left {
-        grid-column: 2;
-    }
-
-    .header-item-right {
-        grid-column: 4;
-    }
-
-    #help-icon {
-        // Hide text content, display only icon
-        // via [https://stackoverflow.com/a/471538]
-        text-indent: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        // HACK Manual offset to center in header
-        top: -38px;
-        width: 45px;
-    }
+@media screen and (max-width: 500px) and (max-height: 500px) {
 }
 
-@media screen and (min-width: 500px) {
-    header {
-        grid-template-rows: auto;
-        grid-template-columns: repeat(3, 1fr);
-    }
+$logo-margin-width: min(20%, 25px);
+header {
+    grid-template-rows: auto;
+    grid-template-columns: repeat(3, 1fr);
+}
 
-    .header-item-left {
-        grid-row: 1;
-        grid-column: 1;
-        margin-left: 25px;
-        justify-self: left;
-    }
+.header-item-left {
+    grid-row: 1;
+    grid-column: 1;
+    margin-left: $logo-margin-width;
+    justify-self: left;
+}
 
-    #app-title {
-        grid-row: 1;
-        grid-column: 2;
-    }
+.header-item-right {
+    grid-row: 1;
+    grid-column: 3;
+    margin-right: $logo-margin-width;
+    justify-self: right;
+}
 
-    .header-item-right {
-        grid-row: 1;
-        grid-column: 3;
-        margin-right: 25px;
-        justify-self: right;
-
-        & img {
-            display: block;
-            max-height: 40px;
-            max-width: 160px;
-        }
-    }
+#app-title {
+    grid-row: 1;
+    grid-column: 2;
 }
 
 body.anonymous-mode {
@@ -114,6 +72,9 @@ body.anonymous-mode {
     filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.1));
 }
 
+$logo-width-small: max(15px, min(10vw, 6vh, 60px));
+$logo-width-full: min(30vw, 16vh, 120px);
+
 .header-item-left, .header-item-right {
     display: flex;
     align-self: center;
@@ -125,18 +86,21 @@ body.anonymous-mode {
 }
 
 header picture, header img {
-    height: inherit;
+    height: auto;
+    align-content: center;
+    align-items: center;
+    display: inline-flex;
+    vertical-align: middle;
 }
 
 .logo {
-    @media screen and (max-width: 700px) {
-        width: 40px;
-        height: 23px;
-    }
+    height: 100%;
 
-    @media screen and (min-width: 700px) {
-        width: 160px;
-        height: 50px;
+    @media screen and (min-width: 700px), screen and (min-height: 500px) {
+        width: $logo-width-full;
+    }
+    @media screen and (max-width: 700px), screen and (max-height: 500px) {
+        width: $logo-width-small;
     }
 }
 
@@ -147,6 +111,6 @@ header picture, header img {
 
     display: flex;
 
-    font-size: 2.3em;
+    font-size: min(10vw, 12vh, 2.3em);
     font-family: 'Julius' !important;
 }

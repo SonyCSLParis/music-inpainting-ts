@@ -41,7 +41,7 @@ export function render(containerElement: HTMLElement, configuration) {
         cslLogoLinkElem.appendChild(cslLogoContainerElem);
         let CslLargeLogoElem = document.createElement('source');
         CslLargeLogoElem.type = "image/svg+xml";
-        CslLargeLogoElem.media = "(min-width: 700px)";
+        CslLargeLogoElem.media = "(min-width: 700px) and (min-height: 500px)";
         CslLargeLogoElem.srcset = Path.join(static_correct, '/icons/logos/sonycsl-logo.svg');
         cslLogoContainerElem.appendChild(CslLargeLogoElem);
         let CslSmallLogoElem = document.createElement('img');
@@ -74,7 +74,7 @@ export function render(containerElement: HTMLElement, configuration) {
         acidsLogoLinkElem.appendChild(acidsLogoContainerElem);
         let acidsLargeLogoElem = document.createElement('source');
         acidsLargeLogoElem.type = "image/png";
-        acidsLargeLogoElem.media = "(min-width: 700px)";
+        acidsLargeLogoElem.media = "(min-width: 700px) and (min-height: 500px)";
         acidsLargeLogoElem.srcset = Path.join(static_correct, '/icons/logos/acids-flat-logo.png');
         acidsLogoContainerElem.appendChild(acidsLargeLogoElem);
         let acidsSmallLogoElem = document.createElement('img');
