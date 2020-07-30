@@ -116,28 +116,46 @@ async function render(configuration=defaultConfiguration) {
     });
 
 
-    let useAdvancedControls: boolean = configuration['insert_advanced_controls'];
-    $(() => {
-        if (useAdvancedControls) {
-            document.body.classList.add('advanced-controls');
-        }
-    });
-
     // Tone.context.latencyHint = 'playback';
 
     $(() => {
         let headerGridElem: HTMLElement = document.createElement('header');
+        headerGridElem.id = 'header';
         document.body.appendChild(headerGridElem);
-        Header.render(headerGridElem, configuration);
-    });
 
-    let bottomControlsGridElem: HTMLDivElement;
+        let mainPanel = <HTMLElement>document.createElement('div');
+        mainPanel.id = 'main-panel';
+        document.body.appendChild(mainPanel);
 
-    $(() => {
-        bottomControlsGridElem = document.createElement('div');
+        let bottomControlsGridElem: HTMLElement;
+        bottomControlsGridElem = document.createElement('footer');
         bottomControlsGridElem.id = 'bottom-controls';
         document.body.appendChild(bottomControlsGridElem);
+    });
 
+    $(() => {
+        let headerGridElem = document.getElementById('header');
+        Header.render(headerGridElem, configuration);
+    })
+
+    $(() => {
+        let bottomControlsGridElem = document.getElementById('bottom-controls');
+        let bottomControlsExpandTabElem = document.createElement('div');
+        bottomControlsExpandTabElem.id = 'bottom-controls-expand';
+        bottomControlsExpandTabElem.classList.add('expand-tab');
+        bottomControlsExpandTabElem.innerHTML = '⬆';
+        bottomControlsGridElem.appendChild(bottomControlsExpandTabElem);
+        bottomControlsExpandTabElem.addEventListener('click', function () {
+            this.classList.toggle('expanded');
+            this.innerHTML = (
+                this.classList.contains('expanded') ?
+                '⬇' :
+                '⬆'
+            );
+            document.body.classList.toggle('advanced-controls',
+                this.classList.contains('expanded'));
+            spectrogramPlaybackManager.spectrogramLocator.refresh();
+        });
 
         const playButtonGridspanElem = document.createElement('div');
         playButtonGridspanElem.id = "play-button-gridspan";
@@ -179,6 +197,7 @@ async function render(configuration=defaultConfiguration) {
 
         let granularitySelectContainerElem: HTMLElement = document.createElement('control-item');
         granularitySelectContainerElem.id = 'edit-tool-select-container';
+        let bottomControlsGridElem = document.getElementById('bottom-controls');
         bottomControlsGridElem.appendChild(granularitySelectContainerElem);
 
         ControlLabels.createLabel(granularitySelectContainerElem,
@@ -232,14 +251,16 @@ async function render(configuration=defaultConfiguration) {
         $(() => {
             let bottomControlsGridElem = document.getElementById('bottom-controls');
             pitchControl = new NumberControl(bottomControlsGridElem,
-                'pitch-control', [24, 84], 60);
-            pitchControl.render();
+                'pitch-control', [24, 84], 60, 40);
+            const useSimpleSlider = false;
+            const elementWidth_px = 40;
+            pitchControl.render(useSimpleSlider, elementWidth_px);
 
             let instrumentSelectElem: HTMLElement = document.createElement('control-item');
             instrumentSelectElem.id = 'instrument-control';
             bottomControlsGridElem.appendChild(instrumentSelectElem);
             instrumentSelect = new Nexus.Select('#instrument-control', {
-                'size': [150, 50],
+                'size': [120, 50],
                 'options': ['bass', 'brass', 'flute',
                     'guitar', 'keyboard', 'mallet', 'organ',
                     'reed', 'string', 'synth_lead', 'vocal'
@@ -251,9 +272,7 @@ async function render(configuration=defaultConfiguration) {
     };
 
     $(() => {
-        let mainPanel = <HTMLElement>document.createElement("div");
-        mainPanel.id = 'main-panel';
-        document.body.appendChild(mainPanel);
+        let mainPanel = document.getElementById('main-panel');
 
         let spinnerElem = insertLoadingSpinner(mainPanel);
 
@@ -409,6 +428,7 @@ async function render(configuration=defaultConfiguration) {
             let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
             playbuttonContainerElem.id = 'play-button';
 
+            let bottomControlsGridElem = document.getElementById('bottom-controls');
             bottomControlsGridElem.appendChild(playbuttonContainerElem);
 
             ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
@@ -659,11 +679,13 @@ async function render(configuration=defaultConfiguration) {
     }});
 
     $(() => {
+        let isAdvancedControl = true;
         let bottomControlsGridElem = document.getElementById('bottom-controls')
         downloadButton = new DownloadButton(bottomControlsGridElem,
-            configuration);
+            configuration, null, isAdvancedControl);
 
-        ControlLabels.createLabel(bottomControlsGridElem, 'download-button-label');
+        ControlLabels.createLabel(bottomControlsGridElem, 'download-button-label',
+            isAdvancedControl);
     });
 
     $(() => {
@@ -690,12 +712,15 @@ async function render(configuration=defaultConfiguration) {
     })
 
     $(() => {
+        let isAdvancedControl: boolean = true;
         let bottomControlsGridElem = document.getElementById('bottom-controls');
         let fadeInControlElement: HTMLElement = document.createElement('control-item');
         fadeInControlElement.id = 'fade-in-control';
+        fadeInControlElement.classList.toggle('advanced', isAdvancedControl);
         bottomControlsGridElem.appendChild(fadeInControlElement);
         renderFadeInControl(fadeInControlElement, spectrogramPlaybackManager);
-        ControlLabels.createLabel(fadeInControlElement, 'fade-in-control-label');
+        ControlLabels.createLabel(fadeInControlElement, 'fade-in-control-label',
+            isAdvancedControl);
     });
 
     $(() => {

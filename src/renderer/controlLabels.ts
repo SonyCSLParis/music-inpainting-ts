@@ -1,7 +1,8 @@
 const configuration = require('../common/default_config.json');
 const localizations = require('../common/localization.json');
 
-export function createLabel(controlElem: HTMLElement, id: string) {
+export function createLabel(controlElem: HTMLElement, id: string,
+        isAdvancedControl: boolean = false) {
     let labelElem: HTMLElement = document.createElement('control-label');
     labelElem.id = id;
     let controlLabel: string = `${
@@ -11,6 +12,7 @@ export function createLabel(controlElem: HTMLElement, id: string) {
         controlLabel.concat(`<br><i>${localizations['control-labels'][id][secondary_language]}</i>`)
     }
     labelElem.innerHTML = controlLabel;
+    labelElem.classList.toggle('advanced', isAdvancedControl);
 
     let bottomControlsElem: HTMLElement = document.getElementById(
         'bottom-controls');

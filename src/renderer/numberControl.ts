@@ -15,7 +15,7 @@ export class NumberControl {
     private readonly initialValue: number;
 
     constructor (parent: HTMLElement, id: string, range: [number, number],
-        initialValue: number,
+        initialValue: number, elementWidth: number,
         onchange: (newValue: number) => void = (v) => {}
         ) {
         if ( range[1] < initialValue || range[0] > initialValue) {
@@ -30,7 +30,7 @@ export class NumberControl {
         this.initialValue = initialValue;
     }
 
-    render(useSimpleSlider: boolean = false): void{
+    render(useSimpleSlider: boolean = false, elementWidth: number): void{
         // Create BPM display
         let containerElem: HTMLElement = document.createElement('control-item');
         containerElem.id = this.id,
@@ -45,7 +45,7 @@ export class NumberControl {
 
         if (!useSimpleSlider) {
             let interactionElem: HTMLElement = document.createElement('div');
-            interactionElem.setAttribute('id', this.interactionId);
+            interactionElem.id = this.interactionId;
             containerElem.appendChild(interactionElem);
             this.controller = new Nexus.Number('#' + this.interactionId, {
                 'min': this.range[0],
@@ -53,10 +53,11 @@ export class NumberControl {
                 'step': 1,
                 'value': this.initialValue,
             });
+            this.controller.element.style.width = Math.round(elementWidth).toString() + 'px';
         }
         else {
             let bpmSliderElem: HTMLElement = document.createElement('div');
-            bpmSliderElem.setAttribute('id', this.id);
+            bpmSliderElem.id = this.id;
             containerElem.appendChild(bpmSliderElem);
 
             this.controller = new Nexus.Slider('#' + this.id, {
@@ -91,14 +92,14 @@ export class BPMControl extends NumberControl {
 
     constructor(containerElement: HTMLElement, id: string,
             range: [number, number] = BPMControl.defaultRange,
-            initialValue: number = BPMControl.defaultInitialValue,
+            initialValue: number = BPMControl.defaultInitialValue, elementWidth: number,
             onchange: (newValue: number) => void = BPMControl.onchangeCallback_default
             ) {
         if (range[1] < 2*range[0]) {
             throw Error(`BPM range should be at least one tempo octave wide, ie.
             maxAcceptedBPM at least twice as big as minAcceptedBPM`)
         }
-        super(containerElement, id, range, initialValue, onchange)
+        super(containerElement, id, range, initialValue, elementWidth, onchange);
     }
 
     // ensure the new BPM is in the accepted range

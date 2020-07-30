@@ -1,4 +1,34 @@
+@use "mixins/measures";
+@use "mixins/colors";
 // Styling for the icon-based select element
+
+
+.CycleSelect-container {
+    color: colors.$idle-control;
+
+    width: measures.$CycleSelect-size;
+    height: measures.$CycleSelect-size;
+    border-radius: 64px;
+    border-style: solid;
+    border-width: clamp(2px, 0.3vw, 3.5px);
+
+    align-self: center;
+    justify-self: center;
+}
+
+.CycleSelect-inner-container {
+    width: inherit !important;
+    height: inherit !important;
+
+    // HACK: invisible border to allow clicking on the border of the selector
+    border-radius: 64px;
+    border-style: solid;
+    border-width: thick;
+    border-color: inherit;  // fallback if no opacity support
+    border-color: rgba(0, 0, 0, 0);
+
+    top: -5px;
+}
 
 .CycleSelect-container {
     &.CycleSelect-disabled {
@@ -13,7 +43,7 @@
             left: 2px;
             border-top-width: thick;
             border-top-style: solid;
-            width: 62px;
+            width: measures.$CycleSelect-size;
             transform: rotate(-45deg);
             transform-origin: 0% 0%;
         }
