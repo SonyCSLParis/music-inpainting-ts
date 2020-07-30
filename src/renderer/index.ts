@@ -167,6 +167,11 @@ async function render(configuration=defaultConfiguration) {
         downloadButtonGridspanElem.classList.add('gridspan');
         bottomControlsGridElem.appendChild(downloadButtonGridspanElem);
 
+        const fadeInControlGridspanElem = document.createElement('div');
+        fadeInControlGridspanElem.id = "fade-in-control-gridspan";
+        fadeInControlGridspanElem.classList.add('gridspan');
+        bottomControlsGridElem.appendChild(fadeInControlGridspanElem);
+
         // create element for highlighting control grid spans in help
         const constraintsSpanElem = document.createElement('div');
         constraintsSpanElem.id = "constraints-gridspan";
