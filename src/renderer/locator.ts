@@ -116,59 +116,60 @@ export class SpectrogramLocator extends Locator {
     };
 
     public drawTimestampBoxes(onclickFactory: undefined,
-        numRows: number, numColumns: number, numColumnsTop: number): void{
-            const spectrogramImageContainerElem: HTMLElement = document.getElementById(
-                'spectrogram-image-container');
-            const spectrogramImageElem: HTMLImageElement = this.container.getElementsByTagName('img')[0];
+            numRows: number, numColumns: number, numColumnsTop: number): void{
+        const spectrogramImageContainerElem: HTMLElement = document.getElementById(
+            'spectrogram-image-container');
+        const spectrogramImageElem: HTMLImageElement = this.container.getElementsByTagName('img')[0];
 
-            // restore default height for spectrogram image
-            spectrogramImageContainerElem.style.removeProperty('height');
+        // restore default height for spectrogram image
+        spectrogramImageElem.style.removeProperty('height');
+        spectrogramImageContainerElem.style.removeProperty('height');
 
-            const width: number = this.interfaceContainer.clientWidth;
-            const height: number = spectrogramImageContainerElem.clientHeight;
+        const width: number = this.interfaceContainer.clientWidth;
+        const height: number = spectrogramImageContainerElem.clientHeight;
 
-            this.sequencer = new Nexus.Sequencer(this.interfaceContainer.id, {
-                'size': [width, height],
-                'mode': 'toggle',
-                'rows': numRows,
-                'columns': numColumns,
+        this.sequencer = new Nexus.Sequencer(this.interfaceContainer.id, {
+            'size': [width, height],
+            'mode': 'toggle',
+            'rows': numRows,
+            'columns': numColumns,
+        });
+        this.numColumnsTop = numColumnsTop;
+        // make the matrix overlay transparent
+        this.sequencer.colorize("accent", "rgba(255, 255, 255, 1)");
+        this.sequencer.colorize("fill", "rgba(255, 255, 255, 0.4)");
+
+        const snapPointsContainer = document.getElementById('snap-points');
+        // clear existing snap points
+        while (snapPointsContainer.firstChild) {
+            snapPointsContainer.removeChild(snapPointsContainer.lastChild);
+        }
+
+        const numScrollSteps = this.vqvaeTimestepsTop - numColumnsTop + 1;
+
+        this.toggleNoscroll(numScrollSteps == 1);
+        Array(numScrollSteps).fill(0).forEach(
+            () => {
+                let snapElem = document.createElement('snap');
+                snapPointsContainer.appendChild(snapElem);
             });
-            this.numColumnsTop = numColumnsTop;
-            // make the matrix overlay transparent
-            this.sequencer.colorize("accent", "rgba(255, 255, 255, 1)");
-            this.sequencer.colorize("fill", "rgba(255, 255, 255, 0.4)");
 
-            const snapPointsContainer = document.getElementById('snap-points');
-            // clear existing snap points
-            while (snapPointsContainer.firstChild) {
-                snapPointsContainer.removeChild(snapPointsContainer.lastChild);
-            }
+        // update image scaling to match snap points
+        const timeStepWidth_px: number = width / numColumnsTop;
+        spectrogramImageElem.width = Math.floor(
+            timeStepWidth_px * this.vqvaeTimestepsTop);
+        snapPointsContainer.style.width = Math.round(
+            timeStepWidth_px * numScrollSteps
+            ).toString() + 'px';
 
-            const numScrollSteps = this.vqvaeTimestepsTop - numColumnsTop + 1;
-
-            this.toggleNoscroll(numScrollSteps == 1);
-            Array(numScrollSteps).fill(0).forEach(
-                () => {
-                    let snapElem = document.createElement('snap');
-                    snapPointsContainer.appendChild(snapElem);
-            });
-
-            // update image scaling to match snap points
-            const timeStepWidth_px: number = width / numColumnsTop;
-            spectrogramImageElem.width = Math.floor(
-                timeStepWidth_px * this.vqvaeTimestepsTop);
-            snapPointsContainer.style.width = Math.round(
-                timeStepWidth_px * numScrollSteps
-                ).toString() + 'px';
-
-            // adapt the spectrogram's image size to the resulting grid's size
-            // since the grid size is rounded up to the number of rows and columns
-            spectrogramImageElem.style.height = (
-                this.interfaceContainer.clientHeight.toString()
-                + 'px');
-            spectrogramImageContainerElem.style.height = (
-                this.interfaceContainer.clientHeight.toString()
-                + 'px');
+        // adapt the spectrogram's image size to the resulting grid's size
+        // since the grid size is rounded up to the number of rows and columns
+        spectrogramImageElem.style.height = (
+            this.interfaceContainer.clientHeight.toString()
+            + 'px');
+        spectrogramImageContainerElem.style.height = (
+            this.interfaceContainer.clientHeight.toString()
+            + 'px');
     }
 
     protected toggleNoscroll(force?: boolean): void {
