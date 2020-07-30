@@ -197,10 +197,9 @@ export class SpectrogramLocator extends Locator {
             setTimeout(() => {
                 randomIndexes.forEach((index) => {
                     const element = this.interfaceElement.children.item(index);
-                    element.classList.remove('highlight');
-                });
-            },
-            4 * interval * numCells  // FIXME(theis): hardcoded
+                    element.classList.remove('highlight');});
+                },
+                4 * interval * numCells  // FIXME(theis): hardcoded
             );
         });
     }
