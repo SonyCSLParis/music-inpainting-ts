@@ -90,8 +90,20 @@ $spectrogram-height: 45vh;
         top: 0;
         position: relative;
         pointer-events: none;
+    // ensures snap points are within the visible spectrogram image canvas
+    // this is required so that they are taken into account
+    position: absolute;
+    top: 0;
+    // ensures snap points are within the visible spectrogram image canvas
+    // this is required so that they are taken into account
+    height: 1px;
+    visibility: hidden;
+    position: absolute;
+    top: 0;
         z-index: -1000;
     }
+    height: 1px;
+    visibility: hidden;
 }
 
 #snap-points {
