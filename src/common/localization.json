@@ -90,6 +90,10 @@
 
             "download": {
                 "en": "Click here at any point to <b>store</b> the current sound locally on your machine as an audio file!"
+            },
+
+            "fade-in": {
+                "en": "Use this knob to add a slight <b>fade-in</b> to the audio playback. This can reduce fatigue for your ears during long sessions with sounds containing strong attacks. <br><br>Note that this fade-in is not applied when storing sounds via the download button, letting you control any processing in your DAW."
             }
         }
     }
