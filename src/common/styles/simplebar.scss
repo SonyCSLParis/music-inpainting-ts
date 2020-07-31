@@ -8,11 +8,12 @@ $scrollbar-color: #009ceb;
     }
 
     &.simplebar-horizontal {
+        position: fixed;
         border-radius: 20px;
         margin-left: 10%;
         margin-right: 10%;
-        height: 30px;
-        bottom: 60px;
+        height: min(10%, 30px, 4vh);
+        bottom: -12%;
         background-color: $track-color;
 
         // prevent visual glitches when updating the sheet where the scrollbar

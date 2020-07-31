@@ -1,4 +1,5 @@
 @use "mixins/colors";
+@use "mixins/measures";
 
 $main-filter: drop-shadow(0px 0px 1.3px rgba(0, 0, 0, 0.3));
 
@@ -6,23 +7,34 @@ control-item {
     filter: $main-filter;
 }
 
-[nexus-ui] * {
-    border-radius: 4px !important;
+.fas {
+    font-size: measures.$CycleSelect-size;
 }
 
-[nexus-ui] {
+#bottom-controls [nexus-ui] {
+    & * {
+        border-radius: 4px !important;
+    }
+
+    width: unset !important;
+    height: unset !important;
+
     select, input {
-        font-size: min(7vw, 15px) !important;
+        text-align: center;
+        font-size: min(7vh, 7vw, 15px) !important;
     }
     select {
-        width: min(120px, 20vw) !important;
+        display: inline-flex;
+        vertical-align: middle;
+        top: 50%;
+        height: max(1em, min(40px, 8vh, 7vw)) !important;
+        width: min(110px, 20vw) !important;
     }
     input {
+        height: min(25px, 10vh) !important;
         width: min(18vw, 45px) !important;
     }
 }
-
-
 
 control-item:hover {
     filter: brightness(1.03) $main-filter;
@@ -34,8 +46,6 @@ control-item * {
 
 control-item {
     font-size: calc(min(10px + 0.5vw, 1em)) !important;
-}
-control-item {
     font-weight: 500;
 }
 

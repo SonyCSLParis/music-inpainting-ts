@@ -45,18 +45,29 @@ div.trip-overlay {
     background: darken(colors.$panes-background, 50%) !important;
     font-weight: normal;
     color: white !important;
+
+    min-width: 20vw !important;
+    max-width: 35vw !important;
+    width: fit-content !important;
 }
 
 .trip-progress-steps {
+    border-top-width: 0px;
     border-color: gray !important;
+
+    @media screen and (max-width: 500px), screen and (max-height: 300px) {
+        display: none !important;
+    }
 }
 
 .trip-content {
     padding-top: 0.75rem;
+    font-size: max(0.7em, min(2.5vw, 3vh, 1em));
+    border-bottom: thin solid gray;
 }
 
 .trip-header {
-    font-size: large;
+    font-size: max(1em, min(3vw, 4vh, 1.3em));
     font-weight: 600;
     border-bottom: thin solid gray;
     padding-bottom: 0.5rem;
@@ -68,4 +79,34 @@ div.trip-overlay {
 
 .trip-hide {
     opacity: 10% !important;
+}
+
+div.trip-block {
+    // min-width: 400px;
+    // max-width: 20vw !important;
+    border-radius: 15px;
+    // background: rgb(247, 247, 247) !important;
+
+    &.e::before {
+        border-right-color: black!important;
+    }
+    &.s::before {
+        border-bottom-color: black!important;
+    }
+    &.n::before {
+        border-top-color: black!important;
+    }
+    &.w::before {
+        border-left-color: black!important;
+    }
+}
+
+.trip-navigation {
+    // increase size of navigation buttons
+    font-size: xx-large;
+
+    & a {
+        color: black;
+        text-decoration: none;
+    }
 }
