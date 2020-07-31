@@ -41,36 +41,41 @@ body {
     font-weight: 700 !important;
 }
 
-$main-panel-height: calc(100% - #{measures.$header-height + measures.$bottom-controls-height});
-$main-panel-height-advanced-controls: calc(100% - #{measures.$header-height + measures.$bottom-controls-height + measures.$advanced-controls-height});
+body {
+    display: flex;
+    flex-direction: column;
+}
 
 #main-panel {
-    height: measures.$main-panel-height;
-    top: measures.$header-height;
+    position: relative !important;
+    flex-grow: 1;
     z-index: 0;
 }
 
 #osmd-loading-spinner {
     position: absolute;
-    top: calc(#{measures.$main-panel-height}/2);
+    top: 50%;
     left: 50%;
     margin-left: -32px;
     margin-top: -32px;
     display: none;
 }
 
-$expand-tab-height: max(0.5vh, 40px);
-$trapezoid-perspective-transform:  perspective(#{$expand-tab-height}) rotateX(2deg);
+$trapezoid-perspective-transform:  perspective(10px) rotateX(8deg);
 
 #bottom-controls {
     .expand-tab {
         position: absolute;
         cursor: pointer;
-        width: 50%;
-        height: $expand-tab-height;
-        top: calc(0px - #{$expand-tab-height});
+        width: 15%;
+        height: measures.$expand-tab-height;
+        top: calc(0px - #{measures.$expand-tab-height});
+        overflow: hidden;
 
-        content: "⬆";
+        &::before {
+            position: absolute;
+            content: "⬆";
+        }
 
         font-size: large;
         display: flex;
@@ -86,36 +91,33 @@ $trapezoid-perspective-transform:  perspective(#{$expand-tab-height}) rotateX(2d
 
         @media (hover: hover) {
             // enable show on hover if device supports hovering;
-            height: calc(#{$expand-tab-height} / 2);;
-            top: calc(0px - #{$expand-tab-height} / 2);
+            height: calc(#{measures.$expand-tab-height} / 2);;
+            top: calc(0px - #{measures.$expand-tab-height} / 2);
             // translateZ is used to ensure the content is behind the parent container
             // this is required since the parent container creates a stacking context
             // furthermore the Z-axis translation should happen before the trapezoid transform,
             // otherwise it messes up the perspective
-            transform: translateZ(-100px) translate(-50%, 0) $trapezoid-perspective-transform;
+            transform: translateZ(-1000px) translate(-50%, 0) $trapezoid-perspective-transform;
         }
 
         &:hover {
             // transform: translate(-50%, 0);
-            height: $expand-tab-height;
-            top: calc(0px - #{$expand-tab-height});
+            height: measures.$expand-tab-height;
+            top: calc(0px - #{measures.$expand-tab-height});
         }
     }
 
-    position: absolute;
     display: grid;
     transform-style: preserve-3D;
     width: 100%;
-    height: measures.$bottom-controls-height;
-    transition: height 0.4s ease-in-out;
+    margin-top: calc(#{measures.$expand-tab-height} / 2);
+    transition: height 4s ease-in-out;
     grid-template-columns: repeat(4, 25%);
-    grid-template-rows: 90px auto;
+    grid-template-rows: 2.5fr 1fr 1vh;
     align-items: center;
     justify-items: center;
     z-index: 0;
 
-    bottom: 0;
-    left: 0;
     opacity: 1;
     background-color: colors.$panes-background;
 
@@ -124,30 +126,45 @@ $trapezoid-perspective-transform:  perspective(#{$expand-tab-height}) rotateX(2d
     text-align: center;
 }
 
-body.help-tour-on .expand-tab {
-    // disable advanced controls expansion tab when browsing the help menu
-    visibility: hidden;
+control-item.advanced, control-label.advanced {
+    display: none;
+    opacity: 0;
 }
 
+body:not(.help-tour-on) .trip-block {
+    // ensures the trip-block takes up no space in the layout
+    display: none !important
+}
+
+body.help-tour-on {
+    .expand-tab {
+        // disable advanced controls expansion tab when browsing the help menu,
+        // we automatically expand all controls to show the help
+        visibility: hidden;
+    }
+}
 
 control-item.advanced, control-label.advanced {
     opacity: 0;
     transition: opacity 0.2s ease-in;
 }
-body.help-tour-on, body.advanced-controls {
+
+body.advanced-controls {
     #bottom-controls {
-        height: calc(#{measures.$bottom-controls-height} + #{measures.$advanced-controls-height});
-        grid-template-columns: repeat(4, 25%);
-        grid-template-rows: 5fr 1fr 5fr 1fr 1vh;
+        grid-template-rows: 2.5fr 1fr 2.5fr 1fr 1vh;
+
+        .expand-tab {
+            &::before {
+                position: absolute;
+                content: "⬇";
+            }
+        }
     }
 
     control-item.advanced, control-label.advanced {
+        display: block;
         opacity: 1;
     }
-}
-
-body.advanced-controls #main-panel {
-    height: measures.$main-panel-height-with-advanced-controls;
 }
 
 select {

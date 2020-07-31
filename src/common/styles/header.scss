@@ -1,22 +1,21 @@
 @use "mixins/measures";
 @use "mixins/colors";
 
+
 header {
-    position: absolute;
+    @media screen and (max-height: 300px) {
+        display: none;
+    }
+
     display: grid;
     width: 100%;
-    height: measures.$header-height;
-    top: 0;
-    left: 0;
+    min-height: measures.$header-height;
 
     background-color: colors.$panes-background;
     opacity: 1;
     box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.21);
     font-size: 25px;
 
-    align-self: center;
-    justify-self: center;
-    margin: auto;
 
     justify-items: center;
     align-items: center;

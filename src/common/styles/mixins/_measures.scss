@@ -1,9 +1,9 @@
-$header-height: min(11vh, 20vw);
+$header-height: min(8vh, 20vw);
 $bottom-controls-height: 140px;
 $advanced-controls-height: 70px;
 
-$main-panel-height: calc(100vh - (#{$header-height} + #{$bottom-controls-height}));
-$main-panel-height-with-advanced-controls: calc(100vh - (#{$header-height} + #{$bottom-controls-height} + #{$advanced-controls-height}));
+$expand-tab-height: clamp(10px, 3vh, 20px);
 
+$spectrogram-width: 90%;
 
-$CycleSelect-size: min(calc(30px + 1.5vw), 54px);
+$CycleSelect-size: min(calc(30px + 1.5vw), calc(30px + 2vh), 54px);

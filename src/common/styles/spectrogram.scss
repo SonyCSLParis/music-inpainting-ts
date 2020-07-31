@@ -3,12 +3,23 @@
 
 // $main-panel-height: calc()
 $spectrogram-background-color: #744a86;
-$spectrogram-height: 45vh;
+
+$spectrogram-height: 80%;
+$spectrogram-height-no-scroll: 90%;
+
+#spectrogram-image-container, #spectrogram-container-interface-container {
+    height: $spectrogram-height;
+}
+
+#spectrogram-container.no-scroll {
+    & #spectrogram-image-container, & #spectrogram-container-interface-container {
+        height: $spectrogram-height-no-scroll;
+    }
+}
 
 #spectrogram-container {
-    height: 100%; // 45vh !important;
-    width: 100%; // 90vw !important;
-    // margin-top: 8vh;
+    height: 100%;
+    width: 100%;
     margin-left: 0vw; // 5vw;
 
     top: 0;
@@ -37,9 +48,8 @@ $spectrogram-height: 45vh;
 
 #spectrogram-image-container {
     position: absolute;
-    height: 90%;
     width: 100vw;
-    top: 10%;
+    top: 5vh;
     pointer-events: none;
 
     .simplebar-scroll-content {
@@ -77,12 +87,10 @@ $spectrogram-height: 45vh;
 #spectrogram-picture {
     position: relative;
     left: 5vw;
-    height: $spectrogram-height !important;
 
     img {
         background-color: $spectrogram-background-color;
         margin-right: 5vw;
-        height: $spectrogram-height;
         top: 0;
     }
 
@@ -90,23 +98,15 @@ $spectrogram-height: 45vh;
         top: 0;
         position: relative;
         pointer-events: none;
-    // ensures snap points are within the visible spectrogram image canvas
-    // this is required so that they are taken into account
-    position: absolute;
-    top: 0;
-    // ensures snap points are within the visible spectrogram image canvas
-    // this is required so that they are taken into account
-    height: 1px;
-    visibility: hidden;
-    position: absolute;
-    top: 0;
         z-index: -1000;
     }
-    height: 1px;
-    visibility: hidden;
 }
 
 #snap-points {
+    // ensures snap points are within the visible spectrogram image canvas
+    // this is required so that they are taken into account
+    position: absolute;
+    top: 0;
     margin-left: -5vw;
     display: flex;
     height: 1px;
@@ -123,40 +123,42 @@ $spectrogram-height: 45vh;
     pointer-events: none;
 }
 
+$spectrogram-margin-width: 5vw;
+
 #spectrogram-container-interface-container {
     position: absolute;
-    margin-left: 5vw;
+    margin-left: $spectrogram-margin-width;
     width: measures.$spectrogram-width !important;
-    top: 10%;
-    height: $spectrogram-height;
+    top: 5vh;
     z-index: 0;
-    // background: $spectrogram-background-color;
 
     &:before, &:after {
         z-index: 0;
+        content: "";
         position: absolute;
-        width: 5vw;
+        width: $spectrogram-margin-width;
         top: 0;
-        height: $spectrogram-height;
+        height: 100%;
+        background-size: cover;
         will-change: width;
         backdrop-filter: brightness(1.3) blur(2px);
         transform: perspective(500px);
     }
     &:before {
-        left: -5vw;
-        content:
+        left: calc(0vw - #{$spectrogram-margin-width});
+        background:
             radial-gradient(ellipse farthest-corner at right,
-                transparent 0%,
-                rgba(colors.$body-background, 1) 70%,
+                transparent 0vw,
+                colors.$body-background $spectrogram-margin-width,
             );
     }
 
     &:after {
-        right: -5vw;
-        content:
+        right: calc(0vw - #{$spectrogram-margin-width});
+        background:
             radial-gradient(ellipse farthest-corner at left,
-                transparent 0%,
-                rgba(colors.$body-background, 1) 70%,
+                transparent 0vw,
+                    colors.$body-background $spectrogram-margin-width,
         );
     }
     div span {
@@ -174,4 +176,8 @@ $spectrogram-height: 45vh;
         opacity: 0.4;
         background-color: white;
     }
+}
+
+.simplebar-content {
+    height: 100%;
 }

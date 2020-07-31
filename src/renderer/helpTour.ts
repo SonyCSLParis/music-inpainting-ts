@@ -31,6 +31,23 @@ export abstract class myTrip {
         if (!isNull(this.inactivityDetectorDelay)) {
             this.registerIdleStateDetector();
         }
+
+        const oldRun = this.trip.run.bind(this.trip);
+        this.trip.run = (function() {
+            // pushes the <footer> element as last child of the body so as not to
+            // disrupt layout, since Trip.start() always recreates the .trip-block element
+            // and appends it to the body prior to calling Trip.run()
+            $('body').append($('footer'));
+            oldRun();
+        }).bind(this.trip);
+    }
+
+    public start(): void {
+        document.body.classList.add('help-tour-on');
+        document.body.classList.add('advanced-controls');
+        this.locator.refresh();
+
+        $(() => {this.trip.start()});
     }
 
     protected tripOptions = {
@@ -49,7 +66,7 @@ export abstract class myTrip {
         showHeader: true,
         // showCloseBox : true,
         delay : this.tripDelay_ms,
-        onEnd: this.tripCleanup,
+        onEnd: this.tripCleanup.bind(this),
         onTripStart: (tripIndex: number, tripObject: any  // TODO(theis): add proper typing
             ) => {
             if (tripObject.expose && tripObject.hasOwnProperty('exposeContainer') ) {
@@ -71,6 +88,9 @@ export abstract class myTrip {
     // clean-up modifications made to the DOM if the trip is exited mid-run
     protected tripCleanup(): void {
         document.body.classList.remove('help-tour-on');
+        // this is needed in conjunction with position: sticky for the .trip-block
+        // in order to restore the locator's full size if the viewport was resized during the trip
+        this.locator.refresh();
     };
 
     protected toggleExpose(element: HTMLElement, force?: boolean) {
@@ -126,9 +146,7 @@ export abstract class myTrip {
         helpElem.addEventListener('click', function(event) {
             // stops event from trigerring outsideClickListener registered onTripStart
             event.stopPropagation();
-            document.body.classList.add('help-tour-on');
-
-            self.trip.start()
+            self.start();
         }, true);
     }
 
@@ -192,22 +210,12 @@ class NonotoTrip extends myTrip {
                 sel: "#whole-note-0-0-common",
                 content: this.makeHTMLContent(helpContents["nonoto"]["note_box"]),
                 position : "e",
-                // expose: true
             },
             {
                 sel: "#quarter-note-1-3-common-Fermata",
                 content: this.makeHTMLContent(helpContents["nonoto"]["fermata_box"]),
                 position : "s",
-                // expose: true,
             },
-            // {
-            //     sel: "#main-panel",
-            //     content: this.makeHTMLContent(helpContents["notono"]["drag-n-drop"]),
-            //     position : "screen-center",
-            //     header: "Audio drag'n'drop",
-            //     animation: "fadeInLeft",
-            //     expose: true
-            // },
         ]
     }
 }
@@ -299,7 +307,7 @@ export class NotonoTrip extends myTrip {
                 sel: "#main-panel",
                 content: this.makeHTMLContent(helpContents["general"]["attributions"]),
                 position : "screen-center",
-                header: "Attributions/Licenses",
+                header: "Acknowledgments",
             },
         ]
     }
@@ -307,6 +315,7 @@ export class NotonoTrip extends myTrip {
     // clean-up modifications to the DOM if the trip is exited mid-run
     protected tripCleanup(): void {
         super.tripCleanup();
+
         $('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hide');
     }
 }

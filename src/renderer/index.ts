@@ -95,13 +95,6 @@ function enableChanges(): void {
 
 async function render(configuration=defaultConfiguration) {
     disableChanges();
-
-    let COMPILE_MUSEUM_VERSION: boolean = true;
-
-    if ( COMPILE_MUSEUM_VERSION ) {
-        require('../common/styles/museum.scss');
-    }
-
     // set to true to display the help tour after two minutes of inactivity on the
     // interface
     let REGISTER_IDLE_STATE_DETECTOR: boolean = configuration["display_help_on_idle"];
@@ -143,17 +136,9 @@ async function render(configuration=defaultConfiguration) {
         let bottomControlsExpandTabElem = document.createElement('div');
         bottomControlsExpandTabElem.id = 'bottom-controls-expand';
         bottomControlsExpandTabElem.classList.add('expand-tab');
-        bottomControlsExpandTabElem.innerHTML = '⬆';
         bottomControlsGridElem.appendChild(bottomControlsExpandTabElem);
         bottomControlsExpandTabElem.addEventListener('click', function () {
-            this.classList.toggle('expanded');
-            this.innerHTML = (
-                this.classList.contains('expanded') ?
-                '⬇' :
-                '⬆'
-            );
-            document.body.classList.toggle('advanced-controls',
-                this.classList.contains('expanded'));
+            document.body.classList.toggle('advanced-controls');
             spectrogramPlaybackManager.spectrogramLocator.refresh();
         });
 

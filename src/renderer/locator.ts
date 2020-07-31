@@ -5,12 +5,32 @@ import '../common/styles/overlays.scss';
 
 let Nexus: any = require('./nexusColored');
 
-export class Locator {
+export abstract class Locator {
+    // render the interface on the DOM and bind callbacks
+    public abstract render(...args: any): void;
+
+    // re-render with current parameters
+    // also ensures the help-tour is not taken into account for the layout
+    public refresh(): void {
+        // HACK(theis)
+        const isInHelpTour: boolean = document.body.classList.contains('help-tour-on');
+        document.body.classList.remove('help-tour-on');
+
+        this.refreshMain();
+
+        document.body.classList.toggle('help-tour-on', isInHelpTour);
+    };
+
+    protected abstract refreshMain(): void;
+
+    // triggers an animation to catch the user's eye
+    public abstract callToAction(...args: any): void;
+
 
 }
 
 export class SpectrogramLocator extends Locator {
-    protected resizeTimeoutDuration: number = 2;
+    protected resizeTimeoutDuration: number = 200;
     protected resizeTimeout: NodeJS.Timeout;
     readonly container: HTMLElement;
     readonly shadowContainer: HTMLElement;
@@ -37,7 +57,8 @@ export class SpectrogramLocator extends Locator {
         window.addEventListener('resize', (uiEvent: UIEvent) => {
             clearTimeout(this.resizeTimeout);
             this.resizeTimeout = setTimeout(() => {
-                this.render(this.numRows, this.numColumns, this.numColumnsTop);},
+                this.refresh();
+            },
                 this.resizeTimeoutDuration)
         })
     }
@@ -94,7 +115,7 @@ export class SpectrogramLocator extends Locator {
     }
 
     // re-render with current parameters
-    public refresh(): void {
+    public refreshMain(): void {
         this.render(this.numRows, this.numColumns, this.numColumnsTop)
     }
 
@@ -174,7 +195,7 @@ export class SpectrogramLocator extends Locator {
 
     protected toggleNoscroll(force?: boolean): void {
         // when set, prevents the scroll-bar from appearing
-        this.container.classList.toggle('no-scroll', force)
+        this.container.classList.toggle('no-scroll', force);
     }
 
     // triggers an animation to catch the user's eye
