@@ -8,7 +8,6 @@ import * as log from 'loglevel';
 import * as path from 'path';
 let Nexus = require('./nexusColored');
 import * as url from 'url';
-import * as JSZIP from 'jszip';
 
 import * as Header from './header';
 import * as PlaybackCommands from './playbackCommands';
@@ -28,14 +27,13 @@ import * as SplashScreen from './startup';
 
 import 'simplebar';
 import 'simplebar/src/simplebar.css';
+import '../common/styles/simplebar.scss';
 
 import '../common/styles/osmd.scss';
 import '../common/styles/spectrogram.scss';
 import '../common/styles/main.scss';
 import '../common/styles/controls.scss';
-import '../common/styles/simplebar.scss';
 import '../common/styles/disableMouse.scss';
-import { isNull } from 'util';
 
 // defined at compile-time via webpack.DefinePlugin
 declare var COMPILE_ELECTRON: boolean;

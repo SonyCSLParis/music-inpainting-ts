@@ -36,9 +36,9 @@ $scrollbar-color: #009ceb;
     &:before {
         background: none;
     }
+}
 
-    &:hover {
-        cursor: pointer;
-        background-color: lighten($scrollbar-color, 20%); // lighter blue // #ffc7cf;  // lighter pink
-    }
+.simplebar-hover {
+    cursor: pointer;
+    background-color: lighten($scrollbar-color, 20%); // lighter blue // #ffc7cf;  // lighter pink
 }
