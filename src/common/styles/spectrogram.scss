@@ -46,42 +46,44 @@ $spectrogram-height-no-scroll: 90%;
     }
 }
 
+
+.simplebar-scroll-content {
+    pointer-events: none;
+}
+
+$simplebar-track-color: darken(colors.$body-background, 15%);
+$simplebar-scrollbar-color: lighten(colors.$panes-background, 6%);
+
+.simplebar-track.simplebar-horizontal {
+    background-color: $simplebar-track-color;
+    box-shadow: 0 0 20px 0.5px rgba($spectrogram-background-color, 0.2) inset;
+    position: absolute;
+}
+
+.simplebar-scrollbar {
+    box-shadow: 0 0 2px 1px $simplebar-scrollbar-color;
+    background-color: $simplebar-scrollbar-color;
+    &.simplebar-hover {
+        background-color: lighten($simplebar-scrollbar-color, 1%);
+    }
+}
+
+.simplebar-content-wrapper {
+    scroll-snap-type: x mandatory;
+
+    snap {
+        scroll-snap-align: start;
+        display: inline-flex;
+        flex: 1;
+        visibility: hidden;
+    }
+}
+
 #spectrogram-image-container {
     position: absolute;
     width: 100vw;
     top: 5vh;
     pointer-events: none;
-
-    .simplebar-scroll-content {
-        pointer-events: none;
-    }
-
-    .simplebar-track.simplebar-horizontal {
-        background-color: darken(colors.$body-background, 15%);
-        box-shadow: 0 0 20px 0.5px rgba($spectrogram-background-color, 0.2) inset;
-        .simplebar-scrollbar {
-            &:hover {
-                background-color: lighten(colors.$panes-background, 8%);
-            }
-            box-shadow: 0 0 2px 1px lighten(colors.$panes-background, 6%);;
-            // box-shadow: 0 0 3px 0.5px transparency(darken(colors.$panes-background, 20%), 60%);
-            background-color: lighten(colors.$panes-background, 6%);
-        }
-        position: absolute;
-        overflow: visible;
-    }
-
-    .simplebar-content-wrapper {
-        scroll-snap-type: x mandatory;
-
-        snap {
-            scroll-snap-align: start;
-            display: inline-flex;
-            flex: 1;
-            visibility: hidden;
-        }
-    }
-
 }
 
 #spectrogram-picture {
@@ -180,4 +182,12 @@ $spectrogram-margin-width: 5vw;
 
 .simplebar-content {
     height: 100%;
+}
+
+@-moz-document url-prefix() {
+    .ff {
+        .simplebar-content {
+            margin-top: 4.5px;
+        }
+    }
 }
