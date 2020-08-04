@@ -1,5 +1,5 @@
 import * as Tone from 'tone'
-let Nexus = require('./nexusColored')
+import Nexus from './nexusColored';
 
 import LinkClient from './linkClient';
 import * as ControlLabels from './controlLabels';

@@ -1,10 +1,6 @@
-import { ipcRenderer } from 'electron'
-import * as log from 'loglevel'
-import * as $ from 'jquery'
-
 import LinkClient from './linkClient';
 
-let Nexus = require('./nexusColored');
+import Nexus from './nexusColored';
 
 export function render() {
     let topControlsGridElem = document.getElementById('bottom-controls')

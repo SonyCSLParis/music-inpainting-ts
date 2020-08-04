@@ -3,7 +3,7 @@ import * as Tone from 'tone';
 import { PlaybackManager } from "./playback";
 import { SpectrogramLocator } from "./locator";
 
-let Nexus = require('./nexusColored');
+import Nexus from './nexusColored';
 
 export class SpectrogramPlaybackManager extends PlaybackManager {
     readonly spectrogramLocator: SpectrogramLocator;

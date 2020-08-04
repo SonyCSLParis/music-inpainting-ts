@@ -1,7 +1,4 @@
-import * as log from 'loglevel'
-import * as $ from 'jquery'
-
-let Nexus = require('./nexusColored')
+import * as log from 'loglevel';
 
 import { BPMControl } from './numberControl'
 

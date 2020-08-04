@@ -1,8 +1,7 @@
-import * as Tone from 'tone';
 import WebMidi, {Output} from 'webmidi';
 import * as log from 'loglevel';
 
-let Nexus = require('./nexusColored')
+import Nexus from './nexusColored';
 
 let midiOut: false | Output = false;
 
