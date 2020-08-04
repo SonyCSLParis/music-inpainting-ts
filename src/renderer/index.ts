@@ -93,6 +93,12 @@ function enableChanges(): void {
 
 async function render(configuration=defaultConfiguration) {
     disableChanges();
+
+    if ( document.getElementById('header') ) {
+        // do nothing if the app has already been rendered
+        return;
+    }
+
     // set to true to display the help tour after two minutes of inactivity on the
     // interface
     let REGISTER_IDLE_STATE_DETECTOR: boolean = configuration["display_help_on_idle"];
