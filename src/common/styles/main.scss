@@ -87,17 +87,16 @@ $trapezoid-perspective-transform:  perspective(10px) rotateX(8deg);
         border-radius: 5px 5px 0 0;
 
         background-color: darken(colors.$panes-background, 10%);
-        transform: translate(-50%, 0) $trapezoid-perspective-transform;
+        // translateZ is used to ensure the content is behind the parent container
+        // this is required since the parent container creates a stacking context
+        // furthermore the Z-axis translation should happen before the trapezoid transform,
+        // otherwise it messes up the perspective
+        transform: translateZ(-1000px) translate(-50%, 0) $trapezoid-perspective-transform;
 
         @media (hover: hover) {
             // enable show on hover if device supports hovering;
             height: calc(#{measures.$expand-tab-height} / 2);;
             top: calc(0px - #{measures.$expand-tab-height} / 2);
-            // translateZ is used to ensure the content is behind the parent container
-            // this is required since the parent container creates a stacking context
-            // furthermore the Z-axis translation should happen before the trapezoid transform,
-            // otherwise it messes up the perspective
-            transform: translateZ(-1000px) translate(-50%, 0) $trapezoid-perspective-transform;
         }
 
         &:hover {
