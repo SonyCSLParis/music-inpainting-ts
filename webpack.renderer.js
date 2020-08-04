@@ -8,7 +8,7 @@ module.exports = function(config) {
 
     styleRules.forEach(rule => {
       const cssLoader = rule.use.find(use => use.loader === 'css-loader')
-      cssLoader.options.modules = false
+      cssLoader.options.modules.type = 'icss'
     })
 
     return merge.smart(merge(common, {
