@@ -1,8 +1,5 @@
-import { ipcRenderer } from 'electron'
-import * as log from 'loglevel'
-import * as $ from 'jquery'
-
-let Nexus = require('./nexusColored')
+import { ipcRenderer } from 'electron';
+import * as log from 'loglevel';
 
 import { BPMControl } from './numberControl';
 import { PlaybackManager } from './playback';

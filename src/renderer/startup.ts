@@ -3,7 +3,7 @@
 // clicking on the start button
 import * as Tone from 'tone';
 
-let Nexus = require('./nexusColored');
+import Nexus from './nexusColored';
 
 import '../common/styles/startupSplash.scss';
 

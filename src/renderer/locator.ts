@@ -3,7 +3,7 @@ import 'nipplejs';
 
 import '../common/styles/overlays.scss';
 
-let Nexus: any = require('./nexusColored');
+import Nexus from './nexusColored';
 
 export abstract class Locator {
     // render the interface on the DOM and bind callbacks

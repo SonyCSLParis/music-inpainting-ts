@@ -6,7 +6,7 @@ import * as MidiConvert from "midiconvert";
 import * as Tone from 'tone';
 import * as log from 'loglevel';
 import * as path from 'path';
-let Nexus = require('./nexusColored');
+import Nexus from './nexusColored';
 import * as url from 'url';
 
 import * as Header from './header';

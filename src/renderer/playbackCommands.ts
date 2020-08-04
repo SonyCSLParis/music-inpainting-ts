@@ -5,7 +5,7 @@ import '@fortawesome/fontawesome-free/css/all.css';
 // library.add(icon({ prefix: 'fas', iconName: 'stop-circle' }));
 // library.add(icon({ prefix: 'fas', iconName: 'play-circle' }));
 
-let Nexus = require('./nexusColored');
+import Nexus from './nexusColored';
 
 import { PlaybackManager } from './playback';
 

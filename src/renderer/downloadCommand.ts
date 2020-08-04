@@ -1,7 +1,5 @@
 import { throws, AssertionError } from "assert";
 
-let Nexus: any = require('./nexusColored');
-
 export class DownloadButton {
     protected readonly parent: HTMLElement;
     protected readonly container: HTMLElement;
