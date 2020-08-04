@@ -277,14 +277,14 @@ export function render(renderPage: (configuration: object) => void): void {
         let startButton = new Nexus.TextButton('#start-button', {
             'size': [150,50],
             'state': false,
-            'text': 'Start',
-            // required to put the button in 'toggle' mode
-            'alternateText': 'Start',
+            'text': 'Start'
         });
 
-        startButton.on('change', async () => {
-            await Tone.start();
-            disposeAndStart();
+        startButton.on('change', async (v) => {
+            if (v) {
+                disposeAndStart();
+                Tone.start();
+            }
         });
     }
 
