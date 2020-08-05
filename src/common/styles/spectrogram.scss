@@ -66,8 +66,12 @@ $simplebar-scrollbar-color: color.scale(colors.$panes-background, $lightness: +2
 .simplebar-scrollbar {
     box-shadow: 0 0 2px 1px $simplebar-scrollbar-color;
     background-color: $simplebar-scrollbar-color;
-    &.simplebar-hover {
-        background-color: color.scale($simplebar-scrollbar-color, $lightness: 5%);
+    @media (hover: hover) {
+        // no hover effects on touch screens since the effect remains active
+        // until the user effectively touches another zone on the viewport
+        &:hover {
+            background-color: color.scale($simplebar-scrollbar-color, $lightness: 5%);
+        }
     }
 }
 

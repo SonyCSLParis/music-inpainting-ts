@@ -24,6 +24,7 @@ $scrollbar-color: #009ceb;
 
 .simplebar-scrollbar {
     pointer-events: auto;
+    cursor: pointer;
     background-color: $scrollbar-color;
     height: 100% !important;
     border-radius: 20px;
@@ -38,7 +39,10 @@ $scrollbar-color: #009ceb;
     }
 }
 
-.simplebar-hover {
-    cursor: pointer;
-    background-color: lighten($scrollbar-color, 20%); // lighter blue // #ffc7cf;  // lighter pink
+@media (hover: hover) {
+    // no hover effects on touch screens since the effect remains active
+    // until the user effectively touches another zone on the viewport
+    .simplebar-scrollbar:hover {
+        background-color: lighten($scrollbar-color, 20%); // lighter blue // #ffc7cf;  // lighter pink
+    }
 }
