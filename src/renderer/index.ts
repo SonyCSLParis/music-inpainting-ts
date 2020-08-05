@@ -277,6 +277,7 @@ async function render(configuration=defaultConfiguration) {
         let spectrogramImageContainerElem = document.createElement('div');
         spectrogramImageContainerElem.id = 'spectrogram-image-container';
         spectrogramImageContainerElem.toggleAttribute('data-simplebar', true);
+        spectrogramImageContainerElem.setAttribute('data-simplebar-click-on-track', "false");
         // spectrogramImageContainerElem.setAttribute('data-simplebar-auto-hide', "false");
         // spectrogramImageContainerElem.setAttribute('force-visible', 'x');
         spectrogramContainerElem.appendChild(spectrogramImageContainerElem);
@@ -302,12 +303,13 @@ async function render(configuration=defaultConfiguration) {
             + '&instrument_family_str=' + instrumentSelect.value
             + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
             + '&temperature=1'
-            + '&duration_top=4');
+            + '&duration_top=8');
 
         loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
             'sample-from-dataset' + initial_command, sendCodesWithRequest).then(
                 () => {
                     enableChanges();
+                    mapTouchEventsToMouseSimplebar();
                 }
             );
     })
@@ -744,5 +746,67 @@ $(() => {
     window.addEventListener("drop", function(e) {
         e.preventDefault(); e.stopPropagation();}, false);
 });
+
+function mapTouchEventsToMouseSimplebar(): void {
+    // enables using touch events to drag the simplebar scrollbar
+    // tweaked version of this initial proposition:
+    // https://github.com/Grsmto/simplebar/issues/156#issuecomment-376137543
+    const target = $('[data-simplebar]')[0];
+    function mapTouchEvents(event: TouchEvent, simulatedType: string) {
+        //Ignore any mapping if more than 1 fingers touching
+        if(event.changedTouches.length>1){return;}
+
+        const touch = event.changedTouches[0];
+
+        const eventToSimulate = new MouseEvent(simulatedType,
+            {
+                bubbles: true,
+                cancelable: false,
+                view: window,
+                detail: 1,
+                screenX: touch.screenX,
+                screenY: touch.screenY,
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                ctrlKey: false,
+                altKey: false,
+                shiftKey: false,
+                metaKey: false,
+                button: 0
+            }
+        );
+
+        touch.target.dispatchEvent(eventToSimulate);
+    }
+
+    const addEventListenerOptions: AddEventListenerOptions = {
+        capture: true
+    };
+    target.addEventListener('touchstart', function(e){
+            // required to trigger an update of the mouse position stored by simplebar,
+            // emulates moving the mouse onto the scrollbar THEN clicking,
+            // otherwise simplebar uses the last clicked/swiped position, usually outside of the
+            // scrollbar and therefore considers that the click happened outside of the bar
+            mapTouchEvents(e, 'mousemove');
+            mapTouchEvents(e, 'mousedown');
+        },
+        addEventListenerOptions
+    );
+    target.addEventListener('touchmove', function(e){
+            mapTouchEvents(e, 'mousemove');
+        },
+        addEventListenerOptions
+    );
+    target.addEventListener('touchend', function(e){
+            mapTouchEvents(e, 'mouseup');
+        },
+        addEventListenerOptions
+    );
+    target.addEventListener('touchcancel', function(e){
+            mapTouchEvents(e, 'mouseup');
+        },
+        addEventListenerOptions
+    );
+}
 
 if (module.hot) { }
