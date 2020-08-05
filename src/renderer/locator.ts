@@ -117,7 +117,7 @@ export class SpectrogramLocator extends Locator {
     }
 
     // re-render with current parameters
-    public refreshMain(): void {
+    protected refreshMain(): void {
         this.render(this.numRows, this.numColumns, this.numColumnsTop)
     }
 
