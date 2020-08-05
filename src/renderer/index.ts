@@ -303,7 +303,7 @@ async function render(configuration=defaultConfiguration) {
             + '&instrument_family_str=' + instrumentSelect.value
             + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
             + '&temperature=1'
-            + '&duration_top=8');
+            + '&duration_top=4');
 
         loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
             'sample-from-dataset' + initial_command, sendCodesWithRequest).then(
