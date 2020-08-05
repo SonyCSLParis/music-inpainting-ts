@@ -66,6 +66,8 @@ export class CycleSelect {
                     self.selectNextOption.bind(self)();
                 }
             )
+
+            self.updateVisuals();
         };
 
     private makeOptionId(key: string): string {
