@@ -56,10 +56,12 @@ export class SpectrogramLocator extends Locator {
 
         window.addEventListener('resize', (uiEvent: UIEvent) => {
             clearTimeout(this.resizeTimeout);
-            this.resizeTimeout = setTimeout(() => {
-                this.refresh();
-            },
-                this.resizeTimeoutDuration)
+            this.resizeTimeout = (
+                setTimeout(
+                    () => {this.refresh();},
+                    this.resizeTimeoutDuration
+                    )
+            )
         })
     }
 
