@@ -310,6 +310,12 @@ async function render(configuration=defaultConfiguration) {
                 () => {
                     enableChanges();
                     mapTouchEventsToMouseSimplebar();
+                    // HACK, TODO(theis): should not be necessary, since there is already
+                    // a refresh operation at the end of the loadAudioAndSpectrogram method
+                    // but this has to be done on the initial call since the SpectrogramLocator
+                    // only gets initialized in that call
+                    // should properly initialize the SpectrogramLocator on instantiation
+                    spectrogramPlaybackManager.spectrogramLocator.refresh();
                 }
             );
     })

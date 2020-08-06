@@ -41,6 +41,8 @@ export class SpectrogramLocator extends Locator {
         return this.sequencer.element;
     }
 
+    // TODO(theis): should provide initial values for numRows and numColumns,
+    // so that the instance can be properly rendered/refreshed on initialization
     constructor(container: HTMLElement, options: object = {}) {
         super();
         this.container = container;
