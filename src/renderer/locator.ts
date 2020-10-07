@@ -5,6 +5,34 @@ import '../common/styles/overlays.scss';
 
 import Nexus from './nexusColored';
 
+// monkey-patch Nexus.Sequencer to emit 'toggle' events
+// these are triggered only on actual changes of the pattern,
+// as opposed to the 'change' events which can be emitted even though the actual
+// content of the matrix does not change (e.g. when touching the same cell twice
+// in a single Touch action)
+class SequencerToggle extends Nexus.Sequencer {
+    public matrix: any;
+    public emit: any;
+
+    constructor(container, options) {
+        super(container, options)
+    }
+
+    protected keyChange(note, on: boolean) {
+        let cell = this.matrix.locate(note);
+        let previousState = this.matrix.pattern[cell.row][cell.column];
+        if (previousState !== on) {
+            let data = {
+                row: cell.row,
+                column: cell.column,
+                state: on
+            };
+            this.emit('toggle', data);
+        }
+        super.keyChange(note, on);
+    }
+}
+
 export abstract class Locator {
     // render the interface on the DOM and bind callbacks
     public abstract render(...args: any): void;
@@ -109,18 +137,33 @@ export class SpectrogramLocator extends Locator {
 
     public vqvaeTimestepsTop: number = 4;
 
+    // // HACK: this is necessary to filter out invalid 'change' events
+    // protected previousMask: number[][] = undefined;
+
+    public ontoggle(data: number[][]): void {
+        // called every time the interface changes
+        if (window.navigator.vibrate) {
+            // Vibration API is available, perform haptic feedback
+            window.navigator.vibrate(10);
+        };
+    }
+
     public render(numRows: number, numColumns: number, numColumnsTop: number,
             onclickFactory=undefined): void {
         if ( this.sequencer !== null ) {
-            this.sequencer.destroy();}
+            this.sequencer.destroy();
+        };
         this.drawTimestampBoxes(onclickFactory, numRows, numColumns, numColumnsTop);
-        // this.container.setAttribute('sequenceDuration_quarters',
-        //     this.vqvaeTimestepsTop.toString());
+
+        $(() => {
+            // wait for all 'change' events to have been emitted
+            this.sequencer.on('toggle', this.ontoggle);
+        });
     }
 
     // re-render with current parameters
     protected refreshMain(): void {
-        this.render(this.numRows, this.numColumns, this.numColumnsTop)
+        this.render(this.numRows, this.numColumns, this.numColumnsTop);
     }
 
     public clear(): void {
@@ -153,12 +196,13 @@ export class SpectrogramLocator extends Locator {
         const width: number = this.interfaceContainer.clientWidth;
         const height: number = spectrogramImageContainerElem.clientHeight;
 
-        this.sequencer = new Nexus.Sequencer(this.interfaceContainer.id, {
+        this.sequencer = new SequencerToggle(this.interfaceContainer.id, {
             'size': [width, height],
             'mode': 'toggle',
             'rows': numRows,
             'columns': numColumns,
         });
+
         this.numColumnsTop = numColumnsTop;
         // make the matrix overlay transparent
         this.sequencer.colorize("accent", "rgba(255, 255, 255, 1)");
