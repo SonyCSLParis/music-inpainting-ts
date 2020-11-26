@@ -93,17 +93,20 @@ export function render(containerElement: HTMLElement): void{
         const keyName = event.key
         switch (keyName) {
             case 'Spacebar':
-                // disable scrolling on press Spacebar
+                // disable scrolling on Spacebar press
                 log.debug('SPACEBAR target: ' + event.target);
 
                 if (event.target == document.body) { log.debug('HEY SPACEBAR!'); event.preventDefault(); };
             case ' ':
+                event.preventDefault();
                 togglePlayback();
                 break;
             case 'p':
+                event.preventDefault();
                 pressPlay();
                 break;
             case 's':
+                event.preventDefault();
                 pressStop();
                 break
     }}, );
