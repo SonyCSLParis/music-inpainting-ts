@@ -4,7 +4,6 @@ import { SpectrogramLocator, Locator } from "./locator";
 
 import "trip.js/dist/trip.css";
 import '../common/styles/helpTour.scss';
-import { isNull } from "util";
 
 var Trip = require('trip.js');
 
@@ -28,7 +27,7 @@ export abstract class myTrip {
         const tripContents = this.makeContents();
         this.trip = new Trip(tripContents, this.tripOptions);
 
-        if (!isNull(this.inactivityDetectorDelay)) {
+        if (!(this.inactivityDetectorDelay === null)) {
             this.registerIdleStateDetector();
         }
 
