@@ -1,8 +1,8 @@
 import * as log from 'loglevel';
 
-import { BPMControl } from './numberControl'
+import { BPMControl } from '../numberControl'
 
-let link_channel_prefix: string = require('../common/default_config.json')['link_channel_prefix'];
+let link_channel_prefix: string = require('../../common/default_config.json')['link_channel_prefix'];
 
 let io = require('socket.io-client');
 // connect to the Ableton Link Node.js server
@@ -39,7 +39,7 @@ export function isInitialized(): boolean {
 }
 
 export function enable() {
-    new Promise((resolve, reject) => {
+    new Promise<void>((resolve, _) => {
         if (!isInitialized()) {
             let bpm: number = bpmControl.value;
             let quantum: number = linkQuantum;

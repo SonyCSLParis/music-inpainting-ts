@@ -191,6 +191,7 @@ $spectrogram-margin-width: 5vw;
     height: 100%;
 }
 
+// HACK: compensate for scrollbar in Firefox
 @-moz-document url-prefix() {
     .ff {
         .simplebar-content {

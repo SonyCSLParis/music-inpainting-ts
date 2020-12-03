@@ -5,7 +5,8 @@
 import * as Tone from 'tone';
 import * as log from 'loglevel';
 
-import LinkClient from './linkClient';
+import LinkClient from './ableton_link/linkClient';
+import { Locator } from './locator';
 
 log.setLevel(log.levels.INFO);
 
@@ -15,9 +16,11 @@ export interface MinimalPlaybackManager {
 };
 
 abstract class TonePlaybackManager implements MinimalPlaybackManager {
+    readonly safeStartDuration: Tone.Unit.Time = "+0.1";
+
     // adds a small delay to ensure playback as recommended in the Tone.js docs
     protected safeStartPlayback(): void {
-        Tone.Transport.start("+0.02");
+        Tone.getTransport().start(this.safeStartDuration);
     };
 
     async play() {
@@ -27,7 +30,7 @@ abstract class TonePlaybackManager implements MinimalPlaybackManager {
     };
 
     protected stopSound(): void {
-        Tone.Transport.stop();
+        Tone.getTransport().stop();
     };
 
     async stop()  {
@@ -36,30 +39,35 @@ abstract class TonePlaybackManager implements MinimalPlaybackManager {
     };
 }
 
-abstract class VisualPlaybackManager extends TonePlaybackManager {
-    protected abstract setPlaybackPositionDisplay(timePosition: number): void;
+abstract class VisualPlaybackManager<VisualLocator extends Locator> extends TonePlaybackManager {
+    protected locator: VisualLocator;
 
-    protected nowPlayingCallback(_: any, step: number): void {
+    get Locator(): VisualLocator {return this.locator};
+
+    protected setPlaybackPositionDisplay(progress: number): void {
+        this.Locator.setCurrentlyPlayingPositionDisplay(progress);
+    };
+
+    protected nowPlayingDisplayCallback(_: any, progress: number): void {
         // scroll display to current step if necessary
-        // this.scrollToStep(step);
-        this.setPlaybackPositionDisplay(step);
+        this.setPlaybackPositionDisplay(progress);
     };
 
     // retrieve index of the current display-step
     protected abstract getCurrentDisplayTimestep(): number;
 
     protected updateCursorPosition(): void {
-        const currentDisplayTimestep: number = this.getCurrentDisplayTimestep()
-        this.nowPlayingCallback(null, currentDisplayTimestep);
+        const progress: number = Tone.getTransport().progress;
+        this.nowPlayingDisplayCallback(null, progress);
     };
 
     protected scheduleDisplayLoop(toneDisplayUpdateInterval: string): void {
         // initialize playback display scheduler
+        const self = this;
         const drawCallback = (time) => {
-            // DOM modifying callback should be put in Tone.Draw scheduler!
+            // DOM modifying callback should be put in Tone.getDraw() scheduler!
             // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
-            Tone.Draw.schedule(
-                () => {this.updateCursorPosition();},
+            Tone.getDraw().schedule(function() {self.updateCursorPosition();},
                 time)
         };
 
@@ -83,7 +91,7 @@ abstract class VisualPlaybackManager extends TonePlaybackManager {
 abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
     // Start playback immediately at the beginning of the song
     protected startPlaybackNowFromBeginning(): void {
-        Tone.Transport.start("+0.03", "0:0:0");
+        Tone.getTransport().start("+0.03", "0:0:0");
     }
 
     // Start playback either immediately or in sync with Link if Link is enabled
@@ -106,15 +114,15 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
     // Set the position in the current measure to the provided phase
     // TODO(theis): should we use the `link.quantum` value?
     synchronizeToLink(): void {
-        if (Tone.Transport.state == 'started' && LinkClient.isEnabled()) {
+        if (Tone.getTransport().state == 'started' && LinkClient.isEnabled()) {
             const currentMeasure = this.getCurrentMeasure().toString();
-            Tone.Transport.position = currentMeasure + ':' + LinkClient.getPhaseSynchronous().toString();
+            Tone.getTransport().position = currentMeasure + ':' + LinkClient.getPhaseSynchronous().toString();
         };
     };
 
     // Helper function to access the current measure in the Transport
     protected getCurrentMeasure(): number {
-        const currentMeasure = Tone.Transport.position.toString().split('')[0];
+        const currentMeasure = Tone.getTransport().position.toString().split('')[0];
         return parseInt(currentMeasure);
     };
 
@@ -124,10 +132,11 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
     };
 };
 
-export interface PlaybackManager extends TonePlaybackManager, VisualPlaybackManager, SynchronizedPlaybackManager {}
+export interface PlaybackManager<VisualLocator extends Locator> extends TonePlaybackManager, VisualPlaybackManager<VisualLocator>, SynchronizedPlaybackManager {}
 
-export abstract class PlaybackManager {
-    constructor(toneDisplayUpdateInterval: string='4n') {
+export abstract class PlaybackManager<VisualLocator extends Locator> {
+    constructor(locator: VisualLocator, toneDisplayUpdateInterval: string='4n') {
+        this.locator = locator;
         this.scheduleAutomaticResync();
         this.scheduleDisplayLoop(toneDisplayUpdateInterval);
     };

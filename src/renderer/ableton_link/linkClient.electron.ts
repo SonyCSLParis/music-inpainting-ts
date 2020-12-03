@@ -1,11 +1,12 @@
 import { ipcRenderer } from 'electron';
 import * as log from 'loglevel';
 
-import { BPMControl } from './numberControl';
-import { PlaybackManager } from './playback';
+import { BPMControl } from '../numberControl';
+import { PlaybackManager } from '../playback';
+import { Locator } from '../locator';
 
 
-let link_channel_prefix: string = require('../common/default_config.json')['link_channel_prefix'];
+let link_channel_prefix: string = require('../../common/default_config.json')['link_channel_prefix'];
 
 let link_initialized: boolean = false;
 let link_enabled: boolean = false;
@@ -39,7 +40,7 @@ export function isInitialized(): boolean {
     return link_initialized
 }
 
-export async function enable(playbackManager: PlaybackManager) {
+export async function enable(playbackManager: PlaybackManager<Locator>) {
     if (!isInitialized()) {
         log.debug("Must initialize LINK");
         let bpm: number = bpmControl.value;

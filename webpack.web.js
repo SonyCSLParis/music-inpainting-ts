@@ -21,8 +21,7 @@ module.exports = merge.smartStrategy({plugins: 'prepend',})(common, {
     // Currently we need to add '.ts' to the resolve.extensions array.
     resolve: {
         extensions: ['.ts', '.js', '.css', '.scss', '.json'],
-        modules: ['node_modules', 'styles', '../opensheetmusicdisplay',
-            './tonejs-instruments', 'src/common'],
+        modules: ['node_modules', 'styles', './tonejs-instruments', 'src/common'],
       // exclude: ['**/*.electron.ts'],
         symlinks: true,
         alias: {
@@ -33,11 +32,12 @@ module.exports = merge.smartStrategy({plugins: 'prepend',})(common, {
     // Source maps support ('inline-source-map' also works)
     devtool: 'source-map',
 
-    // Add the loader for .ts files.
     module: {
         rules: [{
-            test: /\.ts$/,
-            use: [{loader: 'ts-loader'}]
+            // loader for .ts files.
+            test: /\.tsx?$/,
+            use: [{loader: 'ts-loader'}],
+            exclude: path.resolve(__dirname, 'node_modules')
         },
         {
             test: /\.(css|scss)$/,

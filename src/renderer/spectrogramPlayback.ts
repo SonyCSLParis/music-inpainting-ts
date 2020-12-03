@@ -1,12 +1,11 @@
 import * as Tone from 'tone';
 
 import { PlaybackManager } from "./playback";
-import { SpectrogramLocator } from "./locator";
+import { Locator, SpectrogramLocator } from "./locator";
 
 import Nexus from './nexusColored';
 
-export class SpectrogramPlaybackManager extends PlaybackManager {
-    readonly spectrogramLocator: SpectrogramLocator;
+export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramLocator> {
     // initialize crossfade to play player A
     private crossFade: Tone.CrossFade = new Tone.CrossFade(0).toDestination();
     private player_A: Tone.Player = new Tone.Player().connect(this.crossFade.a);
@@ -16,9 +15,8 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     // look-ahead duration to retrieve the state of the crossfade after potential fading operations
     protected crossFadeOffset: Tone.Unit.Time = "+1.5";
 
-    constructor(spectrogramLocator: SpectrogramLocator) {
-        super();
-        this.spectrogramLocator = spectrogramLocator;
+    constructor(locator: SpectrogramLocator) {
+        super(locator);
 
         this.scheduleInitialPlaybackLoop();
     }
@@ -29,12 +27,12 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     };
 
     protected setPlaybackPositionDisplay(timePosition: number): void {
-        this.spectrogramLocator.setPosition(timePosition);
+        this.locator.setPosition(timePosition);
     }
 
     protected getCurrentDisplayTimestep(): number {
         // TODO(theis): fix method name, this returns the ratio of progress in the playback
-        return Tone.Transport.progress;
+        return Tone.getTransport().progress;
     }
 
     // return the player scheduled to play after any eventual crossfade operation has been completed
@@ -58,7 +56,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     private scheduleInitialPlaybackLoop() {
         this.player_A.sync();
         this.player_B.sync();
-        Tone.Transport.loop = true;
+        Tone.getTransport().loop = true;
     };
 
     // load a remote audio file into the next player and switch playback to it
@@ -73,7 +71,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
         this.nextPlayer().sync();
 
         // reschedule the Transport loop
-        Tone.Transport.setLoopPoints(0, this.nextPlayer().buffer.duration);
+        Tone.getTransport().setLoopPoints(0, this.nextPlayer().buffer.duration);
         this.nextPlayer().start(0);
 
         this.switchPlayers();

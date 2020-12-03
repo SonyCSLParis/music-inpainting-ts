@@ -1,6 +1,6 @@
 import LinkClient from './linkClient';
 
-import Nexus from './nexusColored';
+import Nexus from '../nexusColored';
 
 export function render() {
     let topControlsGridElem = document.getElementById('bottom-controls')

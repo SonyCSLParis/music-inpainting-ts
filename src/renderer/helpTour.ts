@@ -194,7 +194,7 @@ export abstract class myTrip {
     }
 }
 
-class NonotoTrip extends myTrip {
+export class NonotoTrip extends myTrip {
     protected makeContents(): object[] {
         // TODO contents should depend on AnnotationBox type used
         return [
