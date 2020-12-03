@@ -11,10 +11,5 @@
       "resolveJsonModule": true,
       "esModuleInterop": true
   },
-  "allowSyntheticDefaultImports": true,
-  "awesomeTypescriptLoaderOptions": {},
-  "exclude": [
-    "node_modules",
-    "src/main"
-  ]
+  "allowSyntheticDefaultImports": true
 }

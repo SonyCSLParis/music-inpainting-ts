@@ -4,7 +4,7 @@ app.commandLine.appendSwitch('disable-pinch');
 import * as log from 'loglevel'
 
 import * as WindowManager from './windowManager'
-import LinkServer from './linkServer'
+import LinkServer from './ableton_link/linkServer'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 

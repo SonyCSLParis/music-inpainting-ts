@@ -1,7 +1,7 @@
 import * as Tone from 'tone'
 import Nexus from './nexusColored';
 
-import LinkClient from './linkClient';
+import LinkClient from './ableton_link/linkClient';
 import * as ControlLabels from './controlLabels';
 
 export class NumberControl {
@@ -15,7 +15,7 @@ export class NumberControl {
     private readonly initialValue: number;
 
     constructor (parent: HTMLElement, id: string, range: [number, number],
-        initialValue: number, elementWidth: number,
+        initialValue: number,
         onchange: (newValue: number) => void = (v) => {}
         ) {
         if ( range[1] < initialValue || range[0] > initialValue) {
@@ -84,7 +84,7 @@ export class NumberControl {
 
 export class BPMControl extends NumberControl {
     protected static onchangeCallback_default= (newBPM) => {
-        Tone.Transport.bpm.value = newBPM;
+        Tone.getTransport().bpm.value = newBPM;
         LinkClient.updateLinkBPM(newBPM);
     }
     protected static defaultRange: [number, number] = [30, 300];
@@ -92,14 +92,14 @@ export class BPMControl extends NumberControl {
 
     constructor(containerElement: HTMLElement, id: string,
             range: [number, number] = BPMControl.defaultRange,
-            initialValue: number = BPMControl.defaultInitialValue, elementWidth: number,
+            initialValue: number = BPMControl.defaultInitialValue,
             onchange: (newValue: number) => void = BPMControl.onchangeCallback_default
             ) {
         if (range[1] < 2*range[0]) {
             throw Error(`BPM range should be at least one tempo octave wide, ie.
             maxAcceptedBPM at least twice as big as minAcceptedBPM`)
         }
-        super(containerElement, id, range, initialValue, elementWidth, onchange);
+        super(containerElement, id, range, initialValue, onchange);
     }
 
     // ensure the new BPM is in the accepted range
@@ -110,8 +110,8 @@ export class BPMControl extends NumberControl {
 
         // HACK perform a comparison to avoid messaging loops, since
         // the link update triggers a bpm modification message
-        if (Tone.Transport.bpm.value !== newBPM) {
-            Tone.Transport.bpm.value = newBPM;
+        if (Tone.getTransport().bpm.value !== newBPM) {
+            Tone.getTransport().bpm.value = newBPM;
             this.controller._value.update(newBPM);
             this.controller.render()
         }

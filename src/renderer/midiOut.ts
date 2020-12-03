@@ -1,5 +1,6 @@
 import WebMidi, {Output} from 'webmidi';
 import * as log from 'loglevel';
+import * as Instruments from './instruments';
 
 import Nexus from './nexusColored';
 
@@ -7,10 +8,10 @@ let midiOut: false | Output = false;
 
 export function render(useChordsInstrument: boolean = false) {
     let bottomControlsGridElem = document.getElementById('bottom-controls');
+
     let midiOutSelectElem: HTMLElement = document.createElement('control-item');
     midiOutSelectElem.id = 'select-midiout';
     bottomControlsGridElem.appendChild(midiOutSelectElem);
-
     WebMidi.enable(function (err) {
         if (err) log.error(err);
 
@@ -26,8 +27,10 @@ export function render(useChordsInstrument: boolean = false) {
                     log.warn('Midi output ' + this.value + ' not found');
                 }
                 midiOut = WebMidi.getOutputByName(this.value);
+                Instruments.mute(true, useChordsInstrument);
             }
             else {
+                Instruments.mute(false, useChordsInstrument);
                 midiOut = false;
             }
             log.info('Selected MIDI out: ' + this.value);

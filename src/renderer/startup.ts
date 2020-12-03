@@ -282,8 +282,10 @@ export function render(renderPage: (configuration: object) => void): void {
 
         startButton.on('change', async (v) => {
             if (v) {
+                Tone.setContext(new Tone.Context({latencyHint: "interactive"}));
+                await Tone.start();
+
                 disposeAndStart();
-                Tone.start();
             }
         });
     }

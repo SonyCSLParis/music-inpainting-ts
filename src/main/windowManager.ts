@@ -20,7 +20,7 @@ export function createWindow() {
     webPreferences: process.env.NODE_ENV === 'development'
         ? { nodeIntegration: true }
         : {
-            preload: path.join(__dirname, 'dist/renderer.prod.js')
+            preload: path.join(__dirname, 'dist/renderer/renderer.prod.js')
           }
     })
 

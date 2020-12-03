@@ -8,10 +8,11 @@ import '@fortawesome/fontawesome-free/css/all.css';
 import Nexus from './nexusColored';
 
 import { PlaybackManager } from './playback';
+import { Locator } from './locator';
 
-let playbackManager: PlaybackManager;
+let playbackManager: PlaybackManager<Locator>;
 
-export function setPlaybackManager(newPlaybackManager: PlaybackManager): void {
+export function setPlaybackManager(newPlaybackManager: PlaybackManager<Locator>): void {
     playbackManager = newPlaybackManager
 }
 
