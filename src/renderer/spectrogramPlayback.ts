@@ -5,13 +5,6 @@ import { SpectrogramLocator } from "./locator";
 
 import Nexus from './nexusColored';
 
-// @tonejs/piano@0.2.1 is built as an es6 module, so we use the trick from
-// https://www.typescriptlang.org/docs/handbook/modules.html#optional-module-loading-and-other-advanced-loading-scenarios
-// to load the types and the implementation separately
-// this ensures that babel is correctly applied on the imported javascript
-import { MidiInput as PianoMidiInputInterface } from '@tonejs/piano'
-let PianoMidiInputImplementation: typeof PianoMidiInputInterface = require('babel-loader!@tonejs/piano').MidiInput
-
 import { getMidiInputListener } from './midiIn';
 
 interface NoteEvent {
