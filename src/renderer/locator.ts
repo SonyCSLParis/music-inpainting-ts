@@ -33,14 +33,22 @@ export abstract class Locator {
 
     protected abstract refreshMain(): void;
 
+    callToActionHighlightedCellsRatio: number = 0.1;
+
     // triggers an animation to catch the user's eye
-    public callToAction(numCellsToHighlight: number): void {
+    public callToAction(): void {
         function delay(ms: number): Promise<void> {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
         let promise = Promise.resolve();
         const interval: number = 100;
+
+        const numCellsToHighlight = Math.max(
+            1,
+            Math.round(
+                this.numInteractiveElements * this.callToActionHighlightedCellsRatio)
+        );
 
         const randomIndexes: number[] = Array(numCellsToHighlight).fill(0).map(
             () => {return Math.floor(Math.random() * (this.numInteractiveElements))}
