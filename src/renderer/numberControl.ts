@@ -41,7 +41,8 @@ export class NumberControl {
 
         this.parent.appendChild(containerElem);
 
-        ControlLabels.createLabel(containerElem, this.labelId);
+        ControlLabels.createLabel(containerElem, this.labelId, false, null,
+            this.parent);
 
         if (!useSimpleSlider) {
             let interactionElem: HTMLElement = document.createElement('div');
