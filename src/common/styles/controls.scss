@@ -178,7 +178,7 @@ control-label {
     grid-column: 4;
 }
 
-#volume-controls-gridspan {
+#volume-controls-gridspan, #pitch-control-gridspan {
     display: inline-grid;
     grid-template-rows: 2.5fr 1fr;
     grid-auto-flow: column row;
@@ -211,15 +211,29 @@ control-label {
     grid-column: 2;
 }
 
+#pitch-control-gridspan {
+    grid-row: 1/3;
     grid-column: 4;
 }
 
-#fade-in-control-gridspan {
-    grid-row: 3/5;
-    grid-column: 4;
+#pitch-control-root-select {
+    width: 40px !important;
+    grid-row: 1;
+    grid-column: 1;
 }
 
-#fade-in-control-label {
-    grid-row: 4;
-    grid-column: 4;
+#pitch-control-octave-control {
+    grid-row: 1;
+    grid-column: 2;
 }
+
+#pitch-control-root-select-label {
+    grid-row: 2;
+    grid-column: 1;
+}
+
+#pitch-control-octave-control-label {
+    grid-row: 2;
+    grid-column: 2;
+}
+
