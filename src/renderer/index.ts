@@ -1036,7 +1036,7 @@ async function render(configuration=defaultConfiguration) {
         bottomControlsGridElem.appendChild(fadeInControlElement);
         renderFadeInControl(fadeInControlElement, spectrogramPlaybackManager);
         ControlLabels.createLabel(fadeInControlElement, 'fade-in-control-label',
-            isAdvancedControl);
+            isAdvancedControl, null, volumeControlsGridElement);
     });
 
     $(() => {
