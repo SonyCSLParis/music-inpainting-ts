@@ -32,6 +32,7 @@ let globalConfiguration = {...defaultConfiguration, ...customConfiguration};
 // should have truly orthogonal configuration options
 let osmdConfiguration: object = cloneJSON(globalConfiguration);
 osmdConfiguration['osmd'] = true;
+osmdConfiguration['app_name'] = 'nonoto';
 osmdConfiguration['spectrogram'] = false;
 
 let choraleConfiguration: object = cloneJSON(osmdConfiguration);
