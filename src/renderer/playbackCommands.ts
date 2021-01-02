@@ -116,6 +116,7 @@ export function render(containerElement: HTMLElement): void{
 export function renderSyncButton(container: HTMLElement) {
     let linkbuttonElem: HTMLElement = document.createElement('control-item');
     linkbuttonElem.id = 'sync-button'
+    linkbuttonElem.classList.add('advanced');
     container.appendChild(linkbuttonElem);
 
     let syncbutton = new Nexus.TextButton('#sync-button',{
