@@ -5,8 +5,12 @@
             "en": "Tempo"
         },
 
-        "pitch-control-label": {
-            "en": "Pitch"
+        "pitch-control-octave-control-label": {
+            "en": "Octave"
+        },
+
+        "pitch-control-root-select-label": {
+            "en": "Key"
         },
 
         "instrument-control-label": {

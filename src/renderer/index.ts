@@ -58,11 +58,16 @@ let playbackManager: PlaybackManager<Locator>;
 let sheetPlaybackManager: SheetPlaybackManager;
 let spectrogramPlaybackManager: SpectrogramPlaybackManager;
 let bpmControl: BPMControl;
-let pitchControl: NumberControl;
+let pitchRootSelect: Nexus.Select;
+let octaveControl: NumberControl;
 let instrumentSelect: CycleSelect;
 let vqvaeLayerSelect: CycleSelect;
 let downloadButton: DownloadButton;
 let helpTrip: myTrip;
+
+function getMidiPitch(): number {
+    return (pitchRootSelect.selectedIndex) + 12 * (octaveControl.value);
+}
 
 function triggerInterfaceRefresh(): void {
     vqvaeLayerSelect.value = vqvaeLayerSelect.value;
@@ -282,11 +287,37 @@ async function render(configuration=defaultConfiguration) {
     if ( configuration['spectrogram'] ) {
         $(() => {
             let bottomControlsGridElem = document.getElementById('bottom-controls');
-            pitchControl = new NumberControl(bottomControlsGridElem,
-                'pitch-control', [24, 84], 60);
+            let pitchSelectGridspanElem = document.createElement('div');
+            pitchSelectGridspanElem.id = 'pitch-control-gridspan';
+            bottomControlsGridElem.appendChild(pitchSelectGridspanElem)
+
+            let pitchSelectContainer = document.createElement('control-item');
+            pitchSelectContainer.id = 'pitch-control-root-select';
+            pitchSelectGridspanElem.appendChild(pitchSelectContainer);
+            // TODO(theis): clean this!
+            pitchRootSelect = new Nexus.Select(
+                '#pitch-control-root-select', {
+                    'size': [20,30],
+                    'options': [
+                        'C', 'C♯', 'D', 'E♭', 'E',
+                        'F', 'F♯', 'G', 'A♭', 'A',
+                        'B♭', 'B',
+                    ]
+                }
+            );
+            pitchSelectContainer.style.width = ''
+            pitchSelectContainer.style.height = ''
+            ControlLabels.createLabel(pitchSelectContainer, 'pitch-control-root-select-label',
+                false, null, pitchSelectGridspanElem);
+
+            // const octaveControlContainer = document.createElement('control-item');
+            // octaveControlContainer.id = 'pitch-control-octave-control';
+            // pitchSelectGridspanElem.appendChild(octaveControlContainer);
+            octaveControl = new NumberControl(pitchSelectGridspanElem,
+                'pitch-control-octave-control', [2, 7], 5);
             const useSimpleSlider = false;
             const elementWidth_px = 40;
-            pitchControl.render(useSimpleSlider, elementWidth_px);
+            octaveControl.render(useSimpleSlider, elementWidth_px);
 
             let instrumentSelectElem: HTMLElement = document.createElement('control-item');
             instrumentSelectElem.id = 'instrument-control';
@@ -419,7 +450,7 @@ async function render(configuration=defaultConfiguration) {
             PlaybackCommands.setPlaybackManager(spectrogramPlaybackManager);
 
             const sendCodesWithRequest = false;
-            const initial_command = ('?pitch=' + pitchControl.value.toString()
+            const initial_command = ('?pitch=' + getMidiPitch().toString()
                 + '&instrument_family_str=' + instrumentSelect.value
                 + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
                 + '&temperature=1'
@@ -449,7 +480,7 @@ async function render(configuration=defaultConfiguration) {
             ): Map<string, (number|string)[][]> {
         // retrieve up-to-date user-selected conditioning
         const newConditioning_value = new Map()
-        newConditioning_value.set('pitch', pitchControl.value)
+        newConditioning_value.set('pitch', getMidiPitch())
         newConditioning_value.set('instrument_family_str', instrumentSelect.value)
 
         for (const [ modality, conditioning_map ] of currentConditioningMap.entries()) {
@@ -508,7 +539,7 @@ async function render(configuration=defaultConfiguration) {
                     }
 
                     let sendCodesWithRequest = true;
-                    let generationParameters = ('?pitch=' + pitchControl.value.toString()
+                    let generationParameters = ('?pitch=' + getMidiPitch().toString()
                         + '&instrument_family_str=' + instrumentSelect.value
                         + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
                         + '&temperature=1'
@@ -757,7 +788,7 @@ async function render(configuration=defaultConfiguration) {
                 var file = e.dataTransfer.items[i].getAsFile();
                 console.log('... file[' + i + '].name = ' + file.name);
                 const generationParameters = (
-                    '?pitch=' + pitchControl.value.toString()
+                    '?pitch=' + getMidiPitch().toString()
                     + '&instrument_family_str=' + instrumentSelect.value);
                 sendAudio(file, spectrogramPlaybackManager, serverUrl,
                     'analyze-audio' + generationParameters);
