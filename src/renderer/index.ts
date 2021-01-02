@@ -209,7 +209,6 @@ async function render(configuration=defaultConfiguration) {
         }
         else if ( configuration['spectrogram'] ) {
             let vqvaeLayerIcons: Map<string, string> = new Map([
-                ['bottom-brush', 'paint-brush-small.svg'],
                 ['top-brush', 'paint-roller.svg'],
                 ['bottom-brush', 'paint-brush-small.svg'],
                 ['top-brush-random', 'paint-roller-random.svg'],
