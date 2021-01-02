@@ -40,10 +40,6 @@ control-item:hover {
     filter: brightness(1.03) $main-filter;
 }
 
-control-item * {
-    color: colors.$idle-control;
-}
-
 control-item {
     font-size: calc(min(10px + 0.5vw, 1em)) !important;
     font-weight: 500;
@@ -58,15 +54,6 @@ control-label {
 #play-button {
     grid-row: 1;
     grid-column: 1;
-
-    & > .playing {
-        color: colors.$active-control;
-    }
-
-    & > .stopped {
-        color: colors.$idle-control;
-    }
-
 }
 
 #play-button-label {
