@@ -32,7 +32,9 @@ control-item {
         vertical-align: middle;
         top: 50%;
         height: max(1em, min(40px, 8vh, 7vw)) !important;
-        width: min(110px, 20vw) !important;
+        min-height: max-content;
+        max-width: max-content;
+        width: 20vw !important;
     }
     input {
         height: min(25px, 10vh) !important;
