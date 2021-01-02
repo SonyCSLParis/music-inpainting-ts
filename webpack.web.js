@@ -43,14 +43,7 @@ module.exports = merge.smartStrategy({plugins: 'prepend',})(common, {
             test: /\.(css|scss)$/,
             use: [
                 "style-loader", // creates style nodes from JS strings
-                {
-                    loader: "css-loader",
-                    options: {
-                        modules: {
-                            compileType: 'icss'
-                        }
-                    }
-                }, // translates CSS into CommonJS
+                "css-loader", // translates CSS into CommonJS
                 "sass-loader" // compiles Sass to CSS
             ]
         },
