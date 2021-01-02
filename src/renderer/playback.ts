@@ -1,7 +1,5 @@
 // <reference path='./jquery-exists.d.ts'/>
 
-// NOTE: This relies on the SonyCSL simplebar fork!
-
 import * as Tone from 'tone';
 import * as log from 'loglevel';
 
