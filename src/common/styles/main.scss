@@ -13,7 +13,7 @@ html, body {
 }
 
 body {
-    background-color: rgb(255, 241, 255);
+    background-color: rgb(255, 248, 255);
     &.nonoto {
         @include colors.theme-colors(millenial-pink);
     }
