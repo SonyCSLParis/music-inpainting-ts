@@ -18,6 +18,17 @@
     "dev": "electron-webpack dev",
     "compile": "electron-webpack"
   },
+  "build": {
+    "extraResources": [
+      {
+        "from": "./static/",
+        "to": "static",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SonyCSLParis/NONOTO.git"
