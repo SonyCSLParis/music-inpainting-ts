@@ -75,9 +75,9 @@ export abstract class Locator {
     }
 
     // retrieve interactive elements of the interface by index
-    protected abstract getInterfaceElementByIndex(index: number): Element;
+    abstract getInterfaceElementByIndex(index: number): Element;
 
-    protected abstract get numInteractiveElements(): number
+    abstract get numInteractiveElements(): number
 
     public constructor(...args) {
         this.registerRefreshOnResizeListener();
@@ -504,14 +504,14 @@ export class SheetLocator extends Locator {
     }
 
     protected get activeElements() {
-        return document.getElementsByClassName('.notebox .active');
+        return this.container.getElementsByClassName('notebox active');
     }
 
-    protected getInterfaceElementByIndex(index: number): Element {
+    getInterfaceElementByIndex(index: number): Element {
         return this.activeElements.item(index);
     }
 
-    protected get numInteractiveElements(): number {
+    get numInteractiveElements(): number {
         return this.activeElements.length;
     }
 
@@ -728,11 +728,11 @@ export class SpectrogramLocator extends Locator {
         this.container.classList.toggle('no-scroll', force);
     }
 
-    protected getInterfaceElementByIndex(index: number): Element {
+    getInterfaceElementByIndex(index: number): Element {
         return this.interfaceElement.children.item(index);
     }
 
-    protected get numInteractiveElements(): number {
+    get numInteractiveElements(): number {
         return this.numRows * this.numColumns;
     }
 
