@@ -286,10 +286,10 @@ export class NotonoTrip extends myTrip {
                 exposeContainer: 'bottom-controls',
             },
             {
-                sel: "#fade-in-control-gridspan",
+                sel: "#volume-controls-gridspan",
                 content: this.makeHTMLContent(helpContents["notono"]["fade-in"]),
                 position : "nw",
-                header: "Declick / Fade-In",
+                header: "Declick / Gain",
                 expose: true,
                 exposeContainer: 'bottom-controls'
             },

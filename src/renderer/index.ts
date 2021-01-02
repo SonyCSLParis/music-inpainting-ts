@@ -13,7 +13,9 @@ import * as Header from './header';
 import * as PlaybackCommands from './playbackCommands';
 import { PlaybackManager } from './playback';
 import SheetPlaybackManager from './sheetPlayback';
-import { SpectrogramPlaybackManager, renderFadeInControl } from './spectrogramPlayback';
+import { SpectrogramPlaybackManager } from './spectrogramPlayback';
+import * as SpectrogramPlayback from './spectrogramPlayback';
+
 import * as Instruments from './instruments';
 import { NumberControl, BPMControl } from './numberControl';
 import LinkClient from './ableton_link/linkClient';
@@ -1042,15 +1044,32 @@ async function render(configuration=defaultConfiguration) {
     })
 
     $(() => {
-        let isAdvancedControl: boolean = true;
-        let bottomControlsGridElem = document.getElementById('bottom-controls');
-        let fadeInControlElement: HTMLElement = document.createElement('control-item');
-        fadeInControlElement.id = 'fade-in-control';
-        fadeInControlElement.classList.toggle('advanced', isAdvancedControl);
-        bottomControlsGridElem.appendChild(fadeInControlElement);
-        renderFadeInControl(fadeInControlElement, spectrogramPlaybackManager);
-        ControlLabels.createLabel(fadeInControlElement, 'fade-in-control-label',
-            isAdvancedControl, null, volumeControlsGridElement);
+        if (configuration['spectrogram'] ) {
+            const isAdvancedControl: boolean = true;
+            const bottomControlsGridElem = document.getElementById('bottom-controls');
+            const volumeControlsGridElement: HTMLElement = document.createElement('div');
+            volumeControlsGridElement.id = 'volume-controls-gridspan'
+            volumeControlsGridElement.classList.toggle('advanced', isAdvancedControl);
+            bottomControlsGridElem.appendChild(volumeControlsGridElement);
+
+            const fadeInControlElement: HTMLElement = document.createElement('control-item');
+            fadeInControlElement.id = 'fade-in-control';
+            fadeInControlElement.classList.toggle('advanced', isAdvancedControl);
+            volumeControlsGridElement.appendChild(fadeInControlElement);
+            SpectrogramPlayback.renderFadeInControl(fadeInControlElement,
+                spectrogramPlaybackManager);
+            ControlLabels.createLabel(fadeInControlElement, 'fade-in-control-label',
+                isAdvancedControl, null, volumeControlsGridElement);
+
+            const gainControlElement: HTMLElement = document.createElement('control-item');
+            gainControlElement.id = 'gain-control';
+            gainControlElement.classList.toggle('advanced', isAdvancedControl);
+            volumeControlsGridElement.appendChild(gainControlElement);
+            SpectrogramPlayback.renderGainControl(gainControlElement,
+                spectrogramPlaybackManager);
+            ControlLabels.createLabel(gainControlElement, 'gain-control-label',
+                isAdvancedControl, null, volumeControlsGridElement);
+        }
     });
 
     $(() => {
