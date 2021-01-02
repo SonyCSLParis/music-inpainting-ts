@@ -2,8 +2,6 @@ const merge = require('webpack-merge');
 const common = require('./webpack.common.js');
 
 module.exports = function(config) {
-  console.log(config);
-
   const styleRules = config.module.rules.filter(rule =>
     rule.test.toString().match(/css|less|s\(\[ac\]\)ss/)
   );
@@ -31,6 +29,5 @@ module.exports = function(config) {
 
     output: (config.mode === 'production' ? {filename: 'renderer.prod.js'} : {}),
   });
-  console.log(finalConfiguration);
   return finalConfiguration
 };
