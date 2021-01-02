@@ -233,11 +233,14 @@ async function render(configuration=defaultConfiguration) {
                 'edit-tool-select-label');
 
             function vqvaeLayerOnChange(ev) {
-                let newLayer: string = <string>this.value.split('-')[0];
-                let [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(newLayer);
-                let [_, numColumnsTop] = vqvaeLayerDimensions.get('top');
+                const tool: string = this.value;
+                const newLayer: string = <string>tool.split('-')[0];
+                const [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(newLayer);
+                const [_, numColumnsTop] = vqvaeLayerDimensions.get('top');
                 spectrogramPlaybackManager.Locator.render(newNumRows, newNumColumns,
                     numColumnsTop);
+                    spectrogramPlaybackManager.Locator.container.classList.toggle(
+                        'eraser', tool.includes('eraser'))
             };
 
             vqvaeLayerSelect = new CycleSelect(granularitySelectContainerElem,

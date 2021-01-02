@@ -47,6 +47,9 @@ $spectrogram-height-no-scroll: 90%;
     }
 }
 
+#spectrogram-container.eraser svg {
+    cursor: url('../images/eraser-solid.png') 0 18, pointer !important;
+}
 
 .simplebar-scroll-content {
     pointer-events: none;
