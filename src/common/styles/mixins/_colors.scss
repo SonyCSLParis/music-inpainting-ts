@@ -1,11 +1,105 @@
+@use 'sass:color';
+
+$millenial-pink-body-background: #fff7f8;
+$millenial-pink-panes-background: #ffecf9;
+$millenial-pink-idle-control: color.scale(lightpink, $lightness: 20%);
+$millenial-pink-active-control: #e5f5fd;
+
+$lavender-body-background: #C8DADF;
+$lavender-panes-background: #BEB9D4;
+$lavender-idle-control: #58A4B0;
+$lavender-active-control: #A3BCF9;
+
 $body-background: #C8DADF;
 $panes-background: #BEB9D4;
 
-$idle-control: #58A4B0;
-$active-control: #A3BCF9;
+@mixin theme-colors($theme: lavender) {
+    $body: $lavender-body-background;
+    $panes: $lavender-panes-background;
+    $idle-control: $lavender-idle-control;
+    $active-control: $lavender-active-control;
+    $scrollbar-lightness-factor: 1;
+    @if $theme == lavender {
+        $scrollbar-lightness-factor: -1;
+    }
+    @else if $theme == millenial-pink {
+        // TODO(theis): replace with list variables
+        $body: $millenial-pink-body-background;
+        $panes: $millenial-pink-panes-background;
+        $active-control: $millenial-pink-active-control;
+        $idle-control: $millenial-pink-idle-control;
+        // $scrollbar-lightness-factor: 0.1;
+    }
+    @else {
+        @error "Unknown theme #{$theme}.";
+    }
+
+    background-color: $body;
+    header, footer {
+        background-color: $panes;
+        .expand-tab {
+            background-color: darken($panes, 10%);
+        }
+    }
+    .trip-block {
+        background-color: darken($panes, 50%) !important;
+    }
+
+    $simplebar-track-color: color.scale($body, $lightness: 20% * $scrollbar-lightness-factor);
+    $simplebar-scrollbar-color: color.scale($panes, $lightness: -20% * $scrollbar-lightness-factor);
+    @if $theme == millenial-pink {
+        $simplebar-track-color: $panes;
+        $simplebar-scrollbar-color: #4392F1;
+    }
+
+    .simplebar-track.simplebar-horizontal {
+        background-color: $simplebar-track-color;
+        box-shadow:
+            inset 0px 3px 20px 0.5px color.scale($simplebar-track-color,
+                $lightness: 30% * $scrollbar-lightness-factor,
+                $alpha: -30%),
+            0 0 10px 0.2px color.scale($simplebar-scrollbar-color,
+                $lightness: 50% * $scrollbar-lightness-factor,
+                $alpha: -70%);
+    }
+
+    .simplebar-scrollbar {
+        box-shadow: 0 0 2px 1px $simplebar-scrollbar-color;
+        background-color: $simplebar-scrollbar-color;
+        @media (hover: hover) {
+            // no hover effects on touch screens since the effect remains active
+            // until the user effectively touches another zone on the viewport
+            &:hover {
+                background-color: color.scale($simplebar-scrollbar-color, $lightness: 5%);
+            }
+        }
+    }
+
+    control-item * {
+        color: $idle-control;
+    }
+
+    #play-button {
+        & > .playing {
+            color: $active-control;
+        }
+
+        & > .stopped {
+            color: $idle-control;
+        }
+    }
+
+    .CycleSelect-container {
+        color: $idle-control;
+    }
+}
 
 :export {
     // see https://github.com/css-modules/icss
-    idle_control: $idle_control;
-    active_control: $active_control;
+    lavender_idle_control: $lavender_idle_control;
+    lavender_active_control: $lavender_active_control;
+    millenial_pink_idle_control: $millenial_pink_idle_control;
+    millenial_pink_active_control: $millenial_pink_active_control;
+    idle_control: $lavender_idle_control;
+    active_control: $lavender_active_control;
 }

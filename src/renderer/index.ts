@@ -43,6 +43,8 @@ import '../common/styles/main.scss';
 import '../common/styles/controls.scss';
 import '../common/styles/disableMouse.scss';
 
+import colors  from '../common/styles/mixins/_colors.scss';
+
 declare var ohSnap: any;
 
 let defaultConfiguration = require('../common/default_config.json');
@@ -102,6 +104,15 @@ function enableChanges(): void {
 async function render(configuration=defaultConfiguration) {
     disableChanges();
     appConfiguration = configuration;
+
+    if ( configuration['osmd'] ) {
+        document.body.classList.add('nonoto');
+        Nexus.colors.accent = colors.millenial_pink_active_control;
+        Nexus.colors.fill = colors.millenial_pink_idle_control;
+    }
+    else if ( configuration['spectrogram'] ) {
+        document.body.classList.add('notono')
+    }
 
     if ( document.getElementById('header') ) {
         // do nothing if the app has already been rendered

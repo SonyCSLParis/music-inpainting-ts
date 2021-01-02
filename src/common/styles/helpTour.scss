@@ -42,7 +42,6 @@ div.trip-overlay {
 
 .trip-block {
     position: sticky;  // prevents blocks from overflowing the viewport
-    background: darken(colors.$panes-background, 50%) !important;
     font-weight: normal;
     color: white !important;
 

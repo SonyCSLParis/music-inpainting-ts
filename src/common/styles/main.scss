@@ -1,3 +1,7 @@
+// TODO(theis, 2020/12/10): check/clean-up usage of .advanced class
+// children nodes should inherit the appropriate behaviour from their container
+// and note require setting the class on all nodes
+
 @use "mixins/colors";
 @use "mixins/measures";
 @use "mixins/fonts";
@@ -9,7 +13,13 @@ html, body {
 }
 
 body {
-    background-color: colors.$body-background;
+    background-color: rgb(255, 241, 255);
+    &.nonoto {
+        @include colors.theme-colors(millenial-pink);
+    }
+    &.notono {
+        @include colors.theme-colors(lavender);
+    }
     font-family: fonts.$interface-font-stack;
     transition: all 0.1s ease-in;
 
@@ -86,7 +96,6 @@ $trapezoid-perspective-transform:  perspective(10px) rotateX(8deg);
         z-index: -1;
         border-radius: 5px 5px 0 0;
 
-        background-color: darken(colors.$panes-background, 10%);
         // translateZ is used to ensure the content is behind the parent container
         // this is required since the parent container creates a stacking context
         // furthermore the Z-axis translation should happen before the trapezoid transform,
@@ -118,7 +127,6 @@ $trapezoid-perspective-transform:  perspective(10px) rotateX(8deg);
     z-index: 0;
 
     opacity: 1;
-    background-color: colors.$panes-background;
 
     box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
 

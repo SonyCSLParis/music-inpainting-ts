@@ -52,27 +52,8 @@ $spectrogram-height-no-scroll: 90%;
     pointer-events: none;
 }
 
-$simplebar-track-color: color.scale(colors.$body-background, $lightness: -20%);
-$simplebar-scrollbar-color: color.scale(colors.$panes-background, $lightness: +20%);
-
 .simplebar-track.simplebar-horizontal {
-    background-color: $simplebar-track-color;
-    box-shadow:
-        inset 0px 3px 20px 0.5px color.scale($simplebar-track-color, $lightness: -30%, $alpha: -30%),
-        0 0 10px 0.2px color.scale($simplebar-scrollbar-color, $lightness: -50%, $alpha: -70%);
     position: absolute;
-}
-
-.simplebar-scrollbar {
-    box-shadow: 0 0 2px 1px $simplebar-scrollbar-color;
-    background-color: $simplebar-scrollbar-color;
-    @media (hover: hover) {
-        // no hover effects on touch screens since the effect remains active
-        // until the user effectively touches another zone on the viewport
-        &:hover {
-            background-color: color.scale($simplebar-scrollbar-color, $lightness: 5%);
-        }
-    }
 }
 
 .simplebar-content-wrapper {
