@@ -40,6 +40,10 @@
             "en": "Download"
         },
 
+        "download-button-label-with-native-drag": {
+            "en": "Save/Drag"
+        },
+
         "fade-in-control-label": {
             "en": "Declick"
         },

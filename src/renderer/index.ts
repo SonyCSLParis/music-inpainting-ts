@@ -18,7 +18,7 @@ import * as Instruments from './instruments';
 import { NumberControl, BPMControl } from './numberControl';
 import LinkClient from './ableton_link/linkClient';
 // import * as LinkClientCommands from './linkClientCommands';
-import { DownloadButton } from './downloadCommand';
+import { DownloadButton, filename as filenameType } from './downloadCommand';
 import * as MidiOut from './midiOut';
 import * as MidiIn from './midiIn';
 
@@ -46,6 +46,7 @@ import '../common/styles/disableMouse.scss';
 import colors  from '../common/styles/mixins/_colors.scss';
 
 declare var ohSnap: any;
+declare var COMPILE_ELECTRON: boolean;
 
 let defaultConfiguration = require('../common/default_config.json');
 
@@ -642,9 +643,9 @@ async function render(configuration=defaultConfiguration) {
 
         // allocate new local blobURL for the received audio
         const blobUrl = URL.createObjectURL(audioBlob);
+        downloadButton.content = audioBlob;
 
         return spectrogramPlaybackManager.loadAudio(blobUrl).then(() => {
-            log.debug("Tone.js Player audio succesfully loaded!");
             downloadButton.targetURL = blobUrl;
         });
     };
@@ -652,6 +653,7 @@ async function render(configuration=defaultConfiguration) {
     async function updateSpectrogramImage(imageBlob: Blob): Promise<void> {
         return new Promise((resolve, _) => {
             const blobUrl = URL.createObjectURL(imageBlob);
+            downloadButton.imageContent = imageBlob;
             const spectrogramImageElem: HTMLImageElement = (
                 <HTMLImageElement>document.getElementById('spectrogram-image'));
             spectrogramImageElem.src = blobUrl;
@@ -912,7 +914,6 @@ async function render(configuration=defaultConfiguration) {
                             );
                             downloadButton.revokeBlobURL();
                             downloadButton.targetURL = midiBlobURL;
-                            downloadButton.filename = 'deepsheet.mid';
 
                             enableChanges();
                             resolve();
@@ -977,11 +978,24 @@ async function render(configuration=defaultConfiguration) {
     $(() => {
         let isAdvancedControl = true;
         let bottomControlsGridElem = document.getElementById('bottom-controls')
-        downloadButton = new DownloadButton(bottomControlsGridElem,
-            configuration, null, isAdvancedControl);
+        let defaultFilename: filenameType;
+        if ( configuration['spectrogram'] ) {
+            defaultFilename = {name: 'notono', extension: '.wav'}
+        }
+        else if ( configuration['osmd'] ) {
+            defaultFilename = {name: 'nonoto', extension: '.mid'}
+        }
+        downloadButton = new DownloadButton(
+            bottomControlsGridElem, defaultFilename, isAdvancedControl);
 
-        ControlLabels.createLabel(bottomControlsGridElem, 'download-button-label',
-            isAdvancedControl);
+        if ( COMPILE_ELECTRON ) {
+            ControlLabels.createLabel(bottomControlsGridElem, 'download-button-label',
+                isAdvancedControl, 'download-button-label-with-native-drag');
+            }
+        else {
+            ControlLabels.createLabel(bottomControlsGridElem, 'download-button-label',
+                isAdvancedControl);
+        }
     });
 
     $(() => {

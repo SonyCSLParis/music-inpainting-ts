@@ -2,6 +2,8 @@
 import {app, ipcMain} from 'electron'
 app.commandLine.appendSwitch('disable-pinch');
 import * as log from 'loglevel'
+import path from 'path';
+import { outputFile } from 'fs-extra';
 
 import * as WindowManager from './windowManager'
 import LinkServer from './ableton_link/linkServer'
@@ -35,8 +37,25 @@ app.on('activate', function () {
 
 ipcMain.on('disconnect', () => LinkServer.killLink());
 
+
+ipcMain.handle('get-path', (event, fileName, appDirectory: 'documents' | 'temp') => {
+  const storagePath = path.join(app.getPath(appDirectory), "NONOTO_generations", fileName);
+  return storagePath
+});
+
+ipcMain.handle('save-file', (event, fileName, buffer) => {
+  return outputFile(fileName, buffer)
+})
+
+ipcMain.on('ondragstart', (event, filePath, iconPath) => {
+  event.sender.startDrag({
+      file: filePath,
+      icon: iconPath
+  })
+});
+// })
+
 LinkServer.attachListeners()
 
 if (module.hot) {
-    module.hot.accept();
 }
