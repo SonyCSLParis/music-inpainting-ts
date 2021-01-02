@@ -162,8 +162,28 @@ control-label {
     grid-column: 2;
 }
 
-#select-midiout {
+#select-midi-gridspan {
+    grid-row: 3/5;
+    grid-column: 3;
+}
+
+#select-midi-out,  #select-midi-in {
     grid-row: 3;
+    grid-column: 3;
+}
+
+#select-midi-out-label,  #select-midi-in-label {
+    grid-row: 4;
+    grid-column: 3;
+}
+
+#select-midi-out,  #select-midi-in {
+    grid-row: 3;
+    grid-column: 3;
+}
+
+#select-midi-out-label,  #select-midi-in-label {
+    grid-row: 4;
     grid-column: 3;
 }
 

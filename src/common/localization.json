@@ -42,6 +42,14 @@
 
         "fade-in-control-label": {
             "en": "Declick"
+        },
+
+        "select-midi-out-label": {
+            "en": "Midi Out Device"
+        },
+
+        "select-midi-in-label": {
+            "en": "Midi In Device"
         }
     },
 

@@ -20,6 +20,7 @@ import LinkClient from './ableton_link/linkClient';
 // import * as LinkClientCommands from './linkClientCommands';
 import { DownloadButton } from './downloadCommand';
 import * as MidiOut from './midiOut';
+import * as MidiIn from './midiIn';
 
 import { myTrip, NonotoTrip, NotonoTrip } from './helpTour';
 import * as HelpTour from './helpTour';
@@ -983,12 +984,15 @@ async function render(configuration=defaultConfiguration) {
     );
 
     $(() => {
-        if ( configuration['insert_advanced_controls']  && configuration['osmd'] ) {
+        if ( configuration['insert_advanced_controls'] && configuration['osmd'] ) {
             // Add manual Link-Sync button
             const bottomControlsGridElem = document.getElementById('bottom-controls')
             PlaybackCommands.renderSyncButton(bottomControlsGridElem);
 
             MidiOut.render();
+        }
+        else if ( configuration['insert_advanced_controls'] && configuration['spectrogram'] ) {
+            MidiIn.render();
         }}
     );
 
