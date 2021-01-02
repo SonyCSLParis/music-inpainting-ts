@@ -55,7 +55,7 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
                 }
                 else if ('triggerAttackRelease' in currentInstrument) {
                     getCurrentInstrument().triggerAttackRelease(event.name,
-                        Tone.Time(event.duration).toSeconds() - 0.05,
+                        event.duration,
                         time, event.velocity);
                 }
                 log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event));
