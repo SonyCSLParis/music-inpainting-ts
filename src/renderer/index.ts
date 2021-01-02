@@ -1,8 +1,7 @@
 // import * as nipplejs from "nipplejs";
 import { SheetLocator, renderZoomControls, SpectrogramLocator, registerZoomTarget, Locator } from './locator';
-import { OpenSheetMusicDisplay, Fraction } from 'opensheetmusicdisplay';
+import { Fraction } from 'opensheetmusicdisplay';
 import $ from "jquery";
-import * as WebMidi from 'webmidi';
 import * as Tone from 'tone';
 import * as log from 'loglevel';
 import * as path from 'path';
@@ -10,6 +9,7 @@ import Nexus from './nexusColored';
 import * as url from 'url';
 
 import * as Header from './header';
+
 import * as PlaybackCommands from './playbackCommands';
 import { PlaybackManager } from './playback';
 import SheetPlaybackManager from './sheetPlayback';
@@ -25,7 +25,6 @@ import * as MidiOut from './midiOut';
 import * as MidiIn from './midiIn';
 
 import { myTrip, NonotoTrip, NotonoTrip } from './helpTour';
-import * as HelpTour from './helpTour';
 
 import { createLFOControls } from './lfo';
 import { CycleSelect } from './cycleSelect';
@@ -72,13 +71,6 @@ function getMidiPitch(): number {
 function triggerInterfaceRefresh(): void {
     vqvaeLayerSelect.value = vqvaeLayerSelect.value;
 };
-
-// TODO(theis): don't create globals like this
-let currentCodes_top: number[][] = null;
-let currentCodes_bottom: number[][] = null;
-let currentConditioning_top: Map<string, (number|string)[][]> = null;
-let currentConditioning_bottom: Map<string, (number|string)[][]> = null;
-let currentXML: XMLDocument;
 
 function toggleBusyClass(state: boolean): void {
     $('body').toggleClass('busy', state);
@@ -143,8 +135,6 @@ async function render(configuration=defaultConfiguration) {
     const granularities_quarters: string[] = (
         (<string[]>configuration['granularities_quarters']).sort(
             (a, b) => {return parseInt(a) - parseInt(b)}));
-
-    let COMPILE_MUSEUM_VERSION: boolean = true;
 
     $(() => {
         let headerGridElem: HTMLElement = document.createElement('header');
