@@ -48,6 +48,10 @@
             "en": "Declick"
         },
 
+        "gain-control-label": {
+            "en": "Gain"
+        },
+
         "select-midi-out-label": {
             "en": "Midi Out Device"
         },
@@ -105,7 +109,7 @@
             },
 
             "fade-in": {
-                "en": "Adds a slight <b>fade-in</b> to the audio playback. This can reduce fatigue for your ears during long sessions with sounds containing strong attacks. <br><br>Note that this fade-in is not applied when storing sounds via the download button, letting you control any processing in your DAW."
+                "en": "Declick adds a slight <b>fade-in</b> to the audio playback. This can reduce fatigue for your ears during long sessions with sounds containing strong attacks.<br>Gain allows to control the playback volume of the sound. <br><br>Note that the fade-in is not applied when storing sounds via the download button, letting you control any processing in your DAW."
             }
         }
     }
