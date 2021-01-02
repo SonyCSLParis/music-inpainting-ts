@@ -20,7 +20,11 @@ export function createWindow() {
     webPreferences: process.env.NODE_ENV === 'development'
         ? { nodeIntegration: true }
         : {
-            preload: path.join(__dirname, 'dist/renderer/renderer.prod.js')
+          // TODO(theis): fix this, should not enable nodeIntegration!
+          // check: https://www.electronjs.org/docs/tutorial/security
+          // and https://github.com/doyensec/electronegativity
+            nodeIntegration: true,
+            // preload: path.join(__dirname, 'renderer.prod.js')
           }
     })
 
