@@ -254,7 +254,7 @@ export class NotonoTrip extends myTrip {
                 expose: true,
                 header: "Spectrogram transformations",
                 onTripStart: () => {
-                    this.locator.callToAction(6)
+                    this.locator.callToAction();
                     this.toggleExpose(document.getElementById('main-panel'), true);
                 },
                 onTripEnd: () => {
