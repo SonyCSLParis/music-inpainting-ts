@@ -20,8 +20,11 @@ function cloneJSON(obj: object): object {
 }
 
 import defaultConfiguration from '../common/default_config.json';
-defaultConfiguration['server_ip'] = DEFAULT_SERVER_IP;
-defaultConfiguration['server_port'] = DEFAULT_SERVER_PORT;
+// FIXME(theis, 2021_01_02): required hardcoded defaults since default values
+// retrieved from the window via DEFAULT_SERVER_IP and DEFAULT_SERVER_PORT
+// are blank in compiled Electron applications
+defaultConfiguration['server_ip'] = DEFAULT_SERVER_IP || 'localhost';
+defaultConfiguration['server_port'] = DEFAULT_SERVER_PORT || '5000';
 import customConfiguration from '../../config.json';
 let globalConfiguration = {...defaultConfiguration, ...customConfiguration};
 
