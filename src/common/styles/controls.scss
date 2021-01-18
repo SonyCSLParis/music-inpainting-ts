@@ -5,6 +5,11 @@ $main-filter: drop-shadow(0px 0px 1.3px rgba(0, 0, 0, 0.3));
 
 control-item, control-label {
     align-self: center;
+    align-content: normal;
+    align-items: center;
+
+    height: fit-content;
+    width: fit-content;
 }
 
 control-item {
@@ -16,12 +21,12 @@ control-item {
 }
 
 #bottom-controls [nexus-ui] {
-    & * {
+    * {
         border-radius: 4px !important;
     }
 
-    width: unset !important;
-    height: unset !important;
+    width: fit-content !important;
+    height: fit-content !important;
 
     select, input {
         text-align: center;
