@@ -79,7 +79,7 @@ $panes-background: #BEB9D4;
         color: $idle-control;
     }
 
-    #play-button {
+    #play-button-interface {
         & > .playing {
             color: $active-control;
         }
@@ -95,7 +95,6 @@ $panes-background: #BEB9D4;
 }
 
 :export {
-    // see https://github.com/css-modules/icss
     lavender_idle_control: $lavender_idle_control;
     lavender_active_control: $lavender_active_control;
     millenial_pink_idle_control: $millenial_pink_idle_control;

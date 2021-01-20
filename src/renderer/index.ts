@@ -44,7 +44,7 @@ import '../common/styles/main.scss';
 import '../common/styles/controls.scss';
 import '../common/styles/disableMouse.scss';
 
-import colors  from '../common/styles/mixins/_colors.scss';
+import colors from '../common/styles/mixins/_colors.module.scss';
 
 declare var ohSnap: any;
 declare var COMPILE_ELECTRON: boolean;

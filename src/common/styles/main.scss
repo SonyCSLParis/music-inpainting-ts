@@ -2,7 +2,7 @@
 // children nodes should inherit the appropriate behaviour from their container
 // and note require setting the class on all nodes
 
-@use "mixins/colors";
+@use "mixins/colors.module";
 @use "mixins/measures";
 @use "mixins/fonts";
 
