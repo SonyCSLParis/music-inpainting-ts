@@ -11,6 +11,7 @@ import '../common/styles/startupSplash.scss';
 declare var COMPILE_ELECTRON: boolean;
 declare const DEFAULT_SERVER_IP: string;
 declare const DEFAULT_SERVER_PORT: string;
+declare const SPECTROGRAM_ONLY: boolean;
 declare const ENABLE_ANONYMOUS_MODE: boolean;
 const isDevelopment: boolean = process.env.NODE_ENV !== 'production';
 
@@ -104,7 +105,8 @@ export function render(renderPage: (configuration: object) => void): void {
 
     let modeConfigElem: HTMLDivElement;
     let applicationModeSelectElem: HTMLSelectElement;
-    if (!globalConfiguration['spectrogram_only']) {
+    const spectrogramOnlyMode: boolean = (SPECTROGRAM_ONLY || globalConfiguration['spectrogram_only']);
+    if (!spectrogramOnlyMode) {
         modeConfigElem = document.createElement('div');
         modeConfigElem.id = 'mode-configuration';
         configurationWindow.appendChild(modeConfigElem);
@@ -233,7 +235,7 @@ export function render(renderPage: (configuration: object) => void): void {
 
     function getCurrentConfiguration() {
         let applicationMode: string;
-        if (!globalConfiguration['spectrogram_only']) {
+        if (!spectrogramOnlyMode) {
             applicationMode = applicationModeSelectElem.value;
         }
         else {

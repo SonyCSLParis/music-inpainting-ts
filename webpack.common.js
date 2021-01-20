@@ -10,6 +10,7 @@ module.exports = {
             // default to communicating with the Flask server on the same port as the window
             // FIXME(theis): retrieved value is empty in compiled Electron app
             'DEFAULT_SERVER_PORT': 'window.location.port',
+            'SPECTROGRAM_ONLY': false,
             'ENABLE_ANONYMOUS_MODE': false,
         }),
 

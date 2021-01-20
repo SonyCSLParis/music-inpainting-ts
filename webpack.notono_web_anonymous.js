@@ -18,6 +18,7 @@ merged_defines = merge.strategy(
 
     plugins: [
         new webpack.DefinePlugin({
+            'SPECTROGRAM_ONLY': true,
             'ENABLE_ANONYMOUS_MODE': true
         }),
     ]
