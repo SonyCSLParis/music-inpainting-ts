@@ -239,11 +239,11 @@ export class NotonoTrip extends myTrip {
                 expose: true,
                 header: "Spectrogram 1: General",
                 onTripStart: () => {
-                    $('#spectrogram-container-interface-container')[0].children[1].classList.add('trip-hide');
+                    $('#spectrogram-container-interface-container')[0].children[1].classList.add('trip-hidden');
                     this.toggleExpose(document.getElementById('main-panel'), true);
                 },
                 onTripEnd: () => {
-                    $('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hide');
+                    $('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hidden');
                     this.toggleExpose(document.getElementById('main-panel'), false);
                 }
             },
@@ -315,7 +315,7 @@ export class NotonoTrip extends myTrip {
     protected tripCleanup(): void {
         super.tripCleanup();
 
-        $('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hide');
+        $('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hidden');
     }
 }
 
