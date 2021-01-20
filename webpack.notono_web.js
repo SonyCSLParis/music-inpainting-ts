@@ -14,7 +14,13 @@ merged_defines = merge.strategy(
 )(web, {
     mode: 'production',
 
-    devtool: false
+    devtool: false,
+
+    plugins: [
+        new webpack.DefinePlugin({
+            'SPECTROGRAM_ONLY': true,
+        }),
+    ]
 });
 
 module.exports = merge(
