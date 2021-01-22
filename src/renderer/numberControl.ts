@@ -30,8 +30,11 @@ export class NumberControl {
         this.initialValue = initialValue;
     }
 
+    get container(): HTMLElement {
+        return document.getElementById(this.id);
+    }
+
     render(useSimpleSlider: boolean = false, elementWidth: number): void{
-        // Create BPM display
         let containerElem: HTMLElement = document.createElement('control-item');
         containerElem.id = this.id,
         containerElem.setAttribute('horizontal', '');

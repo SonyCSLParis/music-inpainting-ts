@@ -167,26 +167,17 @@ async function render(configuration=defaultConfiguration) {
             locator.refresh();
         });
 
-        const playButtonGridspanElem = document.createElement('div');
-        playButtonGridspanElem.id = "play-button-gridspan";
-        playButtonGridspanElem.classList.add('gridspan');
-        bottomControlsGridElem.appendChild(playButtonGridspanElem);
-
-        const downloadButtonGridspanElem = document.createElement('div');
-        downloadButtonGridspanElem.id = "download-button-gridspan";
-        downloadButtonGridspanElem.classList.add('gridspan');
-        bottomControlsGridElem.appendChild(downloadButtonGridspanElem);
+        const playbackCommandsGridspan = document.createElement('div');
+        playbackCommandsGridspan.id = "playback-commands-gridspan";
+        playbackCommandsGridspan.classList.add('gridspan');
+        bottomControlsGridElem.appendChild(playbackCommandsGridspan);
 
         if ( configuration['spectrogram'] ) {
-            const fadeInControlGridspanElem = document.createElement('div');
-            fadeInControlGridspanElem.id = "fade-in-control-gridspan";
-            fadeInControlGridspanElem.classList.add('gridspan');
-            bottomControlsGridElem.appendChild(fadeInControlGridspanElem);
-
             // create element for highlighting control grid spans in help
             const constraintsSpanElem = document.createElement('div');
             constraintsSpanElem.id = "constraints-gridspan";
             constraintsSpanElem.classList.add('gridspan');
+            constraintsSpanElem.classList.add('multi-column-gridspan');
             bottomControlsGridElem.appendChild(constraintsSpanElem);
 
             const editToolsGridspanElem = document.createElement('div');
@@ -276,12 +267,32 @@ async function render(configuration=defaultConfiguration) {
 
     if ( configuration['spectrogram'] ) {
         $(() => {
-            let bottomControlsGridElem = document.getElementById('bottom-controls');
-            let pitchSelectGridspanElem = document.createElement('div');
-            pitchSelectGridspanElem.id = 'pitch-control-gridspan';
-            bottomControlsGridElem.appendChild(pitchSelectGridspanElem)
+            const constraintsGridspanElem = document.getElementById('constraints-gridspan');
 
-            let pitchSelectContainer = document.createElement('control-item');
+            const instrumentSelectGridspanElem: HTMLElement = document.createElement('div');
+            instrumentSelectGridspanElem.id = 'instrument-select-gridspan';
+            instrumentSelectGridspanElem.classList.add('gridspan');
+            constraintsGridspanElem.appendChild(instrumentSelectGridspanElem);
+            const instrumentSelectElem: HTMLElement = document.createElement('control-item');
+            instrumentSelectElem.id = 'instrument-control';
+            instrumentSelectGridspanElem.appendChild(instrumentSelectElem);
+            instrumentSelect = new Nexus.Select('#instrument-control', {
+                    'size': [120, 50],
+                    'options': ['bass', 'brass', 'flute',
+                    'guitar', 'keyboard', 'mallet', 'organ',
+                    'reed', 'string', 'synth_lead', 'vocal'
+                ],
+                'value': 'organ',
+            });
+            ControlLabels.createLabel(instrumentSelectElem, 'instrument-control-label', false,
+                null, instrumentSelectGridspanElem);
+
+            const pitchSelectGridspanElem = document.createElement('div');
+            pitchSelectGridspanElem.id = 'pitch-control-gridspan';
+            pitchSelectGridspanElem.classList.add('gridspan');
+            constraintsGridspanElem.appendChild(pitchSelectGridspanElem);
+
+            const pitchSelectContainer = document.createElement('control-item');
             pitchSelectContainer.id = 'pitch-control-root-select';
             pitchSelectGridspanElem.appendChild(pitchSelectContainer);
             // TODO(theis): clean this!
@@ -300,27 +311,11 @@ async function render(configuration=defaultConfiguration) {
             ControlLabels.createLabel(pitchSelectContainer, 'pitch-control-root-select-label',
                 false, null, pitchSelectGridspanElem);
 
-            // const octaveControlContainer = document.createElement('control-item');
-            // octaveControlContainer.id = 'pitch-control-octave-control';
-            // pitchSelectGridspanElem.appendChild(octaveControlContainer);
             octaveControl = new NumberControl(pitchSelectGridspanElem,
                 'pitch-control-octave-control', [2, 7], 5);
             const useSimpleSlider = false;
             const elementWidth_px = 40;
             octaveControl.render(useSimpleSlider, elementWidth_px);
-
-            let instrumentSelectElem: HTMLElement = document.createElement('control-item');
-            instrumentSelectElem.id = 'instrument-control';
-            bottomControlsGridElem.appendChild(instrumentSelectElem);
-            instrumentSelect = new Nexus.Select('#instrument-control', {
-                'size': [120, 50],
-                'options': ['bass', 'brass', 'flute',
-                    'guitar', 'keyboard', 'mallet', 'organ',
-                    'reed', 'string', 'synth_lead', 'vocal'
-                ],
-                'value': 'organ',
-            });
-            ControlLabels.createLabel(instrumentSelectElem, 'instrument-control-label');
         });
     };
 
@@ -579,17 +574,8 @@ async function render(configuration=defaultConfiguration) {
     };
 
     $(() => {
-        $(() => {
-            let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
-            playbuttonContainerElem.id = 'play-button';
-
-            let bottomControlsGridElem = document.getElementById('bottom-controls');
-            bottomControlsGridElem.appendChild(playbuttonContainerElem);
-
-            ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
-
-            PlaybackCommands.render(playbuttonContainerElem);
-        });
+        const playbackCommandsGridspan = document.getElementById('playback-commands-gridspan')
+        PlaybackCommands.render(playbackCommandsGridspan);
     });
 
 
@@ -1023,16 +1009,23 @@ async function render(configuration=defaultConfiguration) {
         else if ( configuration['osmd'] ) {
             defaultFilename = {name: 'nonoto', extension: '.mid'}
         }
+
+        const downloadCommandsGridspan = document.createElement('div');
+        downloadCommandsGridspan.id = 'download-button-gridspan';
+        downloadCommandsGridspan.classList.add('gridspan');
+        downloadCommandsGridspan.classList.toggle('advanced', isAdvancedControl);
+        bottomControlsGridElem.appendChild(downloadCommandsGridspan);
         downloadButton = new DownloadButton(
-            bottomControlsGridElem, defaultFilename, isAdvancedControl);
+            downloadCommandsGridspan, defaultFilename, isAdvancedControl);
 
         if ( COMPILE_ELECTRON ) {
             ControlLabels.createLabel(bottomControlsGridElem, 'download-button-label',
-                isAdvancedControl, 'download-button-label-with-native-drag');
+                isAdvancedControl, 'download-button-label-with-native-drag',
+                downloadButton.container);
             }
         else {
             ControlLabels.createLabel(bottomControlsGridElem, 'download-button-label',
-                isAdvancedControl);
+                isAdvancedControl, null, downloadButton.container);
         }
     });
 
@@ -1067,6 +1060,7 @@ async function render(configuration=defaultConfiguration) {
             const bottomControlsGridElem = document.getElementById('bottom-controls');
             const volumeControlsGridElement: HTMLElement = document.createElement('div');
             volumeControlsGridElement.id = 'volume-controls-gridspan'
+            volumeControlsGridElement.classList.add('gridspan');
             volumeControlsGridElement.classList.toggle('advanced', isAdvancedControl);
             bottomControlsGridElem.appendChild(volumeControlsGridElement);
 

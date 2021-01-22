@@ -119,9 +119,8 @@ $trapezoid-perspective-transform:  perspective(10px) rotateX(8deg);
     transform-style: preserve-3D;
     width: 100%;
     margin-top: calc(#{measures.$expand-tab-height} / 2);
-    transition: height 4s ease-in-out;
     grid-template-columns: repeat(4, 25%);
-    grid-template-rows: 2.5fr 1fr 1vh;
+    grid-template-rows: 2.5fr 1fr 0 0 1vh;
     align-items: center;
     justify-items: center;
     z-index: 0;
@@ -133,9 +132,11 @@ $trapezoid-perspective-transform:  perspective(10px) rotateX(8deg);
     text-align: center;
 }
 
-control-item.advanced, control-label.advanced {
-    display: none;
-    opacity: 0;
+.advanced {
+    &, & control-item, & control-label {
+        visibility: collapse;
+        opacity: 0;
+    }
 }
 
 body:not(.help-tour-on) .trip-block {
@@ -151,11 +152,6 @@ body.help-tour-on {
     }
 }
 
-control-item.advanced, control-label.advanced {
-    opacity: 0;
-    transition: opacity 0.2s ease-in;
-}
-
 body.advanced-controls {
     #bottom-controls {
         grid-template-rows: 2.5fr 1fr 2.5fr 1fr 1vh;
@@ -168,9 +164,13 @@ body.advanced-controls {
         }
     }
 
-    control-item.advanced, control-label.advanced {
-        display: block;
+    .advanced {
+        visibility: visible;
         opacity: 1;
+        control-item, control-label {
+            visibility: visible;
+            opacity: 1;
+        }
     }
 }
 
