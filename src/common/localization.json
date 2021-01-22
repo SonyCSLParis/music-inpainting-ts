@@ -60,8 +60,11 @@
             "en": "Midi Out Device"
         },
 
-        "select-midi-in-label": {
-            "en": "Midi In Device"
+        "select-midi-input-device-label": {
+            "en": "MIDI Device"
+        },
+        "select-midi-input-channel-label": {
+            "en": "MIDI Channel"
         }
     },
 

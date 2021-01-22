@@ -1,4 +1,4 @@
-// <reference path='./jquery-exists.d.ts'/>
+// <reference path='./typing/jquery-exists.d.ts'/>
 
 import { PlaybackManager } from './playback';
 
@@ -38,28 +38,31 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
 
         const timingOffset = getTimingOffset();
         function playNote(time, event){
-            const currentMidiOutput = MidiOut.getOutput()
-            if ( currentMidiOutput ) {
-                currentMidiOutput.playNote(
-                    event.name,
-                    midiChannel,
-                    {time: time * 1000 + getTimingOffset(),
-                     duration: event.duration * 1000});
+            MidiOut.getOutput().then(
+                (currentMidiOutput) => {
+                    if ( currentMidiOutput ) {
+                        currentMidiOutput.playNote(
+                            event.name,
+                            midiChannel,
+                            {time: time * 1000 + getTimingOffset(),
+                             duration: event.duration * 1000}
+                        );
+                    }
                 }
-            // else {
-                const currentInstrument = getCurrentInstrument();
-                if ('keyUp' in currentInstrument) {
-                    const piano: PianoType = <PianoType>currentInstrument;
-                    piano.keyDown({note: event.name, time: time, velocity: event.velocity})
-                    piano.keyUp({note: event.name, time: time + event.duration});
-                }
-                else if ('triggerAttackRelease' in currentInstrument) {
-                    getCurrentInstrument().triggerAttackRelease(event.name,
-                        event.duration,
-                        time, event.velocity);
-                }
-                log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event));
-            // }
+            );
+
+            const currentInstrument = getCurrentInstrument();
+            if ('keyUp' in currentInstrument) {
+                const piano: PianoType = <PianoType>currentInstrument;
+                piano.keyDown({note: event.name, time: time, velocity: event.velocity})
+                piano.keyUp({note: event.name, time: time + event.duration});
+            }
+            else if ('triggerAttackRelease' in currentInstrument) {
+                getCurrentInstrument().triggerAttackRelease(event.name,
+                    event.duration,
+                    time, event.velocity);
+            };
+            log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event));
         };
         return playNote
     };

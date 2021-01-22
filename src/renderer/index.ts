@@ -324,6 +324,19 @@ async function render(configuration=defaultConfiguration) {
         });
     };
 
+    $(() => {
+        // HACK(theis): delayed import necessary to avoid
+        // failure on startup if the browser does not support the Web MIDI API
+        const midiOutImplementation: typeof MidiOut = require('./midiOut');
+        const midiInImplementation: typeof MidiIn = require('./midiIn');
+        if ( configuration['insert_advanced_controls'] && configuration['osmd'] ) {
+            midiOutImplementation.render();
+        }
+        else if ( configuration['insert_advanced_controls'] && configuration['spectrogram'] ) {
+            midiInImplementation.render();
+        }}
+    );
+
     let sheetLocator: SheetLocator;
     $(() => {
         let mainPanel = document.getElementById('main-panel');
@@ -1024,26 +1037,8 @@ async function render(configuration=defaultConfiguration) {
     });
 
     $(() => {
-        // LinkClient.kill();
-        // if (useAdvancedControls) {
-        //     // Insert LINK client controls
-        //     LinkClientCommands.render();
-        //     LinkClientCommands.renderDownbeatDisplay();
-        // }
-    }
-    );
-
-    $(() => {
-        if ( configuration['insert_advanced_controls'] && configuration['osmd'] ) {
-            // Add manual Link-Sync button
-            const bottomControlsGridElem = document.getElementById('bottom-controls')
-            PlaybackCommands.renderSyncButton(bottomControlsGridElem);
-
-            MidiOut.render();
         }
-        else if ( configuration['insert_advanced_controls'] && configuration['spectrogram'] ) {
-            MidiIn.render();
-        }}
+    }
     );
 
     if ( configuration['osmd'] ) {

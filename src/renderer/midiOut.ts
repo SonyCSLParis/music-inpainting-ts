@@ -7,15 +7,25 @@ import * as ControlLabels from './controlLabels';
 
 import Nexus from './nexusColored';
 
-let midiOutputListener = new MidiOutput(null);
+let globalMidiOutputListener: MidiOutput = null;
 
 export async function getMidiOutputListener(): Promise<MidiOutput> {
     await MidiOutput.enabled();
-    return midiOutputListener;
+    return globalMidiOutputListener;
 }
 
-
 export async function render(useChordsInstrument: boolean = false) {
+    if ( globalMidiOutputListener === null) {
+        try {
+            globalMidiOutputListener = new MidiOutput(null);
+            await MidiOutput.enabled();
+        } catch (error) {
+            // fail silently if no Web MIDI API support in the browser
+            log.error("Failed in rendering Midi-Out controls with error: ", error);
+            return
+        }
+    }
+
     let bottomControlsGridElem = document.getElementById('bottom-controls');
 
     let midiOutSelectElem: HTMLElement = document.createElement('control-item');
@@ -59,10 +69,12 @@ export async function render(useChordsInstrument: boolean = false) {
         log.info('[MIDI OUT]: Updated list of outputs, now', JSON.stringify(newOptions));
     }
 
-    (await getMidiOutputListener()).on('connect', updateOptions);
-    (await getMidiOutputListener()).on('disconnect', updateOptions);
+    const midiOutputListener = await getMidiOutputListener();
+    midiOutputListener.on('connect', updateOptions);
+    midiOutputListener.on('disconnect', updateOptions);
 
     async function midiOutOnChange(_: any): Promise<void> {
+        const previousOutput = midiOutputListener.deviceId;
         if (this.value == disabledOutputId) {
             midiOutputListener.deviceId = null;
             Instruments.mute(false)
@@ -76,7 +88,9 @@ export async function render(useChordsInstrument: boolean = false) {
             }
             Instruments.mute(true);
         }
-        log.info('Selected MIDI Out: ' + this.value);
+        if ( midiOutputListener.deviceId != previousOutput ) {
+            log.info('Selected MIDI Out: ' + this.value);
+        };
     };
 
     midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect));
@@ -84,8 +98,9 @@ export async function render(useChordsInstrument: boolean = false) {
 }
 
 
-export function getOutput(): false | Output {
-    if ( midiOutputListener.deviceId === null ) {
+export async function getOutput(): Promise<false | Output> {
+    const midiOutputListener = await getMidiOutputListener();
+    if ( midiOutputListener === null || midiOutputListener.deviceId === null ) {
         return false;
     }
     else {
