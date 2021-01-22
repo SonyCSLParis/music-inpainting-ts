@@ -45,6 +45,17 @@ $spectrogram-height-no-scroll: 90%;
         display: none;
         visibility: hidden;
     }
+
+    .snap-points {
+        // ensures snap points are within the visible spectrogram image canvas
+        // this is required so that they are taken into account
+        position: absolute;
+        top: 0;
+        margin-left: -5vw;
+        display: flex;
+        height: 1px;
+        visibility: hidden;
+    }
 }
 
 #spectrogram-container.eraser svg {
@@ -93,17 +104,6 @@ $spectrogram-height-no-scroll: 90%;
         pointer-events: none;
         z-index: -1000;
     }
-}
-
-#snap-points {
-    // ensures snap points are within the visible spectrogram image canvas
-    // this is required so that they are taken into account
-    position: absolute;
-    top: 0;
-    margin-left: -5vw;
-    display: flex;
-    height: 1px;
-    visibility: hidden;
 }
 
 #spectrogram-container-shadow-container {

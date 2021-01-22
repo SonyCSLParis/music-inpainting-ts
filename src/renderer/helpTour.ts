@@ -199,19 +199,19 @@ export class NonotoTrip extends myTrip {
         // TODO contents should depend on AnnotationBox type used
         return [
             {
-                sel: "#play-button-gridspan",
+                sel: "#playback-commands-gridspan",
                 content: this.makeHTMLContent(helpContents["general"]["play_button"]),
                 position : "e",
                 expose: true,
                 header: "Playback"
             },
             {
-                sel: "#whole-note-0-0-common",
+                sel: "#4-0-0-timecontainer-common",
                 content: this.makeHTMLContent(helpContents["nonoto"]["note_box"]),
                 position : "e",
             },
             {
-                sel: "#quarter-note-1-3-common-Fermata",
+                sel: "#1-1-1-timecontainer-common-Fermata",
                 content: this.makeHTMLContent(helpContents["nonoto"]["fermata_box"]),
                 position : "s",
             },
@@ -225,7 +225,7 @@ export class NotonoTrip extends myTrip {
     protected makeContents(): object[] {
         return [
             {
-                sel: "#play-button-gridspan",
+                sel: "#playback-commands-gridspan",
                 content: this.makeHTMLContent(helpContents["general"]["play_button"]),
                 position : "e",
                 header: "Playback",

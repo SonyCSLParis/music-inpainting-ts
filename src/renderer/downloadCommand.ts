@@ -50,40 +50,40 @@ export type filename = {
 
 export class DownloadButton {
     protected readonly parent: HTMLElement;
-    protected readonly container: HTMLElement;
+    readonly container: HTMLElement;
     readonly downloadElem: HTMLAnchorElement;
     protected readonly interface;  // Nexus.TextButton;
+    protected readonly iconElem;  // Nexus.TextButton;
 
     protected mainIconSize: string = 'fa-3x';
 
-    constructor(parent: HTMLElement, defaultFilename: filename,
+    constructor(container: HTMLElement, defaultFilename: filename,
             isAdvancedControl: boolean = false) {
-        this.parent = parent;
+        this.container = container;
 
-        this.container = document.createElement('control-item');
-        this.container.id = 'download-button-container';
-        this.container.classList.toggle('advanced', isAdvancedControl);
-        this.parent.appendChild(this.container);
+        this.interface = document.createElement('control-item');
+        this.interface.id = 'download-button-interface';
+        this.container.appendChild(this.interface);
 
         // create invisible anchor element to handle download logic
         this.downloadElem = document.createElement('a');
         this.downloadElem.id = 'download-button';
         this.downloadElem.setAttribute('draggable', 'true');
-        this.container.appendChild(this.downloadElem);
+        this.interface.appendChild(this.downloadElem);
 
         this.defaultFilename = defaultFilename;
 
-        this.interface = document.createElement('i');
-        this.interface.id = 'download-button-icon';
-        this.interface.classList.add('fas');
-        this.interface.classList.add('fa-download');
-        this.interface.classList.add(this.mainIconSize);
-        this.downloadElem.appendChild(this.interface);
+        this.iconElem = document.createElement('i');
+        this.iconElem.id = 'download-button-icon';
+        this.iconElem.classList.add('fas');
+        this.iconElem.classList.add('fa-download');
+        this.iconElem.classList.add(this.mainIconSize);
+        this.downloadElem.appendChild(this.iconElem);
 
         this.resizeCanvas = document.createElement('canvas');
         this.resizeCanvas.id = 'drag-n-drop-thumbnail-image-resizer';
         this.resizeCanvas.hidden = true;
-        this.container.appendChild(this.resizeCanvas);
+        this.interface.appendChild(this.resizeCanvas);
 
         if ( COMPILE_ELECTRON ) {
             // add support for native Drag and Drop
