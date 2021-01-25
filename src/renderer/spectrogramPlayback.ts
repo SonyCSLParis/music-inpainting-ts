@@ -246,7 +246,7 @@ export function renderGainControl(
         spectrogramPlaybackManager: SpectrogramPlaybackManager): void {
     const gainControl = new Nexus.Slider(element.id,{
         'size': [60, 20],
-        'mode': 'relative',
+        'mode': 'absolute',
         'min': 0,
         'max': 1.2,
         'step': 0,
