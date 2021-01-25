@@ -422,24 +422,6 @@ async function render(configuration=defaultConfiguration) {
             spectrogramContainerElem.id = 'spectrogram-container';
             mainPanel.appendChild(spectrogramContainerElem);
 
-            let spectrogramImageContainerElem = document.createElement('div');
-            spectrogramImageContainerElem.id = 'spectrogram-image-container';
-            spectrogramImageContainerElem.toggleAttribute('data-simplebar', true);
-            spectrogramImageContainerElem.setAttribute('data-simplebar-click-on-track', "false");
-            // spectrogramImageContainerElem.setAttribute('data-simplebar-auto-hide', "false");
-            // spectrogramImageContainerElem.setAttribute('force-visible', 'x');
-            spectrogramContainerElem.appendChild(spectrogramImageContainerElem);
-
-            let spectrogramPictureElem = document.createElement('picture');
-            spectrogramPictureElem.id = 'spectrogram-picture';
-            spectrogramImageContainerElem.appendChild(spectrogramPictureElem);
-            let spectrogramImageElem = document.createElement('img');
-            spectrogramImageElem.id = 'spectrogram-image';
-            spectrogramPictureElem.appendChild(spectrogramImageElem);
-            let spectrogramSnapPointsElem = document.createElement('div');
-            spectrogramSnapPointsElem.id = 'snap-points';
-            spectrogramPictureElem.appendChild(spectrogramSnapPointsElem);
-
             let spectrogramLocator = new SpectrogramLocator(spectrogramContainerElem);
 
             spectrogramPlaybackManager = new SpectrogramPlaybackManager(spectrogramLocator);
@@ -507,7 +489,7 @@ async function render(configuration=defaultConfiguration) {
         }
         else {
             const currentScrollRatio = scrollElem.scrollLeft / (scrollElem.scrollWidth - scrollElem.clientWidth);
-            const numSnapElems: number = document.getElementById('snap-points').getElementsByTagName('snap').length;
+            const numSnapElems: number = this.container.getElementById('snap-points').getElementsByTagName('snap').length;
             // snaps happen on <snap>'s left boundaries
             const numSnapLocations: number = numSnapElems - 1;
             return Math.round(currentScrollRatio * numSnapLocations);
