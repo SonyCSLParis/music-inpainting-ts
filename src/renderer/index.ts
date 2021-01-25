@@ -498,59 +498,57 @@ async function render(configuration=defaultConfiguration) {
 
     if ( configuration['spectrogram'] ) {
         $(() => {
-            let regenerationCallback = (
-                (v) => {
-                    let mask = spectrogramPlaybackManager.Locator.mask;
-                    let startIndexTop: number = getCurrentSpectrogramPositionTopLayer();
+            function regenerationCallback() {
+                let mask = spectrogramPlaybackManager.Locator.mask;
+                let startIndexTop: number = getCurrentSpectrogramPositionTopLayer();
 
-                    switch ( vqvaeLayerSelect.value ) {
-                        case "top": {
-                            currentConditioning_top = updateConditioningMap(
-                                mask, currentConditioning_top
-                            );
-                            break;
-                        };
-                        case "bottom": {
-                            currentConditioning_bottom = updateConditioningMap(
-                                mask, currentConditioning_bottom
-                            );
-                            break;
-                        }
+                switch ( vqvaeLayerSelect.value ) {
+                    case "top": {
+                        currentConditioning_top = updateConditioningMap(
+                            mask, currentConditioning_top
+                        );
+                        break;
+                    };
+                    case "bottom": {
+                        currentConditioning_bottom = updateConditioningMap(
+                            mask, currentConditioning_bottom
+                        );
+                        break;
                     }
-
-                    let sendCodesWithRequest = true;
-                    let generationParameters = ('?pitch=' + getMidiPitch().toString()
-                        + '&instrument_family_str=' + instrumentSelect.value
-                        + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
-                        + '&temperature=1'
-                        + '&eraser_amplitude=0.1'
-                        + '&start_index_top=' + startIndexTop);
-                    const split_tool_select = vqvaeLayerSelect.value.split('-')
-                    let command: string;
-                    if ( split_tool_select.length >= 2 ) {
-                        switch ( split_tool_select[1] ) {
-                                case 'eraser': {
-                                    command = 'erase';
-                                    break;
-                                };
-                                case 'brush': {
-                                    command = 'timerange-change';
-                                    break;
-                                };
-                        };
-                    }
-                    else {
-                        throw EvalError;
-                    }
-
-                    generationParameters += '&uniform_sampling=' + (
-                        ( split_tool_select.length == 3 && split_tool_select[2] == 'random' )
-                    ).toString();
-
-                    loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
-                        command + generationParameters, sendCodesWithRequest, mask);
                 }
-            )
+
+                let sendCodesWithRequest = true;
+                let generationParameters = ('?pitch=' + getMidiPitch().toString()
+                    + '&instrument_family_str=' + instrumentSelect.value
+                    + '&layer=' + vqvaeLayerSelect.value.split('-')[0]
+                    + '&temperature=1'
+                    + '&eraser_amplitude=0.1'
+                    + '&start_index_top=' + startIndexTop);
+                const split_tool_select = vqvaeLayerSelect.value.split('-')
+                let command: string;
+                if ( split_tool_select.length >= 2 ) {
+                    switch ( split_tool_select[1] ) {
+                            case 'eraser': {
+                                command = 'erase';
+                                break;
+                            };
+                            case 'brush': {
+                                command = 'timerange-change';
+                                break;
+                            };
+                    };
+                }
+                else {
+                    throw EvalError;
+                }
+
+                generationParameters += '&uniform_sampling=' + (
+                    ( split_tool_select.length == 3 && split_tool_select[2] == 'random' )
+                ).toString();
+
+                loadAudioAndSpectrogram(spectrogramPlaybackManager, serverUrl,
+                    command + generationParameters, sendCodesWithRequest, mask);
+            }
             spectrogramPlaybackManager.Locator.registerCallback(regenerationCallback);
         });
     };
