@@ -13,7 +13,7 @@ import '../common/styles/overlays.scss';
 import Nexus from './nexusColored';
 
 export abstract class Locator {
-    protected resizeTimeoutDuration: number = 200;
+    protected resizeTimeoutDuration: number = 0;
     protected resizeTimeout: NodeJS.Timeout;
 
     // render the interface on the DOM and bind callbacks
@@ -26,14 +26,15 @@ export abstract class Locator {
         const isInHelpTour: boolean = document.body.classList.contains('help-tour-on');
         document.body.classList.remove('help-tour-on');
 
-        this.refreshMain();
+        this._refresh();
 
         document.body.classList.toggle('help-tour-on', isInHelpTour);
     };
 
-    protected abstract refreshMain(): void;
+    // subclass this
+    protected abstract _refresh(): void;
 
-    callToActionHighlightedCellsRatio: number = 0.1;
+    callToActionHighlightedCells: number = 16;
 
     // triggers an animation to catch the user's eye
     public callToAction(): void {
@@ -44,13 +45,8 @@ export abstract class Locator {
         let promise = Promise.resolve();
         const interval: number = 100;
 
-        const numCellsToHighlight = Math.max(
-            1,
-            Math.round(
-                this.numInteractiveElements * this.callToActionHighlightedCellsRatio)
-        );
 
-        const randomIndexes: number[] = Array(numCellsToHighlight).fill(0).map(
+        const randomIndexes: number[] = Array(this.callToActionHighlightedCells).fill(0).map(
             () => {return Math.floor(Math.random() * (this.numInteractiveElements))}
         );
 
@@ -69,7 +65,7 @@ export abstract class Locator {
                     const element = this.getInterfaceElementByIndex(index);
                     element.classList.remove('highlight');});
                 },
-                4 * interval * numCellsToHighlight  // FIXME(theis): hardcoded
+                4 * interval * this.callToActionHighlightedCells
             );
         });
     }
@@ -85,13 +81,17 @@ export abstract class Locator {
 
     protected registerRefreshOnResizeListener(): void {
         window.addEventListener('resize', (uiEvent: UIEvent) => {
-            clearTimeout(this.resizeTimeout);
-            this.resizeTimeout = (
-                setTimeout(
-                    () => {this.refresh();},
-                    this.resizeTimeoutDuration
-                    )
-            )
+            if ( this.resizeTimeoutDuration > 0) {
+                clearTimeout(this.resizeTimeout);
+                this.resizeTimeout = (
+                    setTimeout(
+                        () => {this.refresh();},
+                        this.resizeTimeoutDuration
+                        )
+                )
+            } else {
+                this.refresh();
+            }
         });
     };
 
@@ -161,8 +161,8 @@ export class SheetLocator extends Locator {
         this.updateContainerWidth(true);
     }
 
-    protected refreshMain(): void {
-        // this.sheet.render();
+    protected _refresh(): void {
+        // nothing to do in the case of a sheet, since it does not get resized!
     }
 
     private updateContainerWidth(toContentWidth: boolean=true): void {
@@ -555,6 +555,7 @@ export class SpectrogramLocator extends Locator {
     readonly container: HTMLElement;
     readonly shadowContainer: HTMLElement;
     readonly interfaceContainer: HTMLElement;
+    readonly snapPoints: HTMLDivElement;
     private sequencer = null;
 
     get interfaceElement(): HTMLDivElement {
@@ -566,6 +567,23 @@ export class SpectrogramLocator extends Locator {
     constructor(container: HTMLElement, options: object = {}) {
         super();
         this.container = container;
+
+        let spectrogramImageContainerElem = document.createElement('div');
+        spectrogramImageContainerElem.id = 'spectrogram-image-container';
+        spectrogramImageContainerElem.toggleAttribute('data-simplebar', true);
+        spectrogramImageContainerElem.setAttribute('data-simplebar-click-on-track', "false");
+        this.container.appendChild(spectrogramImageContainerElem);
+
+        const spectrogramPictureElem = document.createElement('picture');
+        spectrogramPictureElem.id = 'spectrogram-picture';
+        spectrogramImageContainerElem.appendChild(spectrogramPictureElem);
+        const spectrogramImageElem = document.createElement('img');
+        spectrogramImageElem.id = 'spectrogram-image';
+        spectrogramPictureElem.appendChild(spectrogramImageElem);
+
+        this.snapPoints = document.createElement('div');
+        this.snapPoints.classList.toggle('snap-points');
+        spectrogramPictureElem.appendChild(this.snapPoints);
 
         // necessary to handle 'busy' state cursor change and pointer events disabling
         this.interfaceContainer = document.createElement('div');
@@ -595,7 +613,7 @@ export class SpectrogramLocator extends Locator {
         let registerReleaseCallback = () => {
             // call the actual callback on pointer release to allow for click and drag
             document.addEventListener('pointerup',
-                (v) => { if ( !this.isEmpty() ) {callback(v)}},
+                (v) => { if ( !this.isEmpty() ) {callback.bind(this)(v)}},
                 {'once': true}  // eventListener removed after being called
             );
         }
@@ -615,12 +633,23 @@ export class SpectrogramLocator extends Locator {
         return this.sequencer.columns;
     };
 
-    protected numColumnsTop: number = 4;
+    protected _vqvaeTimestepsTop: number = 4;
+    public get vqvaeTimestepsTop(): number{
+        return this._vqvaeTimestepsTop;
+    };
+    public set vqvaeTimestepsTop(vqvaeTimestepsTop: number) {
+        this._vqvaeTimestepsTop = vqvaeTimestepsTop;
+        this.toggleNoscroll(this.numScrollSteps == 1);
+    }
 
-    public vqvaeTimestepsTop: number = 4;
-
-    // // HACK: this is necessary to filter out invalid 'change' events
-    // protected previousMask: number[][] = undefined;
+    protected _numColumnsTop: number = 4;
+    protected get numColumnsTop(): number {
+        return this._numColumnsTop;
+    }
+    protected set numColumnsTop(numColumnsTop: number) {
+        this._numColumnsTop = numColumnsTop;
+        this.toggleNoscroll(this.numColumnsTop == 1);
+    }
 
     public ontoggle(data: number[][]): void {
         // called every time the interface changes
@@ -643,9 +672,40 @@ export class SpectrogramLocator extends Locator {
         });
     }
 
-    // re-render with current parameters
-    protected refreshMain(): void {
-        this.render(this.numRows, this.numColumns, this.numColumnsTop);
+    protected _refresh(): void {
+        this.resize();
+    }
+
+    public resize(): void {
+        const spectrogramImageContainerElem: HTMLElement = document.getElementById(
+            'spectrogram-image-container');
+        const spectrogramImageElem: HTMLImageElement = this.container.getElementsByTagName('img')[0];
+
+        // restore default height for spectrogram image
+        spectrogramImageElem.style.removeProperty('height');
+        spectrogramImageContainerElem.style.removeProperty('height');
+
+        const width: number = this.interfaceContainer.clientWidth;
+        const height: number = spectrogramImageContainerElem.clientHeight;
+
+        this.sequencer.resize(width, height);
+
+        // update image scaling to match snap points
+        const timeStepWidth_px: number = width / this.numColumnsTop;
+        spectrogramImageElem.width = Math.floor(
+            timeStepWidth_px * this.vqvaeTimestepsTop);
+        this.snapPoints.style.width = Math.round(
+            timeStepWidth_px * this.numScrollSteps
+            ).toString() + 'px';
+
+        // adapt the spectrogram's image size to the resulting grid's size
+        // since the grid size is rounded up to the number of rows and columns
+        spectrogramImageElem.style.height = (
+            this.interfaceContainer.clientHeight.toString()
+            + 'px');
+        spectrogramImageContainerElem.style.height = (
+            this.interfaceContainer.clientHeight.toString()
+            + 'px');
     }
 
     public clear(): void {
@@ -664,6 +724,10 @@ export class SpectrogramLocator extends Locator {
     private computePositionZoom(value: number, shift=0): number {
         return ((value - shift) * 10.0 * this.zoom);
     };
+
+    protected get numScrollSteps(): number {
+        return this.vqvaeTimestepsTop - this.numColumnsTop + 1;
+    }
 
     public drawTimestampBoxes(onclickFactory: undefined,
             numRows: number, numColumns: number, numColumnsTop: number): void{
@@ -690,27 +754,14 @@ export class SpectrogramLocator extends Locator {
         this.sequencer.colorize("accent", "rgba(255, 255, 255, 1)");
         this.sequencer.colorize("fill", "rgba(255, 255, 255, 0.4)");
 
-        const snapPointsContainer = document.getElementById('snap-points');
-        // clear existing snap points
-        while (snapPointsContainer.firstChild) {
-            snapPointsContainer.removeChild(snapPointsContainer.lastChild);
-        }
-
-        const numScrollSteps = this.vqvaeTimestepsTop - numColumnsTop + 1;
-
-        this.toggleNoscroll(numScrollSteps == 1);
-        Array(numScrollSteps).fill(0).forEach(
-            () => {
-                let snapElem = document.createElement('snap');
-                snapPointsContainer.appendChild(snapElem);
-            });
+        this.updateSnapPoints();
 
         // update image scaling to match snap points
         const timeStepWidth_px: number = width / numColumnsTop;
         spectrogramImageElem.width = Math.floor(
             timeStepWidth_px * this.vqvaeTimestepsTop);
-        snapPointsContainer.style.width = Math.round(
-            timeStepWidth_px * numScrollSteps
+        this.snapPoints.style.width = Math.round(
+            timeStepWidth_px * this.numScrollSteps
             ).toString() + 'px';
 
         // adapt the spectrogram's image size to the resulting grid's size
@@ -721,6 +772,20 @@ export class SpectrogramLocator extends Locator {
         spectrogramImageContainerElem.style.height = (
             this.interfaceContainer.clientHeight.toString()
             + 'px');
+    }
+
+    protected updateSnapPoints(): void {
+        // clear existing snap points
+        while (this.snapPoints.firstChild) {
+            this.snapPoints.removeChild(this.snapPoints.lastChild);
+        }
+
+        this.toggleNoscroll(this.numScrollSteps == 1);
+        Array(this.numScrollSteps).fill(0).forEach(
+            () => {
+                let snapElem = document.createElement('snap');
+                this.snapPoints.appendChild(snapElem);
+            });
     }
 
     protected toggleNoscroll(force?: boolean): void {
