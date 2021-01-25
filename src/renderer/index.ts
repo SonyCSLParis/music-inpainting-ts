@@ -353,67 +353,67 @@ async function render(configuration=defaultConfiguration) {
             osmdContainer = <HTMLElement>document.createElement("div");
             osmdContainer.id = 'osmd-container';
             osmdContainerContainer.appendChild(osmdContainer);
+
+            /*
+            * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
+            * the container we've created in the steps before. The second parameter tells OSMD
+            * not to redraw on resize.
+            */
+            function copyTimecontainerContent(origin: HTMLElement, target: HTMLElement) {
+                // retrieve quarter-note positions for origin and target
+                function getContainedQuarters(timecontainer: HTMLElement): number[] {
+                    return timecontainer.getAttribute('containedQuarterNotes')
+                        .split(', ')
+                        .map((x) => parseInt(x, 10))
+                }
+                const originContainedQuarters: number[] = getContainedQuarters(origin);
+                const targetContainedQuarters: number[] = getContainedQuarters(target);
+
+                const originStart_quarter: number = originContainedQuarters[0];
+                const targetStart_quarter: number = targetContainedQuarters[0];
+                const originEnd_quarter: number = originContainedQuarters.pop();
+                const targetEnd_quarter: number = targetContainedQuarters.pop();
+
+                const generationCommand: string = ('/copy' +
+                    `?origin_start_quarter=${originStart_quarter}` +
+                    `&origin_end_quarter=${originEnd_quarter}` +
+                    `&target_start_quarter=${targetStart_quarter}` +
+                    `&target_end_quarter=${targetEnd_quarter}`);
+                loadMusicXMLandMidi(sheetPlaybackManager, sheetLocator, serverUrl, generationCommand);
+            }
+
+            let autoResize: boolean = false;
+            sheetLocator = new SheetLocator(osmdContainer,
+                {autoResize: autoResize,
+                    drawingParameters: "compact",
+                    drawPartNames: false
+                },
+                granularities_quarters.map((num) => {return parseInt(num, 10);}),
+                configuration['annotation_types'],
+                allowOnlyOneFermata,
+                onClickTimestampBoxFactory,
+                copyTimecontainerContent
+            );
+            locator = sheetLocator;
+            // TODO(theis): check proper way of enforcing subtype
+            sheetPlaybackManager = new SheetPlaybackManager(sheetLocator);
+
+            playbackManager = sheetPlaybackManager;
+
+            PlaybackCommands.setPlaybackManager(sheetPlaybackManager);
+            registerZoomTarget(sheetLocator);
+
+            if (configuration['use_chords_instrument']) {
+            sheetPlaybackManager.scheduleChordsPlayer(sheetLocator,
+                configuration['chords_midi_channel']);
+            }
             $(() => {
-                /*
-                * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
-                * the container we've created in the steps before. The second parameter tells OSMD
-                * not to redraw on resize.
-                */
-
-                function copyTimecontainerContent(origin: HTMLElement, target: HTMLElement) {
-                    // retrieve quarter-note positions for origin and target
-                    function getContainedQuarters(timecontainer: HTMLElement): number[] {
-                        return timecontainer.getAttribute('containedQuarterNotes')
-                            .split(', ')
-                            .map((x) => parseInt(x, 10))
-                    }
-                    const originContainedQuarters: number[] = getContainedQuarters(origin);
-                    const targetContainedQuarters: number[] = getContainedQuarters(target);
-
-                    const originStart_quarter: number = originContainedQuarters[0];
-                    const targetStart_quarter: number = targetContainedQuarters[0];
-                    const originEnd_quarter: number = originContainedQuarters.pop();
-                    const targetEnd_quarter: number = targetContainedQuarters.pop();
-
-                    const generationCommand: string = ('/copy' +
-                        `?origin_start_quarter=${originStart_quarter}` +
-                        `&origin_end_quarter=${originEnd_quarter}` +
-                        `&target_start_quarter=${targetStart_quarter}` +
-                        `&target_end_quarter=${targetEnd_quarter}`);
-                    loadMusicXMLandMidi(sheetPlaybackManager, sheetLocator, serverUrl, generationCommand);
-                }
-
-                let autoResize: boolean = false;
-                sheetLocator = new SheetLocator(osmdContainer,
-                    {autoResize: autoResize,
-                        drawingParameters: "compact",
-                        drawPartNames: false
-                    },
-                    granularities_quarters.map((num) => {return parseInt(num, 10);}),
-                    configuration['annotation_types'],
-                    allowOnlyOneFermata,
-                    onClickTimestampBoxFactory,
-                    copyTimecontainerContent
-                );
-                locator = sheetLocator;
-                // TODO(theis): check proper way of enforcing subtype
-                sheetPlaybackManager = new SheetPlaybackManager(sheetLocator);
-                playbackManager = sheetPlaybackManager;
-                PlaybackCommands.setPlaybackManager(sheetPlaybackManager);
-                registerZoomTarget(sheetLocator);
-
-                if (configuration['use_chords_instrument']) {
-                sheetPlaybackManager.scheduleChordsPlayer(sheetLocator,
-                    configuration['chords_midi_channel']);
-                }
-                $(() => {
-                    // requesting the initial sheet, so can't send any sheet along
-                    const sendSheetWithRequest = false;
-                    loadMusicXMLandMidi(sheetPlaybackManager, sheetLocator, serverUrl,
-                    'generate', sendSheetWithRequest).then(() => {
-                        spinnerElem.style.visibility = 'hidden';
-                        mainPanel.classList.remove('loading');
-                    });
+                // requesting the initial sheet, so can't send any sheet along
+                const sendSheetWithRequest = false;
+                loadMusicXMLandMidi(sheetPlaybackManager, sheetLocator, serverUrl,
+                'generate', sendSheetWithRequest).then(() => {
+                    spinnerElem.style.visibility = 'hidden';
+                    mainPanel.classList.remove('loading');
                 });
             });
         }
