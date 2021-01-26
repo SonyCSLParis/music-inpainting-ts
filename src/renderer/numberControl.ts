@@ -154,3 +154,44 @@ export class BPMControl extends NumberControl {
     }
 
 }
+
+export class PitchControl extends NumberControl {
+    protected static onchangeCallback_default= () => {}
+    protected static defaultRange: [number, number] = [30, 300];
+    protected static defaultInitialValue: number = 100;
+
+    render(useSimpleSlider: boolean = false, elementWidth: number) {
+
+    }
+}
+
+export function renderPitchRootAndOctaveControl() {
+    const constraintsGridspanElem = document.getElementById('constraints-gridspan');
+    const pitchSelectGridspanElem = document.createElement('div');
+    pitchSelectGridspanElem.id = 'pitch-control-gridspan';
+    pitchSelectGridspanElem.classList.add('gridspan');
+    constraintsGridspanElem.appendChild(pitchSelectGridspanElem);
+
+    const pitchSelectContainer = document.createElement('control-item');
+    pitchSelectContainer.id = 'pitch-control-root-select';
+    pitchSelectGridspanElem.appendChild(pitchSelectContainer);
+    const notes = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
+    const pitchRootSelect = new Nexus.Select(
+        '#pitch-control-root-select', {
+            'size': [20,30],
+            'options': notes
+        }
+    );
+    pitchSelectContainer.style.width = '';
+    pitchSelectContainer.style.height = '';
+    ControlLabels.createLabel(pitchSelectContainer, 'pitch-control-root-select-label',
+        false, null, pitchSelectGridspanElem);
+
+    const octaveControl = new NumberControl(pitchSelectGridspanElem,
+        'pitch-control-octave-control', [2, 7], 5);
+    const useSimpleSlider = false;
+    const elementWidth_px = 40;
+    octaveControl.render(useSimpleSlider, elementWidth_px);
+
+    return [pitchRootSelect, octaveControl]
+}

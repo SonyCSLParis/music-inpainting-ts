@@ -17,7 +17,7 @@ import { SpectrogramPlaybackManager } from './spectrogramPlayback';
 import * as SpectrogramPlayback from './spectrogramPlayback';
 
 import * as Instruments from './instruments';
-import { NumberControl, BPMControl } from './numberControl';
+import { NumberControl, BPMControl, renderPitchRootAndOctaveControl } from './numberControl';
 import LinkClient from './ableton_link/linkClient';
 import * as LinkClientCommands from './ableton_link/linkClientCommands';
 import { DownloadButton, filename as filenameType } from './downloadCommand';
@@ -287,35 +287,7 @@ async function render(configuration=defaultConfiguration) {
             ControlLabels.createLabel(instrumentSelectElem, 'instrument-control-label', false,
                 null, instrumentSelectGridspanElem);
 
-            const pitchSelectGridspanElem = document.createElement('div');
-            pitchSelectGridspanElem.id = 'pitch-control-gridspan';
-            pitchSelectGridspanElem.classList.add('gridspan');
-            constraintsGridspanElem.appendChild(pitchSelectGridspanElem);
-
-            const pitchSelectContainer = document.createElement('control-item');
-            pitchSelectContainer.id = 'pitch-control-root-select';
-            pitchSelectGridspanElem.appendChild(pitchSelectContainer);
-            // TODO(theis): clean this!
-            pitchRootSelect = new Nexus.Select(
-                '#pitch-control-root-select', {
-                    'size': [20,30],
-                    'options': [
-                        'C', 'C♯', 'D', 'E♭', 'E',
-                        'F', 'F♯', 'G', 'A♭', 'A',
-                        'B♭', 'B',
-                    ]
-                }
-            );
-            pitchSelectContainer.style.width = ''
-            pitchSelectContainer.style.height = ''
-            ControlLabels.createLabel(pitchSelectContainer, 'pitch-control-root-select-label',
-                false, null, pitchSelectGridspanElem);
-
-            octaveControl = new NumberControl(pitchSelectGridspanElem,
-                'pitch-control-octave-control', [2, 7], 5);
-            const useSimpleSlider = false;
-            const elementWidth_px = 40;
-            octaveControl.render(useSimpleSlider, elementWidth_px);
+            [pitchRootSelect, octaveControl] = renderPitchRootAndOctaveControl()
         });
     };
 
