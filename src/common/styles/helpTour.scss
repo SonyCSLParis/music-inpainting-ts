@@ -40,8 +40,13 @@ div.trip-overlay {
     }
 }
 
+body.notono {
+    .trip-block {
+        position: sticky;  // prevents blocks from overflowing the viewport
+    }
+}
+
 .trip-block {
-    position: sticky;  // prevents blocks from overflowing the viewport
     font-weight: normal;
     color: white !important;
 
@@ -77,6 +82,7 @@ div.trip-overlay {
 }
 
 .trip-hidden {
+    opacity: 50% !important;
 }
 
 div.trip-block {
