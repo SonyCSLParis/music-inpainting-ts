@@ -13,7 +13,7 @@ import * as Header from './header';
 import * as PlaybackCommands from './playbackCommands';
 import { PlaybackManager } from './playback';
 import SheetPlaybackManager from './sheetPlayback';
-import { SpectrogramPlaybackManager } from './spectrogramPlayback';
+import { MultiChannelSpectrogramPlaybackManager as SpectrogramPlaybackManager } from './spectrogramPlayback';
 import * as SpectrogramPlayback from './spectrogramPlayback';
 
 import * as Instruments from './instruments';
