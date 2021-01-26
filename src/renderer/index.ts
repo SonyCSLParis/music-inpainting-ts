@@ -1171,7 +1171,7 @@ if ( module.hot ) {
         if ( appConfiguration['osmd'] ) {
             const newSheetPlaybackManager: typeof SheetPlaybackManager = require('./sheetPlayback').default
             console.log("Accepting new SheetPlayback Manager")
-            sheetPlaybackManager.dispose().then(() => {
+            sheetPlaybackManager.disposeScheduledParts().then(() => {
                 sheetPlaybackManager = new newSheetPlaybackManager(<SheetLocator>locator);
             })
         }

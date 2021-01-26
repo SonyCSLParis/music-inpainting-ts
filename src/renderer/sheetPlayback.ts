@@ -346,8 +346,7 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
         new Tone.Loop(playChord, '4n').start(0);
     };
 
-    //@ts-ignore
-    dispose(): Promise<void> {
+    disposeScheduledParts(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             this.midiParts.forEach(part => part.dispose());
             resolve();
