@@ -234,3 +234,7 @@ select {
         ry: 10;
     }
 }
+
+.disable-mouse {
+    pointer-events: none;
+}
