@@ -65,6 +65,7 @@ export function renderDownbeatDisplay(): void{
     let abletonLinkSettingsGridspan = document.getElementById('ableton-link-settings-gridspan');
     let linkDownbeatDisplayElem: HTMLElement = document.createElement('control-item');
     linkDownbeatDisplayElem.id = 'link-downbeat-display';
+    linkDownbeatDisplayElem.classList.add('disable-mouse');
     linkDownbeatDisplayElem.style.pointerEvents = 'none';
     abletonLinkSettingsGridspan.appendChild(linkDownbeatDisplayElem);
 
