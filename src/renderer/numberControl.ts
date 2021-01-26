@@ -4,6 +4,23 @@ import Nexus from './nexusColored';
 import LinkClient from './ableton_link/linkClient';
 import * as ControlLabels from './controlLabels';
 
+
+// Monkey-patch Nexus.Number to remove the undocumented dependency of the rate of change
+// of the value via click-and-drag on the x position of the initial mouse click
+class UniformChangeRateNumber extends Nexus.Number {
+    changeFactor: number = 1;
+
+    constructor(container: string, options: {}) {
+        super(container, options);
+    };
+
+    public click(): void {
+        super.click();
+        // restore this.changeFactor to a default, effect-less value
+        this.changeFactor = 1;
+    };
+}
+
 export class NumberControl {
     protected readonly parent: HTMLElement;
     readonly interactionId: string;
@@ -56,7 +73,7 @@ export class NumberControl {
             let interactionElem: HTMLElement = document.createElement('div');
             interactionElem.id = this.interactionId;
             containerElem.appendChild(interactionElem);
-            this.controller = new Nexus.Number('#' + this.interactionId, {
+            this.controller = new UniformChangeRateNumber('#' + this.interactionId, {
                 'min': this.range[0],
                 'max': this.range[1],
                 'step': 1,
