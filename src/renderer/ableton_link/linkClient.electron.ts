@@ -45,7 +45,7 @@ export async function enable(playbackManager: PlaybackManager<Locator>) {
         log.debug("Must initialize LINK");
         let bpm: number = bpmControl.value;
         let quantum: number = linkQuantum;
-        // hang asynchronously on this call
+
         await ipcRenderer.send(link_channel_prefix + 'init', bpm, quantum);
         link_initialized = true;
     }

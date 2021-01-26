@@ -119,23 +119,3 @@ export function render(container: HTMLElement): void{
                 break
     }}, );
 };
-
-export function renderSyncButton(container: HTMLElement) {
-    const linkbuttonElem: HTMLElement = document.createElement('control-item');
-    linkbuttonElem.id = 'sync-button'
-    linkbuttonElem.classList.add('advanced');
-    container.appendChild(linkbuttonElem);
-
-    const syncbutton = new Nexus.TextButton('#sync-button',{
-        'size': [150,50],
-        'state': false,
-        'text': 'Sync'
-    });
-
-    syncbutton.on('change', (enable: Boolean) => {
-        if (enable) {
-            // Playback.getPlayNoteByMidiChannel(1, false)('', {duration: '4n', 'name': 'C5', 'midi': 60, velocity: 0.8})
-            playbackManager.synchronizeToLink();
-        }
-    });
-}

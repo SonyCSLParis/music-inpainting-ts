@@ -33,7 +33,7 @@ function initAbletonLinkServer(bpm: number=120, quantum: number=4,
 
     setLinkEnabled(enable);
     // TODO(theis): how to detect errors in initialization?
-    log.info(link)
+    log.info(link);
     let success = true
 
     link.on('tempo', (bpm) => {
@@ -82,16 +82,7 @@ function stopLinkDownbeatClock() {
 // Initialize LINK server
 export function attachListeners() {
     ipcMain.on(link_channel_prefix + 'init', (event, bpm, quantum) => {
-        let return_promise = new Promise((resolve) => {
-            // TODO(theis): could just throw error in main process
-            // maybe not necessary to send error message to renderer
-            let success = initAbletonLinkServer(bpm, quantum);
-            resolve(success);
-        });
-        event.sender.send(link_channel_prefix + 'init-success', return_promise)
-    }
-    );
-
+    });
 
     ipcMain.on(link_channel_prefix + 'ping', (event, _) => {
         if (isLinkInitialized()) {
