@@ -93,9 +93,7 @@ control-label {
 }
 
 .gridspan {
-    // visibility: hidden;
     position: absolute;
-    // pointer-events: none;
     width: 100%;
     height: 100%;
 
@@ -157,8 +155,6 @@ control-label {
     grid-template-columns: auto;
     grid-template-rows: 2.5fr 1fr;
     grid-auto-flow: column;
-    width: 100%;
-    height: 100%;
 
     control-label, control-item {
         flex-basis: auto;
