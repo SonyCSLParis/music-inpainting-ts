@@ -65,6 +65,18 @@
         },
         "select-midi-input-channel-label": {
             "en": "MIDI Channel"
+        },
+
+        "link-enable-button-label": {
+            "en": "LINK"
+        },
+
+        "link-force-resync-button-label": {
+            "en": "Resync"
+        },
+
+        "link-downbeat-display-label": {
+            "en": "Downbeat"
         }
     },
 

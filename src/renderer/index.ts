@@ -19,7 +19,7 @@ import * as SpectrogramPlayback from './spectrogramPlayback';
 import * as Instruments from './instruments';
 import { NumberControl, BPMControl } from './numberControl';
 import LinkClient from './ableton_link/linkClient';
-// import * as LinkClientCommands from './linkClientCommands';
+import * as LinkClientCommands from './ableton_link/linkClientCommands';
 import { DownloadButton, filename as filenameType } from './downloadCommand';
 import * as MidiOut from './midiOut';
 import * as MidiIn from './midiIn';
@@ -1010,6 +1010,11 @@ async function render(configuration=defaultConfiguration) {
     });
 
     $(() => {
+        let isAdvancedControl = true;
+        if ( configuration['osmd'] && isAdvancedControl ) {
+            LinkClient.kill();
+            // Insert LINK client controls
+            LinkClientCommands.render(playbackManager);
         }
     }
     );
