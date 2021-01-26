@@ -18,9 +18,8 @@ export class NumberControl {
         initialValue: number,
         onchange: (newValue: number) => void = (v) => {}
         ) {
-        if ( range[1] < initialValue || range[0] > initialValue) {
-            throw Error(`Selected initial value should be in the accepted range`)
-        }
+        this._checkRange(range, initialValue);
+
         this.parent = parent;
         this.id = id;
         this.labelId = this.id + '-label';
@@ -28,6 +27,12 @@ export class NumberControl {
         this.range = range;
         this.onchange = onchange;
         this.initialValue = initialValue;
+    }
+
+    protected _checkRange(range: [number, number], initialValue: number) {
+        if (range[1] < initialValue || range[0] > initialValue) {
+            throw Error(`Selected initial value should be in the accepted range`);
+        }
     }
 
     get container(): HTMLElement {
@@ -99,11 +104,14 @@ export class BPMControl extends NumberControl {
             initialValue: number = BPMControl.defaultInitialValue,
             onchange: (newValue: number) => void = BPMControl.onchangeCallback_default
             ) {
-        if (range[1] < 2*range[0]) {
-            throw Error(`BPM range should be at least one tempo octave wide, ie.
-            maxAcceptedBPM at least twice as big as minAcceptedBPM`)
-        }
         super(containerElement, id, range, initialValue, onchange);
+    }
+
+    protected _checkRange(range: [number, number]) {
+        if (range[1] < 2 * range[0]) {
+            throw Error(`BPM range should be at least one tempo octave wide, ie.
+            maxAcceptedBPM at least twice as big as minAcceptedBPM`);
+        }
     }
 
     // ensure the new BPM is in the accepted range
