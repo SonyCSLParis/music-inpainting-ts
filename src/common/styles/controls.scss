@@ -8,8 +8,8 @@ control-item, control-label {
     align-content: normal;
     align-items: center;
 
-    height: fit-content;
-    width: fit-content;
+    height: max-content;
+    width: max-content;
 }
 
 control-item {
@@ -25,8 +25,8 @@ control-item {
         border-radius: 4px !important;
     }
 
-    width: fit-content !important;
-    height: fit-content !important;
+    width: max-content !important;
+    height: max-content !important;
 
     select, input {
         text-align: center;
