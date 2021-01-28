@@ -291,7 +291,7 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
             Tone.getTransport().loopStart = 0;
             Tone.getTransport().loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths();
 
-            // assumes constant BPM or defaults to 120BPM
+            // assumes constant BPM or defaults to 120BPM if no tempo information available
             const BPM = midi.header.tempos.length > 0 ? midi.header.tempos[0].bpm : 120
             if (!midi.header.timeSignatures[0]) {
                 // TODO insert warning wrong Flask server
