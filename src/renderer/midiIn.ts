@@ -196,11 +196,12 @@ export async function render(useChordsInstrument: boolean = false) {
         'state': false,
         'mode': 'impulse'
     })
-    Array("keyDown", "keyUp", "pedalDown", "pedalUp").forEach(
+    type midiKeyAndPedalEvents = "keyDown" | "keyUp" | "pedalDown" | "pedalUp";
+    Array<midiKeyAndPedalEvents>("keyDown", "keyUp", "pedalDown", "pedalUp").forEach(
         (event) => {
             midiInputListener.on(event, () => {
-                midiInDisplayButton.click()
+                midiInDisplayButton.click();
             });
         }
-    )
-}
+    );
+};
