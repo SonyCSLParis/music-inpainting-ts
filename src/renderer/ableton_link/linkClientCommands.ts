@@ -22,7 +22,7 @@ export function render(playbackManager: PlaybackManager<Locator>) {
         'state': false,
         'mode': 'toggle',
     });
-    linkEnableButton.on('change', (enable: Boolean) => {
+    linkEnableButton.on('change', (enable: boolean) => {
         if (enable) {
             LinkClient.enable(playbackManager);
         }
@@ -50,7 +50,7 @@ function renderSyncButton(container: HTMLElement, playbackManager: PlaybackManag
         'state': false,
         'mode': 'impulse'
     });
-    syncButton.on('change', (enable: Boolean) => {
+    syncButton.on('change', (enable: boolean) => {
         if (enable) {
             playbackManager.synchronizeToLink();
         }
