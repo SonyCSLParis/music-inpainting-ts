@@ -62,16 +62,13 @@ export function render(container: HTMLElement): void{
     function setWaitingClass() {
         // Replace the playback icon with a rotating 'wait' icon until
         // playback state correctly updated
-        playButtonInterface.classList.remove(...playingClasses);
-        playButtonInterface.classList.remove(...stoppedClasses);
+        playButtonInterface.classList.remove(...playingClasses, ...stoppedClasses);
 
-        playButtonInterface.classList.add('fa-spin');  // spinning icon
-        playButtonInterface.classList.add(waitingClass);
+        playButtonInterface.classList.add('fa-spin', waitingClass);  // spinning icon
     }
     function unsetWaitingClass() {
         // Remove rotating 'wait' icon
-        playButtonInterface.classList.remove('fa-spin');  // spinning icon
-        playButtonInterface.classList.remove(waitingClass);
+        playButtonInterface.classList.remove('fa-spin', waitingClass);  // spinning icon
     }
     // Initialize playback to stopped
     setPlayingClass(false);
@@ -102,9 +99,7 @@ export function render(container: HTMLElement): void{
         switch (keyName) {
             case 'Spacebar':
                 // disable scrolling on Spacebar press
-                log.debug('SPACEBAR target: ' + event.target);
-
-                if (event.target == document.body) { log.debug('HEY SPACEBAR!'); event.preventDefault(); };
+                event.preventDefault();
             case ' ':
                 event.preventDefault();
                 togglePlayback();
