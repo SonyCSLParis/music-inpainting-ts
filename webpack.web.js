@@ -1,7 +1,8 @@
-let webpack = require('webpack');
-let path = require('path');
-var HtmlWebpackPlugin = require('html-webpack-plugin');
-var CopyWebpackPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const ESLintPlugin = require('eslint-webpack-plugin');
 
 const merge = require('webpack-merge');
 const common = require('./webpack.common.js');
@@ -68,6 +69,11 @@ module.exports = merge.smartStrategy({plugins: 'prepend',})(common, {
     ]},
 
     plugins: [
+        new ESLintPlugin({
+            context: 'src/renderer',
+            extensions: ['ts', 'tsx'],
+        }),
+
         new webpack.DefinePlugin({
             COMPILE_ELECTRON: false
         }),
