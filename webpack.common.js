@@ -1,4 +1,4 @@
-let webpack = require('webpack')
+import webpack from 'webpack'
 
 module.exports = {
     plugins: [

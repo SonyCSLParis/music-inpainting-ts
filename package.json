@@ -29,6 +29,14 @@
       }
     ]
   },
+  "engines": {
+    "node": ">=15"
+  },
+  "type": "module",
+  "files": [
+    "src/**/*",
+    "config.json"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SonyCSLParis/NONOTO.git"
@@ -64,8 +72,12 @@
     "electron-webpack": "^2.1.2",
     "electron-webpack-ts": "^4",
     "eslint": "^7.19.0",
+    "eslint-import-resolver-typescript": "^2.3.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
     "eslint-webpack-plugin": "^2.4.3",
     "file-loader": "^6.0.0",
+    "html-webpack-plugin": "^5.0.0",
     "http-server": "^0.12.3",
     "jquery": "^3.5.1",
     "node-gyp": "^7.0.0",
@@ -77,7 +89,8 @@
     "url-loader": "^4.1.0",
     "utf-8-validate": "^5.0.2",
     "webpack": "^4",
-    "webpack-json-loader": "^1.0.0"
+    "webpack-json-loader": "^1.0.0",
+    "webpack-merge": "^5.7.3"
   },
   "dependencies": {
     "@tonejs/midi": "^2.0.25",
