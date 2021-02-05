@@ -1,13 +1,13 @@
-const webpack = require('webpack');
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const ESLintPlugin = require('eslint-webpack-plugin');
+import webpack from 'webpack'
+import path from 'path'
+import CopyWebpackPlugin from 'copy-webpack-plugin'
+import ESLintPlugin from 'eslint-webpack-plugin'
+import HtmlWebpackPlugin from 'html-webpack-plugin'
+import merge from 'webpack-merge'
 
-const merge = require('webpack-merge');
-const common = require('./webpack.common.js');
+import common from './webpack.common.js'
 
-module.exports = merge.smartStrategy({plugins: 'prepend',})(common, {
+export default merge.smartStrategy({plugins: 'prepend',})(common, {
     mode: 'development',
 
     target: 'web',
