@@ -1,15 +1,14 @@
 // webpack configuration for web, NOTONO-only interface
 // TODO(theis): disable inclusion of sound samples for this mode
 
-let webpack = require('webpack');
-let path = require('path');
-var HtmlWebpackPlugin = require('html-webpack-plugin');
-var CopyWebpackPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const merge = require('webpack-merge');
 const notono_web = require('./webpack.notono_web.js');
 
-// DefinePlugin must be overriden by prepending since the inlining occurs
+// DefinePlugin must be overridden by prepending since the inlining occurs
 // in the order of apparition of the multiple instances of the plugin
 merged_defines = merge.strategy(
     {plugins: 'prepend'}
