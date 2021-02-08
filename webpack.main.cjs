@@ -1,9 +1,8 @@
-import merge from 'webpack-merge'
-import { Configuration } from 'webpack'
-import * as common from './webpack.common.js'
-import ESLintPlugin from 'eslint-webpack-plugin'
+const { merge } = require('webpack-merge')
+const common = require('./webpack.common.cjs')
+const ESLintPlugin = require('eslint-webpack-plugin')
 
-export default function(config) {
+module.exports = function(config) {
     return merge(config, merge(common, {
         target: "electron-main",
 
@@ -11,7 +10,8 @@ export default function(config) {
             new ESLintPlugin({
                 context: 'src/main',
                 extensions: ['ts', 'tsx'],
+                failOnError: false
             }),
         ]
     }))
-};
+}

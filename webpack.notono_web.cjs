@@ -1,44 +1,41 @@
 // webpack configuration for web, NOTONO-only interface
 // TODO(theis): disable inclusion of sound samples for this mode
 
-import webpack from 'webpack'
-import path from 'path'
-import HtmlWebpackPlugin from 'html-webpack-plugin'
-import merge from 'webpack-merge'
+const webpack = require('webpack')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const { merge, mergeWithCustomize, customizeArray } = require('webpack-merge')
 
-import notono_web from './webpack.notono_web.js'
+const web = require('./webpack.web.cjs')
 
 // DefinePlugin must be overridden by prepending since the inlining occurs
 // in the order of apparition of the multiple instances of the plugin
-let merged_defines = merge.strategy(
-    {plugins: 'prepend'}
-)(notono_web, {
+let merged_defines = mergeWithCustomize({
+        customizeArray: customizeArray({
+            plugins: 'prepend'
+        })
+    })(web, {
     mode: 'production',
+
+    devtool: false,
 
     plugins: [
         new webpack.DefinePlugin({
             'SPECTROGRAM_ONLY': true,
-            'ENABLE_ANONYMOUS_MODE': true
         }),
     ]
 });
 
-export default merge(
+module.exports = merge(
     merged_defines,
     {
-        output: {
-            path: path.join(__dirname, 'web/dist_anonymous'),
-            filename: 'index.bundle.js'
-        },
-
         plugins: [
             new HtmlWebpackPlugin({
                 meta: {
                     // Fixes 300ms delay on touch + reduce size on mobile for better display
                     'viewport': "width=device-width, initial-scale=0.5, maximum-scale=1.0, user-scalable=no, target-densityDpi=medium-dpi"
                 },
-                title: 'NSynth Vector-Quantized Inpainting',
-                favicon: 'src/common/images/favicon_spectrogram.ico'
+                title: 'NOTONO',
+                favicon: 'src/common/images/favicon.ico'
         })]
     }
 );

@@ -1,13 +1,17 @@
-import webpack from 'webpack'
-import path from 'path'
-import CopyWebpackPlugin from 'copy-webpack-plugin'
-import ESLintPlugin from 'eslint-webpack-plugin'
-import HtmlWebpackPlugin from 'html-webpack-plugin'
-import merge from 'webpack-merge'
+const webpack = require ('webpack')
+const path = require ('path')
+const CopyWebpackPlugin = require ('copy-webpack-plugin')
+const ESLintPlugin = require ('eslint-webpack-plugin')
+const HtmlWebpackPlugin = require ('html-webpack-plugin')
+const { mergeWithCustomize, customizeArray } = require ('webpack-merge')
 
-import common from './webpack.common.js'
+const common = require ('./webpack.common.cjs')
 
-export default merge.smartStrategy({plugins: 'prepend',})(common, {
+module.exports = mergeWithCustomize({
+        customizeArray: customizeArray({
+            plugins: 'prepend'
+        })
+    })(common, {
     mode: 'development',
 
     target: 'web',
@@ -72,6 +76,7 @@ export default merge.smartStrategy({plugins: 'prepend',})(common, {
         new ESLintPlugin({
             context: 'src/renderer',
             extensions: ['ts', 'tsx'],
+            failOnError: true
         }),
 
         new webpack.DefinePlugin({
@@ -113,4 +118,4 @@ export default merge.smartStrategy({plugins: 'prepend',})(common, {
         clearImmediate: false,
         setImmediate: false
     }
-});
+})

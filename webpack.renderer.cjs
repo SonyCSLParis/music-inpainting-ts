@@ -1,6 +1,6 @@
-import { merge } from 'webpack-merge'
-import * as common from './webpack.common.js'
-import ESLintPlugin from 'eslint-webpack-plugin'
+const { merge } = require('webpack-merge')
+const common = require('./webpack.common.cjs')
+const ESLintPlugin = require('eslint-webpack-plugin')
 
 module.exports = function(config) {
 	const finalConfiguration = merge(merge(config, common), {
@@ -25,6 +25,7 @@ module.exports = function(config) {
 			new ESLintPlugin({
 					context: 'src/renderer',
 					extensions: ['ts', 'tsx'],
+					failOnError: false
 			}),
 	]
 	});

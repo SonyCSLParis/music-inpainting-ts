@@ -1,7 +1,6 @@
-"main": {
-    "webpackConfig": "webpack.main.js"
-  }
+main:
+    webpackConfig: "webpack.main.cjs"
 
-"renderer": {
-    "webpackConfig": "webpack.renderer.js"
-  }
+
+renderer:
+    webpackConfig: "webpack.renderer.cjs"
