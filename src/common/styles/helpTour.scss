@@ -5,7 +5,6 @@
     z-index: 10000 !important;
     box-shadow: 0 0 0 150vmax rgba(0,0,0,.5) !important;
     opacity: initial !important;
-    pointer-events: none;
     border-radius: 10px;
 }
 
@@ -25,7 +24,6 @@ div.trip-overlay {
     position: absolute;
     justify-self: right;
     align-self: inherit;
-    // margin-right: 25px;
     cursor: pointer;
     font-size: xx-large;
     opacity: 0.2;
@@ -86,10 +84,7 @@ body.notono {
 }
 
 div.trip-block {
-    // min-width: 400px;
-    // max-width: 20vw !important;
     border-radius: 15px;
-    // background: rgb(247, 247, 247) !important;
 
     &.e::before {
         border-right-color: black!important;
