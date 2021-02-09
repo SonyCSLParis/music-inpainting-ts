@@ -27,15 +27,19 @@
 
 #osmd-zoom-controls {
     position: absolute;
-    right: 1em;
-    top: 1em;
-    opacity: 0.7;
+    left: 1.5vw;
+    top: 1.5vh;
+    width: 10vw;
 
-    & .zoom-out {
-        padding-right: 0.5em;
-    }
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-items: center;
 
-    &:hover {
-        opacity: 1;
+    i {
+        opacity: 0.7;
+        font-size: xx-large;
+        &:hover {
+            opacity: 1;
+        }
     }
 }
