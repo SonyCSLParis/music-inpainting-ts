@@ -90,7 +90,8 @@
     "utf-8-validate": "^5.0.4",
     "webpack": "^4",
     "webpack-json-loader": "^1.0.0",
-    "webpack-merge": "^5.7.3"
+    "webpack-merge": "^5.7.3",
+    "yarn": "^1.22.10"
   },
   "dependencies": {
     "@tonejs/midi": "^2.0.25",
@@ -118,8 +119,7 @@
     "trip.js": "^3.3.3",
     "webmidi": "^2.3.0",
     "webpack-sources": "^2.2.0",
-    "wheelnav": "^1.7.1",
-    "yarn": "^1.22.10"
+    "wheelnav": "^1.7.1"
   },
   "resolutions": {
     "webpack-sources": "^1.0.1"
