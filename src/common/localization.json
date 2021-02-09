@@ -86,19 +86,19 @@
                 "en": "Press here to start and stop playback.<br><br>Alternatively, on desktop, you can just press SPACE!"
             },
             "attributions": {
-                "en": "Icons made by Freepik <a>https://www.flaticon.com/authors/freepik</a> from <a>www.flaticon.com</a>"
+                "en": "Icons made by Freepik <a>https://www.flaticon.com/authors/freepik</a> from <a>www.flaticon.com</a>."
             }
         },
 
         "nonoto": {
             "note_box": {
-                "en": "Touch the <b>blue boxes</b> to trigger a <b>regeneration</b> of the underlying portion of the score",
-                "de": "Tippen Sie auf die <b>blauen Kästen</b> des Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen"
+                "en": "Touch the <b>blue boxes</b> to trigger a <b>regeneration</b> of the underlying portion of the score.",
+                "de": "Tippen Sie auf die <b>blauen Kästen</b> des Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen."
             },
 
             "fermata_box": {
-                "de": "Tippen Sie auf die <b>gestrichelten Kästchen</b>, um eine <b>Fermata</b> zu setzen. Damit kann die Struktur des Chorales kontrolliert werden",
-                "en": "Touch the <b>dotted boxes</b> to position an intermediate <b>fermata</b>. It allows to structure the chorale"
+                "de": "Tippen Sie auf die <b>gestrichelten Kästchen</b>, um eine <b>Fermata</b> zu setzen. Damit kann die Struktur des Chorales kontrolliert werden.",
+                "en": "Touch the <b>dotted boxes</b> to position an intermediate <b>fermata</b>. It allows to structure the chorale."
             }
         },
 
