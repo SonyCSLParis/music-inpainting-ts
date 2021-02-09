@@ -5,17 +5,18 @@ import { SpectrogramLocator, Locator } from "./locator";
 import "trip.js/dist/trip.css";
 import '../common/styles/helpTour.scss';
 
-var Trip = require('trip.js');
+import Trip from 'trip.js'
 
-const localizations = require('../common/localization.json');
-const helpContents = localizations["help"];
+import localizations from '../common/localization.json'
+const helpContents = localizations["help"]
 
+type TripStepOptions = Record<string, string | boolean | (() => void)>;
 
 export abstract class myTrip {
     protected trip: typeof Trip;
     protected languages: string[];
     readonly locator: Locator;
-    protected tripDelay_ms: number = 10000;
+    protected tripDelay_ms = 10000;
     // launches help tour automatically after two minutes of idle state
     readonly inactivityDetectorDelay: number = 2 * 1000 * 60;
 
@@ -46,7 +47,13 @@ export abstract class myTrip {
         document.body.classList.add('advanced-controls');
         this.locator.refresh();
 
-        $(() => {this.trip.start()});
+        $(() => { this.trip.start(); });
+    }
+
+    public async stop(): Promise<JQuery> {
+        this.cleanup();
+
+        return $(() => { this.trip.stop(); }).promise();
     }
 
     protected tripOptions = {
@@ -65,7 +72,7 @@ export abstract class myTrip {
         showHeader: true,
         // showCloseBox : true,
         delay : this.tripDelay_ms,
-        onEnd: this.tripCleanup.bind(this),
+        onEnd: this.cleanup.bind(this),
         onTripStart: (tripIndex: number, tripObject: any  // TODO(theis): add proper typing
             ) => {
             if (tripObject.expose && tripObject.hasOwnProperty('exposeContainer') ) {
@@ -82,21 +89,22 @@ export abstract class myTrip {
         },
     };
 
-    protected abstract makeContents(): void;
+    protected abstract makeContents(): TripStepOptions[];
 
     // clean-up modifications made to the DOM if the trip is exited mid-run
-    protected tripCleanup(): void {
+    protected cleanup(): void {
         document.body.classList.remove('help-tour-on');
+        document.body.classList.remove('advanced-controls');
         // this is needed in conjunction with position: sticky for the .trip-block
         // in order to restore the locator's full size if the viewport was resized during the trip
         this.locator.refresh();
-    };
+    }
 
     protected toggleExpose(element: HTMLElement, force?: boolean) {
         element.classList.toggle('trip-exposed-container', force)
     }
 
-    protected makeHTMLContent(contents: object) {
+    protected makeHTMLContent(contents: Record<string, string>) {
         switch (this.languages.length) {
             case 2:
                 return `${contents[this.languages[0]]}<br><br><i>${contents[this.languages[1]]}</i><br><br>`
@@ -123,10 +131,11 @@ export abstract class myTrip {
                     this.trip.start();
                     // }
                 },
-                self.totalTripDuration_ms + 500)
-            }
-            self.trip.start();
-            intervalTripLoop();
+                self.totalTripDuration_ms + 500
+            )
+        }
+        self.trip.start();
+        intervalTripLoop();
     }
 
     protected stopLoop() {
@@ -135,27 +144,28 @@ export abstract class myTrip {
     }
 
     public renderIcon(containerElement: HTMLElement) {
-        let helpElem: HTMLAnchorElement = document.createElement('a');
-        containerElement.appendChild(helpElem);
+        const helpElement: HTMLAnchorElement = document.createElement('a');
+        containerElement.appendChild(helpElement);
 
-        helpElem.id = 'help-icon';
-        helpElem.title = 'Help';
+        helpElement.id = 'help-icon';
+        helpElement.title = 'Help';
 
-        const self = this;
-        helpElem.addEventListener('click', function(event) {
+        // const self = this;
+        helpElement.addEventListener('click', async (event) => {
             // stops event from trigerring outsideClickListener registered onTripStart
             event.stopPropagation();
-            self.start();
+            await this.stop();
+            this.start();
         }, true);
     }
 
     protected outsideClickListener(event) {
-        let target: HTMLElement = event.target;
+        const target: HTMLElement = event.target;
         if (!$(target).closest($('div.trip-block')).length) {
             this.stopLoop();
             this.trip.stop();
         }
-    };
+    }
 
     protected initHideOnClickOutside() {
         // Attach an event listener to the whole document that detects clicks
@@ -168,11 +178,11 @@ export abstract class myTrip {
             document.addEventListener('click', this.outsideClickListener);
             // },
             // 100);
-        };
+        }
 
     protected removeClickListener() {
         document.removeEventListener('click', this.outsideClickListener)
-    };
+    }
 
 
     public registerIdleStateDetector(): void {
@@ -195,7 +205,7 @@ export abstract class myTrip {
 }
 
 export class NonotoTrip extends myTrip {
-    protected makeContents(): object[] {
+    protected makeContents(): Record<string, string | boolean>[] {
         // TODO contents should depend on AnnotationBox type used
         return [
             {
@@ -206,12 +216,12 @@ export class NonotoTrip extends myTrip {
                 header: "Playback"
             },
             {
-                sel: "#4-0-0-timecontainer-common",
+                sel: "#4-0-0-timeContainer-common",
                 content: this.makeHTMLContent(helpContents["nonoto"]["note_box"]),
                 position : "e",
             },
             {
-                sel: "#1-1-1-timecontainer-common-Fermata",
+                sel: "#1-1-1-timeContainer-common-Fermata",
                 content: this.makeHTMLContent(helpContents["nonoto"]["fermata_box"]),
                 position : "s",
             },
@@ -222,7 +232,7 @@ export class NonotoTrip extends myTrip {
 export class NotonoTrip extends myTrip {
     readonly locator: SpectrogramLocator;
 
-    protected makeContents(): object[] {
+    protected makeContents(): TripStepOptions[] {
         return [
             {
                 sel: "#playback-commands-gridspan",
@@ -312,11 +322,9 @@ export class NotonoTrip extends myTrip {
     }
 
     // clean-up modifications to the DOM if the trip is exited mid-run
-    protected tripCleanup(): void {
-        super.tripCleanup();
+    protected cleanup(): void {
+        super.cleanup();
 
         $('#spectrogram-container-interface-container')[0].children[1].classList.remove('trip-hidden');
     }
 }
-
-if (module.hot) {}
