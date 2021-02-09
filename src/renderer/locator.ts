@@ -895,12 +895,9 @@ export async function renderZoomControls(containerElement: HTMLElement,
     zoomOutButton.classList.add("zoom-out", "fa-search-minus");
     zoomInButton.classList.add("zoom-in", "fa-search-plus");
 
-    const mainIconSize: string = 'fa-3x';
-
-    let zoomButtons = [zoomOutButton, zoomInButton];
+    const zoomButtons = [zoomOutButton, zoomInButton];
     zoomButtons.forEach((zoomButton) => {
         zoomButton.classList.add('fas');
-        zoomButton.classList.add(mainIconSize);
         zoomButton.style.alignSelf = 'inherit';
         zoomButton.style.cursor = 'pointer';
         // FIXME not super visible
