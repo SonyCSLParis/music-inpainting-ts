@@ -6,235 +6,242 @@
 @use "mixins/measures";
 @use "mixins/fonts";
 
-html, body {
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
 }
 
 body {
-    background-color: rgb(255, 242, 255);
-    &.nonoto {
-        @include colors.theme-colors(millenial-pink);
+  background-color: rgb(255, 242, 255);
+  &.nonoto {
+    @include colors.theme-colors(millenial-pink);
+  }
+  &.notono {
+    @include colors.theme-colors(lavender);
+  }
+  font-family: fonts.$interface-font-stack;
+  transition: all 0.1s ease-in;
+
+  // disable blue box over objects on touch
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -webkit-tap-highlight-color: transparent;
+
+  user-select: none;
+  z-index: 0;
+
+  &.busy {
+    cursor: wait !important;
+
+    & #osmd-loading-spinner {
+      display: inline-block;
     }
-    &.notono {
-        @include colors.theme-colors(lavender);
-    }
-    font-family: fonts.$interface-font-stack;
-    transition: all 0.1s ease-in;
-
-    // disable blue box over objects on touch
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
-    -webkit-tap-highlight-color: transparent;
-
-    user-select: none;
-    z-index: 0;
-
-    &.busy {
-        cursor: wait !important;
-
-        & #osmd-loading-spinner {
-            display: inline-block;
-        }
-    }
+  }
 }
 
-[nexus-ui] select *, [nexus-ui] input * {
-    font-family: fonts.$interface-font-stack !important;
+[nexus-ui] select *,
+[nexus-ui] input * {
+  font-family: fonts.$interface-font-stack !important;
 }
 
 [nexus-ui] * {
-    font-weight: fonts.$interface-font-weight !important;
+  font-weight: fonts.$interface-font-weight !important;
 }
 
 [nexus-ui] input {
-    font-weight: 700 !important;
+  font-weight: 700 !important;
 }
 
 body {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 #main-panel {
-    position: relative !important;
-    flex-grow: 1;
-    z-index: 0;
+  position: relative !important;
+  flex-grow: 1;
+  z-index: 0;
 }
 
 #osmd-loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    margin-left: -32px;
-    margin-top: -32px;
-    display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-left: -32px;
+  margin-top: -32px;
+  display: none;
 }
 
-$trapezoid-perspective-transform:  perspective(10px) rotateX(8deg);
+$trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
 
 #bottom-controls {
-    .expand-tab {
-        position: absolute;
-        cursor: pointer;
-        width: 15%;
-        height: measures.$expand-tab-height;
-        top: calc(0px - #{measures.$expand-tab-height});
-        overflow: hidden;
+  .expand-tab {
+    position: absolute;
+    cursor: pointer;
+    width: 15%;
+    height: measures.$expand-tab-height;
+    top: calc(0px - #{measures.$expand-tab-height});
+    overflow: hidden;
 
-        &::before {
-            position: absolute;
-            content: "⬆";
-        }
-
-        font-size: large;
-        display: flex;
-        align-content: center;
-        justify-content: center;
-        transition: all 0.1s ease-in;
-        left: 50%;
-        z-index: -1;
-        border-radius: 5px 5px 0 0;
-
-        // translateZ is used to ensure the content is behind the parent container
-        // this is required since the parent container creates a stacking context
-        // furthermore the Z-axis translation should happen before the trapezoid transform,
-        // otherwise it messes up the perspective
-        transform: translateZ(-1000px) translate(-50%, 0) $trapezoid-perspective-transform;
-
-        @media (hover: hover) {
-            // enable show on hover if device supports hovering;
-            height: calc(#{measures.$expand-tab-height} / 2);;
-            top: calc(0px - #{measures.$expand-tab-height} / 2);
-        }
-
-        &:hover {
-            // transform: translate(-50%, 0);
-            height: measures.$expand-tab-height;
-            top: calc(0px - #{measures.$expand-tab-height});
-        }
+    &::before {
+      position: absolute;
+      content: '⬆';
     }
 
-    display: grid;
-    transform-style: preserve-3D;
-    width: 100%;
-    margin-top: calc(#{measures.$expand-tab-height} / 2);
-    grid-template-columns: repeat(4, 25%);
-    grid-template-rows: 2.5fr 1fr 0 0 1vh;
-    align-items: center;
-    justify-items: center;
-    z-index: 0;
+    font-size: large;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    transition: all 0.1s ease-in;
+    left: 50%;
+    z-index: -1;
+    border-radius: 5px 5px 0 0;
 
-    opacity: 1;
+    // translateZ is used to ensure the content is behind the parent container
+    // this is required since the parent container creates a stacking context
+    // furthermore the Z-axis translation should happen before the trapezoid transform,
+    // otherwise it messes up the perspective
+    transform: translateZ(-1000px) translate(-50%, 0)
+      $trapezoid-perspective-transform;
 
-    box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
+    @media (hover: hover) {
+      // enable show on hover if device supports hovering;
+      height: calc(#{measures.$expand-tab-height} / 2);
+      top: calc(0px - #{measures.$expand-tab-height} / 2);
+    }
 
-    text-align: center;
+    &:hover {
+      // transform: translate(-50%, 0);
+      height: measures.$expand-tab-height;
+      top: calc(0px - #{measures.$expand-tab-height});
+    }
+  }
+
+  display: grid;
+  transform-style: preserve-3D;
+  width: 100%;
+  margin-top: calc(#{measures.$expand-tab-height} / 2);
+  grid-template-columns: repeat(4, 25%);
+  grid-template-rows: 2.5fr 1fr 0 0 1vh;
+  align-items: center;
+  justify-items: center;
+  z-index: 0;
+
+  opacity: 1;
+
+  box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
+
+  text-align: center;
 }
 
 .advanced {
-    &, & control-item, & control-label {
-        visibility: collapse;
-        opacity: 0;
-    }
+  &,
+  & control-item,
+  & control-label {
+    visibility: collapse;
+    opacity: 0;
+  }
 }
 
 body:not(.help-tour-on) .trip-block {
-    // ensures the trip-block takes up no space in the layout
-    display: none !important
+  // ensures the trip-block takes up no space in the layout
+  display: none !important;
 }
 
 body.help-tour-on {
-    .expand-tab {
-        // disable advanced controls expansion tab when browsing the help menu,
-        // we automatically expand all controls to show the help
-        visibility: hidden;
-    }
+  .expand-tab {
+    // disable advanced controls expansion tab when browsing the help menu,
+    // we automatically expand all controls to show the help
+    visibility: hidden;
+  }
 }
 
 body.advanced-controls {
-    #bottom-controls {
-        grid-template-rows: 2.5fr 1fr 2.5fr 1fr 1vh;
+  #bottom-controls {
+    grid-template-rows: 2.5fr 1fr 2.5fr 1fr 1vh;
 
-        .expand-tab {
-            &::before {
-                position: absolute;
-                content: "⬇";
-            }
-        }
+    .expand-tab {
+      &::before {
+        position: absolute;
+        content: '⬇';
+      }
     }
+  }
 
-    .advanced {
-        visibility: visible;
-        opacity: 1;
-        control-item, control-label {
-            visibility: visible;
-            opacity: 1;
-        }
+  .advanced {
+    visibility: visible;
+    opacity: 1;
+    control-item,
+    control-label {
+      visibility: visible;
+      opacity: 1;
     }
+  }
 }
 
 select {
-    font-family: inherit;
-    font-weight: bold;
-    font-size: large !important;
-    text-transform: capitalize;
-    text-align-last: center;  // see https://stackoverflow.com/a/34532555
+  font-family: inherit;
+  font-weight: bold;
+  font-size: large !important;
+  text-transform: capitalize;
+  text-align-last: center; // see https://stackoverflow.com/a/34532555
 }
 
 .two-columns {
-    align-items: center;
-    justify-items: center;
-    display: grid;
-    grid-template-columns: 50%;
-    width: 100%;
+  align-items: center;
+  justify-items: center;
+  display: grid;
+  grid-template-columns: 50%;
+  width: 100%;
 
-    & .left-column {
-        grid-column: 1;
-    }
+  & .left-column {
+    grid-column: 1;
+  }
 
-    & .right-column {
-        grid-column: 2;
-    }
+  & .right-column {
+    grid-column: 2;
+  }
 }
 
 .disabled {
-    color: lightgray;
-    cursor: not-allowed;
+  color: lightgray;
+  cursor: not-allowed;
 
-    & * {
-        pointer-events: none!important;
-    }
+  & * {
+    pointer-events: none !important;
+  }
 }
 
 #lfo-controls {
-    display: grid;
-    width: 40%;
-    grid-template-columns: repeat(3, 1fr);
-    text-align: center;
+  display: grid;
+  width: 40%;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
 }
 
 #granularity-select-container--whole-note {
-    width: 45%;
+  width: 45%;
 }
 
-#edit-tool-select-container--top, #edit-tool-select-container--bottom {
-    width: 60%;
+#edit-tool-select-container--top,
+#edit-tool-select-container--bottom {
+  width: 60%;
 }
 
 .center {
-    margin: auto
+  margin: auto;
 }
 
 #bpm-control {
-    & svg rect {
-        transform: scaleY(0.6);
-        y: 25;
-        rx: 5;
-        ry: 10;
-    }
+  & svg rect {
+    transform: scaleY(0.6);
+    y: 25;
+    rx: 5;
+    ry: 10;
+  }
 }
 
 .disable-mouse {
-    pointer-events: none;
+  pointer-events: none;
 }

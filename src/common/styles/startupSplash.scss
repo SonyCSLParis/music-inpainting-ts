@@ -1,162 +1,162 @@
 @use 'mixins/colors.module';
 
 #configuration-selection {
+  display: grid;
+
+  width: 65vw;
+
+  grid-template-columns: 100%;
+  grid-row-gap: 3vh;
+  justify-items: center;
+
+  background-color: colors.$panes-background;
+  box-shadow: 0 0 20px 0px #dadada;
+
+  padding: 2em;
+
+  margin-left: auto;
+  margin-right: auto;
+
+  & * {
+    text-align: center;
+  }
+
+  > * * {
+    width: inherit !important;
+  }
+
+  > control-item {
+    max-width: 10em;
+  }
+
+  & input {
+    // width: inherit;
+    font-size: 2vw;
+    @media screen and (max-width: 800px) {
+      font-size: 15px;
+    }
+    height: 3vh;
+    text-align: center;
+  }
+
+  & > div {
     display: grid;
-
-    width: 65vw;
-
-    grid-template-columns: 100%;
-    grid-row-gap: 3vh;
     justify-items: center;
+    grid-column-gap: 3vw;
+    column-gap: 3vw;
+    grid-row-gap: 1vh;
+    row-gap: 1vh;
+    // max-width: 30em;
+  }
 
-    background-color: colors.$panes-background;
-    box-shadow: 0 0 20px 0px #dadada;
-
-    padding: 2em;
-
-    margin-left: auto;
-    margin-right: auto;
-
-    & * {
-        text-align: center;
+  &.no-server-config {
+    & #server-port-input,
+    & #server-ip-input {
+      visibility: hidden;
     }
-
-    > * * {
-        width: inherit !important;
-    }
-
-    > control-item {
-        max-width: 10em;
-    }
-
-    & input {
-        // width: inherit;
-        font-size: 2vw;
-        @media screen and (max-width: 800px) {
-            font-size: 15px;
-        }
-        height: 3vh;
-        text-align: center;
-    }
-
-    & > div {
-        display: grid;
-        justify-items: center;
-        grid-column-gap: 3vw;
-        column-gap: 3vw;
-        grid-row-gap: 1vh;
-        row-gap: 1vh;
-        // max-width: 30em;
-    }
-
-
-    &.no-server-config {
-        & #server-port-input, & #server-ip-input {
-            visibility: hidden;
-        }
-    }
+  }
 }
 .centeredXY {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 #server-configuration {
-    &:before {
-        grid-row: 1;
-        content: "Server configuration";
-        grid-column: 1/-1;
-        width: 100%;
-    }
-
-    display: grid;
-    // grid-row: 1;
-
-    & input {
-        width: 60% !important;
-        height: 2rem;
-    }
-
-    @media screen {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media screen and (max-width: 800px) {
-        grid-template-columns: 100%;
-    }
-
+  &:before {
+    grid-row: 1;
+    content: 'Server configuration';
+    grid-column: 1/-1;
     width: 100%;
+  }
+
+  display: grid;
+  // grid-row: 1;
+
+  & input {
+    width: 60% !important;
+    height: 2rem;
+  }
+
+  @media screen {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media screen and (max-width: 800px) {
+    grid-template-columns: 100%;
+  }
+
+  width: 100%;
 }
 
 #server-ip-container:before {
-    content: "IP";
-    // @media screen and (min-width: 400px) {
-    //     content: "Server IP";
-    // }
-    display: inline-block;
-    width: 35%;
-    margin-right: auto;
-    white-space: nowrap;
+  content: 'IP';
+  // @media screen and (min-width: 400px) {
+  //     content: "Server IP";
+  // }
+  display: inline-block;
+  width: 35%;
+  margin-right: auto;
+  white-space: nowrap;
 }
 #server-port-container:before {
-    content: "Port";
-    // @media screen and (min-width: 400px) {
-    //     content: "Server port";
-    // }
-    display: inline-block;
-    width: 35%;
+  content: 'Port';
+  // @media screen and (min-width: 400px) {
+  //     content: "Server port";
+  // }
+  display: inline-block;
+  width: 35%;
 }
 
 #mode-configuration {
-    &:before {
-        content: "Interface mode";
-        grid-column: 1/-1;
-        display: inline-block;
-        width: 100%;
-    }
-
-    // grid-row: 2;
-    display: grid;
-
+  &:before {
+    content: 'Interface mode';
+    grid-column: 1/-1;
+    display: inline-block;
     width: 100%;
+  }
 
-    @media screen and (max-width: 500px) {
-        grid-template-columns: 1fr;
-        margin: auto;
-    }
+  // grid-row: 2;
+  display: grid;
 
-    @media screen and (min-width: 500px) {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  width: 100%;
 
-    @media screen and (min-width: 800px) {
-        grid-template-columns: repeat(4, 1fr);
-    }
+  @media screen and (max-width: 500px) {
+    grid-template-columns: 1fr;
+    margin: auto;
+  }
 
-    & * {
-        text-align: center;
-        width: inherit !important;
-        height: inherit !important;
-        font-size: 100% !important;
-    }
+  @media screen and (min-width: 500px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media screen and (min-width: 800px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  & * {
+    text-align: center;
+    width: inherit !important;
+    height: inherit !important;
+    font-size: 100% !important;
+  }
 }
 
 #start-button {
-    // display: grid;
-    // grid-row: 3;
+  // display: grid;
+  // grid-row: 3;
 
-    width: 100% !important;
-    height: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
 
-    & * {
-        // text-align: center;
-        // width: inherit !important;
-        // height: inherit !important;
-    }
+  & * {
+    // text-align: center;
+    // width: inherit !important;
+    // height: inherit !important;
+  }
 }
 
 #application-mode-select {
-    display: none;
+  display: none;
 }

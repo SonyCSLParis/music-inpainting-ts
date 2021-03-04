@@ -1,44 +1,48 @@
 // Module to create native browser window
-import {BrowserWindow} from 'electron'
+import { BrowserWindow } from 'electron'
 import { format as formatUrl } from 'url'
-import * as path from 'path';
+import * as path from 'path'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let mainWindow: BrowserWindow;
+let mainWindow: BrowserWindow
 
-import defaultConfiguration from '../common/default_config.json';
-import customConfiguration from '../../config.json';
-let globalConfiguration = {...defaultConfiguration, ...customConfiguration};
+import defaultConfiguration from '../common/default_config.json'
+import customConfiguration from '../../config.json'
+const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
 
 export function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     title: globalConfiguration['app_name'],
-    webPreferences: process.env.NODE_ENV === 'development'
+    webPreferences:
+      process.env.NODE_ENV === 'development'
         ? { nodeIntegration: true }
         : {
-          // TODO(theis): fix this, should not enable nodeIntegration!
-          // check: https://www.electronjs.org/docs/tutorial/security
-          // and https://github.com/doyensec/electronegativity
+            // TODO(theis): fix this, should not enable nodeIntegration!
+            // check: https://www.electronjs.org/docs/tutorial/security
+            // and https://github.com/doyensec/electronegativity
             nodeIntegration: true,
             // preload: path.join(__dirname, 'renderer.prod.js')
-          }
-    })
+          },
+  })
 
   if (isDevelopment) {
-    mainWindow.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`)
+    mainWindow.loadURL(
+      `http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`
+    )
     // Open the DevTools.
     mainWindow.webContents.openDevTools()
-  }
-  else {
-    mainWindow.loadURL(formatUrl({
-      pathname: path.join(__dirname, 'index.html'),
-      protocol: 'file',
-      slashes: true
-    }))
+  } else {
+    mainWindow.loadURL(
+      formatUrl({
+        pathname: path.join(__dirname, 'index.html'),
+        protocol: 'file',
+        slashes: true,
+      })
+    )
   }
 
   // Emitted when the window is closed.
@@ -50,19 +54,18 @@ export function createWindow() {
   })
 
   mainWindow.webContents.on('devtools-opened', () => {
-      mainWindow.focus();
-      setImmediate(() => {
-          mainWindow.focus();
-      })
+    mainWindow.focus()
+    setImmediate(() => {
+      mainWindow.focus()
+    })
   })
 }
 
-
 export function existsWindow(): boolean {
-    return mainWindow !== null
+  return mainWindow !== null
 }
 
 // send a message to the main Renderer window over IPC
 export function send(channel: string, ...args: any[]) {
-    mainWindow.webContents.send(channel, ...args)
+  mainWindow.webContents.send(channel, ...args)
 }

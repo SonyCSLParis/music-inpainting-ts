@@ -3,168 +3,175 @@
 
 $main-filter: drop-shadow(0px 0px 1.3px rgba(0, 0, 0, 0.3));
 
-control-item, control-label {
-    align-self: center;
-    align-content: normal;
-    align-items: center;
+control-item,
+control-label {
+  align-self: center;
+  align-content: normal;
+  align-items: center;
 
-    height: max-content;
-    width: max-content;
+  height: max-content;
+  width: max-content;
 }
 
 control-item {
-    filter: $main-filter;
+  filter: $main-filter;
 }
 
 .fas {
-    font-size: measures.$CycleSelect-size;
+  font-size: measures.$CycleSelect-size;
 }
 
 #bottom-controls [nexus-ui] {
-    * {
-        border-radius: 4px !important;
-    }
+  * {
+    border-radius: 4px !important;
+  }
 
-    width: max-content !important;
-    height: max-content !important;
+  width: max-content !important;
+  height: max-content !important;
 
-    select, input {
-        text-align: center;
-        font-size: min(7vh, 7vw, 15px) !important;
-    }
-    select {
-        display: inline-flex;
-        vertical-align: middle;
-        top: 50%;
-        height: max(1em, min(40px, 8vh, 7vw)) !important;
-        min-height: max-content;
-        max-width: max-content;
-        width: 20vw !important;
-    }
-    input {
-        height: min(25px, 10vh) !important;
-        width: min(18vw, 45px) !important;
-    }
+  select,
+  input {
+    text-align: center;
+    font-size: min(7vh, 7vw, 15px) !important;
+  }
+  select {
+    display: inline-flex;
+    vertical-align: middle;
+    top: 50%;
+    height: max(1em, min(40px, 8vh, 7vw)) !important;
+    min-height: max-content;
+    max-width: max-content;
+    width: 20vw !important;
+  }
+  input {
+    height: min(25px, 10vh) !important;
+    width: min(18vw, 45px) !important;
+  }
 }
 
 control-item:hover {
-    filter: brightness(1.03) $main-filter;
+  filter: brightness(1.03) $main-filter;
 }
 
 control-item {
-    font-size: calc(min(10px + 0.5vw, 1em)) !important;
-    font-weight: 500;
+  font-size: calc(min(10px + 0.5vw, 1em)) !important;
+  font-weight: 500;
 }
 
 control-label {
-    font-weight: 400;
+  font-weight: 400;
 
-    font-size: calc(min(10px + 1vw, 1.1em));
+  font-size: calc(min(10px + 1vw, 1.1em));
 }
 
-#granularity-select-container, #edit-tool-select-container {
-    grid-row: 1;
-    grid-column: 2;
+#granularity-select-container,
+#edit-tool-select-container {
+  grid-row: 1;
+  grid-column: 2;
 }
 
-#granularity-select-label, #edit-tool-select-label {
-    grid-row: 2;
-    grid-column: 2;
+#granularity-select-label,
+#edit-tool-select-label {
+  grid-row: 2;
+  grid-column: 2;
 }
 
 #instruments-grid {
-    grid-row: 1;
-    grid-column: 3;
+  grid-row: 1;
+  grid-column: 3;
 }
 
 #instruments-grid-label {
-    grid-row: 2;
-    grid-column: 3;
+  grid-row: 2;
+  grid-column: 3;
 }
 
 #bpm-control {
-    grid-row: 1;
-    grid-column: 4;
+  grid-row: 1;
+  grid-column: 4;
 }
 
 #bpm-control-label {
-    grid-row: 2;
-    grid-column: 4;
+  grid-row: 2;
+  grid-column: 4;
 }
 
 .gridspan {
-    position: absolute;
-    width: 100%;
-    height: 100%;
+  position: absolute;
+  width: 100%;
+  height: 100%;
 
-    .gridspan {
-        position: relative;
-    }
+  .gridspan {
+    position: relative;
+  }
 }
 
 #playback-commands-gridspan {
-    grid-row: 1/3;
-    grid-column: 1/1;
+  grid-row: 1/3;
+  grid-column: 1/1;
 }
 
 #download-button-gridspan {
-    grid-row: 3/5;
-    grid-column: 1/2;
+  grid-row: 3/5;
+  grid-column: 1/2;
 }
 
 #constraints-gridspan {
-    grid-row: 1/3;
-    grid-column: 3/5;
+  grid-row: 1/3;
+  grid-column: 3/5;
 }
 
 #edit-tools-gridspan {
-    grid-row: 1/3;
-    grid-column: 2/3;
+  grid-row: 1/3;
+  grid-column: 2/3;
 }
 
 #midi-input-setup-gridspan {
-    grid-row: 3/5;
-    grid-column: 3/3;
+  grid-row: 3/5;
+  grid-column: 3/3;
 }
 
-#select-midi-out,  #select-midi-in {
-    grid-row: 3;
-    grid-column: 3;
+#select-midi-out,
+#select-midi-in {
+  grid-row: 3;
+  grid-column: 3;
 }
 
-#select-midi-out-label,  #select-midi-in-label {
-    grid-row: 4;
-    grid-column: 3;
+#select-midi-out-label,
+#select-midi-in-label {
+  grid-row: 4;
+  grid-column: 3;
 }
 
 #volume-controls-gridspan {
-    grid-row: 3/5;
-    grid-column: 4;
+  grid-row: 3/5;
+  grid-column: 4;
 }
 
 #ableton-link-settings-gridspan {
-    grid-row: 3/5;
-    grid-column: 4;
+  grid-row: 3/5;
+  grid-column: 4;
 }
 
 .gridspan {
-    align-items: center;
-    justify-items: center;
+  align-items: center;
+  justify-items: center;
 
-    display: inline-grid;
-    grid-template-columns: auto;
-    grid-template-rows: 2.5fr 1fr;
-    grid-auto-flow: column;
+  display: inline-grid;
+  grid-template-columns: auto;
+  grid-template-rows: 2.5fr 1fr;
+  grid-auto-flow: column;
 
-    control-label, control-item {
-        flex-basis: auto;
-    }
+  control-label,
+  control-item {
+    flex-basis: auto;
+  }
 }
 
 #pitch-control-root-select {
-    width: 40px !important;
+  width: 40px !important;
 }
 
 .multi-column-gridspan {
-    grid-template-rows: 1fr;
+  grid-template-rows: 1fr;
 }

@@ -8,178 +8,181 @@ $spectrogram-background-color: #744a86;
 $spectrogram-height: 80%;
 $spectrogram-height-no-scroll: 90%;
 
-#spectrogram-image-container, #spectrogram-container-interface-container {
-    height: $spectrogram-height;
+#spectrogram-image-container,
+#spectrogram-container-interface-container {
+  height: $spectrogram-height;
 }
 
 #spectrogram-container.no-scroll {
-    & #spectrogram-image-container, & #spectrogram-container-interface-container {
-        height: $spectrogram-height-no-scroll;
-    }
+  & #spectrogram-image-container,
+  & #spectrogram-container-interface-container {
+    height: $spectrogram-height-no-scroll;
+  }
 }
 
 #spectrogram-container {
-    height: 100%;
-    width: 100%;
-    margin-left: 0vw; // 5vw;
+  height: 100%;
+  width: 100%;
+  margin-left: 0vw; // 5vw;
 
-    top: 0;
-    bottom: 0;
+  top: 0;
+  bottom: 0;
+  position: absolute;
+  z-index: -1;
+
+  &.busy {
+    cursor: wait !important;
+    & * {
+      pointer-events: none !important;
+    }
+  }
+
+  background: transparent;
+  [nexus-ui] {
     position: absolute;
-    z-index: -1;
+    left: 0;
+  }
 
-    &.busy {
-        cursor: wait !important;
-        & * {
-            pointer-events: none !important;
-        }
-    }
+  &.no-scroll .simplebar-track.simplebar-horizontal {
+    display: none;
+    visibility: hidden;
+  }
 
-    background: transparent;
-    [nexus-ui] {
-        position: absolute;
-        left: 0;
-    }
-
-    &.no-scroll .simplebar-track.simplebar-horizontal {
-        display: none;
-        visibility: hidden;
-    }
-
-    .snap-points {
-        // ensures snap points are within the visible spectrogram image canvas
-        // this is required so that they are taken into account
-        position: absolute;
-        top: 0;
-        margin-left: -5vw;
-        display: flex;
-        height: 1px;
-        visibility: hidden;
-    }
+  .snap-points {
+    // ensures snap points are within the visible spectrogram image canvas
+    // this is required so that they are taken into account
+    position: absolute;
+    top: 0;
+    margin-left: -5vw;
+    display: flex;
+    height: 1px;
+    visibility: hidden;
+  }
 }
 
 #spectrogram-container.eraser svg {
-    cursor: url('../images/eraser-solid.png') 0 18, pointer !important;
+  cursor: url('../images/eraser-solid.png') 0 18, pointer !important;
 }
 
 .simplebar-scroll-content {
-    pointer-events: none;
+  pointer-events: none;
 }
 
 .simplebar-track.simplebar-horizontal {
-    position: absolute;
+  position: absolute;
 }
 
 .simplebar-content-wrapper {
-    scroll-snap-type: x mandatory;
+  scroll-snap-type: x mandatory;
 
-    snap {
-        scroll-snap-align: start;
-        display: inline-flex;
-        flex: 1;
-        visibility: hidden;
-    }
+  snap {
+    scroll-snap-align: start;
+    display: inline-flex;
+    flex: 1;
+    visibility: hidden;
+  }
 }
 
 #spectrogram-image-container {
-    position: absolute;
-    width: 100vw;
-    top: 5vh;
-    pointer-events: none;
+  position: absolute;
+  width: 100vw;
+  top: 5vh;
+  pointer-events: none;
 }
 
 #spectrogram-picture {
+  position: relative;
+  left: 5vw;
+
+  img {
+    background-color: $spectrogram-background-color;
+    margin-right: 5vw;
+    top: 0;
+  }
+
+  > * {
+    top: 0;
     position: relative;
-    left: 5vw;
-
-    img {
-        background-color: $spectrogram-background-color;
-        margin-right: 5vw;
-        top: 0;
-    }
-
-    > * {
-        top: 0;
-        position: relative;
-        pointer-events: none;
-        z-index: -1000;
-    }
+    pointer-events: none;
+    z-index: -1000;
+  }
 }
 
 #spectrogram-container-shadow-container {
-    position: absolute;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    box-shadow: 0 0 20px 3px $spectrogram-background-color;
-    z-index: 10;
-    pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 0 20px 3px $spectrogram-background-color;
+  z-index: 10;
+  pointer-events: none;
 }
 
 $spectrogram-margin-width: 5vw;
 
 #spectrogram-container-interface-container {
-    position: absolute;
-    margin-left: $spectrogram-margin-width;
-    width: measures.$spectrogram-width !important;
-    top: 5vh;
+  position: absolute;
+  margin-left: $spectrogram-margin-width;
+  width: measures.$spectrogram-width !important;
+  top: 5vh;
+  z-index: 0;
+
+  &:before,
+  &:after {
     z-index: 0;
+    content: '';
+    position: absolute;
+    width: $spectrogram-margin-width;
+    top: 0;
+    height: 100%;
+    background-size: cover;
+    will-change: width;
+    backdrop-filter: brightness(1.3) blur(2px);
+    transform: perspective(500px);
+  }
+  &:before {
+    left: calc(0vw - #{$spectrogram-margin-width});
+    background: radial-gradient(
+      ellipse farthest-corner at right,
+      transparent 0vw,
+      colors.$body-background $spectrogram-margin-width
+    );
+  }
 
-    &:before, &:after {
-        z-index: 0;
-        content: "";
-        position: absolute;
-        width: $spectrogram-margin-width;
-        top: 0;
-        height: 100%;
-        background-size: cover;
-        will-change: width;
-        backdrop-filter: brightness(1.3) blur(2px);
-        transform: perspective(500px);
-    }
-    &:before {
-        left: calc(0vw - #{$spectrogram-margin-width});
-        background:
-            radial-gradient(ellipse farthest-corner at right,
-                transparent 0vw,
-                colors.$body-background $spectrogram-margin-width,
-            );
-    }
-
-    &:after {
-        right: calc(0vw - #{$spectrogram-margin-width});
-        background:
-            radial-gradient(ellipse farthest-corner at left,
-                transparent 0vw,
-                    colors.$body-background $spectrogram-margin-width,
-        );
-    }
-    div span {
-        z-index: 100;
-        opacity: 0.3;
-    }
+  &:after {
+    right: calc(0vw - #{$spectrogram-margin-width});
+    background: radial-gradient(
+      ellipse farthest-corner at left,
+      transparent 0vw,
+      colors.$body-background $spectrogram-margin-width
+    );
+  }
+  div span {
+    z-index: 100;
+    opacity: 0.3;
+  }
 }
 
 .highlight {
-    animation: 500ms ease-in-out 100ms 2 alternate none highlight;
+  animation: 500ms ease-in-out 100ms 2 alternate none highlight;
 }
 
 @keyframes highlight {
-    to {
-        opacity: 0.4;
-        background-color: white;
-    }
+  to {
+    opacity: 0.4;
+    background-color: white;
+  }
 }
 
 .simplebar-content {
-    height: 100%;
+  height: 100%;
 }
 
 // HACK: compensate for scrollbar in Firefox
 @-moz-document url-prefix() {
-    .ff {
-        .simplebar-content {
-            margin-top: 4.5px;
-        }
+  .ff {
+    .simplebar-content {
+      margin-top: 4.5px;
     }
+  }
 }

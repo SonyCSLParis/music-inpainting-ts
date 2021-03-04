@@ -1,58 +1,65 @@
-import 'common/styles/overlays.scss';
+import '../common/styles/overlays.scss'
 
-export class AnnotationBox {
-    readonly containedQuarterNotes: number[];
+export abstract class AnnotationBox {
+  readonly containedQuarterNotes: number[]
 
-    constructor(timestampContainer: string|HTMLElement, cssClass: string) {
-        // Store container element
-        if (typeof timestampContainer === "string") {
-            // ID passed
-            this.timestampContainer = document.getElementById(<string>timestampContainer);
-        } else if (timestampContainer && "appendChild" in <any>timestampContainer) {
-            // Element passed
-            this.timestampContainer = <HTMLElement>timestampContainer;
-        }
-        if (!this.timestampContainer || this.timestampContainer.getAttribute('containedquarternotes') === undefined) {
-            throw new Error("Please pass a valid timestamp container for the annotation box");
-        }
-        this.validateTimestampContainer()
-
-        this.containedQuarterNotes = (() => {
-            let containedQuarters_str = (
-                this.timestampContainer.getAttribute('containedquarternotes'));
-                let containedQuarters_strlist: string[] = containedQuarters_str.split(' ');
-                let containedQuarterNotes = containedQuarters_strlist.map(parseInt);
-                return containedQuarterNotes;
-            })();
-
-        this.cssClass = cssClass;
-        this.createContainer();
+  constructor(timestampContainer: string | HTMLElement, cssClass: string) {
+    // Store container element
+    if (typeof timestampContainer === 'string') {
+      // ID passed
+      this.timestampContainer = document.getElementById(timestampContainer)
+    } else if (timestampContainer && 'appendChild' in timestampContainer) {
+      // Element passed
+      this.timestampContainer = timestampContainer
     }
+    if (
+      !this.timestampContainer ||
+      this.timestampContainer.getAttribute('containedquarternotes') ===
+        undefined
+    ) {
+      throw new Error(
+        'Please pass a valid timestamp container for the annotation box'
+      )
+    }
+    this.validateTimestampContainer()
 
-    protected timestampContainer: HTMLElement;
-    protected validateTimestampContainer(): void {};
+    this.containedQuarterNotes = (() => {
+      const containedQuarters_str = this.timestampContainer.getAttribute(
+        'containedquarternotes'
+      )
+      const containedQuarters_strlist: string[] = containedQuarters_str.split(
+        ' '
+      )
+      const containedQuarterNotes = containedQuarters_strlist.map(parseInt)
+      return containedQuarterNotes
+    })()
 
-    public container: HTMLDivElement;
-    readonly cssClass: string;
+    this.cssClass = cssClass
+    this.createContainer()
+  }
 
-    // create containing div,
-    private createContainer(): void {
-        const containerId = this.timestampContainer.id + '-' + this.cssClass
-        let containerByID = <HTMLDivElement>document.getElementById(containerId)
-        let containerExistsInitially = containerByID !== null
-        this.container = (containerByID || document.createElement("div"));
-        this.container.id = containerId
-        this.container.classList.add(this.cssClass);
+  protected timestampContainer: HTMLElement
+  protected abstract validateTimestampContainer(): void
 
-        // let containedQuarters_str: string = this.timestampContainer.getAttribute('containedquarternotes')
-        // this.container.setAttribute('containedquarternotes', containedQuarters_str);
+  public container: HTMLDivElement
+  readonly cssClass: string
 
-        if (!containerExistsInitially) {
-            this.timestampContainer.appendChild(this.container);
-        }
-    };
+  // create containing div,
+  private createContainer(): void {
+    const containerId = this.timestampContainer.id + '-' + this.cssClass
+    const containerByID = <HTMLDivElement>document.getElementById(containerId)
+    const containerExistsInitially = containerByID !== null
+    this.container = containerByID || document.createElement('div')
+    this.container.id = containerId
+    this.container.classList.add(this.cssClass)
 
-    public draw(): void {
-        throw new EvalError("Not implemented, please subclass the draw function");
-    };
+    // let containedQuarters_str: string = this.timestampContainer.getAttribute('containedquarternotes')
+    // this.container.setAttribute('containedquarternotes', containedQuarters_str);
+
+    if (!containerExistsInitially) {
+      this.timestampContainer.appendChild(this.container)
+    }
+  }
+
+  public abstract draw(): void
 }

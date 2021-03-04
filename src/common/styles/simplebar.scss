@@ -2,47 +2,50 @@ $track-color: #ffc7cf;
 $scrollbar-color: #009ceb;
 
 .simplebar-track {
-    &.simplebar-vertical {
-        pointer-events: none;
-        visibility: hidden !important;
-    }
+  &.simplebar-vertical {
+    pointer-events: none;
+    visibility: hidden !important;
+  }
 
-    &.simplebar-horizontal {
-        position: fixed;
-        border-radius: 20px;
-        margin-left: 10%;
-        margin-right: 10%;
-        height: min(10%, 4vh);
-        bottom: -12%;
-        background-color: $track-color;
+  &.simplebar-horizontal {
+    position: fixed;
+    border-radius: 20px;
+    margin-left: 10%;
+    margin-right: 10%;
+    height: min(10%, 4vh);
+    bottom: -12%;
+    background-color: $track-color;
 
-        // prevent visual glitches when updating the sheet where the scrollbar
-        // goes beyond the available area
-        overflow: hidden;
-    }
+    // prevent visual glitches when updating the sheet where the scrollbar
+    // goes beyond the available area
+    overflow: hidden;
+  }
 }
 
 .simplebar-scrollbar {
-    pointer-events: auto;
-    cursor: pointer;
-    background-color: $scrollbar-color;
-    height: 100% !important;
-    border-radius: 20px;
-    top: 0 !important;
+  pointer-events: auto;
+  cursor: pointer;
+  background-color: $scrollbar-color;
+  height: 100% !important;
+  border-radius: 20px;
+  top: 0 !important;
 
-    &.simplebar-vertical {
-        pointer-events: none;
-    }
+  &.simplebar-vertical {
+    pointer-events: none;
+  }
 
-    &:before {
-        background: none;
-    }
+  &:before {
+    background: none;
+  }
 }
 
 @media (hover: hover) {
-    // no hover effects on touch screens since the effect remains active
-    // until the user effectively touches another zone on the viewport
-    .simplebar-scrollbar:hover {
-        background-color: lighten($scrollbar-color, 20%); // lighter blue // #ffc7cf;  // lighter pink
-    }
+  // no hover effects on touch screens since the effect remains active
+  // until the user effectively touches another zone on the viewport
+  .simplebar-scrollbar:hover {
+    background-color: lighten(
+      $scrollbar-color,
+      20%
+    ); // lighter blue // #ffc7cf;  // lighter pink
+  }
 }

@@ -1,3 +1,3 @@
-interface JQuery<TElement = HTMLElement> {
-    exists(): boolean
+interface JQuery {
+  exists(): boolean
 }
