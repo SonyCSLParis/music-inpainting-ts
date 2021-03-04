@@ -1,45 +1,45 @@
 #main-panel {
-    pointer-events: auto;
+  pointer-events: auto;
 
-    width: 100%;
-    position: absolute;
+  width: 100%;
+  position: absolute;
 
-    justify-content: center;
-    align-content: center;
+  justify-content: center;
+  align-content: center;
 
-    &.loading {
-        & .simplebar-track {
-            // hide scrollbars when osmd is loading
-            opacity: 0;
-            pointer-events: none;
-        }
+  &.loading {
+    & .simplebar-track {
+      // hide scrollbars when osmd is loading
+      opacity: 0;
+      pointer-events: none;
     }
+  }
 }
 
 #osmd-container {
-    pointer-events: none;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 180px;
+  pointer-events: none;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 180px;
 
-    width: 10000000px;  // HACK infinite width
+  width: 10000000px; // HACK infinite width
 }
 
 #osmd-zoom-controls {
-    position: absolute;
-    left: 1.5vw;
-    top: 1.5vh;
-    width: 10vw;
+  position: absolute;
+  left: 1.5vw;
+  top: 1.5vh;
+  width: 10vw;
 
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    justify-items: center;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  justify-items: center;
 
-    i {
-        opacity: 0.7;
-        font-size: xx-large;
-        &:hover {
-            opacity: 1;
-        }
+  i {
+    opacity: 0.7;
+    font-size: xx-large;
+    &:hover {
+      opacity: 1;
     }
+  }
 }

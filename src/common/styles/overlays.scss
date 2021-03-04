@@ -1,165 +1,165 @@
 $chords-font-stack: 'Boogaloo', cursive;
 
 .timecontainer {
-    position: absolute;
-    pointer-events: auto;
+  position: absolute;
+  pointer-events: auto;
 
-    &.busy {
-        &:hover {
-            cursor: wait !important;
-        }
+  &.busy {
+    &:hover {
+      cursor: wait !important;
     }
+  }
 
-    &.busy * {
-        &:hover {
-            cursor: wait !important;
-        }
+  &.busy * {
+    &:hover {
+      cursor: wait !important;
     }
+  }
 
-    &.dragover {
-        background-color: purple;
-    }
+  &.dragover {
+    background-color: purple;
+  }
 
-    &.dragover .notebox {
-        background-color: purple;
-    }
+  &.dragover .notebox {
+    background-color: purple;
+  }
 }
 
 .notebox {
-    // box-sizing: border-box;
-    z-index: 1;
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background-color: #009ceb;
-    opacity: 0;
-    pointer-events: none;
-    border-radius: 15px;
-    // border: solid 0.5em;
-    // border-color: #009ceb;
-    // border-width: thick;
+  // box-sizing: border-box;
+  z-index: 1;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: #009ceb;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 15px;
+  // border: solid 0.5em;
+  // border-color: #009ceb;
+  // border-width: thick;
 
-    &.active {
-        opacity: 0.1;
+  &.active {
+    opacity: 0.1;
 
-        // TODO(theis): clean-up, remove redundant .available class, only keep .busy
-        &.available {
-            pointer-events: auto;
-            &:hover{
-                cursor: crosshair;
-            }
-        }
-
-        &:hover{
-            opacity: 0.25;
-        }
-
-        &.busy {
-            background-color: grey;
-            opacity: 0.05;
-        }
-
-        &.playing {
-            background-color: #f40081;
-            top: -1.4em;
-            // use CSS-3 run-time calc() function
-            // unquote() necessary because SASS also has a calc() function that
-            // does something else, this ensures we are using the CSS-3 one
-            // see [https://stackoverflow.com/a/25547896]
-            height: unquote("calc(100% + 2*1.2em)");
-            border: solid 0.2em;
-            border-color: blue;
-            opacity: 0.25;
-            // box-shadow: 2px 1px black;
-
-            &:hover {
-                opacity: 0.3;
-            }
-        }
-
-        &.dragover {
-            // background-color: purple;
-            opacity: 0.3;
-        }
+    // TODO(theis): clean-up, remove redundant .available class, only keep .busy
+    &.available {
+      pointer-events: auto;
+      &:hover {
+        cursor: crosshair;
+      }
     }
 
-    // .playing {
-    //     background-color: #f40081;
-    // }
+    &:hover {
+      opacity: 0.25;
+    }
+
+    &.busy {
+      background-color: grey;
+      opacity: 0.05;
+    }
+
+    &.playing {
+      background-color: #f40081;
+      top: -1.4em;
+      // use CSS-3 run-time calc() function
+      // unquote() necessary because SASS also has a calc() function that
+      // does something else, this ensures we are using the CSS-3 one
+      // see [https://stackoverflow.com/a/25547896]
+      height: unquote('calc(100% + 2*1.2em)');
+      border: solid 0.2em;
+      border-color: blue;
+      opacity: 0.25;
+      // box-shadow: 2px 1px black;
+
+      &:hover {
+        opacity: 0.3;
+      }
+    }
+
+    &.dragover {
+      // background-color: purple;
+      opacity: 0.3;
+    }
+  }
+
+  // .playing {
+  //     background-color: #f40081;
+  // }
 }
 
 .Fermata {
-    position: absolute;
-    pointer-events: auto;
-    z-index: 1;
-    width: 100%;
-    height: 2em;  // HACK hardcoded
-    top: -4.5em;
-    // opacity: 0;
-    // background-color: rgb(252, 252, 108, 0);
+  position: absolute;
+  pointer-events: auto;
+  z-index: 1;
+  width: 100%;
+  height: 2em; // HACK hardcoded
+  top: -4.5em;
+  // opacity: 0;
+  // background-color: rgb(252, 252, 108, 0);
 
-    box-sizing: border-box;
-    border-radius: 15px;
-    border: dashed 0.15em;
-    border-color: rgb(0, 0, 0);  // if no support for transparency
-    border-color: rgba(0, 0, 0, 0.7);
+  box-sizing: border-box;
+  border-radius: 15px;
+  border: dashed 0.15em;
+  border-color: rgb(0, 0, 0); // if no support for transparency
+  border-color: rgba(0, 0, 0, 0.7);
 
-    // border-width: thick;
+  // border-width: thick;
 
-    &:hover{
-        cursor: pointer;
-        background-color: rgba(0, 0, 0, 0.3);
-    }
+  &:hover {
+    cursor: pointer;
+    background-color: rgba(0, 0, 0, 0.3);
+  }
 
-    &.active {
-        background-color: rgba(0, 0, 0, 0.6);
-    }
+  &.active {
+    background-color: rgba(0, 0, 0, 0.6);
+  }
 
-    &.imposed {
-        background-color: rgba(0, 0, 0, 0.8);
-        cursor: not-allowed;
-    }
-    // &:last-child {
-    //     background-color: rgba(0, 0, 0, 0.8);
-    //     cursor: not-allowed;
-    // }
+  &.imposed {
+    background-color: rgba(0, 0, 0, 0.8);
+    cursor: not-allowed;
+  }
+  // &:last-child {
+  //     background-color: rgba(0, 0, 0, 0.8);
+  //     cursor: not-allowed;
+  // }
 }
 
 .ChordSelector {
-    position: absolute;
-    z-index: 2;
-    pointer-events: none;
-    // width: 100%;
-    // height: 2em;  // HACK hardcoded
-    top: -4.5em;  // -4.5em;
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  // width: 100%;
+  // height: 2em;  // HACK hardcoded
+  top: -4.5em; // -4.5em;
 
-    &.active {
-        z-index: 3;
-    }
-    // opacity: 0;
-    // background-color: rgb(252, 252, 108, 0);
+  &.active {
+    z-index: 3;
+  }
+  // opacity: 0;
+  // background-color: rgb(252, 252, 108, 0);
 
-    // box-sizing: border-box;
-    // border-radius: 15px;
-    // border: dashed 0.15em;
-    // border-color: rgb(0, 0, 0);  // if no support for transparency
-    // border-color: rgba(0, 0, 0, 0.7);
+  // box-sizing: border-box;
+  // border-radius: 15px;
+  // border: dashed 0.15em;
+  // border-color: rgb(0, 0, 0);  // if no support for transparency
+  // border-color: rgba(0, 0, 0, 0.7);
 
-    // border-width: thick;
+  // border-width: thick;
 
-    // &:hover{
-    //     cursor: pointer;
-    //     background-color: rgba(0, 0, 0, 0.3);
-    // }
-    //
-    // &.active {
-    //     background-color: rgba(0, 0, 0, 0.6);
-    // }
-    //
-    // &.imposed {
-    //     background-color: rgba(0, 0, 0, 0.8);
-    //     cursor: not-allowed;
-    // }
+  // &:hover{
+  //     cursor: pointer;
+  //     background-color: rgba(0, 0, 0, 0.3);
+  // }
+  //
+  // &.active {
+  //     background-color: rgba(0, 0, 0, 0.6);
+  // }
+  //
+  // &.imposed {
+  //     background-color: rgba(0, 0, 0, 0.8);
+  //     cursor: not-allowed;
+  // }
 }
 
 // this doesn't work since the svgs created by wheelnav have inline positionning
@@ -172,36 +172,36 @@ $chords-font-stack: 'Boogaloo', cursive;
 
 // set pointer event to pass-through on the <svg> tag containing the selector
 .ChordSelector > svg {
-    pointer-events: none;
+  pointer-events: none;
 }
 
 .ChordSelector > svg > * {
-    pointer-events: auto;
+  pointer-events: auto;
 }
 
 .ChordSelector text {
-    font-family: $chords-font-stack !important;
+  font-family: $chords-font-stack !important;
 }
 
 .ChordSelector tspan {
-    // disable undesired behaviour of -webkit-tap-highlight-color tspans catching pointer
-    // click events but disappearing right after, leaving with an event with no target
-    pointer-events: none;
+  // disable undesired behaviour of -webkit-tap-highlight-color tspans catching pointer
+  // click events but disappearing right after, leaving with an event with no target
+  pointer-events: none;
 }
 
 path[id*='-spreader'] {
-    z-index: 3;
-    // cursor: zoom-in;
-    background-color: red;
+  z-index: 3;
+  // cursor: zoom-in;
+  background-color: red;
 }
 
 // disable text selection in several browsers
 .noselect {
   -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; /* Non-prefixed version, currently
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
                                   supported by Chrome and Opera */
 }

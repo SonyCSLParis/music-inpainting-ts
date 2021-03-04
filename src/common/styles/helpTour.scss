@@ -1,111 +1,111 @@
 @use "mixins/colors.module";
 
 .trip-exposed {
-    background: none;
-    z-index: 10000 !important;
-    box-shadow: 0 0 0 150vmax rgba(0,0,0,.5) !important;
-    opacity: initial !important;
-    border-radius: 10px;
+  background: none;
+  z-index: 10000 !important;
+  box-shadow: 0 0 0 150vmax rgba(0, 0, 0, 0.5) !important;
+  opacity: initial !important;
+  border-radius: 10px;
 }
 
 div.trip-overlay {
-    // disable Trip.js dark overlay
-    display: none !important;
+  // disable Trip.js dark overlay
+  display: none !important;
 }
 
 .trip-exposed-container {
-    // push container up to ensure the box-shadow displays properly
-    z-index: 10 !important;
+  // push container up to ensure the box-shadow displays properly
+  z-index: 10 !important;
 }
 
 #help-icon {
-    top: 1.5vh;
-    right: 1.5vw;
-    position: absolute;
-    justify-self: right;
-    align-self: inherit;
-    cursor: pointer;
-    font-size: xx-large;
-    opacity: 0.2;
+  top: 1.5vh;
+  right: 1.5vw;
+  position: absolute;
+  justify-self: right;
+  align-self: inherit;
+  cursor: pointer;
+  font-size: xx-large;
+  opacity: 0.2;
 
-    &:hover {
-        opacity: 1;
-    }
+  &:hover {
+    opacity: 1;
+  }
 
-    &:before {
-        content: "\F05A";
-        font-family: 'FontAwesome';
-    }
+  &:before {
+    content: '\F05A';
+    font-family: 'FontAwesome';
+  }
 }
 
 body.notono {
-    .trip-block {
-        position: sticky;  // prevents blocks from overflowing the viewport
-    }
+  .trip-block {
+    position: sticky; // prevents blocks from overflowing the viewport
+  }
 }
 
 .trip-block {
-    font-weight: normal;
-    color: white !important;
+  font-weight: normal;
+  color: white !important;
 
-    min-width: 20vw !important;
-    max-width: 35vw !important;
-    width: max-content !important;
+  min-width: 20vw !important;
+  max-width: 35vw !important;
+  width: max-content !important;
 }
 
 .trip-progress-steps {
-    border-top-width: 0px;
-    border-color: gray !important;
+  border-top-width: 0px;
+  border-color: gray !important;
 
-    @media screen and (max-width: 500px), screen and (max-height: 300px) {
-        display: none !important;
-    }
+  @media screen and (max-width: 500px), screen and (max-height: 300px) {
+    display: none !important;
+  }
 }
 
 .trip-content {
-    padding-top: 0.75rem;
-    font-size: max(0.7em, min(2.5vw, 3vh, 1em));
-    border-bottom: thin solid gray;
+  padding-top: 0.75rem;
+  font-size: max(0.7em, min(2.5vw, 3vh, 1em));
+  border-bottom: thin solid gray;
 }
 
 .trip-header {
-    font-size: max(1em, min(3vw, 4vh, 1.3em));
-    font-weight: 600;
-    border-bottom: thin solid gray;
-    padding-bottom: 0.5rem;
+  font-size: max(1em, min(3vw, 4vh, 1.3em));
+  font-weight: 600;
+  border-bottom: thin solid gray;
+  padding-bottom: 0.5rem;
 }
 
 .trip-close {
-    font-size: large !important;
+  font-size: large !important;
 }
 
 .trip-hidden {
-    opacity: 50% !important;
+  opacity: 50% !important;
 }
 
 div.trip-block {
-    border-radius: 15px;
+  border-radius: 15px;
 
-    &.e::before {
-        border-right-color: black!important;
-    }
-    &.s::before {
-        border-bottom-color: black!important;
-    }
-    &.n::before {
-        border-top-color: black!important;
-    }
-    &.w::before {
-        border-left-color: black!important;
-    }
+  &.e::before {
+    border-right-color: black !important;
+  }
+  &.s::before {
+    border-bottom-color: black !important;
+  }
+  &.n::before {
+    border-top-color: black !important;
+  }
+  &.w::before {
+    border-left-color: black !important;
+  }
 }
 
 .trip-navigation {
-    // increase size of navigation buttons
-    font-size: xx-large;
+  // increase size of navigation buttons
+  font-size: xx-large;
 
-    & a {
-        color: black;
-        text-decoration: none;
-    }
+  & a {
+    color: black;
+    text-decoration: none;
+  }
 }

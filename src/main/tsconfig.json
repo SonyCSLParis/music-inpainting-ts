@@ -1,19 +1,7 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-      "target": "es6",
-      "module": "commonjs",
-      "pretty": true,
-      "noImplicitAny": false,
-      "removeComments": true,
-      "declaration": true,
-      "sourceMap": true,
-      "resolveJsonModule": true,
-      "esModuleInterop": true
-  },
-  "allowSyntheticDefaultImports": true,
-  "awesomeTypescriptLoaderOptions": {},
-  "exclude": [
-    "node_modules",
-    "src/renderer"
-  ]
+    "target": "es6",
+    "module": "commonjs"
+  }
 }

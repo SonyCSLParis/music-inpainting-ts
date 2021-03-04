@@ -1,78 +1,81 @@
 /*Font Awesome Fonts*/
 @font-face {
-    font-family: 'FontAwesome';
-    src: url('../../../node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf') format('truetype');
+  font-family: 'FontAwesome';
+  src: url('../../../node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf')
+    format('truetype');
 }
 
 @font-face {
-    font-family: 'Ubuntu-Condensed';
-    src: url('../fonts/Ubuntu_Condensed/UbuntuCondensed-Regular.ttf') format('truetype');
+  font-family: 'Ubuntu-Condensed';
+  src: url('../fonts/Ubuntu_Condensed/UbuntuCondensed-Regular.ttf')
+    format('truetype');
 }
 
 @font-face {
-    font-family: 'Ubuntu-Regular';
-    src: url('../fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
+  font-family: 'Ubuntu-Regular';
+  src: url('../fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
 }
 
 @font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-Light.ttf') format('truetype');
-    font-weight: 300;
-    font-style: normal;
+  font-family: 'Fira-Sans';
+  src: url('../fonts/Fira_Sans/FiraSans-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-LightItalic.ttf') format('truetype');
-    font-weight: 300;
-    font-style: italic;
+  font-family: 'Fira-Sans';
+  src: url('../fonts/Fira_Sans/FiraSans-LightItalic.ttf') format('truetype');
+  font-weight: 300;
+  font-style: italic;
 }
 
 @font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-Regular.ttf') format('truetype');
-    font-weight: 400;
-    font-style: normal;
+  font-family: 'Fira-Sans';
+  src: url('../fonts/Fira_Sans/FiraSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-Italic.ttf') format('truetype');
-    font-weight: 400;
-    font-style: italic;
+  font-family: 'Fira-Sans';
+  src: url('../fonts/Fira_Sans/FiraSans-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
 }
 
 @font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-Medium.ttf') format('truetype');
-    font-weight: 500;
-    font-style: normal;
+  font-family: 'Fira-Sans';
+  src: url('../fonts/Fira_Sans/FiraSans-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-SemiBold.ttf') format('truetype');
-    font-weight: 600;
-    font-style: normal;
+  font-family: 'Fira-Sans';
+  src: url('../fonts/Fira_Sans/FiraSans-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-Bold.ttf') format('truetype');
-    font-weight: 700;
-    font-style: normal;
+  font-family: 'Fira-Sans';
+  src: url('../fonts/Fira_Sans/FiraSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
 }
 
 @font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-BoldItalic.ttf') format('truetype');
-    font-weight: 700;
-    font-style: italic;
+  font-family: 'Fira-Sans';
+  src: url('../fonts/Fira_Sans/FiraSans-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
 }
 
 @font-face {
-    font-family: 'Julius';
-    src: url('../fonts/Julius_Sans_One/JuliusSansOne-Regular.ttf') format('truetype');
+  font-family: 'Julius';
+  src: url('../fonts/Julius_Sans_One/JuliusSansOne-Regular.ttf')
+    format('truetype');
 }
 
 $interface-font-stack: 'Fira-Sans', 'Ubuntu-Regular', sans-serif;

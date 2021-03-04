@@ -1,45 +1,45 @@
 {
-    "app_name": "NOTONO",
+  "app_name": "NOTONO",
 
-    "disable_server_parameters_input": false,
+  "disable_server_parameters_input": false,
 
-    "annotation_types": ["fermata"],
+  "annotation_types": ["fermata"],
 
-    "allow_only_one_fermata": false,
+  "allow_only_one_fermata": false,
 
-    "granularities_quarters": ["1", "2", "4"],
+  "granularities_quarters": ["1", "2", "4"],
 
-    "insert_variations_lfo": false,
+  "insert_variations_lfo": false,
 
-    "use_chords_instrument": false,
-    "chords_midi_channel": 2,
+  "use_chords_instrument": false,
+  "chords_midi_channel": 2,
 
-    "insert_advanced_controls": true,
+  "insert_advanced_controls": true,
 
-    "disable_mouse": false,
+  "disable_mouse": false,
 
-    "insert_wav_input": false,
+  "insert_wav_input": false,
 
-    "main_language": "en",
-    "secondary_language": null,
+  "main_language": "en",
+  "secondary_language": null,
 
-    "insert_help": true,
-    "display_help_on_idle": false,
-    "display_help_on_idle_period_ms": 10000,
+  "insert_help": true,
+  "display_help_on_idle": false,
+  "display_help_on_idle_period_ms": 10000,
 
-    "sony_logo": true,
-    "acids_logo": false,
+  "sony_logo": true,
+  "acids_logo": false,
 
-    "link_channel_prefix": "LINK/",
+  "link_channel_prefix": "LINK/",
 
-    "spectrogram_only": false,
+  "spectrogram_only": false,
 
-    "insert_recaptcha": false,
-    "recaptcha_sitekey": "6Leab_MUAAAAAP7_u_MTF96FH0-8kLtfNTZiD3yu",
+  "insert_recaptcha": false,
+  "recaptcha_sitekey": "6Leab_MUAAAAAP7_u_MTF96FH0-8kLtfNTZiD3yu",
 
-    "recaptcha_verification_ip": null,
-    "recaptcha_verification_port": 8081,
-    "recaptcha_verification_command": "verify",
+  "recaptcha_verification_ip": null,
+  "recaptcha_verification_port": 8081,
+  "recaptcha_verification_command": "verify",
 
-    "enable_anonymous_mode": false
+  "enable_anonymous_mode": false
 }

@@ -1,17 +1,20 @@
 // Modules to control application life
-import {app, ipcMain} from 'electron'
-app.commandLine.appendSwitch('disable-pinch');
+import { app, ipcMain } from 'electron'
+app.commandLine.appendSwitch('disable-pinch')
 import * as log from 'loglevel'
-import path from 'path';
-import { outputFile } from 'fs-extra';
+import path from 'path'
+import { outputFile } from 'fs-extra'
 
 import * as WindowManager from './windowManager'
 import LinkServer from './ableton_link/linkServer'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
-if (isDevelopment) { log.setLevel('debug'); }
-else { log.setLevel('info'); }
+if (isDevelopment) {
+  log.setLevel('debug')
+} else {
+  log.setLevel('info')
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -35,13 +38,19 @@ app.on('activate', function () {
   }
 })
 
-ipcMain.on('disconnect', () => LinkServer.killLink());
+ipcMain.on('disconnect', () => LinkServer.killLink())
 
-
-ipcMain.handle('get-path', (event, fileName, appDirectory: 'documents' | 'temp') => {
-  const storagePath = path.join(app.getPath(appDirectory), "NONOTO_generations", fileName);
-  return storagePath
-});
+ipcMain.handle(
+  'get-path',
+  (event, fileName, appDirectory: 'documents' | 'temp') => {
+    const storagePath = path.join(
+      app.getPath(appDirectory),
+      'NONOTO_generations',
+      fileName
+    )
+    return storagePath
+  }
+)
 
 ipcMain.handle('save-file', (event, fileName, buffer) => {
   return outputFile(fileName, buffer)
@@ -49,10 +58,10 @@ ipcMain.handle('save-file', (event, fileName, buffer) => {
 
 ipcMain.on('ondragstart', (event, filePath, iconPath) => {
   event.sender.startDrag({
-      file: filePath,
-      icon: iconPath
+    file: filePath,
+    icon: iconPath,
   })
-});
+})
 // })
 
 LinkServer.attachListeners()

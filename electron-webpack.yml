@@ -1,6 +1,5 @@
 main:
-    webpackConfig: "webpack.main.cjs"
-
+  webpackConfig: 'webpack.main.cjs'
 
 renderer:
-    webpackConfig: "webpack.renderer.cjs"
+  webpackConfig: 'webpack.renderer.cjs'
