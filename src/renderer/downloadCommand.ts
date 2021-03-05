@@ -1,7 +1,3 @@
-import { throws, AssertionError } from 'assert'
-import { app } from 'electron'
-import path, { parse } from 'path'
-
 declare let COMPILE_ELECTRON: boolean
 
 class Radius {
@@ -58,9 +54,9 @@ export type filename = {
 export class DownloadButton {
   protected readonly parent: HTMLElement
   readonly container: HTMLElement
-  readonly downloadElem: HTMLAnchorElement
+  readonly downloadElement: HTMLAnchorElement
   protected readonly interface // Nexus.TextButton;
-  protected readonly iconElem // Nexus.TextButton;
+  protected readonly iconElement // Nexus.TextButton;
 
   protected mainIconSize = 'fa-3x'
 
@@ -76,19 +72,19 @@ export class DownloadButton {
     this.container.appendChild(this.interface)
 
     // create invisible anchor element to handle download logic
-    this.downloadElem = document.createElement('a')
-    this.downloadElem.id = 'download-button'
-    this.downloadElem.setAttribute('draggable', 'true')
-    this.interface.appendChild(this.downloadElem)
+    this.downloadElement = document.createElement('a')
+    this.downloadElement.id = 'download-button'
+    this.downloadElement.setAttribute('draggable', 'true')
+    this.interface.appendChild(this.downloadElement)
 
     this.defaultFilename = defaultFilename
 
-    this.iconElem = document.createElement('i')
-    this.iconElem.id = 'download-button-icon'
-    this.iconElem.classList.add('fas')
-    this.iconElem.classList.add('fa-download')
-    this.iconElem.classList.add(this.mainIconSize)
-    this.downloadElem.appendChild(this.iconElem)
+    this.iconElement = document.createElement('i')
+    this.iconElement.id = 'download-button-icon'
+    this.iconElement.classList.add('fas')
+    this.iconElement.classList.add('fa-download')
+    this.iconElement.classList.add(this.mainIconSize)
+    this.downloadElement.appendChild(this.iconElement)
 
     this.resizeCanvas = document.createElement('canvas')
     this.resizeCanvas.id = 'drag-n-drop-thumbnail-image-resizer'
@@ -100,8 +96,8 @@ export class DownloadButton {
       const ipcRenderer = require('electron').ipcRenderer
 
       function saveBlob(
-        blob,
-        fileName,
+        blob: Blob,
+        fileName: string,
         appDir: 'temp' | 'documents' = 'temp'
       ): Promise<string> {
         return new Promise<string>((resolve, _) => {
@@ -137,11 +133,12 @@ export class DownloadButton {
           'spectrogram.png',
           'temp'
         )
-        Promise.all([soundStoragePathPromise, imageStoragePathPromise]).then(
-          ([soundPath, imagePath]) => {
-            ipcRenderer.send('ondragstart', soundPath, imagePath)
-          }
-        )
+        void Promise.all([
+          soundStoragePathPromise,
+          imageStoragePathPromise,
+        ]).then(([soundPath, imagePath]) => {
+          ipcRenderer.send('ondragstart', soundPath, imagePath)
+        })
       })
     }
   }
@@ -223,34 +220,34 @@ export class DownloadButton {
 
   protected resizeCanvas: HTMLCanvasElement
 
-  set targetURL(downloadURL: string) {
-    this.downloadElem.href = downloadURL
-  }
-
   content: Blob
 
   protected _imageContent: Blob
   get imageContent(): Blob {
     return this._imageContent
   }
-  set imageContent(imageBlob) {
-    this.resizeImage(imageBlob, 150, 150).then((blob) => {
+  set imageContent(imageBlob: Blob) {
+    void this.resizeImage(imageBlob, 150, 150).then((blob) => {
       this._imageContent = blob
     })
   }
 
   get targetURL(): string {
-    return this.downloadElem.href
+    return this.downloadElement.href
+  }
+
+  set targetURL(downloadURL: string) {
+    this.downloadElement.href = downloadURL
   }
 
   readonly defaultFilename: filename
 
   get filename(): string {
-    return this.downloadElem.download
+    return this.downloadElement.download
   }
 
   set filename(newFilename: string) {
-    this.downloadElem.setAttribute(
+    this.downloadElement.setAttribute(
       'download',
       this.makeFilenameWithTimestamp(newFilename)
     )

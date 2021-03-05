@@ -1,7 +1,7 @@
 import { MidiOutput } from './midi_io/midiOutput'
 import WebMidi, { Output } from 'webmidi'
 
-import * as log from 'loglevel'
+import log from 'loglevel'
 import * as Instruments from './instruments'
 import * as ControlLabels from './controlLabels'
 
@@ -14,7 +14,7 @@ export async function getMidiOutputListener(): Promise<MidiOutput> {
   return globalMidiOutputListener
 }
 
-export async function render(useChordsInstrument = false) {
+export async function render(useChordsInstrument = false): Promise<void> {
   if (globalMidiOutputListener === null) {
     try {
       globalMidiOutputListener = new MidiOutput(null)
@@ -26,14 +26,16 @@ export async function render(useChordsInstrument = false) {
     }
   }
 
-  const bottomControlsGridElem = document.getElementById('bottom-controls')
+  const bottomControlsGridElement = document.getElementById('bottom-controls')
 
-  const midiOutSelectElem: HTMLElement = document.createElement('control-item')
-  midiOutSelectElem.id = 'select-midi-out'
-  midiOutSelectElem.classList.add('advanced')
-  bottomControlsGridElem.appendChild(midiOutSelectElem)
+  const midiOutSelectElement: HTMLElement = document.createElement(
+    'control-item'
+  )
+  midiOutSelectElement.id = 'select-midi-out'
+  midiOutSelectElement.classList.add('advanced')
+  bottomControlsGridElement.appendChild(midiOutSelectElement)
 
-  ControlLabels.createLabel(midiOutSelectElem, 'select-midi-out-label', true)
+  ControlLabels.createLabel(midiOutSelectElement, 'select-midi-out-label', true)
 
   const disabledOutputId = 'Disabled'
 

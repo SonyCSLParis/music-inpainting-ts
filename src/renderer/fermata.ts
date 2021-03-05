@@ -2,7 +2,7 @@ import { AnnotationBox } from './annotationBox'
 
 export class FermataBox extends AnnotationBox {
   constructor(
-    timestampContainer: string | HTMLElement,
+    timestampContainer: HTMLElement,
     sequenceDuration: number,
     allowOnlyOneActive = false
   ) {

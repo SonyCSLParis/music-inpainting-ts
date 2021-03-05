@@ -1,6 +1,6 @@
 import { AnnotationBox } from './annotationBox'
 import $ from 'jquery'
-import deepEqual = require('deep-equal')
+import deepEqual from 'deep-equal'
 
 const Raphael = require('./dependencies/wheelnav/raphael')
 import 'wheelnav'
@@ -15,8 +15,8 @@ export class ChordSelector extends AnnotationBox {
   private accidentals: string[]
 
   constructor(
-    timestampContainer: string | HTMLElement,
-    onChordChange: Function,
+    timestampContainer: HTMLElement,
+    onChordChange: () => void,
     wheelSize_px = 250,
     useSlurSymbol = false
   ) {
@@ -33,8 +33,9 @@ export class ChordSelector extends AnnotationBox {
     this.previousChord = this.currentChord
   }
 
-  protected validateTimestampContainer(): void {
-    if (!this.timestampContainer.classList.contains('2_quarterNote_duration')) {
+  protected validateTimestampContainer(timestampContainer: HTMLElement): void {
+    super.validateTimestampContainer(timestampContainer)
+    if (!timestampContainer.classList.contains('2_quarterNote_duration')) {
       throw new EvalError(
         'Chord selector should be associated to a half-note box'
       )
@@ -74,7 +75,7 @@ export class ChordSelector extends AnnotationBox {
   // on the same note and don't disaply accidental selector in that case
   private previouslySelectedNoteIndex: number = null
 
-  private onChordChange: Function
+  private onChordChange: () => void
 
   private get currentNote() {
     return this.notes[this.noteWheel.selectedNavItemIndex]

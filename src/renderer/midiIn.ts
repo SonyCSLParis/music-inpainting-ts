@@ -1,4 +1,4 @@
-import * as log from 'loglevel'
+import log from 'loglevel'
 import { IMidiChannel, Input } from 'webmidi'
 
 import * as ControlLabels from './controlLabels'
@@ -81,7 +81,7 @@ class ChannelBasedMidiInput extends MidiInput {
 
 let globalMidiInputListener: ChannelBasedMidiInput = null
 
-export async function getMidiInputListener(): Promise<ChannelBasedMidiInput> {
+export async function getMidiInputListener(): Promise<ChannelBasedMidiInput | null> {
   try {
     await MidiInput.enabled()
     return globalMidiInputListener
@@ -90,7 +90,7 @@ export async function getMidiInputListener(): Promise<ChannelBasedMidiInput> {
   }
 }
 
-export async function render(useChordsInstrument = false) {
+export async function render(useChordsInstrument = false): Promise<void> {
   if (globalMidiInputListener === null) {
     try {
       globalMidiInputListener = new ChannelBasedMidiInput('all')
@@ -102,26 +102,26 @@ export async function render(useChordsInstrument = false) {
     }
   }
 
-  const bottomControlsGridElem = document.getElementById('bottom-controls')
+  const bottomControlsGridElement = document.getElementById('bottom-controls')
 
-  const midiInContainerElem: HTMLElement = document.createElement('div')
-  midiInContainerElem.id = 'midi-input-setup-gridspan'
-  midiInContainerElem.classList.add('gridspan')
-  midiInContainerElem.classList.add('advanced')
-  bottomControlsGridElem.appendChild(midiInContainerElem)
+  const midiInContainerElement: HTMLElement = document.createElement('div')
+  midiInContainerElement.id = 'midi-input-setup-gridspan'
+  midiInContainerElement.classList.add('gridspan')
+  midiInContainerElement.classList.add('advanced')
+  bottomControlsGridElement.appendChild(midiInContainerElement)
 
-  const midiInDeviceSelectElem: HTMLElement = document.createElement(
+  const midiInDeviceSelectElement: HTMLElement = document.createElement(
     'control-item'
   )
-  midiInDeviceSelectElem.id = 'select-midi-input-device'
-  midiInDeviceSelectElem.classList.add('advanced')
-  midiInContainerElem.appendChild(midiInDeviceSelectElem)
+  midiInDeviceSelectElement.id = 'select-midi-input-device'
+  midiInDeviceSelectElement.classList.add('advanced')
+  midiInContainerElement.appendChild(midiInDeviceSelectElement)
   ControlLabels.createLabel(
-    midiInDeviceSelectElem,
+    midiInDeviceSelectElement,
     'select-midi-input-device-label',
     true,
-    null,
-    midiInContainerElem
+    undefined,
+    midiInContainerElement
   )
 
   const disabledInputId = 'Disabled'
@@ -137,9 +137,14 @@ export async function render(useChordsInstrument = false) {
     options: await makeOptions(),
   })
 
-  async function getDeviceId(name: string): Promise<string> {
+  async function getDeviceId(name: string): Promise<string | null> {
     const devices = await MidiInput.getDevices()
-    return devices.find((data) => data.name == name).id
+    const maybeDevice = devices.find((data) => data.name == name)
+    if (maybeDevice == null) {
+      return null
+    } else {
+      return maybeDevice.id
+    }
   }
 
   async function updateOptions(): Promise<void> {
@@ -187,7 +192,7 @@ export async function render(useChordsInstrument = false) {
   }
 
   const midiInChannelSelect = new NumberControl(
-    midiInContainerElem,
+    midiInContainerElement,
     'select-midi-input-channel',
     [0, 16],
     0,
@@ -199,7 +204,7 @@ export async function render(useChordsInstrument = false) {
   const midiInDisplayButtonContainer = document.createElement('control-item')
   midiInDisplayButtonContainer.id = 'midi-in-display-container'
   midiInDisplayButtonContainer.classList.add('disable-mouse')
-  midiInContainerElem.appendChild(midiInDisplayButtonContainer)
+  midiInContainerElement.appendChild(midiInDisplayButtonContainer)
   const midiInDisplayButton = new Nexus.Button('#midi-in-display-container', {
     size: [15, 15],
     state: false,

@@ -71,7 +71,7 @@ export class NumberControl {
       containerElem,
       this.labelId,
       false,
-      null,
+      undefined,
       this.parent
     )
 
@@ -210,7 +210,7 @@ export function renderPitchRootAndOctaveControl() {
     pitchSelectContainer,
     'pitch-control-root-select-label',
     false,
-    null,
+    undefined,
     pitchSelectGridspanElem
   )
 

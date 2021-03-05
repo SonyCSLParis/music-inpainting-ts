@@ -44,7 +44,7 @@ export function render(container: HTMLElement): void {
     playbuttonContainer,
     'play-button-label',
     false,
-    null,
+    undefined,
     container
   )
 

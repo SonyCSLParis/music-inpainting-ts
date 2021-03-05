@@ -235,8 +235,8 @@ async function render(configuration = defaultConfiguration) {
       )
 
       function vqvaeLayerOnChange(ev) {
-        const tool: string = this.value
-        const newLayer: string = tool.split('-')[0]
+        const tool = this.value
+        const newLayer = tool.split('-')[0]
         const [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(newLayer)
         const [_, numColumnsTop] = vqvaeLayerDimensions.get('top')
         spectrogramPlaybackManager.Locator.render(
@@ -326,7 +326,7 @@ async function render(configuration = defaultConfiguration) {
         instrumentSelectElem,
         'instrument-control-label',
         false,
-        null,
+        undefined,
         instrumentSelectGridspanElem
       )
       ;[pitchRootSelect, octaveControl] = renderPitchRootAndOctaveControl()
@@ -1175,7 +1175,7 @@ async function render(configuration = defaultConfiguration) {
         bottomControlsGridElem,
         'download-button-label',
         isAdvancedControl,
-        null,
+        undefined,
         downloadButton.container
       )
     }
@@ -1238,7 +1238,7 @@ async function render(configuration = defaultConfiguration) {
         fadeInControlElement,
         'fade-in-control-label',
         isAdvancedControl,
-        null,
+        undefined,
         volumeControlsGridElement
       )
 
@@ -1256,7 +1256,7 @@ async function render(configuration = defaultConfiguration) {
         gainControlElement,
         'gain-control-label',
         isAdvancedControl,
-        null,
+        undefined,
         volumeControlsGridElement
       )
     }

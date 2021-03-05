@@ -1,5 +1,6 @@
 import LinkElectronModule = require('./linkServer.electron')
-import LinkSocketModule = require('./linkServer.socket-io') // TODO(theis): use external package ableton-link-server
+// TODO(theis): use external package ableton-link-server
+import LinkSocketModule = require('./linkServer.socket-io')
 
 // wrapper for the different available implementations of the Link Client
 // implemented as described in

@@ -16,7 +16,7 @@ export class CycleSelect {
   readonly icons: Map<string, string>
   readonly options: string[]
 
-  private _selectElem: HTMLSelectElement
+  private _selectElement: HTMLSelectElement
 
   constructor(
     containerElement: HTMLElement,
@@ -43,10 +43,10 @@ export class CycleSelect {
     this.innerContainerElement.classList.add(CycleSelect.innerContainerCssClass)
     this.containerElement.appendChild(this.innerContainerElement)
 
-    this._selectElem = document.createElement('select')
-    this._selectElem.style.visibility = 'hidden'
-    this._selectElem.id = selectElemID
-    this.innerContainerElement.appendChild(this._selectElem)
+    this._selectElement = document.createElement('select')
+    this._selectElement.style.visibility = 'hidden'
+    this._selectElement.id = selectElemID
+    this.innerContainerElement.appendChild(this._selectElement)
 
     const copyCallback = onchangeCallback
     copyCallback.handleEvent = copyCallback.handleEvent.bind(this)
@@ -59,9 +59,9 @@ export class CycleSelect {
     this.populateSelect()
     this.populateContainer()
 
-    this._selectElem.addEventListener('change', (e) => {
+    this._selectElement.addEventListener('change', (e) => {
       self.updateVisuals()
-      self.onchangeCallback.handleEvent.bind(self._selectElem)(e)
+      self.onchangeCallback.handleEvent.bind(self._selectElement)(e)
     })
     this.innerContainerElement.addEventListener('click', (e: MouseEvent) => {
       self.selectNextOption.bind(self)()
@@ -77,7 +77,7 @@ export class CycleSelect {
 
   public get value(): string {
     // return the name of the currently selected option
-    return this.options[parseInt(this._selectElem.value)]
+    return this.options[parseInt(this._selectElement.value)]
   }
 
   public set value(newValue: string) {
@@ -85,8 +85,8 @@ export class CycleSelect {
     if (!this.options.includes(newValue)) {
       throw EvalError('Unauthorized value ' + newValue + ' for CycleSelector')
     }
-    this._selectElem.value = this.options.indexOf(newValue).toString()
-    this._selectElem.dispatchEvent(new Event('change'))
+    this._selectElement.value = this.options.indexOf(newValue).toString()
+    this._selectElement.dispatchEvent(new Event('change'))
   }
 
   private updateVisuals() {
@@ -107,10 +107,10 @@ export class CycleSelect {
     // append all images as <img> to the container
     const self = this
     this.icons.forEach((iconPath, iconName) => {
-      const imageElem = document.createElement('img')
-      imageElem.id = this.makeOptionId(iconName)
-      imageElem.src = path.join(this.basePath, iconPath)
-      self.innerContainerElement.appendChild(imageElem)
+      const imageElement = document.createElement('img')
+      imageElement.id = this.makeOptionId(iconName)
+      imageElement.src = path.join(this.basePath, iconPath)
+      self.innerContainerElement.appendChild(imageElement)
     })
   }
 
@@ -121,7 +121,7 @@ export class CycleSelect {
       const newOption = document.createElement('option')
       newOption.value = optionIndex.toString()
       newOption.textContent = optionName
-      self._selectElem.appendChild(newOption)
+      self._selectElement.appendChild(newOption)
     })
   }
 

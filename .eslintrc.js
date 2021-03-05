@@ -3,7 +3,6 @@ module.exports = {
     'eslint:recommended',
     'plugin:import/errors',
     'plugin:import/warnings',
-    'prettier',
   ],
 
   env: {
@@ -15,11 +14,38 @@ module.exports = {
     sourceType: 'script',
   },
 
+  rules: {
+    'no-warning-comments': [
+      'warn',
+      {
+        terms: ['todo', 'fixme', 'xxx', 'hack'],
+      },
+    ],
+
+    'import/no-extraneous-dependencies': [
+      'error',
+      {
+        devDependencies: true,
+        packageDir: __dirname,
+      },
+    ],
+  },
+
+  globals: {
+    __static: 'readonly',
+    __dirname: 'readonly',
+  },
+
   overrides: [
     // TypeScript-specific rulesets
     {
       files: ['**/*.ts', '**/*.tsx'],
       plugins: ['@typescript-eslint'],
+      extends: [
+        'plugin:import/typescript',
+        'plugin:@typescript-eslint/recommended', // A plugin that contains a bunch of ESLint rules that are TypeScript specific
+        'plugin:@typescript-eslint/recommended-requiring-type-checking',
+      ],
       parser: '@typescript-eslint/parser', // Specifies the ESLint parser
       parserOptions: {
         ecmaVersion: 2021, // Allows for the parsing of modern ECMAScript features
@@ -36,13 +62,10 @@ module.exports = {
     {
       files: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
       extends: [
-        'eslint:recommended',
-        'plugin:import/errors',
-        'plugin:import/warnings',
-        'plugin:import/typescript',
-        'plugin:@typescript-eslint/recommended', // A plugin that contains a bunch of ESLint rules that are TypeScript specific
-        'plugin:@typescript-eslint/recommended-requiring-type-checking',
-        'prettier',
+        // 'plugin:import/typescript',
+        // 'plugin:@typescript-eslint/recommended', // A plugin that contains a bunch of ESLint rules that are TypeScript specific
+        // 'plugin:@typescript-eslint/recommended-requiring-type-checking',
+        // 'prettier',
       ],
       env: {
         browser: true,
@@ -52,36 +75,14 @@ module.exports = {
     // main/Node/server-specific rules
     {
       files: ['src/main/**/*.ts', 'src/main/**/*.tsx'],
-      extends: [
-        'eslint:recommended',
-        'plugin:node/recommended',
-        'plugin:import/errors',
-        'plugin:import/warnings',
-        'plugin:import/typescript',
-        'plugin:@typescript-eslint/recommended', // A plugin that contains a bunch of ESLint rules that are TypeScript specific.
-        'plugin:@typescript-eslint/recommended-requiring-type-checking',
-        'prettier',
-      ],
+      extends: ['plugin:node/recommended'],
       env: {
         node: true,
       },
-      rules: {
-        'node/no-unpublished-import': [
-          'error',
-          {
-            allowModules: ['electron'],
-          },
-        ],
-        'node/no-unsupported-features/es-syntax': [
-          'error',
-          {
-            ignores: ['modules'],
-          },
-        ],
-      },
+
       settings: {
         node: {
-          resolvePaths: [__dirname, '/src/main', '/src/renderer'],
+          resolvePaths: [__dirname, './src/main', './src/renderer'],
           tryExtensions: ['.js', '.jsx', '.json', '.node', '.ts', '.d.ts'],
           allowModules: ['electron', 'fs-extra'],
         },
@@ -92,6 +93,15 @@ module.exports = {
           },
         },
       },
+    },
+
+    {
+      files: '**/*.ts',
+      rules: {
+        // conflicts with import-plugin and does not support multiple package.json files
+        'node/no-extraneous-import': 0,
+      },
+      extends: ['prettier'],
     },
   ],
 
@@ -109,10 +119,5 @@ module.exports = {
         ],
       },
     },
-  },
-
-  globals: {
-    __static: 'readonly',
-    __dirname: 'readonly',
   },
 }

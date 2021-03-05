@@ -2,12 +2,7 @@ import $ from 'jquery'
 import 'nipplejs'
 import log from 'loglevel'
 
-import {
-  OpenSheetMusicDisplay,
-  Fraction,
-  GraphicalMeasure,
-  SourceMeasure,
-} from 'opensheetmusicdisplay'
+import { OpenSheetMusicDisplay, Fraction } from 'opensheetmusicdisplay'
 import { FermataBox } from './fermata'
 import { ChordSelector } from './chord_selector'
 
@@ -20,7 +15,7 @@ export abstract class Locator {
   protected resizeTimeout: NodeJS.Timeout
 
   // render the interface on the DOM and bind callbacks
-  public abstract render(...args: any): void
+  public abstract render(): void
 
   // re-render with current parameters
   // also ensures the help-tour is not taken into account for the layout
@@ -60,7 +55,9 @@ export abstract class Locator {
       const element = this.getInterfaceElementByIndex(index)
 
       promise = promise.then(() => {
-        element.classList.add('highlight')
+        if (element != null) {
+          element.classList.add('highlight')
+        }
         return delay(interval)
       })
     })
@@ -69,14 +66,16 @@ export abstract class Locator {
       setTimeout(() => {
         randomIndexes.forEach((index) => {
           const element = this.getInterfaceElementByIndex(index)
-          element.classList.remove('highlight')
+          if (element != null) {
+            element.classList.remove('highlight')
+          }
         })
       }, 4 * interval * this.callToActionHighlightedCells)
     })
   }
 
   // retrieve interactive elements of the interface by index
-  abstract getInterfaceElementByIndex(index: number): Element
+  abstract getInterfaceElementByIndex(index: number): Element | null
 
   abstract get numInteractiveElements(): number
 
@@ -112,10 +111,12 @@ export class SheetLocator extends Locator {
       timeStart: Fraction,
       timeEnd: Fraction
     ) => (event: PointerEvent) => void,
-    copyTimecontainerContent?: (
+    copyTimecontainerContent: (
       origin: HTMLElement,
       target: HTMLElement
-    ) => void
+    ) => void = () => {
+      return
+    }
   ) {
     super()
     this.container = container
@@ -124,9 +125,7 @@ export class SheetLocator extends Locator {
     this._boxDurations_quarters = boxDurations_quarters
     this._allowOnlyOneFermata = allowOnlyOneFermata
     this.onClickTimestampBoxFactory = onClickTimestampBoxFactory
-    if (copyTimecontainerContent != null) {
-      this.copyTimecontainerContent = copyTimecontainerContent
-    }
+    this.copyTimecontainerContent = copyTimecontainerContent
   }
   protected resizeTimeoutDuration = 50
   readonly container: HTMLElement
@@ -420,10 +419,10 @@ export class SheetLocator extends Locator {
   public get pieceDuration(): Fraction {
     const pieceDuration = new Fraction(0, 1)
     const measureList = this.sheet.GraphicSheet.MeasureList
-    const numMeasures: number = measureList.length
+    const numMeasures = measureList.length
     for (let measureIndex = 0; measureIndex < numMeasures; measureIndex++) {
-      const measure: GraphicalMeasure = measureList[measureIndex][0]
-      const sourceMeasure: SourceMeasure = measure.parentSourceMeasure
+      const measure = measureList[measureIndex][0]
+      const sourceMeasure = measure.parentSourceMeasure
       const measureDuration = sourceMeasure.Duration
 
       pieceDuration.Add(measureDuration)
@@ -435,8 +434,8 @@ export class SheetLocator extends Locator {
     const onclickFactory = this.onClickTimestampBoxFactory
     // FIXME this assumes a time signature of 4/4
     const measureList = this.sheet.GraphicSheet.MeasureList
-    const numMeasures: number = measureList.length
-    const pieceDuration: Fraction = this.pieceDuration
+    const numMeasures = measureList.length
+    const pieceDuration = this.pieceDuration
 
     function makeDurationFraction(duration_quarters: number): Fraction {
       return new Fraction(duration_quarters, 4)
@@ -510,12 +509,11 @@ export class SheetLocator extends Locator {
           } else {
             // index of the last measure contained in the current box
             // e.g. if durationBox is 2, we arrive in `measureIndex+1`
-            const lastContainedMeasureIndex: number =
+            const lastContainedMeasureIndex =
               measureIndex +
               boxDuration.WholeValue -
               1 * (boxDuration.RealValue == boxDuration.WholeValue ? 1 : 0)
-            const lastMeasure: GraphicalMeasure =
-              measureList[lastContainedMeasureIndex][0]
+            const lastMeasure = measureList[lastContainedMeasureIndex][0]
             // reached last segment of the measure
             // set xRight as the x-position of the next measure bar
             xEndBox =
@@ -580,7 +578,7 @@ export class SheetLocator extends Locator {
     return this.container.getElementsByClassName('notebox active')
   }
 
-  getInterfaceElementByIndex(index: number): Element {
+  getInterfaceElementByIndex(index: number): Element | null {
     return this.activeElements.item(index)
   }
 
@@ -588,7 +586,7 @@ export class SheetLocator extends Locator {
     return this.activeElements.length
   }
 
-  setCurrentlyPlayingPositionDisplay(progress: number) {
+  setCurrentlyPlayingPositionDisplay(progress: number): void {
     const timePosition = Math.round(progress * this.sequenceDuration_quarters)
 
     $('.notebox').removeClass('playing')

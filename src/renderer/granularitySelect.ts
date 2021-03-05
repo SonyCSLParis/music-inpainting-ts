@@ -1,6 +1,4 @@
-import * as path from 'path'
-
-import { static_correct } from './staticPath'
+import { getPathToStaticFile } from './staticPath'
 import * as ControlLabels from './controlLabels'
 import { CycleSelect } from './cycleSelect'
 import { SheetLocator } from './locator'
@@ -42,17 +40,17 @@ export function renderGranularitySelect(
   containerElement: HTMLElement,
   granularities_quarters: string[]
 ): void {
-  const iconsBasePath: string = path.join(static_correct, 'icons')
+  const iconsBasePath: string = getPathToStaticFile('icons')
   const granularityIcons = makeGranularityIconsList(granularities_quarters)
 
-  const granularitySelectContainerElem: HTMLElement = document.createElement(
+  const granularitySelectContainerElement: HTMLElement = document.createElement(
     'control-item'
   )
-  granularitySelectContainerElem.id = 'granularity-select-container'
-  containerElement.appendChild(granularitySelectContainerElem)
+  granularitySelectContainerElement.id = 'granularity-select-container'
+  containerElement.appendChild(granularitySelectContainerElement)
 
   ControlLabels.createLabel(
-    granularitySelectContainerElem,
+    granularitySelectContainerElement,
     'granularity-select-label'
   )
 
@@ -66,7 +64,7 @@ export function renderGranularitySelect(
   }
 
   const granularitySelect = new CycleSelect(
-    granularitySelectContainerElem,
+    granularitySelectContainerElement,
     'granularity-select',
     { handleEvent: granularityOnChange },
     granularityIcons,
