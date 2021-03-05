@@ -7,7 +7,6 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "electron-builder install-app-deps",
     "start": "electron ./app/main.js",
-    "link-osmd": "yarn link opensheetmusicdisplay",
     "build:web": "webpack --config webpack.web.cjs",
     "build:notono_web": "webpack --config webpack.notono_web.cjs",
     "build:notono_web_anonymous": "webpack --config webpack.notono_web_anonymous.cjs",
@@ -29,14 +28,6 @@
       }
     ]
   },
-  "engines": {
-    "node": ">=15"
-  },
-  "type": "commonjs",
-  "files": [
-    "src/**/*",
-    "config.json"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SonyCSLParis/NONOTO.git"
@@ -103,6 +94,7 @@
     "ajv": "^7.0.4",
     "deep-equal": "^2.0.3",
     "es6-promise": "^4.2.4",
+    "fs-extra": "^9.1.0",
     "jquery": "^3.5.1",
     "jquery-simple-upload": "^1.1.0",
     "jszip": "^3.2.2",

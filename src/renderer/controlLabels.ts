@@ -1,16 +1,16 @@
-const configuration = require('../common/default_config.json')
-const localizations = require('../common/localization.json')
+import * as configuration from '../common/default_config.json'
+import * as localizations from '../common/localization.json'
 
 export function createLabel(
-  controlElem: HTMLElement,
+  controlElement: HTMLElement,
   id: string,
   isAdvancedControl = false,
-  localizationId: string | null = null,
-  containerElement: HTMLElement = null
-) {
-  const labelElem: HTMLElement = document.createElement('control-label')
-  labelElem.id = id
-  if (localizationId == null) {
+  localizationId?: string,
+  containerElement?: HTMLElement
+): void {
+  const labelElement: HTMLElement = document.createElement('control-label')
+  labelElement.id = id
+  if (localizationId == undefined) {
     localizationId = id
   }
   const controlLabel = `${
@@ -24,14 +24,21 @@ export function createLabel(
       `<br><i>${localizations['control-labels'][localizationId][secondary_language]}</i>`
     )
   }
-  labelElem.innerHTML = controlLabel
-  labelElem.classList.toggle('advanced', isAdvancedControl)
+  labelElement.innerHTML = controlLabel
+  labelElement.classList.toggle('advanced', isAdvancedControl)
 
-  if (containerElement === null) {
-    const bottomControlsElem: HTMLElement = document.getElementById(
-      'bottom-controls'
+  if (containerElement == undefined) {
+    const defaultContainerId = 'bottom-controls'
+    const maybeBottomControlsElement = document.getElementById(
+      defaultContainerId
     )
-    containerElement = bottomControlsElem
+    if (maybeBottomControlsElement == null) {
+      throw new EvalError(
+        `No container element provided and the of ${defaultContainerId} does not exist on the DOM`
+      )
+    }
+    const bottomControlsElement = maybeBottomControlsElement
+    containerElement = bottomControlsElement
   }
-  containerElement.appendChild(labelElem)
+  containerElement.appendChild(labelElement)
 }

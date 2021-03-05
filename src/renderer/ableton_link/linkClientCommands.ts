@@ -5,7 +5,7 @@ import Nexus from '../nexusColored'
 import { PlaybackManager } from '../playback'
 import { Locator } from '../locator'
 
-export function render(playbackManager: PlaybackManager<Locator>) {
+export function render(playbackManager: PlaybackManager<Locator>): void {
   const bottomControlsGridElem = document.getElementById('bottom-controls')
   const abletonLinkSettingsGridspan = document.createElement('div')
   abletonLinkSettingsGridspan.id = 'ableton-link-settings-gridspan'
@@ -35,7 +35,7 @@ export function render(playbackManager: PlaybackManager<Locator>) {
     linkEnableButton,
     'link-enable-button-label',
     false,
-    null,
+    undefined,
     abletonLinkSettingsGridspan
   )
 
@@ -69,7 +69,7 @@ function renderSyncButton(
     syncButton,
     'link-force-resync-button-label',
     false,
-    null,
+    undefined,
     container
   )
 }
@@ -95,7 +95,7 @@ export function renderDownbeatDisplay(): void {
     linkDownbeatDisplayButton,
     'link-downbeat-display-label',
     true,
-    null,
+    undefined,
     abletonLinkSettingsGridspan
   )
 

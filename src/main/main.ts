@@ -1,7 +1,7 @@
 // Modules to control application life
 import { app, ipcMain } from 'electron'
 app.commandLine.appendSwitch('disable-pinch')
-import * as log from 'loglevel'
+import log from 'loglevel'
 import path from 'path'
 import { outputFile } from 'fs-extra'
 
@@ -62,9 +62,5 @@ ipcMain.on('ondragstart', (event, filePath, iconPath) => {
     icon: iconPath,
   })
 })
-// })
 
 LinkServer.attachListeners()
-
-if (module.hot) {
-}

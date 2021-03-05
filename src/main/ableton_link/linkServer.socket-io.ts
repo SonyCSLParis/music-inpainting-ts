@@ -1,15 +1,13 @@
 import { ipcMain } from 'electron'
-import * as log from 'loglevel'
-const abletonlink = require('abletonlink')
+import log from 'loglevel'
+import abletonlink from 'abletonlink'
 
 import * as WindowManager from '../windowManager'
 
 // Code for Ableton-LINK server
 
-const pattern_synchronization_duration_quarters = 4
-const link_channel_prefix: string = require('../../common/default_config.json')[
-  'link_channel_prefix'
-]
+import default_config from '../../common/default_config.json'
+const link_channel_prefix: string = default_config['link_channel_prefix']
 let link = undefined
 let link_enabled = false
 
@@ -21,7 +19,7 @@ function isLinkEnabled(): boolean {
   return link_enabled
 }
 
-function setLinkEnabled(enable): void {
+function setLinkEnabled(enable: boolean): void {
   link_enabled = enable
   WindowManager.send(link_channel_prefix + 'enabled-status', isLinkEnabled())
 }
@@ -50,12 +48,12 @@ function initAbletonLinkServer(
   return success
 }
 
-function startLinkDownbeatClock(updateRate_ms = 16) {
+function startLinkDownbeatClock(updateRate_ms = 16): void {
   // Start a LINK-based downbeat clock using IPC messages
   // updateRate_ms, number: interval (in ms) between updates in the clock
   let lastBeat = 0.0
   let lastPhase = 0.0
-  link.startUpdate(updateRate_ms, (beat, phase, bpm) => {
+  link.startUpdate(updateRate_ms, (beat, phase) => {
     beat = 0 ^ beat
     if (0 < beat - lastBeat) {
       WindowManager.send('beat', { beat })
@@ -69,7 +67,7 @@ function startLinkDownbeatClock(updateRate_ms = 16) {
   })
 }
 
-function stopLinkDownbeatClock() {
+function stopLinkDownbeatClock(): void {
   // Stop the LINK-based downbeat clock
   link.stopUpdate()
 }
@@ -77,9 +75,7 @@ function stopLinkDownbeatClock() {
 // IPC API for the link server
 
 // Initialize LINK server
-export function attachListeners() {
-  ipcMain.on(link_channel_prefix + 'init', (event, bpm, quantum) => {})
-
+export function attachListeners(): void {
   ipcMain.on(link_channel_prefix + 'ping', (event) => {
     if (isLinkInitialized()) {
       event.sender.send(link_channel_prefix + 'initialized-status', true)
@@ -103,7 +99,7 @@ export function attachListeners() {
     }
   })
 
-  // Enable LINK and start a downbeat clock to synchronize Transport
+  // Enable LINK and start a downbeat clock to synchronize Transport
   ipcMain.on(link_channel_prefix + 'enable', (event) => {
     link.enable() // enable backend LINK-server
     startLinkDownbeatClock()
@@ -123,14 +119,13 @@ export function attachListeners() {
   ipcMain.on(link_channel_prefix + 'get-bpm', (event) => {
     if (link.isEnabled()) {
       event.sender.send(link_channel_prefix + 'bpm', link.bpm)
-    } else {
     }
   })
 
   ipcMain.on(link_channel_prefix + 'kill', () => killLink())
 }
 
-function disableLink() {
+function disableLink(): void {
   if (isLinkInitialized()) {
     stopLinkDownbeatClock()
     link.disable() // disable the backend LINK-server
@@ -138,7 +133,7 @@ function disableLink() {
   setLinkEnabled(false)
 }
 
-export function killLink() {
+export function killLink(): void {
   // kill the LINK server
   log.info('Killing the LINK server')
   disableLink()

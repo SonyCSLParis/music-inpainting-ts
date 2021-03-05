@@ -30,7 +30,6 @@
   }
 
   & input {
-    // width: inherit;
     font-size: 2vw;
     @media screen and (max-width: 800px) {
       font-size: 15px;
@@ -46,7 +45,6 @@
     column-gap: 3vw;
     grid-row-gap: 1vh;
     row-gap: 1vh;
-    // max-width: 30em;
   }
 
   &.no-server-config {
@@ -72,7 +70,6 @@
   }
 
   display: grid;
-  // grid-row: 1;
 
   & input {
     width: 60% !important;
@@ -92,9 +89,6 @@
 
 #server-ip-container:before {
   content: 'IP';
-  // @media screen and (min-width: 400px) {
-  //     content: "Server IP";
-  // }
   display: inline-block;
   width: 35%;
   margin-right: auto;
@@ -102,9 +96,6 @@
 }
 #server-port-container:before {
   content: 'Port';
-  // @media screen and (min-width: 400px) {
-  //     content: "Server port";
-  // }
   display: inline-block;
   width: 35%;
 }
@@ -117,7 +108,6 @@
     width: 100%;
   }
 
-  // grid-row: 2;
   display: grid;
 
   width: 100%;
@@ -144,17 +134,8 @@
 }
 
 #start-button {
-  // display: grid;
-  // grid-row: 3;
-
   width: 100% !important;
   height: 100% !important;
-
-  & * {
-    // text-align: center;
-    // width: inherit !important;
-    // height: inherit !important;
-  }
 }
 
 #application-mode-select {

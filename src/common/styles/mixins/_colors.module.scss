@@ -57,7 +57,7 @@ $panes-background: #beb9d4;
     $simplebar-scrollbar-color: #4392f1;
   }
 
-  .simplebar-track.simplebar-horizontal {
+  .simplebar-track {
     background-color: $simplebar-track-color;
     box-shadow: inset 0px 3px 20px 0.5px
         color.scale(
