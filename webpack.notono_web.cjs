@@ -1,5 +1,4 @@
 // webpack configuration for web, NOTONO-only interface
-// TODO(theis): disable inclusion of sound samples for this mode
 
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
