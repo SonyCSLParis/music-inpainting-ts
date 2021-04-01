@@ -42,7 +42,7 @@ module.exports = mergeWithCustomize({
       {
         // loader for .ts files.
         test: /\.tsx?$/,
-        use: [{ loader: 'ts-loader' }],
+        loader: 'ts-loader',
         exclude: path.resolve(__dirname, 'node_modules'),
       },
       {
@@ -92,6 +92,7 @@ module.exports = mergeWithCustomize({
       title: 'DeepBach',
       favicon: 'src/common/images/favicon.ico',
     }),
+
     new webpack.ProvidePlugin({
       // this allows to use JQuery plugin by calling `require('plugin-name')`
       // as it provides a global JQuery
@@ -100,7 +101,7 @@ module.exports = mergeWithCustomize({
       $: 'jquery',
       jQuery: 'jquery',
     }),
-    //example on how to add ressources
+
     new CopyWebpackPlugin({
       patterns: [
         {
