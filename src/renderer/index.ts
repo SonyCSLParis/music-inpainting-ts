@@ -790,7 +790,7 @@ async function render(configuration = defaultConfiguration) {
     serverURL: string,
     generationCommand: string,
     sendCodesWithRequest: boolean,
-    mask: number[][] = null
+    mask?: number[][]
   ): Promise<void> {
     disableChanges()
 
@@ -804,7 +804,7 @@ async function render(configuration = defaultConfiguration) {
         currentConditioning_bottom
       )
     }
-    if (mask !== null) {
+    if (mask != null) {
       // send the mask with low-frequencies first
       payload_object['mask'] = mask.reverse()
     }
