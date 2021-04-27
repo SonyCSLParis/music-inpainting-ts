@@ -59,16 +59,18 @@ export class NumberControl {
   }
 
   render(useSimpleSlider = false, elementWidth: number): void {
-    const containerElem: HTMLElement = document.createElement('control-item')
-    ;(containerElem.id = this.id), containerElem.setAttribute('horizontal', '')
-    containerElem.setAttribute('layout', '')
-    containerElem.setAttribute('display', 'grid')
-    containerElem.setAttribute('grid-template-columns', '200px 200px;')
+    const containerElement = document.createElement('div')
+    containerElement.id = this.id
+    containerElement.classList.add('control-item')
+    containerElement.setAttribute('horizontal', '')
+    containerElement.setAttribute('layout', '')
+    containerElement.setAttribute('display', 'grid')
+    containerElement.setAttribute('grid-template-columns', '200px 200px;')
 
-    this.parent.appendChild(containerElem)
+    this.parent.appendChild(containerElement)
 
     ControlLabels.createLabel(
-      containerElem,
+      containerElement,
       this.labelId,
       false,
       undefined,
@@ -76,9 +78,9 @@ export class NumberControl {
     )
 
     if (!useSimpleSlider) {
-      const interactionElem: HTMLElement = document.createElement('div')
-      interactionElem.id = this.interactionId
-      containerElem.appendChild(interactionElem)
+      const interactionElement: HTMLElement = document.createElement('div')
+      interactionElement.id = this.interactionId
+      containerElement.appendChild(interactionElement)
       this.controller = new UniformChangeRateNumber('#' + this.interactionId, {
         min: this.range[0],
         max: this.range[1],
@@ -88,9 +90,9 @@ export class NumberControl {
       this.controller.element.style.width =
         Math.round(elementWidth).toString() + 'px'
     } else {
-      const bpmSliderElem: HTMLElement = document.createElement('div')
-      bpmSliderElem.id = this.id
-      containerElem.appendChild(bpmSliderElem)
+      const bpmSliderElement: HTMLElement = document.createElement('div')
+      bpmSliderElement.id = this.id
+      containerElement.appendChild(bpmSliderElement)
 
       this.controller = new Nexus.Slider('#' + this.id, {
         size: [100, 40],
@@ -115,7 +117,8 @@ export class NumberControl {
 }
 
 export class BPMControl extends NumberControl {
-  protected static onchangeCallback_default = (newBPM) => {
+
+  protected onchangeCallback_default(newBPM: number): void {
     Tone.getTransport().bpm.value = newBPM
     LinkClient.updateLinkBPM(newBPM)
   }
@@ -127,9 +130,12 @@ export class BPMControl extends NumberControl {
     id: string,
     range: [number, number] = BPMControl.defaultRange,
     initialValue: number = BPMControl.defaultInitialValue,
-    onchange: (newValue: number) => void = BPMControl.onchangeCallback_default
+    onchange?: (newValue: number) => void
   ) {
     super(containerElement, id, range, initialValue, onchange)
+    if (onchange == null) {
+      this.onchange = this.onchangeCallback_default.bind(this)
+    }
   }
 
   protected _checkRange(range: [number, number]) {
@@ -166,26 +172,19 @@ export class BPMControl extends NumberControl {
   }
 }
 
-export class PitchControl extends NumberControl {
-  protected static onchangeCallback_default = () => {}
-  protected static defaultRange: [number, number] = [30, 300]
-  protected static defaultInitialValue = 100
-
-  render(useSimpleSlider = false, elementWidth: number) {}
-}
-
 export function renderPitchRootAndOctaveControl() {
-  const constraintsGridspanElem = document.getElementById(
+  const constraintsGridspanElement = document.getElementById(
     'constraints-gridspan'
   )
-  const pitchSelectGridspanElem = document.createElement('div')
-  pitchSelectGridspanElem.id = 'pitch-control-gridspan'
-  pitchSelectGridspanElem.classList.add('gridspan')
-  constraintsGridspanElem.appendChild(pitchSelectGridspanElem)
+  const pitchSelectGridspanElement = document.createElement('div')
+  pitchSelectGridspanElement.id = 'pitch-control-gridspan'
+  pitchSelectGridspanElement.classList.add('gridspan')
+  constraintsGridspanElement.appendChild(pitchSelectGridspanElement)
 
-  const pitchSelectContainer = document.createElement('control-item')
+  const pitchSelectContainer = document.createElement('div')
   pitchSelectContainer.id = 'pitch-control-root-select'
-  pitchSelectGridspanElem.appendChild(pitchSelectContainer)
+  pitchSelectContainer.classList.add('control-item')
+  pitchSelectGridspanElement.appendChild(pitchSelectContainer)
   const notes = [
     'C',
     'C♯',
@@ -211,11 +210,11 @@ export function renderPitchRootAndOctaveControl() {
     'pitch-control-root-select-label',
     false,
     undefined,
-    pitchSelectGridspanElem
+    pitchSelectGridspanElement
   )
 
   const octaveControl = new NumberControl(
-    pitchSelectGridspanElem,
+    pitchSelectGridspanElement,
     'pitch-control-octave-control',
     [2, 7],
     5

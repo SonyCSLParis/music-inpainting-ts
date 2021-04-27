@@ -61,12 +61,6 @@ module.exports = {
     // renderer/browser-specific rules
     {
       files: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
-      extends: [
-        // 'plugin:import/typescript',
-        // 'plugin:@typescript-eslint/recommended', // A plugin that contains a bunch of ESLint rules that are TypeScript specific
-        // 'plugin:@typescript-eslint/recommended-requiring-type-checking',
-        // 'prettier',
-      ],
       env: {
         browser: true,
       },

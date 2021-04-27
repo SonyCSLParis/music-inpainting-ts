@@ -55,8 +55,8 @@ export class DownloadButton {
   protected readonly parent: HTMLElement
   readonly container: HTMLElement
   readonly downloadElement: HTMLAnchorElement
-  protected readonly interface // Nexus.TextButton;
-  protected readonly iconElement // Nexus.TextButton;
+  protected readonly interface: HTMLElement
+  protected readonly iconElement: HTMLElement
 
   protected mainIconSize = 'fa-3x'
 
@@ -67,8 +67,9 @@ export class DownloadButton {
   ) {
     this.container = container
 
-    this.interface = document.createElement('control-item')
+    this.interface = document.createElement('div')
     this.interface.id = 'download-button-interface'
+    this.interface.classList.add('control-item')
     this.container.appendChild(this.interface)
 
     // create invisible anchor element to handle download logic
@@ -143,13 +144,10 @@ export class DownloadButton {
     }
   }
 
-  makeFilenameWithTimestamp(
-    baseName: string = null,
-    extension: string = null
-  ): string {
-    baseName = baseName || this.defaultFilename.name
+  makeFilenameWithTimestamp(baseName?: string, extension?: string): string {
+    baseName = baseName != null ? baseName : this.defaultFilename.name
 
-    extension = extension || this.defaultFilename.extension
+    extension = extension != null ? extension : this.defaultFilename.extension
     const dotFreeExtension = extension.replace(/^\./, '')
 
     const timestamp: string = new Date()
@@ -199,12 +197,8 @@ export class DownloadButton {
         context.filter = 'blur(2px)'
         roundRect(context, centerX + 2, centerY - 2, cropWidth, cropHeight, 20)
 
-        // context.beginPath();
-        // context.ellipse(centerX, centerY, ellipseWidth, ellipseHeight, 0, 0, 2 * Math.PI);
-
         context.fillStyle = 'purple'
         context.fill()
-        // context.closePath();
         context.filter = 'none'
         context.clip()
         context.drawImage(image, 2, -2, newWidth, newHeight)

@@ -15,7 +15,7 @@ import Nexus from './nexusColored'
 
 import { CycleSelect } from './cycleSelect'
 
-import { static_correct } from './staticPath'
+import { getPathToStaticFile } from './staticPath'
 
 let piano: TonePiano
 let sampledInstruments // declare variable but do not load samples yet
@@ -26,9 +26,8 @@ export function getCurrentInstrument(): any {
   return current_instrument
 }
 
-let chordInstrumentSelectElem: HTMLDivElement
 let chordInstrumentFactories
-let chordInstrumentSelect
+let chordInstrumentSelect: CycleSelect
 
 let current_chords_instrument
 export function getCurrentChordsInstrument() {
@@ -153,7 +152,7 @@ export function initializeInstruments() {
   }
 }
 
-let instrumentSelect
+let instrumentSelect: CycleSelect
 declare let COMPILE_ELECTRON: boolean
 export function renderDownloadButton(
   containerElement: HTMLElement,
@@ -161,10 +160,10 @@ export function renderDownloadButton(
 ): void {
   // Manual samples loading button, to reduce network usage by only loading them
   // when requested
-  const loadSamplesButtonElem: HTMLDivElement = document.createElement('div')
-  loadSamplesButtonElem.id = 'load-samples-button'
-  loadSamplesButtonElem.classList.add('right-column')
-  containerElement.appendChild(loadSamplesButtonElem)
+  const loadSamplesButtonElement: HTMLDivElement = document.createElement('div')
+  loadSamplesButtonElement.id = 'load-samples-button'
+  loadSamplesButtonElement.classList.add('right-column')
+  containerElement.appendChild(loadSamplesButtonElement)
 
   const loadSamplesButton = new Nexus.TextButton('#load-samples-button', {
     size: [100, 50],
@@ -175,11 +174,11 @@ export function renderDownloadButton(
 
   $(() => {
     // HACK manually increase fontSize in download samples button
-    const textContentDivElem = <HTMLDivElement>(
-      loadSamplesButtonElem.children[0].children[0]
+    const textContentDivElement = <HTMLDivElement>(
+      loadSamplesButtonElement.children[0].children[0]
     )
-    textContentDivElem.style.padding = '18px 0px'
-    textContentDivElem.style.fontSize = '12px'
+    textContentDivElement.style.padding = '18px 0px'
+    textContentDivElement.style.fontSize = '12px'
   })
 
   const sampled_instruments_names = ['organ', 'harmonium', 'xylophone']
@@ -187,15 +186,15 @@ export function renderDownloadButton(
   loadSamplesButton.on('change', () => {
     log.info('Start downloading audio samples')
     // must disable pointer events on *child* node to also use cursor property
-    ;(loadSamplesButtonElem.firstElementChild as HTMLElement).style.pointerEvents =
+    ;(loadSamplesButtonElement.firstElementChild as HTMLElement).style.pointerEvents =
       'none'
-    loadSamplesButtonElem.style.cursor = 'wait'
+    loadSamplesButtonElement.style.cursor = 'wait'
 
     const loadPromises: Promise<any>[] = []
-    const sampleLibraryLoadPromise = new Promise((resolve, reject) => {
+    const sampleLibraryLoadPromise = new Promise((resolve) => {
       sampledInstruments = SampleLibrary.load({
         instruments: sampled_instruments_names,
-        baseUrl: path.join(static_correct, 'tonejs-instruments/samples/'),
+        baseUrl: getPathToStaticFile('tonejs-instruments/samples/'),
       })
       Object.keys(sampledInstruments).forEach(function (instrument_name) {
         sampledInstruments[instrument_name].release = 1.8
@@ -213,7 +212,7 @@ export function renderDownloadButton(
       if (!useChordsInstruments) {
         containerElement.classList.remove('two-columns')
       }
-      loadSamplesButtonElem.remove()
+      loadSamplesButtonElement.remove()
       // instrumentSelect.render();
     })
   })
@@ -225,7 +224,7 @@ export function renderDownloadButton(
   }
 }
 
-const instrumentIconsBasePath: string = path.join(static_correct, 'icons')
+const instrumentIconsBasePath: string = getPathToStaticFile('icons')
 const mainInstrumentsIcons = new Map([
   ['Piano', '049-piano.svg'],
   ['PolySynth', '019-synthesizer.svg'],
@@ -238,13 +237,12 @@ const chordInstrumentsIcons = new Map([
 ])
 
 export function renderInstrumentSelect(containerElement: HTMLElement): void {
-  const instrumentSelectElem: HTMLElement = document.createElement(
-    'control-item'
-  )
-  instrumentSelectElem.id = 'lead-instrument-select-container'
+  const instrumentSelectElement = document.createElement('div')
+  instrumentSelectElement.id = 'lead-instrument-select-container'
+  instrumentSelectElement.classList.add('control-item')
 
-  instrumentSelectElem.classList.add('left-column')
-  containerElement.appendChild(instrumentSelectElem)
+  instrumentSelectElement.classList.add('left-column')
+  containerElement.appendChild(instrumentSelectElement)
 
   const instrumentOnChange: { handleEvent: (e: Event) => void } = {
     handleEvent: function (this, e: Event) {
@@ -253,7 +251,7 @@ export function renderInstrumentSelect(containerElement: HTMLElement): void {
   }
 
   instrumentSelect = new CycleSelect(
-    instrumentSelectElem,
+    instrumentSelectElement,
     'instrument-select-lead',
     instrumentOnChange,
     mainInstrumentsIcons,
@@ -266,12 +264,11 @@ export function renderInstrumentSelect(containerElement: HTMLElement): void {
 
 export function renderChordInstrumentSelect(containerElement: HTMLElement) {
   // create second instrument selector for chord instrument
-  const chordInstrumentSelectElem: HTMLElement = document.createElement(
-    'control-item'
-  )
-  chordInstrumentSelectElem.id = 'chord-instrument-select-container'
-  chordInstrumentSelectElem.classList.add('right-column')
-  containerElement.appendChild(chordInstrumentSelectElem)
+  const chordInstrumentSelectElement = document.createElement('div')
+  chordInstrumentSelectElement.id = 'chord-instrument-select-container'
+  chordInstrumentSelectElement.classList.add('control-item')
+  chordInstrumentSelectElement.classList.add('right-column')
+  containerElement.appendChild(chordInstrumentSelectElement)
 
   const chordInstrumentOnChange: { handleEvent: (e: Event) => void } = {
     handleEvent: function (this, e: Event) {
@@ -280,7 +277,7 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
   }
 
   chordInstrumentSelect = new CycleSelect(
-    chordInstrumentSelectElem,
+    chordInstrumentSelectElement,
     'instrument-select-chord',
     chordInstrumentOnChange, // TODO
     chordInstrumentsIcons,
@@ -294,18 +291,18 @@ export function renderChordInstrumentSelect(containerElement: HTMLElement) {
 }
 
 export function mute(mute: boolean, useChordsInstrument = false) {
-  const instrumentSelectElems = $(
+  const instrumentSelectElements = $(
     '.CycleSelect-container[id$="instrument-select-container"]'
   )
   const instruments = [current_instrument, current_chords_instrument]
   if (mute) {
-    instrumentSelectElems.toggleClass('CycleSelect-disabled', true)
+    instrumentSelectElements.toggleClass('CycleSelect-disabled', true)
     current_instrument = silentInstrument
     if (useChordsInstrument) {
       current_chords_instrument = silentInstrument
     }
   } else {
-    instrumentSelectElems.toggleClass('CycleSelect-disabled', false)
+    instrumentSelectElements.toggleClass('CycleSelect-disabled', false)
     instrumentSelect.value = instrumentSelect.value
     if (useChordsInstrument) {
       chordInstrumentSelect.value = chordInstrumentSelect.value

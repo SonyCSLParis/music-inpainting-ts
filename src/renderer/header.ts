@@ -1,101 +1,105 @@
-import * as Path from 'path'
-import * as screenfull from 'screenfull'
+import screenfull from 'screenfull'
+
+import { getPathToStaticFile } from './staticPath'
 
 import '../common/styles/main.scss'
 import '../common/styles/header.scss'
 
-import { static_correct } from './staticPath'
-
-import * as HelpTour from './helpTour'
-
 declare let COMPILE_ELECTRON: boolean
-declare let ENABLE_ANONYMOUS_MODE: boolean
 
 if (COMPILE_ELECTRON) {
-  const shell = require('electron').shell
+  // inner declaration required to have this block properly
+  // erased on non-Electron compilation
+  // eslint-disable-next-line no-inner-declarations
+  async function setupSystemIntegrationForLinksOpening() {
+    const shell = (await import('electron')).shell
 
-  //open links externally by default
-  $(document).on(
-    'click',
-    'a[href^="http"]',
-    function (this: HTMLAnchorElement, event) {
-      event.preventDefault()
-      shell.openExternal(this.href)
-    }
-  )
+    //open links externally by default
+    $(document).on(
+      'click',
+      'a[href^="http"]',
+      function (this: HTMLAnchorElement, event) {
+        event.preventDefault()
+        void shell.openExternal(this.href)
+      }
+    )
+  }
+  void setupSystemIntegrationForLinksOpening()
 }
 
-export function render(containerElement: HTMLElement, configuration) {
-  if (configuration['sony_logo']) {
-    const cslLogoLinkElem = document.createElement('a')
-    cslLogoLinkElem.id = 'csl-logo'
-    cslLogoLinkElem.classList.add('header-item-left')
-    // cslLogoLinkElem.href = "https://www.sonycsl.co.jp/";
+export function render(
+  containerElement: HTMLElement,
+  configuration: Record<string, unknown>
+): void {
+  if (configuration['display_sony_logo']) {
+    const cslLogoLinkElement = document.createElement('a')
+    cslLogoLinkElement.id = 'csl-logo'
+    cslLogoLinkElement.classList.add('header-item-left')
+    // cslLogoLinkElement.href = "https://www.sonycsl.co.jp/";
     //
     // // open in new tab
-    // cslLogoLinkElem.target = '_blank';
+    // cslLogoLinkElement.target = '_blank';
     // // securely open tab, cf. https://stackoverflow.com/a/15551842
-    // cslLogoLinkElem.rel = "noopener noreferrer";
+    // cslLogoLinkElement.rel = "noopener noreferrer";
 
-    containerElement.appendChild(cslLogoLinkElem)
+    containerElement.appendChild(cslLogoLinkElement)
 
-    const cslLogoContainerElem = document.createElement('picture')
-    cslLogoContainerElem.classList.add('logo')
-    cslLogoLinkElem.appendChild(cslLogoContainerElem)
-    const CslLargeLogoElem = document.createElement('source')
-    CslLargeLogoElem.type = 'image/svg+xml'
-    CslLargeLogoElem.media = '(min-width: 700px) and (min-height: 500px)'
-    CslLargeLogoElem.srcset = Path.join(
-      static_correct,
+    const cslLogoContainerElement = document.createElement('picture')
+    cslLogoContainerElement.classList.add('logo')
+    cslLogoLinkElement.appendChild(cslLogoContainerElement)
+    const CslLargeLogoElement = document.createElement('source')
+    CslLargeLogoElement.type = 'image/svg+xml'
+    CslLargeLogoElement.media = '(min-width: 700px) and (min-height: 500px)'
+    CslLargeLogoElement.srcset = getPathToStaticFile(
       '/icons/logos/sonycsl-logo.svg'
     )
-    cslLogoContainerElem.appendChild(CslLargeLogoElem)
-    const CslSmallLogoElem = document.createElement('img')
-    CslSmallLogoElem.src = Path.join(
-      static_correct,
+    cslLogoContainerElement.appendChild(CslLargeLogoElement)
+    const CslSmallLogoElement = document.createElement('img')
+    CslSmallLogoElement.src = getPathToStaticFile(
       '/icons/logos/sonycsl-logo-no_text.svg'
     )
-    CslSmallLogoElem.alt = 'Sony CSL Logo'
-    cslLogoContainerElem.appendChild(CslSmallLogoElem)
+    CslSmallLogoElement.alt = 'Sony CSL Logo'
+    cslLogoContainerElement.appendChild(CslSmallLogoElement)
 
-    cslLogoLinkElem.addEventListener('click', () => {
+    // TODO(theis): remove this hack
+    cslLogoContainerElement.style.cursor = 'pointer'
+    cslLogoContainerElement.addEventListener('click', () => {
       if (screenfull.isEnabled) {
         screenfull.request()
       }
     })
   }
 
-  const nameElem: HTMLElement = document.createElement('div')
-  nameElem.id = 'app-title'
-  nameElem.innerText = configuration['app_name']
+  const nameElement: HTMLElement = document.createElement('div')
+  nameElement.id = 'app-title'
+  nameElement.innerText = <string>configuration['app_name']
 
-  containerElement.appendChild(nameElem)
+  containerElement.appendChild(nameElement)
 
-  if (configuration['acids_logo']) {
-    const acidsLogoLinkElem = document.createElement('a')
-    acidsLogoLinkElem.id = 'acids-logo'
-    acidsLogoLinkElem.classList.add('header-item-right')
+  if (configuration['display_acids_logo']) {
+    const acidsLogoLinkElement = document.createElement('a')
+    acidsLogoLinkElement.id = 'acids-logo'
+    acidsLogoLinkElement.classList.add('header-item-right')
 
-    containerElement.appendChild(acidsLogoLinkElem)
+    containerElement.appendChild(acidsLogoLinkElement)
 
-    const acidsLogoContainerElem = document.createElement('picture')
-    acidsLogoContainerElem.classList.add('logo')
-    acidsLogoLinkElem.appendChild(acidsLogoContainerElem)
-    const acidsLargeLogoElem = document.createElement('source')
-    acidsLargeLogoElem.type = 'image/png'
-    acidsLargeLogoElem.media = '(min-width: 700px) and (min-height: 500px)'
-    acidsLargeLogoElem.srcset = Path.join(
-      static_correct,
+    const acidsLogoContainerElement = document.createElement('picture')
+    acidsLogoContainerElement.classList.add('logo')
+    acidsLogoLinkElement.appendChild(acidsLogoContainerElement)
+    const acidsLargeLogoElement = document.createElement('source')
+    acidsLargeLogoElement.type = 'image/png'
+    acidsLargeLogoElement.media = '(min-width: 700px) and (min-height: 500px)'
+    acidsLargeLogoElement.srcset = getPathToStaticFile(
       '/icons/logos/acids-flat-logo.png'
     )
-    acidsLogoContainerElem.appendChild(acidsLargeLogoElem)
-    const acidsSmallLogoElem = document.createElement('img')
-    acidsSmallLogoElem.src = Path.join(
-      static_correct,
+    acidsLogoContainerElement.appendChild(acidsLargeLogoElement)
+    const acidsSmallLogoElement = document.createElement('img')
+    acidsSmallLogoElement.src = getPathToStaticFile(
       '/icons/logos/acids-flat-logo-no_text.png'
     )
-    acidsSmallLogoElem.alt = 'ACIDS Team Logo'
-    acidsLogoContainerElem.appendChild(acidsSmallLogoElem)
+    acidsSmallLogoElement.alt = 'ACIDS Team Logo'
+    acidsLogoContainerElement.appendChild(acidsSmallLogoElement)
+
   }
 }
 

@@ -1,11 +1,4 @@
-import * as log from 'loglevel'
-// import { library, icon } from '@fortawesome/fontawesome-free'
-
 import '@fortawesome/fontawesome-free/css/all.css'
-// library.add(icon({ prefix: 'fas', iconName: 'stop-circle' }));
-// library.add(icon({ prefix: 'fas', iconName: 'play-circle' }));
-
-import Nexus from './nexusColored'
 
 import { PlaybackManager } from './playback'
 import { Locator } from './locator'
@@ -34,10 +27,9 @@ export function render(container: HTMLElement): void {
 
   const mainIconSize = 'fa-4x'
 
-  const playbuttonContainer: HTMLElement = document.createElement(
-    'control-item'
-  )
+  const playbuttonContainer = document.createElement('div')
   playbuttonContainer.id = 'play-button-container'
+  playbuttonContainer.classList.add('control-item')
   container.appendChild(playbuttonContainer)
 
   ControlLabels.createLabel(
@@ -62,9 +54,15 @@ export function render(container: HTMLElement): void {
     if (isPlaying) {
       playButtonInterface.classList.add(...playingClasses)
       playButtonInterface.classList.remove(...stoppedClasses)
+
+      // updates interface colors
+      playbuttonContainer.classList.add('active')
     } else {
       playButtonInterface.classList.add(...stoppedClasses)
       playButtonInterface.classList.remove(...playingClasses)
+
+      // updates interface colors
+      playbuttonContainer.classList.remove('active')
     }
   }
   function setWaitingClass() {
@@ -88,27 +86,30 @@ export function render(container: HTMLElement): void {
     setPlayingClass(play)
   }
 
-  function pressPlay() {
-    playCallback(true)
+  async function pressPlay() {
+    await playCallback(true)
   }
 
-  function pressStop() {
-    playCallback(false)
+  async function pressStop() {
+    await playCallback(false)
   }
 
-  function togglePlayback() {
-    playCallback(playButtonInterface.classList.contains(stoppedClasses[0]))
+  async function togglePlayback() {
+    await playCallback(
+      playButtonInterface.classList.contains(stoppedClasses[0])
+    )
   }
 
-  playButtonInterface.addEventListener('click', togglePlayback)
+  playButtonInterface.addEventListener('click', () => {
+    togglePlayback()
+  })
 
   document.addEventListener('keydown', (event) => {
     const keyName = event.key
     switch (keyName) {
       case 'Spacebar':
-        // disable scrolling on Spacebar press
-        event.preventDefault()
       case ' ':
+        // disable scrolling on Spacebar press
         event.preventDefault()
         togglePlayback()
         break

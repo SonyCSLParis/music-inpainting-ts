@@ -15,6 +15,14 @@ export async function getMidiOutputListener(): Promise<MidiOutput> {
 }
 
 export async function render(useChordsInstrument = false): Promise<void> {
+  const bottomControlsGridElement = document.getElementById('bottom-controls')
+
+  const midiOutContainerElement: HTMLElement = document.createElement('div')
+  midiOutContainerElement.id = 'midi-output-setup-gridspan'
+  midiOutContainerElement.classList.add('gridspan')
+  midiOutContainerElement.classList.add('advanced')
+  bottomControlsGridElement.appendChild(midiOutContainerElement)
+
   if (globalMidiOutputListener === null) {
     try {
       globalMidiOutputListener = new MidiOutput(null)
@@ -26,16 +34,16 @@ export async function render(useChordsInstrument = false): Promise<void> {
     }
   }
 
-  const bottomControlsGridElement = document.getElementById('bottom-controls')
-
-  const midiOutSelectElement: HTMLElement = document.createElement(
-    'control-item'
-  )
+  const midiOutSelectElement = document.createElement('div')
   midiOutSelectElement.id = 'select-midi-out'
-  midiOutSelectElement.classList.add('advanced')
-  bottomControlsGridElement.appendChild(midiOutSelectElement)
+  midiOutSelectElement.classList.add('control-item', 'advanced')
+  midiOutContainerElement.appendChild(midiOutSelectElement)
 
-  ControlLabels.createLabel(midiOutSelectElement, 'select-midi-out-label', true)
+  ControlLabels.createLabel(
+    midiOutSelectElement,
+    'select-midi-output-device-label',
+    true
+  )
 
   const disabledOutputId = 'Disabled'
 

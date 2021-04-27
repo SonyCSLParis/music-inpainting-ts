@@ -1,7 +1,7 @@
-// Module to create native browser window
+// Module to create native browser windows
 import { BrowserWindow } from 'electron'
 import { format as formatUrl } from 'url'
-import * as path from 'path'
+import path from 'path'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
@@ -13,7 +13,7 @@ import defaultConfiguration from '../common/default_config.json'
 import customConfiguration from '../../config.json'
 const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
 
-export function createWindow() {
+export function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     title: globalConfiguration['app_name'],
@@ -66,6 +66,6 @@ export function existsWindow(): boolean {
 }
 
 // send a message to the main Renderer window over IPC
-export function send(channel: string, ...args: any[]) {
+export function send(channel: string, ...args: unknown[]): void {
   mainWindow.webContents.send(channel, ...args)
 }

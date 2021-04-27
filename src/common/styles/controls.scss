@@ -1,20 +1,14 @@
 @use "mixins/colors.module";
 @use "mixins/measures";
 
-$main-filter: drop-shadow(0px 0px 1.3px rgba(0, 0, 0, 0.3));
-
-control-item,
-control-label {
+.control-item,
+.control-label {
   align-self: center;
   align-content: normal;
   align-items: center;
 
   height: max-content;
   width: max-content;
-}
-
-control-item {
-  filter: $main-filter;
 }
 
 .fas {
@@ -49,18 +43,13 @@ control-item {
   }
 }
 
-control-item:hover {
-  filter: brightness(1.03) $main-filter;
-}
-
-control-item {
+.control-item {
   font-size: calc(min(10px + 0.5vw, 1em)) !important;
   font-weight: 500;
 }
 
-control-label {
+.control-label {
   font-weight: 400;
-
   font-size: calc(min(10px + 1vw, 1.1em));
 }
 
@@ -162,8 +151,8 @@ control-label {
   grid-template-rows: 2.5fr 1fr;
   grid-auto-flow: column;
 
-  control-label,
-  control-item {
+  .control-label,
+  .control-item {
     flex-basis: auto;
   }
 }

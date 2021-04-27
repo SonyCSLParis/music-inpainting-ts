@@ -85,22 +85,22 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
   private getTimecontainerPosition(
     step: number
   ): { left: number; right: number } {
-    const containerElemSelector = $(
-      `.timecontainer[containedQuarterNotes='${step}']`
+    const containerElementSelector = $(
+      `.timeContainer[containedQuarterNotes='${step}']`
     )
 
-    if (!containerElemSelector.exists()) {
+    if (!containerElementSelector.exists()) {
       throw new Error('Inaccessible step')
     }
 
-    const containerElemStyle = containerElemSelector[0].style
+    const containerElementStyle = containerElementSelector[0].style
 
     return {
-      left: parseFloat(containerElemStyle.left),
-      // FIXME implement and use timecontainer method
+      left: parseFloat(containerElementStyle.left),
+      // FIXME implement and use timeContainer method
       right:
-        parseFloat(containerElemStyle.left) +
-        parseFloat(containerElemStyle.width),
+        parseFloat(containerElementStyle.left) +
+        parseFloat(containerElementStyle.width),
     }
   }
 
@@ -128,7 +128,6 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
     // Inversely, scrolling to a position earlier in time (e.g. when pressing
     // stop or reaching the end of the loop) is super-fast
     log.debug(`Scrolling to step: ${step}`)
-    const sheetDisplayElem: HTMLElement = $('#osmd-container-container')[0]
     const scrollContentElement: HTMLElement = $(scrollElementSelector)[0]
     const currentSheetDisplayWidth_px: number = scrollContentElement.clientWidth
     const currentCenterPosition_px: number = this.getDisplayCenterPosition_px()
@@ -373,7 +372,7 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
     return midiBlobURL
   }
 
-  scheduleChordsPlayer(sheetLocator: SheetLocator, midiChannel: number) {
+  scheduleChordsPlayer(sheetLocator: SheetLocator, midiChannel: number): void {
     // schedule callback to play the chords contained in the OSMD
     const useChordsInstruments = true
 

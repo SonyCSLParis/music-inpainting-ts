@@ -43,9 +43,8 @@ export function renderGranularitySelect(
   const iconsBasePath: string = getPathToStaticFile('icons')
   const granularityIcons = makeGranularityIconsList(granularities_quarters)
 
-  const granularitySelectContainerElement: HTMLElement = document.createElement(
-    'control-item'
-  )
+  const granularitySelectContainerElement = document.createElement('div')
+  granularitySelectContainerElement.classList.add('control-item')
   granularitySelectContainerElement.id = 'granularity-select-container'
   containerElement.appendChild(granularitySelectContainerElement)
 

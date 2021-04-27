@@ -118,11 +118,9 @@ $spectrogram-height-no-scroll: 90%;
   pointer-events: none;
 }
 
-$spectrogram-margin-width: 5vw;
-
 #spectrogram-container-interface-container {
   position: absolute;
-  margin-left: $spectrogram-margin-width;
+  margin-left: measures.$spectrogram-margin-width;
   width: measures.$spectrogram-width !important;
   top: 5vh;
   z-index: 0;
@@ -132,34 +130,13 @@ $spectrogram-margin-width: 5vw;
     z-index: 0;
     content: '';
     position: absolute;
-    width: $spectrogram-margin-width;
+    width: measures.$spectrogram-margin-width;
     top: 0;
     height: 100%;
     background-size: cover;
     will-change: width;
     backdrop-filter: brightness(1.3) blur(2px);
     transform: perspective(500px);
-  }
-  &:before {
-    left: calc(0vw - #{$spectrogram-margin-width});
-    background: radial-gradient(
-      ellipse farthest-corner at right,
-      transparent 0vw,
-      colors.$body-background $spectrogram-margin-width
-    );
-  }
-
-  &:after {
-    right: calc(0vw - #{$spectrogram-margin-width});
-    background: radial-gradient(
-      ellipse farthest-corner at left,
-      transparent 0vw,
-      colors.$body-background $spectrogram-margin-width
-    );
-  }
-  div span {
-    z-index: 100;
-    opacity: 0.3;
   }
 }
 

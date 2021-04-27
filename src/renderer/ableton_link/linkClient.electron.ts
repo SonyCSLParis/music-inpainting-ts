@@ -1,13 +1,12 @@
-import { ipcRenderer } from 'electron'
-import * as log from 'loglevel'
+import log from 'loglevel'
+
 
 import { BPMControl } from '../numberControl'
 import { PlaybackManager } from '../playback'
 import { Locator } from '../locator'
 
-const link_channel_prefix: string = require('../../common/default_config.json')[
-  'link_channel_prefix'
-]
+import default_config from '../../common/default_config.json'
+const link_channel_prefix: string = default_config['link_channel_prefix']
 
 let link_initialized = false
 let link_enabled = false
