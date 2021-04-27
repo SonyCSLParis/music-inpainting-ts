@@ -52,7 +52,7 @@ You can download MacOS and Linux standalone applications
 
 Some configuration options can be set in the `config.json` file at the root of the project.
 In particular, you can change the default parameters for the computation back-end, by setting values
-for the `'server_ip'` and `'server_port'` keys.
+for the `'inpainting_api_ip'` and `'inpainting_api_port'` keys.
 
 ## Issues
 

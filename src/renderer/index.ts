@@ -9,10 +9,11 @@ import {
 import { Fraction } from 'opensheetmusicdisplay'
 import $ from 'jquery'
 import * as Tone from 'tone'
+
 import log from 'loglevel'
-import path from 'path'
+log.setLevel(log.levels.INFO)
+
 import Nexus from './nexusColored'
-import * as url from 'url'
 
 import * as Header from './header'
 
@@ -38,7 +39,7 @@ import { myTrip, NonotoTrip, NotonoTrip } from './helpTour'
 
 import { createLFOControls } from './lfo'
 import { CycleSelect } from './cycleSelect'
-import { static_correct } from './staticPath'
+import { getPathToStaticFile } from './staticPath'
 import * as ControlLabels from './controlLabels'
 import * as GranularitySelect from './granularitySelect'
 import { createWavInput } from './file_upload'
@@ -59,9 +60,8 @@ import colors from '../common/styles/mixins/_colors.module.scss'
 declare let ohSnap: any
 declare let COMPILE_ELECTRON: boolean
 
-const defaultConfiguration = require('../common/default_config.json')
+import defaultConfiguration from '../common/default_config.json'
 
-let appConfiguration: any
 let locator: Locator
 let playbackManager: PlaybackManager<Locator>
 let sheetPlaybackManager: SheetPlaybackManager
@@ -79,10 +79,12 @@ function getMidiPitch(): number {
 }
 
 function triggerInterfaceRefresh(): void {
+  // TODO(theis): use a proper interface
   vqvaeLayerSelect.value = vqvaeLayerSelect.value
 }
 
 function toggleBusyClass(state: boolean): void {
+  // TODO(theis, 2021_04_22): clean this up!
   $('body').toggleClass('busy', state)
   $('.notebox').toggleClass('busy', state)
   $('.notebox').toggleClass('available', !state)
@@ -97,21 +99,21 @@ function blockall(e) {
 
 function disableChanges(): void {
   toggleBusyClass(true)
-  $('.timecontainer').addClass('busy')
-  $('.timecontainer').each(function () {
+  $('.timeContainer').addClass('busy')
+  $('.timeContainer').each(function () {
     this.addEventListener('click', blockall, true)
   })
 }
 
 function enableChanges(): void {
-  $('.timecontainer').each(function () {
+  $('.timeContainer').each(function () {
     this.removeEventListener('click', blockall, true)
   })
-  $('.timecontainer').removeClass('busy')
+  $('.timeContainer').removeClass('busy')
   toggleBusyClass(false)
 }
 
-async function render(configuration = defaultConfiguration) {
+function render(configuration = defaultConfiguration): void {
   disableChanges()
   appConfiguration = configuration
 
@@ -149,32 +151,31 @@ async function render(configuration = defaultConfiguration) {
   })
 
   $(() => {
-    const headerGridElem: HTMLElement = document.createElement('header')
-    headerGridElem.id = 'header'
-    document.body.appendChild(headerGridElem)
+    const headerGridElement = document.createElement('header')
+    headerGridElement.id = 'header'
+    document.body.appendChild(headerGridElement)
 
-    const mainPanel = <HTMLElement>document.createElement('div')
+    const mainPanel = document.createElement('div')
     mainPanel.id = 'main-panel'
     document.body.appendChild(mainPanel)
 
-    let bottomControlsGridElem: HTMLElement
-    bottomControlsGridElem = document.createElement('footer')
-    bottomControlsGridElem.id = 'bottom-controls'
-    document.body.appendChild(bottomControlsGridElem)
+    const bottomControlsGridElement = document.createElement('footer')
+    bottomControlsGridElement.id = 'bottom-controls'
+    document.body.appendChild(bottomControlsGridElement)
   })
 
   $(() => {
-    const headerGridElem = document.getElementById('header')
-    Header.render(headerGridElem, configuration)
+    const headerGridElement = document.getElementById('header')
+    Header.render(headerGridElement, configuration)
   })
 
   $(() => {
-    const bottomControlsGridElem = document.getElementById('bottom-controls')
-    const bottomControlsExpandTabElem = document.createElement('div')
-    bottomControlsExpandTabElem.id = 'bottom-controls-expand'
-    bottomControlsExpandTabElem.classList.add('expand-tab')
-    bottomControlsGridElem.appendChild(bottomControlsExpandTabElem)
-    bottomControlsExpandTabElem.addEventListener('click', function () {
+    const bottomControlsGridElement = document.getElementById('bottom-controls')
+    const bottomControlsExpandTabElement = document.createElement('div')
+    bottomControlsExpandTabElement.id = 'bottom-controls-expand'
+    bottomControlsExpandTabElement.classList.add('expand-tab')
+    bottomControlsGridElement.appendChild(bottomControlsExpandTabElement)
+    bottomControlsExpandTabElement.addEventListener('click', function () {
       document.body.classList.toggle('advanced-controls')
       locator.refresh()
     })
@@ -182,28 +183,28 @@ async function render(configuration = defaultConfiguration) {
     const playbackCommandsGridspan = document.createElement('div')
     playbackCommandsGridspan.id = 'playback-commands-gridspan'
     playbackCommandsGridspan.classList.add('gridspan')
-    bottomControlsGridElem.appendChild(playbackCommandsGridspan)
+    bottomControlsGridElement.appendChild(playbackCommandsGridspan)
 
     if (configuration['spectrogram']) {
       // create element for highlighting control grid spans in help
-      const constraintsSpanElem = document.createElement('div')
-      constraintsSpanElem.id = 'constraints-gridspan'
-      constraintsSpanElem.classList.add('gridspan')
-      constraintsSpanElem.classList.add('multi-column-gridspan')
-      bottomControlsGridElem.appendChild(constraintsSpanElem)
+      const constraintsSpanElement = document.createElement('div')
+      constraintsSpanElement.id = 'constraints-gridspan'
+      constraintsSpanElement.classList.add('gridspan')
+      constraintsSpanElement.classList.add('multi-column-gridspan')
+      bottomControlsGridElement.appendChild(constraintsSpanElement)
 
-      const editToolsGridspanElem = document.createElement('div')
-      editToolsGridspanElem.id = 'edit-tools-gridspan'
-      editToolsGridspanElem.classList.add('gridspan')
-      bottomControlsGridElem.appendChild(editToolsGridspanElem)
+      const editToolsGridspanElement = document.createElement('div')
+      editToolsGridspanElement.id = 'edit-tools-gridspan'
+      editToolsGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(editToolsGridspanElement)
     }
   })
 
   $(() => {
-    const bottomControlsGridElem = document.getElementById('bottom-controls')
+    const bottomControlsGridElement = document.getElementById('bottom-controls')
     if (configuration['osmd']) {
       GranularitySelect.renderGranularitySelect(
-        bottomControlsGridElem,
+        bottomControlsGridElement,
         granularities_quarters
       )
     } else if (configuration['spectrogram']) {
@@ -220,23 +221,24 @@ async function render(configuration = defaultConfiguration) {
         ['top', [32, 4]],
       ])
 
-      const iconsBasePath: string = path.join(static_correct, 'icons')
+      const iconsBasePath = getPathToStaticFile('icons')
 
-      const granularitySelectContainerElem: HTMLElement = document.createElement(
-        'control-item'
+      const granularitySelectContainerElement = document.createElement('div')
+      granularitySelectContainerElement.id = 'edit-tool-select-container'
+      granularitySelectContainerElement.classList.add('control-item')
+      const bottomControlsGridElement = document.getElementById(
+        'bottom-controls'
       )
-      granularitySelectContainerElem.id = 'edit-tool-select-container'
-      const bottomControlsGridElem = document.getElementById('bottom-controls')
-      bottomControlsGridElem.appendChild(granularitySelectContainerElem)
+      bottomControlsGridElement.appendChild(granularitySelectContainerElement)
 
       ControlLabels.createLabel(
-        granularitySelectContainerElem,
+        granularitySelectContainerElement,
         'edit-tool-select-label'
       )
 
       function vqvaeLayerOnChange(ev) {
-        const tool = this.value
-        const newLayer = tool.split('-')[0]
+        const tool: string = this.value
+        const newLayer: string = tool.split('-')[0]
         const [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(newLayer)
         const [_, numColumnsTop] = vqvaeLayerDimensions.get('top')
         spectrogramPlaybackManager.Locator.render(
@@ -251,7 +253,7 @@ async function render(configuration = defaultConfiguration) {
       }
 
       vqvaeLayerSelect = new CycleSelect(
-        granularitySelectContainerElem,
+        granularitySelectContainerElement,
         'edit-tool-select',
         { handleEvent: vqvaeLayerOnChange },
         vqvaeLayerIcons,
@@ -267,67 +269,70 @@ async function render(configuration = defaultConfiguration) {
     }
   })
 
-  let serverIp: string = configuration['server_ip']
-  if (serverIp.charAt(serverIp.length - 1) == '/') {
+  let inpaintingApiIp: string = configuration['inpainting_api_ip']
+  if (inpaintingApiIp.charAt(inpaintingApiIp.length - 1) == '/') {
     // strip irrelevant slash at end of IP or address
-    serverIp = serverIp.substring(0, serverIp.length - 1)
+    inpaintingApiIp = inpaintingApiIp.substring(0, inpaintingApiIp.length - 1)
   }
-  const serverPort: number = configuration['server_port']
-  const serverUrl = `http://${serverIp}:${serverPort}/`
+  const inpaintingApiPort: string = configuration['inpainting_api_port']
+  const useCustomPort = inpaintingApiPort != ''
+  const inpaintingApiUrl = `http://${inpaintingApiIp}${
+    useCustomPort ? ':' : ''
+  }${inpaintingApiPort}/`
 
   function insertLoadingSpinner(container: HTMLElement): HTMLElement {
-    const spinnerElem: HTMLElement = document.createElement('i')
-    container.appendChild(spinnerElem)
-    spinnerElem.classList.add('fas')
-    spinnerElem.classList.add('fa-4x')
-    spinnerElem.style.color = 'black'
-    spinnerElem.classList.add('fa-spin')
-    spinnerElem.classList.add('fa-cog')
-    spinnerElem.id = 'osmd-loading-spinner'
+    const spinnerElement: HTMLElement = document.createElement('i')
+    container.appendChild(spinnerElement)
+    spinnerElement.classList.add('fas')
+    spinnerElement.classList.add('fa-4x')
+    spinnerElement.classList.add('fa-spin')
+    spinnerElement.classList.add('fa-cog')
+    spinnerElement.id = 'osmd-loading-spinner'
 
-    return spinnerElem
+    return spinnerElement
   }
 
   if (configuration['spectrogram']) {
     $(() => {
-      const constraintsGridspanElem = document.getElementById(
+      const constraintsGridspanElement = document.getElementById(
         'constraints-gridspan'
       )
 
-      const instrumentSelectGridspanElem: HTMLElement = document.createElement(
+      const instrumentSelectGridspanElement: HTMLElement = document.createElement(
         'div'
       )
-      instrumentSelectGridspanElem.id = 'instrument-select-gridspan'
-      instrumentSelectGridspanElem.classList.add('gridspan')
-      constraintsGridspanElem.appendChild(instrumentSelectGridspanElem)
-      const instrumentSelectElem: HTMLElement = document.createElement(
-        'control-item'
-      )
-      instrumentSelectElem.id = 'instrument-control'
-      instrumentSelectGridspanElem.appendChild(instrumentSelectElem)
+      instrumentSelectGridspanElement.id = 'instrument-select-gridspan'
+      instrumentSelectGridspanElement.classList.add('gridspan')
+      constraintsGridspanElement.appendChild(instrumentSelectGridspanElement)
+      const instrumentSelectElement = document.createElement('div')
+      instrumentSelectElement.id = 'instrument-control'
+      instrumentSelectElement.classList.add('control-item')
+      instrumentSelectGridspanElement.appendChild(instrumentSelectElement)
+      // TODO(theis, 2021_04_20): retrieve instrument options from Inpainting API
+      const instrumentSelectOptions = [
+        'bass',
+        'brass',
+        'flute',
+        'guitar',
+        'keyboard',
+        'mallet',
+        'organ',
+        'reed',
+        'string',
+        'synth_lead',
+        'vocal',
+      ]
       instrumentSelect = new Nexus.Select('#instrument-control', {
         size: [120, 50],
-        options: [
-          'bass',
-          'brass',
-          'flute',
-          'guitar',
-          'keyboard',
-          'mallet',
-          'organ',
-          'reed',
-          'string',
-          'synth_lead',
-          'vocal',
-        ],
+        options: instrumentSelectOptions,
         value: 'organ',
       })
       ControlLabels.createLabel(
-        instrumentSelectElem,
+        instrumentSelectElement,
         'instrument-control-label',
         false,
-        undefined,
-        instrumentSelectGridspanElem
+        null,
+        instrumentSelectGridspanElement
       )
       ;[pitchRootSelect, octaveControl] = renderPitchRootAndOctaveControl()
     })
@@ -365,8 +370,7 @@ async function render(configuration = defaultConfiguration) {
       osmdContainerContainer.setAttribute('data-simplebar', '')
       osmdContainerContainer.setAttribute('data-simplebar-auto-hide', 'false')
       mainPanel.appendChild(osmdContainerContainer)
-      let osmdContainer: HTMLElement
-      osmdContainer = <HTMLElement>document.createElement('div')
+      const osmdContainer = document.createElement('div')
       osmdContainer.id = 'osmd-container'
       osmdContainerContainer.appendChild(osmdContainer)
 
@@ -380,8 +384,8 @@ async function render(configuration = defaultConfiguration) {
         target: HTMLElement
       ) {
         // retrieve quarter-note positions for origin and target
-        function getContainedQuarters(timecontainer: HTMLElement): number[] {
-          return timecontainer
+        function getContainedQuarters(timeContainer: HTMLElement): number[] {
+          return timeContainer
             .getAttribute('containedQuarterNotes')
             .split(', ')
             .map((x) => parseInt(x, 10))
@@ -403,7 +407,7 @@ async function render(configuration = defaultConfiguration) {
         loadMusicXMLandMidi(
           sheetPlaybackManager,
           sheetLocator,
-          serverUrl,
+          inpaintingApiUrl,
           generationCommand
         )
       }
@@ -445,21 +449,21 @@ async function render(configuration = defaultConfiguration) {
         loadMusicXMLandMidi(
           sheetPlaybackManager,
           sheetLocator,
-          serverUrl,
+          inpaintingApiUrl,
           'generate',
           sendSheetWithRequest
         ).then(() => {
-          spinnerElem.style.visibility = 'hidden'
+          spinnerElement.style.visibility = 'hidden'
           mainPanel.classList.remove('loading')
         })
       })
     } else if (configuration['spectrogram']) {
-      const spectrogramContainerElem = document.createElement('div')
-      spectrogramContainerElem.id = 'spectrogram-container'
-      mainPanel.appendChild(spectrogramContainerElem)
+      const spectrogramContainerElement = document.createElement('div')
+      spectrogramContainerElement.id = 'spectrogram-container'
+      mainPanel.appendChild(spectrogramContainerElement)
 
       const spectrogramLocator = new SpectrogramLocator(
-        spectrogramContainerElem
+        spectrogramContainerElement
       )
 
       spectrogramPlaybackManager = new SpectrogramPlaybackManager(
@@ -533,30 +537,37 @@ async function render(configuration = defaultConfiguration) {
         })
       )
     }
-
     return currentConditioningMap
   }
 
   function getCurrentSpectrogramPositionTopLayer(): number {
-    const spectrogramImageContainerElem = document.getElementById(
+    const spectrogramImageContainerElement = document.getElementById(
       'spectrogram-image-container'
     )
-    const scrollElem = spectrogramImageContainerElem.getElementsByClassName(
+    if (spectrogramImageContainerElement == null) {
+      throw Error('Spectrogram container not initialized')
+    }
+    const scrollElement = spectrogramImageContainerElement.getElementsByClassName(
       'simplebar-content-wrapper'
     )[0]
+    // HACK(theis, 2021_04_21): check `isScrollable` test,
+    // testing if scrollWidth - clientWidth > 1 avoids some edge cases
+    // of very slightly different widths, but does not seem very robust
     const isScrollable: boolean =
-      scrollElem.scrollWidth - scrollElem.clientWidth > 0
+      scrollElement.scrollWidth - scrollElement.clientWidth > 1
     if (!isScrollable) {
       return 0
     } else {
       const currentScrollRatio =
-        scrollElem.scrollLeft /
-        (scrollElem.scrollWidth - scrollElem.clientWidth)
-      const numSnapElems: number = this.container
-        .getElementById('snap-points')
+        scrollElement.scrollLeft /
+        (scrollElement.scrollWidth - scrollElement.clientWidth)
+      log.error('Fix scroll computation')
+      const numSnapElements: number = spectrogramImageContainerElement
+        .getElementsByTagName('snap-points')
+        .item(0)
         .getElementsByTagName('snap').length
       // snaps happen on <snap>'s left boundaries
-      const numSnapLocations: number = numSnapElems - 1
+      const numSnapLocations: number = numSnapElements - 1
       return Math.round(currentScrollRatio * numSnapLocations)
     }
   }
@@ -621,7 +632,7 @@ async function render(configuration = defaultConfiguration) {
 
         loadAudioAndSpectrogram(
           spectrogramPlaybackManager,
-          serverUrl,
+          inpaintingApiUrl,
           command + generationParameters,
           sendCodesWithRequest,
           mask
@@ -651,12 +662,16 @@ async function render(configuration = defaultConfiguration) {
   }
 
   function getFermatas(): number[] {
-    const activeFermataElems = $('.Fermata.active')
+    const activeFermataElements = $('.Fermata.active')
     const containedQuarterNotesList = []
-    for (const activeFemataElem of activeFermataElems) {
+    for (const activeFemataElement of activeFermataElements) {
       containedQuarterNotesList.push(
         parseInt(
-          activeFemataElem.parentElement.getAttribute('containedQuarterNotes')
+          // TODO(theis): store and retrieve containedQuarterNotes
+          // to and from TypeScript Fermata objects
+          activeFemataElement.parentElement.getAttribute(
+            'containedQuarterNotes'
+          )
         )
       )
     }
@@ -692,24 +707,26 @@ async function render(configuration = defaultConfiguration) {
       `&time_range_end_quarter=${timeRangeEnd_quarter}`
 
     if (configuration['osmd']) {
-      return function (this, _) {
+      return function () {
         loadMusicXMLandMidi(
           sheetPlaybackManager,
           sheetLocator,
-          serverUrl,
+          inpaintingApiUrl,
           argsGenerationUrl
         )
       }
     } else if (configuration['spectrogram']) {
       const sendCodesWithRequest = true
-      return function (this, _) {
+      return function () {
         loadAudioAndSpectrogram(
           spectrogramPlaybackManager,
-          serverUrl,
+          inpaintingApiUrl,
           argsGenerationUrl,
           sendCodesWithRequest
         )
       }
+    } else {
+      throw new Error(`Unsupported application type`)
     }
   }
 
@@ -718,14 +735,20 @@ async function render(configuration = defaultConfiguration) {
   const parser = new DOMParser()
   let currentCodes_top: number[][]
   let currentCodes_bottom: number[][]
-  let currentConditioning_top: Map<string, (number | string)[][]>
-  let currentConditioning_bottom: Map<string, (number | string)[][]>
+
+  type ConditioningMap = Map<string, (number | string)[][]>
+  let currentConditioning_top: ConditioningMap
+  let currentConditioning_bottom: ConditioningMap
+
   let currentXML: XMLDocument
 
   function loadNewMap(
-    newConditioningMap: Map<string, (number | string)[][]>
-  ): Map<string, (number | string)[][]> {
-    const conditioning_map = new Map()
+    newConditioningMap: Record<string, (number | string)[][]>
+  ): ConditioningMap {
+    const conditioning_map: ConditioningMap = new Map<
+      string,
+      (number | string)[][]
+    >()
     conditioning_map.set('pitch', newConditioningMap['pitch'])
     conditioning_map.set(
       'instrument_family_str',
@@ -734,7 +757,7 @@ async function render(configuration = defaultConfiguration) {
     return conditioning_map
   }
 
-  function mapToObject(conditioning_map: Map<string, (number | string)[][]>) {
+  function mapToObject(conditioning_map: ConditioningMap) {
     return {
       pitch: conditioning_map.get('pitch'),
       instrument_family_str: conditioning_map.get('instrument_family_str'),
@@ -757,11 +780,14 @@ async function render(configuration = defaultConfiguration) {
   async function updateSpectrogramImage(imageBlob: Blob): Promise<void> {
     return new Promise((resolve, _) => {
       const blobUrl = URL.createObjectURL(imageBlob)
+      // HACK(theis, 2021_04_25): update the thumbnail stored in the Download button
+      // for drag-and-drop, could try and generate the thumbnail only on drag-start
+      // to avoid requiring this call here which one could easily forget to perform...
       downloadButton.imageContent = imageBlob
-      const spectrogramImageElem: HTMLImageElement = <HTMLImageElement>(
+      const spectrogramImageElement: HTMLImageElement = <HTMLImageElement>(
         document.getElementById('spectrogram-image')
       )
-      spectrogramImageElem.src = blobUrl
+      spectrogramImageElement.src = blobUrl
       $(() => {
         URL.revokeObjectURL(blobUrl)
         resolve()
@@ -783,11 +809,11 @@ async function render(configuration = defaultConfiguration) {
   }
 
   /**
-   * Load a MusicXml file via xhttp request, and display its contents.
+   * Load a MusicXml file via xHTTP request, and display its contents.
    */
   async function loadAudioAndSpectrogram(
     spectrogramPlaybackManager: SpectrogramPlaybackManager,
-    serverURL: string,
+    inpaintingApiUrl: string,
     generationCommand: string,
     sendCodesWithRequest: boolean,
     mask?: number[][]
@@ -815,8 +841,9 @@ async function render(configuration = defaultConfiguration) {
     let newConditioning_bottom: Map<string, (string | number)[][]>
 
     try {
+      const generationUrl = new URL(generationCommand, inpaintingApiUrl)
       const jsonResponse = await $.post({
-        url: url.resolve(serverURL, generationCommand),
+        url: generationUrl.href,
         data: JSON.stringify(payload_object),
         contentType: 'application/json',
         dataType: 'json',
@@ -829,13 +856,13 @@ async function render(configuration = defaultConfiguration) {
 
       const audioPromise = getAudioRequest(
         spectrogramPlaybackManager,
-        serverURL,
+        inpaintingApiUrl,
         newCodes_top,
         newCodes_bottom
       )
       const spectrogramImagePromise = getSpectrogramImageRequest(
         spectrogramPlaybackManager,
-        serverURL,
+        inpaintingApiUrl,
         newCodes_top,
         newCodes_bottom
       )
@@ -845,7 +872,7 @@ async function render(configuration = defaultConfiguration) {
       console.log(e)
       spectrogramPlaybackManager.Locator.clear()
       enableChanges()
-      return
+      throw e
     }
 
     currentCodes_top = newCodes_top
@@ -867,7 +894,7 @@ async function render(configuration = defaultConfiguration) {
 
     if (e.dataTransfer.items) {
       // Use DataTransferItemList interface to access the file(s)
-      for (var i = 0; i < e.dataTransfer.items.length; i++) {
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
         // If dropped items aren't files, reject them
         if (e.dataTransfer.items[i].kind === 'file') {
           const file = e.dataTransfer.items[i].getAsFile()
@@ -880,7 +907,7 @@ async function render(configuration = defaultConfiguration) {
           sendAudio(
             file,
             spectrogramPlaybackManager,
-            serverUrl,
+            inpaintingApiUrl,
             'analyze-audio' + generationParameters
           )
           return // only send the first file
@@ -888,7 +915,7 @@ async function render(configuration = defaultConfiguration) {
       }
     } else {
       // Use DataTransfer interface to access the file(s)
-      for (var i = 0; i < e.dataTransfer.files.length; i++) {
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
         console.log(
           '... file[' + i + '].name = ' + e.dataTransfer.files[i].name
         )
@@ -899,7 +926,7 @@ async function render(configuration = defaultConfiguration) {
   async function sendAudio(
     audioBlob: Blob,
     spectrogramPlaybackManager: SpectrogramPlaybackManager,
-    serverURL: string,
+    inpaintingApiUrl: string,
     generationCommand: string
   ) {
     disableChanges()
@@ -914,9 +941,10 @@ async function render(configuration = defaultConfiguration) {
     let newConditioning_top: Map<string, (string | number)[][]>
     let newConditioning_bottom: Map<string, (string | number)[][]>
 
+    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
     try {
       const jsonResponse = await $.post({
-        url: url.resolve(serverURL, generationCommand),
+        url: generationUrl.href,
         data: form,
         contentType: false,
         dataType: 'json',
@@ -930,13 +958,13 @@ async function render(configuration = defaultConfiguration) {
 
       const audioPromise = getAudioRequest(
         spectrogramPlaybackManager,
-        serverURL,
+        inpaintingApiUrl,
         newCodes_top,
         newCodes_bottom
       )
       const spectrogramImagePromise = getSpectrogramImageRequest(
         spectrogramPlaybackManager,
-        serverURL,
+        inpaintingApiUrl,
         newCodes_top,
         newCodes_bottom
       )
@@ -963,7 +991,7 @@ async function render(configuration = defaultConfiguration) {
 
   async function getAudioRequest(
     spectrogramPlaybackManager: SpectrogramPlaybackManager,
-    serverURL: string,
+    inpaintingApiUrl: string,
     top_code: number[][],
     bottom_code: number[][]
   ): Promise<Blob> {
@@ -972,8 +1000,9 @@ async function render(configuration = defaultConfiguration) {
     payload_object['bottom_code'] = bottom_code
 
     const generationCommand = '/get-audio'
+    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
     return $.post({
-      url: url.resolve(serverURL, generationCommand),
+      url: generationUrl.href,
       data: JSON.stringify(payload_object),
       xhrFields: {
         responseType: 'blob',
@@ -984,7 +1013,7 @@ async function render(configuration = defaultConfiguration) {
 
   async function getSpectrogramImageRequest(
     spectrogramPlaybackManager: SpectrogramPlaybackManager,
-    serverURL: string,
+    inpaintingApiUrl: string,
     top_code: number[][],
     bottom_code: number[][]
   ): Promise<Blob> {
@@ -994,8 +1023,9 @@ async function render(configuration = defaultConfiguration) {
     payload_object['bottom_code'] = bottom_code
 
     const generationCommand = '/get-spectrogram-image'
+    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
     return $.post({
-      url: url.resolve(serverURL, generationCommand),
+      url: generationUrl.href,
       data: JSON.stringify(payload_object),
       xhrFields: {
         responseType: 'blob',
@@ -1010,7 +1040,7 @@ async function render(configuration = defaultConfiguration) {
   function loadMusicXMLandMidi(
     playbackManager: SheetPlaybackManager,
     sheetLocator: SheetLocator,
-    serverURL: string,
+    inpaintingApiUrl: string,
     generationCommand: string,
     sendSheetWithRequest = true
   ) {
@@ -1020,14 +1050,15 @@ async function render(configuration = defaultConfiguration) {
       const payload_object = getMetadata(sheetLocator)
 
       log.trace('Metadata:')
-      log.trace(JSON.stringify(getMetadata(sheetLocator)))
+      log.trace(JSON.stringify(payload_object))
 
       if (sendSheetWithRequest) {
         payload_object['sheet'] = serializer.serializeToString(currentXML)
       }
 
+      const commandURL = new URL(generationCommand, inpaintingApiUrl)
       $.post({
-        url: url.resolve(serverURL, generationCommand),
+        url: commandURL.href,
         data: JSON.stringify(payload_object),
         contentType: 'application/json',
         dataType: 'json',
@@ -1056,8 +1087,12 @@ async function render(configuration = defaultConfiguration) {
               const sequenceDuration = Tone.Time(
                 `0:${sheetLocator.sequenceDuration_quarters}:0`
               )
+              const midiConversionURL = new URL(
+                '/musicxml-to-midi',
+                inpaintingApiUrl
+              )
               const midiBlobURL = await playbackManager.loadMidi(
-                url.resolve(serverURL, '/musicxml-to-midi'),
+                midiConversionURL.href,
                 currentXML,
                 Tone.Time(sequenceDuration),
                 bpmControl
@@ -1074,32 +1109,35 @@ async function render(configuration = defaultConfiguration) {
             }
           )
         },
+      }).fail((err) => {
+        log.error(err)
+        enableChanges()
       })
-        .done(() => {})
-        .fail((err) => {
-          log.error(err)
-          enableChanges()
-        })
     })
   }
 
   if (configuration['osmd']) {
     $(() => {
-      const bottomControlsGridElem = document.getElementById('bottom-controls')
-      const instrumentsGridElem = document.createElement('div')
-      instrumentsGridElem.id = 'instruments-grid'
-      instrumentsGridElem.classList.add('two-columns')
-      bottomControlsGridElem.appendChild(instrumentsGridElem)
+      const bottomControlsGridElement = document.getElementById(
+        'bottom-controls'
+      )
+      const instrumentsGridElement = document.createElement('div')
+      instrumentsGridElement.id = 'instruments-grid'
+      instrumentsGridElement.classList.add('two-columns')
+      bottomControlsGridElement.appendChild(instrumentsGridElement)
 
-      ControlLabels.createLabel(instrumentsGridElem, 'instruments-grid-label')
+      ControlLabels.createLabel(
+        instrumentsGridElement,
+        'instruments-grid-label'
+      )
 
       Instruments.initializeInstruments()
-      Instruments.renderInstrumentSelect(instrumentsGridElem)
+      Instruments.renderInstrumentSelect(instrumentsGridElement)
       if (configuration['use_chords_instrument']) {
-        Instruments.renderChordInstrumentSelect(instrumentsGridElem)
+        Instruments.renderChordInstrumentSelect(instrumentsGridElement)
       }
       Instruments.renderDownloadButton(
-        instrumentsGridElem,
+        instrumentsGridElement,
         configuration['use_chords_instrument']
       )
     })
@@ -1108,12 +1146,11 @@ async function render(configuration = defaultConfiguration) {
   if (configuration['osmd']) {
     $(() => {
       const useSimpleSlider = !configuration['insert_advanced_controls']
-      const bottomControlsGridElem = document.getElementById('bottom-controls')
-      bpmControl = new BPMControl(bottomControlsGridElem, 'bpm-control')
+      const bottomControlsGridElement = document.getElementById(
+        'bottom-controls'
+      )
+      bpmControl = new BPMControl(bottomControlsGridElement, 'bpm-control')
       bpmControl.render(useSimpleSlider, 200)
-
-      // link the Ableton-Link client to the BPM controller
-      LinkClient.setBPMControl(bpmControl)
 
       // set the initial tempo for the app
       // if (LinkClient.isEnabled()) {
@@ -1134,7 +1171,7 @@ async function render(configuration = defaultConfiguration) {
         loadMusicXMLandMidi(
           sheetPlaybackManager,
           sheetLocator,
-          serverUrl,
+          inpaintingApiUrl,
           'get-musicxml'
         )
       )
@@ -1143,7 +1180,7 @@ async function render(configuration = defaultConfiguration) {
 
   $(() => {
     const isAdvancedControl = true
-    const bottomControlsGridElem = document.getElementById('bottom-controls')
+    const bottomControlsGridElement = document.getElementById('bottom-controls')
     let defaultFilename: filenameType
     if (configuration['spectrogram']) {
       defaultFilename = { name: 'notono', extension: '.wav' }
@@ -1155,7 +1192,7 @@ async function render(configuration = defaultConfiguration) {
     downloadCommandsGridspan.id = 'download-button-gridspan'
     downloadCommandsGridspan.classList.add('gridspan')
     downloadCommandsGridspan.classList.toggle('advanced', isAdvancedControl)
-    bottomControlsGridElem.appendChild(downloadCommandsGridspan)
+    bottomControlsGridElement.appendChild(downloadCommandsGridspan)
     downloadButton = new DownloadButton(
       downloadCommandsGridspan,
       defaultFilename,
@@ -1164,7 +1201,7 @@ async function render(configuration = defaultConfiguration) {
 
     if (COMPILE_ELECTRON) {
       ControlLabels.createLabel(
-        bottomControlsGridElem,
+        bottomControlsGridElement,
         'download-button-label',
         isAdvancedControl,
         'download-button-label-with-native-drag',
@@ -1172,7 +1209,7 @@ async function render(configuration = defaultConfiguration) {
       )
     } else {
       ControlLabels.createLabel(
-        bottomControlsGridElem,
+        bottomControlsGridElement,
         'download-button-label',
         isAdvancedControl,
         undefined,
@@ -1193,17 +1230,12 @@ async function render(configuration = defaultConfiguration) {
   if (configuration['osmd']) {
     $(() => {
       // Insert zoom controls
-      const zoomControlsGridElem = document.createElement('div')
-      zoomControlsGridElem.id = 'osmd-zoom-controls'
-      // zoomControlsGridElem.classList.add('two-columns');
+      const zoomControlsGridElement = document.createElement('div')
+      zoomControlsGridElement.id = 'osmd-zoom-controls'
+      // zoomControlsGridElement.classList.add('two-columns');
       const mainPanel = document.getElementById('main-panel')
-      mainPanel.appendChild(zoomControlsGridElem)
-      renderZoomControls(
-        zoomControlsGridElem,
-        new Promise((resolve) => {
-          resolve(sheetLocator)
-        })
-      )
+      mainPanel.appendChild(zoomControlsGridElement)
+      renderZoomControls(zoomControlsGridElement)
     })
   }
 
@@ -1215,19 +1247,20 @@ async function render(configuration = defaultConfiguration) {
   $(() => {
     if (configuration['spectrogram']) {
       const isAdvancedControl = true
-      const bottomControlsGridElem = document.getElementById('bottom-controls')
+      const bottomControlsGridElement = document.getElementById(
+        'bottom-controls'
+      )
       const volumeControlsGridElement: HTMLElement = document.createElement(
         'div'
       )
       volumeControlsGridElement.id = 'volume-controls-gridspan'
       volumeControlsGridElement.classList.add('gridspan')
       volumeControlsGridElement.classList.toggle('advanced', isAdvancedControl)
-      bottomControlsGridElem.appendChild(volumeControlsGridElement)
+      bottomControlsGridElement.appendChild(volumeControlsGridElement)
 
-      const fadeInControlElement: HTMLElement = document.createElement(
-        'control-item'
-      )
+      const fadeInControlElement = document.createElement('div')
       fadeInControlElement.id = 'fade-in-control'
+      fadeInControlElement.classList.add('control-item')
       fadeInControlElement.classList.toggle('advanced', isAdvancedControl)
       volumeControlsGridElement.appendChild(fadeInControlElement)
       SpectrogramPlayback.renderFadeInControl(
@@ -1242,10 +1275,9 @@ async function render(configuration = defaultConfiguration) {
         volumeControlsGridElement
       )
 
-      const gainControlElement: HTMLElement = document.createElement(
-        'control-item'
-      )
+      const gainControlElement = document.createElement('div')
       gainControlElement.id = 'gain-control'
+      gainControlElement.classList.add('control-item')
       gainControlElement.classList.toggle('advanced', isAdvancedControl)
       volumeControlsGridElement.appendChild(gainControlElement)
       SpectrogramPlayback.renderGainControl(
@@ -1381,19 +1413,4 @@ function mapTouchEventsToMouseSimplebar(): void {
     },
     addEventListenerOptions
   )
-}
-
-if (module.hot) {
-  module.hot.accept('./sheetPlayback', () => {
-    if (appConfiguration['osmd']) {
-      const newSheetPlaybackManager: typeof SheetPlaybackManager = require('./sheetPlayback')
-        .default
-      console.log('Accepting new SheetPlayback Manager')
-      sheetPlaybackManager.disposeScheduledParts().then(() => {
-        sheetPlaybackManager = new newSheetPlaybackManager(
-          <SheetLocator>locator
-        )
-      })
-    }
-  })
 }

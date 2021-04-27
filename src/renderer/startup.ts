@@ -7,93 +7,108 @@ import Nexus from './nexusColored'
 
 import '../common/styles/startupSplash.scss'
 
+enum ApplicationMode {
+  Chorale = 'chorale',
+  Leadsheet = 'leadsheet',
+  Folk = 'folk',
+  Spectrogram = 'spectrogram',
+}
+
 // defined at compile-time via webpack.DefinePlugin
 declare let COMPILE_ELECTRON: boolean
-declare const DEFAULT_SERVER_IP: string
-declare const DEFAULT_SERVER_PORT: string
+declare const DEFAULT_INPAINTING_API_IP: string
+declare const DEFAULT_INPAINTING_API_PORT: string | null
 declare const SPECTROGRAM_ONLY: boolean
 declare const ENABLE_ANONYMOUS_MODE: boolean
 const isDevelopment: boolean = process.env.NODE_ENV !== 'production'
 
 // via https://stackoverflow.com/a/17632779/
-function cloneJSON(obj: object): object {
-  return JSON.parse(JSON.stringify(obj))
+function cloneJSON<T>(obj: T): T {
+  return <T>JSON.parse(JSON.stringify(obj))
 }
 
 import defaultConfiguration from '../common/default_config.json'
 // FIXME(theis, 2021_01_02): required hardcoded defaults since default values
-// retrieved from the window via DEFAULT_SERVER_IP and DEFAULT_SERVER_PORT
+// retrieved from the window via DEFAULT_INPAINTING_API_IP and DEFAULT_INPAINTING_API_PORT
 // are blank in compiled Electron applications
-defaultConfiguration['server_ip'] = DEFAULT_SERVER_IP || 'localhost'
-defaultConfiguration['server_port'] = DEFAULT_SERVER_PORT || '5000'
+// FIXME(theis, 2021_04_20): overly complicated setup...
+defaultConfiguration['inpainting_api_ip'] =
+  DEFAULT_INPAINTING_API_IP || defaultConfiguration['inpainting_api_ip']
+if (DEFAULT_INPAINTING_API_PORT != null) {
+  // null test required, since an empty value of `""` for default HTTP(S) port usage gets
+  // is falsy, and would thus get discarded
+  defaultConfiguration['inpainting_api_port'] = DEFAULT_INPAINTING_API_PORT
+}
 import customConfiguration from '../../config.json'
 const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
 
 // TODO don't create modes like this (goes against 12 Factor App principles)
 // should have truly orthogonal configuration options
-const osmdConfiguration: object = cloneJSON(globalConfiguration)
+const osmdConfiguration = cloneJSON(globalConfiguration)
 osmdConfiguration['osmd'] = true
 osmdConfiguration['app_name'] = 'nonoto'
 osmdConfiguration['spectrogram'] = false
 
-const choraleConfiguration: object = cloneJSON(osmdConfiguration)
+const choraleConfiguration = cloneJSON(osmdConfiguration)
 choraleConfiguration['use_chords_instrument'] = false
 choraleConfiguration['annotation_types'] = ['fermata']
 
-const leadsheetConfiguration: object = cloneJSON(osmdConfiguration)
+const leadsheetConfiguration = cloneJSON(osmdConfiguration)
 leadsheetConfiguration['use_chords_instrument'] = true
 leadsheetConfiguration['annotation_types'] = ['chord_selector']
 
-const folkConfiguration: object = cloneJSON(osmdConfiguration)
+const folkConfiguration = cloneJSON(osmdConfiguration)
 folkConfiguration['use_chords_instrument'] = false
 folkConfiguration['annotation_types'] = []
 folkConfiguration['granularities_quarters'] = ['1', '4', '8', '16']
 
-const spectrogramConfiguration: object = cloneJSON(globalConfiguration)
+const spectrogramConfiguration = cloneJSON(globalConfiguration)
 spectrogramConfiguration['osmd'] = false
 spectrogramConfiguration['spectrogram'] = true
 spectrogramConfiguration['app_name'] = 'notono'
-spectrogramConfiguration['acids_logo'] = true
+spectrogramConfiguration['display_acids_logo'] = true
 
 if (ENABLE_ANONYMOUS_MODE) {
   spectrogramConfiguration['app_name'] = 'VQ-Inpainting'
-  spectrogramConfiguration['sony_logo'] = false
-  spectrogramConfiguration['acids_logo'] = false
+  spectrogramConfiguration['display_sony_logo'] = false
+  spectrogramConfiguration['display_acids_logo'] = false
   document.body.classList.add('anonymous-mode')
 }
 
-export function render(renderPage: (configuration: object) => void): void {
+export function render(
+  renderPage: (configuration: typeof globalConfiguration) => void
+): void {
   const configurationWindow = document.createElement('div')
   configurationWindow.classList.add('centeredXY')
   configurationWindow.id = 'configuration-selection'
   document.body.appendChild(configurationWindow)
 
-  let serverConfigElem: HTMLDivElement
+  let serverConfigElement: HTMLDivElement
   let serverIpContainer: HTMLDivElement
   let serverIpInput: HTMLInputElement
   let serverPortContainer: HTMLDivElement
   let serverPortInput: HTMLInputElement
-  if (!globalConfiguration['disable_server_parameters_input']) {
-    serverConfigElem = document.createElement('div')
-    serverConfigElem.id = 'server-configuration'
-    configurationWindow.appendChild(serverConfigElem)
+  if (!globalConfiguration['disable_inpainting_api_parameters_input']) {
+    serverConfigElement = document.createElement('div')
+    serverConfigElement.id = 'server-configuration'
+    configurationWindow.appendChild(serverConfigElement)
 
     serverIpContainer = document.createElement('div')
     serverIpContainer.id = 'server-ip-container'
-    serverConfigElem.appendChild(serverIpContainer)
+    serverConfigElement.appendChild(serverIpContainer)
     serverIpInput = document.createElement('input')
     serverIpInput.type = 'url'
     serverIpInput.id = 'server-ip-input'
-    serverIpInput.placeholder = `${globalConfiguration['server_ip']}`
+    serverIpInput.placeholder = `${globalConfiguration['inpainting_api_ip']}`
     serverIpContainer.appendChild(serverIpInput)
 
     serverPortContainer = document.createElement('div')
     serverPortContainer.id = 'server-port-container'
-    serverConfigElem.appendChild(serverPortContainer)
+    serverConfigElement.appendChild(serverPortContainer)
     serverPortInput = document.createElement('input')
     serverPortInput.type = 'url'
     serverPortInput.id = 'server-port-input'
-    serverPortInput.placeholder = `${globalConfiguration['server_port']}`
+    serverPortInput.placeholder = `${globalConfiguration['inpainting_api_port']}`
     serverPortContainer.appendChild(serverPortInput)
   }
 
@@ -101,136 +116,100 @@ export function render(renderPage: (configuration: object) => void): void {
   // serverUrlInputLabel.setAttribute('for', 'server-url-input');
   //
 
-  let modeConfigElem: HTMLDivElement
-  let applicationModeSelectElem: HTMLSelectElement
+  let modeConfigElement: HTMLDivElement
+  let applicationModeSelectElement: HTMLSelectElement
   const spectrogramOnlyMode: boolean =
     SPECTROGRAM_ONLY || globalConfiguration['spectrogram_only']
   if (!spectrogramOnlyMode) {
-    modeConfigElem = document.createElement('div')
-    modeConfigElem.id = 'mode-configuration'
-    configurationWindow.appendChild(modeConfigElem)
+    modeConfigElement = document.createElement('div')
+    modeConfigElement.id = 'mode-configuration'
+    configurationWindow.appendChild(modeConfigElement)
 
-    applicationModeSelectElem = document.createElement('select')
-    applicationModeSelectElem.style.visibility = 'hidden'
-    applicationModeSelectElem.id = 'application-mode-select'
-    configurationWindow.appendChild(applicationModeSelectElem)
+    applicationModeSelectElement = document.createElement('select')
+    applicationModeSelectElement.style.visibility = 'hidden'
+    applicationModeSelectElement.id = 'application-mode-select'
+    configurationWindow.appendChild(applicationModeSelectElement)
 
-    const applicationModes: string[] = [
-      'chorale',
-      'leadsheet',
-      'folk',
-      'spectrogram',
+    const applicationModes: ApplicationMode[] = [
+      ApplicationMode.Chorale,
+      ApplicationMode.Leadsheet,
+      ApplicationMode.Folk,
+      ApplicationMode.Spectrogram,
     ]
+    // create HTMLOptionElements for all available mode options
     for (
       let applicationModeIndex = 0, numModes = applicationModes.length;
       applicationModeIndex < numModes;
       applicationModeIndex++
     ) {
       const applicationMode = applicationModes[applicationModeIndex]
-      const applicationModeOptionElem = document.createElement('option')
-      applicationModeOptionElem.value = applicationMode
-      applicationModeSelectElem.appendChild(applicationModeOptionElem)
+      const applicationModeOptionElement = document.createElement('option')
+      applicationModeOptionElement.value = applicationMode
+      applicationModeSelectElement.appendChild(applicationModeOptionElement)
     }
 
-    let deepbachbutton
-    let deepfolkbutton
-    let deepsheetbutton
-    let spectrogrambutton
+    const applicationModeButtons = new Map<ApplicationMode, Nexus.TextButton>()
 
-    const deepbachButtonElem: HTMLElement = document.createElement(
-      'control-item'
-    )
-    deepbachButtonElem.id = 'deepbach-configuration-button'
-    modeConfigElem.appendChild(deepbachButtonElem)
+    const applicationModeButtonsLabel: Record<ApplicationMode, string> = {
+      chorale: 'Chorales',
+      leadsheet: 'Leadsheets',
+      folk: 'Folk songs',
+      spectrogram: 'Spectrogram',
+    }
 
-    deepbachbutton = new Nexus.TextButton('#deepbach-configuration-button', {
-      size: [150, 50],
-      state: true,
-      text: 'Chorales',
-      alternateText: 'Chorales',
-    })
+    // TODO(theis): create proper subclass
+    class applicationModeButton extends Nexus.TextButton {
+      constructor(containerId: string, options) {
+        super(containerId, options)
+      }
+    }
+    const createApplicationModeButton = (
+      applicationMode: ApplicationMode
+    ): void => {
+      const buttonElement: HTMLElement = document.createElement('div')
+      const buttonId = applicationMode + '-configuration-button'
+      buttonElement.id = buttonId
+      buttonElement.classList.add('control-item')
+      modeConfigElement.appendChild(buttonElement)
 
-    deepbachbutton.on('change', () => {
-      deepbachbutton.turnOn(false)
-      deepsheetbutton.turnOff(false)
-      deepfolkbutton.turnOff(false)
-      spectrogrambutton.turnOff(false)
-      applicationModeSelectElem.value = 'chorale'
-    })
-
-    const deepsheetButtonElem: HTMLElement = document.createElement(
-      'control-item'
-    )
-    deepsheetButtonElem.id = 'deepsheet-configuration-button'
-    modeConfigElem.appendChild(deepsheetButtonElem)
-
-    deepsheetbutton = new Nexus.TextButton('#deepsheet-configuration-button', {
-      size: [150, 50],
-      state: false,
-      text: 'Leadsheets',
-      alternateText: 'Leadsheets',
-    })
-
-    deepsheetbutton.on('change', () => {
-      deepsheetbutton.turnOn(false)
-      deepbachbutton.turnOff(false)
-      deepfolkbutton.turnOff(false)
-      spectrogrambutton.turnOff(false)
-      applicationModeSelectElem.value = 'leadsheet'
-    })
-
-    const deepfolkButtonElem: HTMLElement = document.createElement(
-      'control-item'
-    )
-    deepfolkButtonElem.id = 'deepfolk-configuration-button'
-    modeConfigElem.appendChild(deepfolkButtonElem)
-
-    deepfolkbutton = new Nexus.TextButton('#deepfolk-configuration-button', {
-      size: [150, 50],
-      state: false,
-      text: 'Folk songs',
-      alternateText: 'Folk songs',
-    })
-
-    deepfolkbutton.on('change', () => {
-      deepfolkbutton.turnOn(false)
-      deepsheetbutton.turnOff(false)
-      deepbachbutton.turnOff(false)
-      spectrogrambutton.turnOff(false)
-      applicationModeSelectElem.value = 'folk'
-    })
-
-    const spectrogrambuttonElem: HTMLElement = document.createElement(
-      'control-item'
-    )
-    spectrogrambuttonElem.id = 'spectrograms-configuration-button'
-    modeConfigElem.appendChild(spectrogrambuttonElem)
-
-    spectrogrambutton = new Nexus.TextButton(
-      '#spectrograms-configuration-button',
-      {
+      const buttonLabel = applicationModeButtonsLabel[applicationMode]
+      const button = new Nexus.TextButton(buttonId, {
         size: [150, 50],
-        state: false,
-        text: 'Spectrograms',
-        alternateText: 'Spectrograms',
+        state: true,
+        text: buttonLabel,
+        alternateText: buttonLabel,
+      })
+      applicationModeButtons.set(applicationMode, button)
+    }
+    applicationModes.forEach(createApplicationModeButton)
+
+    const selectMode = (applicationMode: ApplicationMode) => {
+      const emitting = false
+      applicationModeButtons.forEach((button: Nexus.TextButton) => {
+        button.turnOff(emitting)
+      })
+      applicationModeButtons.get(applicationMode).turnOn(emitting)
+      applicationModeSelectElement.value = applicationMode
+    }
+
+    applicationModeButtons.forEach(
+      (button: Nexus.TextButton, applicationMode: ApplicationMode) => {
+        button.on('change', () => {
+          selectMode(applicationMode)
+        })
       }
     )
 
-    spectrogrambutton.on('change', () => {
-      spectrogrambutton.turnOn(false)
-      deepfolkbutton.turnOff(false)
-      deepsheetbutton.turnOff(false)
-      deepbachbutton.turnOff(false)
-      applicationModeSelectElem.value = 'spectrogram'
-    })
+    selectMode(applicationModes[0])
   }
 
   if (COMPILE_ELECTRON && false) {
     // open native file system 'open-file' dialog
 
-    const customButtonElem: HTMLElement = document.createElement('control-item')
-    customButtonElem.id = 'custom-configuration-button'
-    configurationWindow.appendChild(customButtonElem)
+    const customButtonElement = document.createElement('div')
+    customButtonElement.id = 'custom-configuration-button'
+    customButtonElement.classList.add('control-item')
+    configurationWindow.appendChild(customButtonElement)
 
     // create HTML element to upload configuration file
     const customConfigurationInput: HTMLInputElement = document.createElement(
@@ -254,11 +233,11 @@ export function render(renderPage: (configuration: object) => void): void {
   }
 
   function getCurrentConfiguration() {
-    let applicationMode: string
+    let applicationMode: ApplicationMode
     if (!spectrogramOnlyMode) {
-      applicationMode = applicationModeSelectElem.value
+      applicationMode = applicationModeSelectElement.value as ApplicationMode
     } else {
-      applicationMode = 'spectrogram'
+      applicationMode = ApplicationMode.Spectrogram
     }
     let configuration
     switch (applicationMode) {
@@ -275,12 +254,12 @@ export function render(renderPage: (configuration: object) => void): void {
         configuration = spectrogramConfiguration
         break
     }
-    if (!globalConfiguration['disable_server_parameters_input']) {
+    if (!globalConfiguration['disable_inpainting_api_parameters_input']) {
       if (serverIpInput.value.length > 0) {
-        configuration['server_ip'] = serverIpInput.value
+        configuration['inpainting_api_ip'] = serverIpInput.value
       }
       if (serverPortInput.value.length > 0) {
-        configuration['server_port'] = serverPortInput.value
+        configuration['inpainting_api_port'] = serverPortInput.value
       }
     }
 
@@ -294,10 +273,11 @@ export function render(renderPage: (configuration: object) => void): void {
     renderPage(currentConfiguration)
   }
 
-  async function renderStartButton() {
-    const startButtonElem: HTMLElement = document.createElement('control-item')
-    startButtonElem.id = 'start-button'
-    configurationWindow.appendChild(startButtonElem)
+  function renderStartButton() {
+    const startButtonElement = document.createElement('div')
+    startButtonElement.id = 'start-button'
+    startButtonElement.classList.add('control-item')
+    configurationWindow.appendChild(startButtonElement)
 
     const startButton = new Nexus.TextButton('#start-button', {
       size: [150, 50],
@@ -305,7 +285,7 @@ export function render(renderPage: (configuration: object) => void): void {
       text: 'Start',
     })
 
-    startButton.on('change', async (v) => {
+    startButton.on('change', async (v: boolean) => {
       if (v) {
         Tone.setContext(new Tone.Context({ latencyHint: 'interactive' }))
         await Tone.start()
@@ -334,7 +314,7 @@ export function render(renderPage: (configuration: object) => void): void {
       const currentConfiguration = getCurrentConfiguration()
       const recaptchaVerificationIp =
         globalConfiguration['recaptcha_verification_ip'] ||
-        currentConfiguration['server_ip']
+        currentConfiguration['inpainting_api_ip']
       const recaptchaVerificationPort: number =
         globalConfiguration['recaptcha_verification_port']
       const recaptchaVerificationCommand: string =
@@ -352,9 +332,9 @@ export function render(renderPage: (configuration: object) => void): void {
       return jsonResponse
     }
 
-    const recaptchaElem: HTMLDivElement = document.createElement('div')
-    recaptchaElem.id = 'g-recaptcha'
-    recaptchaElem.classList.add('g-recaptcha')
+    const recaptchaElement: HTMLDivElement = document.createElement('div')
+    recaptchaElement.id = 'g-recaptcha'
+    recaptchaElement.classList.add('g-recaptcha')
 
     // special all-access development key provided at:
     // https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do
@@ -362,12 +342,12 @@ export function render(renderPage: (configuration: object) => void): void {
     const recaptchaSitekey: string = !isDevelopment
       ? globalConfiguration['recaptcha_sitekey']
       : recaptchaDevSitekey
-    recaptchaElem.setAttribute('data-sitekey', recaptchaSitekey)
+    recaptchaElement.setAttribute('data-sitekey', recaptchaSitekey)
 
-    recaptchaElem.setAttribute('data-theme', 'dark')
-    recaptchaElem.setAttribute('data-callback', 'onreceiveRecaptchaResponse')
+    recaptchaElement.setAttribute('data-theme', 'dark')
+    recaptchaElement.setAttribute('data-callback', 'onreceiveRecaptchaResponse')
     window['onreceiveRecaptchaResponse'] = onreceiveRecaptchaResponse.bind(this)
-    configurationWindow.appendChild(recaptchaElem)
+    configurationWindow.appendChild(recaptchaElement)
   } else {
     renderStartButton()
   }

@@ -1,3 +1,4 @@
+@use './measures';
 @use 'sass:color';
 
 $millenial-pink-body-background: #fff7f8;
@@ -18,7 +19,9 @@ $panes-background: #beb9d4;
   $panes: $lavender-panes-background;
   $idle-control: $lavender-idle-control;
   $active-control: $lavender-active-control;
-  $scrollbar-lightness-factor: 1;
+  $overlay-lightness-factor: -1;
+  $overlay-lightness-factor: -1;
+  $text: black;
   @if $theme == lavender {
     $scrollbar-lightness-factor: -1;
   } @else if $theme == millenial-pink {
@@ -27,17 +30,26 @@ $panes-background: #beb9d4;
     $panes: $millenial-pink-panes-background;
     $active-control: $millenial-pink-active-control;
     $idle-control: $millenial-pink-idle-control;
-    // $scrollbar-lightness-factor: 0.1;
+    $overlay-lightness-factor: 1;
   } @else {
     @error "Unknown theme #{$theme}.";
   }
 
+  $panes-border: color.scale($panes,
+    $lightness: $overlay-lightness-factor * 20%
+  );
+
+  color: $text;
+  .trip-navigation * {
+    color: $text;
+  }
   background-color: $body;
   header,
   footer {
     background-color: $panes;
     .expand-tab {
-      background-color: darken($panes, 10%);
+      background-color: color.scale($panes,
+        $lightness: $overlay-lightness-factor * 10%);
     }
   }
   .trip-block {
@@ -46,11 +58,11 @@ $panes-background: #beb9d4;
 
   $simplebar-track-color: color.scale(
     $body,
-    $lightness: 20% * $scrollbar-lightness-factor
+    $lightness: 20% * $overlay-lightness-factor
   );
   $simplebar-scrollbar-color: color.scale(
     $panes,
-    $lightness: -20% * $scrollbar-lightness-factor
+    $lightness: -20% * $overlay-lightness-factor
   );
   @if $theme == millenial-pink {
     $simplebar-track-color: $panes;
@@ -62,13 +74,13 @@ $panes-background: #beb9d4;
     box-shadow: inset 0px 3px 20px 0.5px
         color.scale(
           $simplebar-track-color,
-          $lightness: 30% * $scrollbar-lightness-factor,
+          $lightness: 30% * $overlay-lightness-factor,
           $alpha: -30%
         ),
       0 0 10px 0.2px
         color.scale(
           $simplebar-scrollbar-color,
-          $lightness: 50% * $scrollbar-lightness-factor,
+          $lightness: 50% * $overlay-lightness-factor,
           $alpha: -70%
         );
   }
@@ -88,22 +100,59 @@ $panes-background: #beb9d4;
     }
   }
 
-  control-item * {
+  .control-item * {
     color: $idle-control;
   }
-
-  #play-button-interface {
-    & > .playing {
-      color: $active-control;
-    }
-
-    & > .stopped {
-      color: $idle-control;
-    }
+  .control-item.active * {
+    color: $active-control;
+  }
+  .control-item option {
+    color: black;
   }
 
   .CycleSelect-container {
     color: $idle-control;
+  }
+
+  #spectrogram-container-interface-container {
+    &:before {
+      left: calc(0vw - #{measures.$spectrogram-margin-width});
+      background: radial-gradient(
+        ellipse farthest-corner at right,
+        transparent 0vw,
+        $body measures.$spectrogram-margin-width
+      );
+    }
+
+    &:after {
+      right: calc(0vw - #{measures.$spectrogram-margin-width});
+      background: radial-gradient(
+        ellipse farthest-corner at left,
+        transparent 0vw,
+        $body measures.$spectrogram-margin-width
+      );
+    }
+    div span {
+      z-index: 100;
+      opacity: 0.3;
+    }
+  }
+
+  .control-item {
+    filter: main-filter($idle-control, $overlay-lightness-factor);
+
+    &:hover {
+      filter: brightness(1.03)
+        main-filter($idle-control, $overlay-lightness-factor);
+    }
+  }
+  .control-item.active {
+    filter: main-filter($active-control, $overlay-lightness-factor);
+
+    &:hover {
+      filter: brightness(1.03)
+        main-filter($active-control, $overlay-lightness-factor);
+    }
   }
 }
 

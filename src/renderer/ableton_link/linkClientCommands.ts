@@ -4,20 +4,26 @@ import * as ControlLabels from '../controlLabels'
 import Nexus from '../nexusColored'
 import { PlaybackManager } from '../playback'
 import { Locator } from '../locator'
+import log from 'loglevel'
 
-export function render(playbackManager: PlaybackManager<Locator>): void {
-  const bottomControlsGridElem = document.getElementById('bottom-controls')
+  const bottomControlsElementID = 'bottom-controls'
+  const bottomControlsGridElement = document.getElementById(
+    bottomControlsElementID
+  )
+  if (bottomControlsGridElement == null) {
+    log.error(`Container element ${bottomControlsElementID} not found`)
+    return
+  }
   const abletonLinkSettingsGridspan = document.createElement('div')
   abletonLinkSettingsGridspan.id = 'ableton-link-settings-gridspan'
   abletonLinkSettingsGridspan.classList.add('gridspan')
   abletonLinkSettingsGridspan.classList.add('advanced')
-  bottomControlsGridElem.appendChild(abletonLinkSettingsGridspan)
+  bottomControlsGridElement.appendChild(abletonLinkSettingsGridspan)
 
-  const linkEnableButtonElem: HTMLElement = document.createElement(
-    'control-item'
-  )
-  linkEnableButtonElem.id = 'link-enable-button'
-  abletonLinkSettingsGridspan.appendChild(linkEnableButtonElem)
+  const linkEnableButtonElement = document.createElement('div')
+  linkEnableButtonElement.id = 'link-enable-button'
+  linkEnableButtonElement.classList.add('control-item')
+  abletonLinkSettingsGridspan.appendChild(linkEnableButtonElement)
 
   const linkEnableButton = new Nexus.Button('#link-enable-button', {
     size: [30, 30],
@@ -49,10 +55,10 @@ function renderSyncButton(
   container: HTMLElement,
   playbackManager: PlaybackManager<Locator>
 ) {
-  const linkbuttonElem: HTMLElement = document.createElement('control-item')
-  linkbuttonElem.id = 'sync-button'
-  linkbuttonElem.classList.add('advanced')
-  container.appendChild(linkbuttonElem)
+  const linkbuttonElement = document.createElement('div')
+  linkbuttonElement.id = 'sync-button'
+  linkbuttonElement.classList.add('control-item', 'advanced')
+  container.appendChild(linkbuttonElement)
 
   const syncButton = new Nexus.Button('#sync-button', {
     size: [30, 30],
@@ -78,13 +84,11 @@ export function renderDownbeatDisplay(): void {
   const abletonLinkSettingsGridspan = document.getElementById(
     'ableton-link-settings-gridspan'
   )
-  const linkDownbeatDisplayElem: HTMLElement = document.createElement(
-    'control-item'
-  )
-  linkDownbeatDisplayElem.id = 'link-downbeat-display'
-  linkDownbeatDisplayElem.classList.add('disable-mouse')
-  linkDownbeatDisplayElem.style.pointerEvents = 'none'
-  abletonLinkSettingsGridspan.appendChild(linkDownbeatDisplayElem)
+  const linkDownbeatDisplayElement = document.createElement('div')
+  linkDownbeatDisplayElement.id = 'link-downbeat-display'
+  linkDownbeatDisplayElement.classList.add('control-item', 'disable-mouse')
+  linkDownbeatDisplayElement.style.pointerEvents = 'none'
+  abletonLinkSettingsGridspan.appendChild(linkDownbeatDisplayElement)
 
   const linkDownbeatDisplayButton = new Nexus.Button('#link-downbeat-display', {
     size: [20, 20],

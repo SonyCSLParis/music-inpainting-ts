@@ -43,9 +43,6 @@ $scrollbar-color: #009ceb;
   // no hover effects on touch screens since the effect remains active
   // until the user effectively touches another zone on the viewport
   .simplebar-scrollbar:hover {
-    background-color: lighten(
-      $scrollbar-color,
-      20%
-    ); // lighter blue // #ffc7cf;  // lighter pink
+    background-color: lighten($scrollbar-color, 20%);
   }
 }

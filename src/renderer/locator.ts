@@ -15,7 +15,7 @@ export abstract class Locator {
   protected resizeTimeout: NodeJS.Timeout
 
   // render the interface on the DOM and bind callbacks
-  public abstract render(): void
+  public abstract render(...args): void
 
   // re-render with current parameters
   // also ensures the help-tour is not taken into account for the layout
@@ -37,7 +37,9 @@ export abstract class Locator {
   callToActionHighlightedCells = 16
 
   // triggers an animation to catch the user's eye
-  public callToAction(): void {
+  public callToAction(
+    hightlightedCellsNumber = this.callToActionHighlightedCells
+  ): void {
     function delay(ms: number): Promise<void> {
       return new Promise((resolve) => setTimeout(resolve, ms))
     }
@@ -45,7 +47,7 @@ export abstract class Locator {
     let promise = Promise.resolve()
     const interval = 100
 
-    const randomIndexes: number[] = Array(this.callToActionHighlightedCells)
+    const randomIndexes: number[] = Array(hightlightedCellsNumber)
       .fill(0)
       .map(() => {
         return Math.floor(Math.random() * this.numInteractiveElements)
@@ -66,25 +68,26 @@ export abstract class Locator {
       setTimeout(() => {
         randomIndexes.forEach((index) => {
           const element = this.getInterfaceElementByIndex(index)
+
           if (element != null) {
             element.classList.remove('highlight')
           }
         })
-      }, 4 * interval * this.callToActionHighlightedCells)
+      }, 4 * interval * hightlightedCellsNumber)
     })
   }
 
   // retrieve interactive elements of the interface by index
-  abstract getInterfaceElementByIndex(index: number): Element | null
+  abstract getInterfaceElementByIndex(index: number): Element
 
   abstract get numInteractiveElements(): number
 
-  public constructor() {
+  public constructor(...args) {
     this.registerRefreshOnResizeListener()
   }
 
   protected registerRefreshOnResizeListener(): void {
-    window.addEventListener('resize', (uiEvent: UIEvent) => {
+    window.addEventListener('resize', () => {
       if (this.resizeTimeoutDuration > 0) {
         clearTimeout(this.resizeTimeout)
         this.resizeTimeout = setTimeout(() => {
@@ -107,16 +110,14 @@ export class SheetLocator extends Locator {
     boxDurations_quarters: number[],
     annotationTypes: string[] = [],
     allowOnlyOneFermata = false,
-    onClickTimestampBoxFactory: (
+    onClickTimestampBoxFactory?: (
       timeStart: Fraction,
       timeEnd: Fraction
     ) => (event: PointerEvent) => void,
-    copyTimecontainerContent: (
+    copyTimecontainerContent?: (
       origin: HTMLElement,
       target: HTMLElement
-    ) => void = () => {
-      return
-    }
+    ) => void
   ) {
     super()
     this.container = container
@@ -130,8 +131,11 @@ export class SheetLocator extends Locator {
   protected resizeTimeoutDuration = 50
   readonly container: HTMLElement
   readonly sheet: OpenSheetMusicDisplay
+  protected get graphicElement(): SVGElement {
+    return this.container.getElementsByTagName('svg')[0]
+  }
 
-  protected onClickTimestampBoxFactory: (
+  protected onClickTimestampBoxFactory?: (
     timeStart: Fraction,
     timeEnd: Fraction
   ) => (event: PointerEvent) => void
@@ -185,16 +189,16 @@ export class SheetLocator extends Locator {
     // nothing to do in the case of a sheet, since it does not get resized!
   }
 
-  private updateContainerWidth(toContentWidth = true): void {
+  protected updateContainerWidth(toContentWidth = true): void {
     // HACK update width of container element to actual width of content
     //
     // this is necessary in order to have OSMD print the sheet with
     // maximum horizontal spread
 
-    const superlarge_width_px = 10000000
+    const superLarge_width_px = 10000000
     // must use a string to ensure no integer formatting is performed
     // which could lead to invalid values in the CSS
-    const superlarge_width_px_str = '10000000'
+    const superLarge_width_px_str = '10000000'
 
     if (
       this.container.children.length == 0 ||
@@ -207,7 +211,7 @@ export class SheetLocator extends Locator {
     let newWidth_px: number
     let newWidth_px_str: string
     const previousWidth_px: number = parseInt(
-      $('#osmd-container svg')[0].getAttribute('width')
+      this.graphicElement.getAttribute('width')
     )
     // let x_px_str: string;
     if (toContentWidth) {
@@ -233,23 +237,23 @@ export class SheetLocator extends Locator {
       newWidth_px = sheetContainerWidthWithAddedBorder_px
       newWidth_px_str = `${newWidth_px}`
     } else {
-      newWidth_px = superlarge_width_px
-      newWidth_px_str = superlarge_width_px_str
+      newWidth_px = superLarge_width_px
+      newWidth_px_str = superLarge_width_px_str
     }
 
     // update the width of the container so the scrollbar operates properly
-    $('#osmd-container')[0].style.width = `${newWidth_px_str}px`
+    this.container.style.width = `${newWidth_px_str}px`
     // update the width of the svg so the scrollbar operates properly
-    $('#osmd-container svg')[0].setAttribute('width', `${newWidth_px_str}`)
+    this.graphicElement.setAttribute('width', `${newWidth_px_str}`)
 
     // update the viewBox width to reflect the updated width
     const viewBoxRatio_NewToOld = newWidth_px / previousWidth_px
-    const viewBox = $('#osmd-container svg')[0].getAttribute('viewBox')
+    const viewBox = this.graphicElement.getAttribute('viewBox')
     const [x_px, y_px, previousWidth_px_str, height_px] = viewBox.split(' ')
     const newViewBoxWidth_px_str: string = (
       viewBoxRatio_NewToOld * parseInt(previousWidth_px_str)
     ).toString()
-    $('#osmd-container svg')[0].setAttribute(
+    this.graphicElement.setAttribute(
       'viewBox',
       `${x_px} ${y_px} ${newViewBoxWidth_px_str} ${height_px}`
     )
@@ -260,12 +264,12 @@ export class SheetLocator extends Locator {
     return (value - shift) * 10.0 * this.sheet.zoom
   }
 
-  // CSS class depicting the duration of a timecontainer box
+  // CSS class depicting the duration of a timeContainer box
   static makeGranularityCSSClass(duration_quarters: number): string {
     return duration_quarters.toFixed() + '_quarterNote_duration'
   }
 
-  // Unique ID for a timecontainer box
+  // Unique ID for a timeContainer box
   static makeGranularityID(
     duration_quarters: number,
     measureIndex: number,
@@ -274,7 +278,7 @@ export class SheetLocator extends Locator {
     return [duration_quarters, measureIndex, positionInMeasure]
       .map((string) => string.toFixed())
       .join('-')
-      .concat('-timecontainer')
+      .concat('-timeContainer')
   }
 
   /*
@@ -316,8 +320,8 @@ export class SheetLocator extends Locator {
     if (commonDiv.id !== commonDivId) {
       // the div has no ID set yet: was created in this call
       commonDiv.id = commonDivId
-      commonDiv.classList.add('timecontainer')
       commonDiv.classList.add(
+        'timeContainer',
         SheetLocator.makeGranularityCSSClass(duration_quarters)
       )
 
@@ -370,7 +374,7 @@ export class SheetLocator extends Locator {
         false
       )
 
-      // add Drag'n'Drop support between timecontainers
+      // add Drag'n'Drop support between timeContainers
       div.setAttribute('draggable', 'true')
       div.addEventListener('dragstart', ondragstartTimecontainer_handler, true)
       div.addEventListener('dragover', ondragoverTimecontainer_handler, true)
@@ -383,7 +387,7 @@ export class SheetLocator extends Locator {
       )
 
       // add div to the rendering backend's <HTMLElement> for positioning
-      const inner = $('#osmd-container svg')[0].parentElement
+      const inner = this.graphicElement.parentElement
       inner.appendChild(commonDiv)
       commonDiv.appendChild(div)
 
@@ -541,16 +545,16 @@ export class SheetLocator extends Locator {
             onclick = onclickFactory(currentBeginTimestamp, currentEndTimestamp)
           }
 
-          const timecontainerID = SheetLocator.makeGranularityID(
+          const timeContainerID = SheetLocator.makeGranularityID(
             boxDuration_quarters,
             measureIndex,
             boxIndex
           )
 
-          if (!document.getElementById(timecontainerID)) {
+          if (!document.getElementById(timeContainerID)) {
             // the time container does not yet exist, create it
             this.createTimeContainer(
-              timecontainerID,
+              timeContainerID,
               boxDuration_quarters,
               onclick,
               [currentBeginTimestamp, currentEndTimestamp]
@@ -558,7 +562,7 @@ export class SheetLocator extends Locator {
           }
 
           this.updateTimeContainerSize(
-            timecontainerID,
+            timeContainerID,
             xBeginBox,
             y,
             width,
@@ -591,7 +595,7 @@ export class SheetLocator extends Locator {
 
     $('.notebox').removeClass('playing')
     $(
-      `.timecontainer[containedQuarterNotes~='${timePosition}'] .notebox`
+      `.timeContainer[containedQuarterNotes~='${timePosition}'] .notebox`
     ).addClass('playing')
   }
 }
@@ -602,8 +606,17 @@ export class SheetLocator extends Locator {
 // content of the matrix does not change (e.g. when touching the same cell twice
 // in a single Touch action)
 class SequencerToggle extends Nexus.Sequencer {
-  public matrix: any
-  public emit: any
+  // TODO(theis): add proper types (create typing for Nexus.\)
+  matrix: any
+  emit: any
+  element: HTMLDivElement
+  stepper: any
+  rows: any
+  columns: any
+  destroy: any
+  resize: any
+  colorize: any
+  on: any
 
   constructor(container, options) {
     super(container, options)
@@ -637,29 +650,29 @@ export class SpectrogramLocator extends Locator {
 
   // TODO(theis): should provide initial values for numRows and numColumns,
   // so that the instance can be properly rendered/refreshed on initialization
-  constructor(container: HTMLElement, options: object = {}) {
+  constructor(container: HTMLElement, options: Record<string, unknown> = {}) {
     super()
     this.container = container
 
-    const spectrogramImageContainerElem = document.createElement('div')
-    spectrogramImageContainerElem.id = 'spectrogram-image-container'
-    spectrogramImageContainerElem.toggleAttribute('data-simplebar', true)
-    spectrogramImageContainerElem.setAttribute(
+    const spectrogramImageContainerElement = document.createElement('div')
+    spectrogramImageContainerElement.id = 'spectrogram-image-container'
+    spectrogramImageContainerElement.toggleAttribute('data-simplebar', true)
+    spectrogramImageContainerElement.setAttribute(
       'data-simplebar-click-on-track',
       'false'
     )
-    this.container.appendChild(spectrogramImageContainerElem)
+    this.container.appendChild(spectrogramImageContainerElement)
 
-    const spectrogramPictureElem = document.createElement('picture')
-    spectrogramPictureElem.id = 'spectrogram-picture'
-    spectrogramImageContainerElem.appendChild(spectrogramPictureElem)
-    const spectrogramImageElem = document.createElement('img')
-    spectrogramImageElem.id = 'spectrogram-image'
-    spectrogramPictureElem.appendChild(spectrogramImageElem)
+    const spectrogramPictureElement = document.createElement('picture')
+    spectrogramPictureElement.id = 'spectrogram-picture'
+    spectrogramImageContainerElement.appendChild(spectrogramPictureElement)
+    const spectrogramImageElement = document.createElement('img')
+    spectrogramImageElement.id = 'spectrogram-image'
+    spectrogramPictureElement.appendChild(spectrogramImageElement)
 
     this.snapPoints = document.createElement('div')
     this.snapPoints.classList.toggle('snap-points')
-    spectrogramPictureElem.appendChild(this.snapPoints)
+    spectrogramPictureElement.appendChild(this.snapPoints)
 
     // necessary to handle 'busy' state cursor change and pointer events disabling
     this.interfaceContainer = document.createElement('div')
@@ -686,7 +699,7 @@ export class SpectrogramLocator extends Locator {
     return this._boxDurations_quarters
   }
 
-  public registerCallback(callback: (ev: any) => void) {
+  public registerCallback(callback: (ev: any) => void): void {
     const self = this
     const registerReleaseCallback = () => {
       // call the actual callback on pointer release to allow for click and drag
@@ -767,25 +780,25 @@ export class SpectrogramLocator extends Locator {
   }
 
   public resize(): void {
-    const spectrogramImageContainerElem: HTMLElement = document.getElementById(
+    const spectrogramImageContainerElement = document.getElementById(
       'spectrogram-image-container'
     )
-    const spectrogramImageElem: HTMLImageElement = this.container.getElementsByTagName(
+    const spectrogramImageElement = this.container.getElementsByTagName(
       'img'
     )[0]
 
     // restore default height for spectrogram image
-    spectrogramImageElem.style.removeProperty('height')
-    spectrogramImageContainerElem.style.removeProperty('height')
+    spectrogramImageElement.style.removeProperty('height')
+    spectrogramImageContainerElement.style.removeProperty('height')
 
-    const width: number = this.interfaceContainer.clientWidth
-    const height: number = spectrogramImageContainerElem.clientHeight
+    const width = this.interfaceContainer.clientWidth
+    const height = spectrogramImageContainerElement.clientHeight
 
     this.sequencer.resize(width, height)
 
     // update image scaling to match snap points
     const timeStepWidth_px: number = width / this.numColumnsTop
-    spectrogramImageElem.width = Math.floor(
+    spectrogramImageElement.width = Math.floor(
       timeStepWidth_px * this.vqvaeTimestepsTop
     )
     this.snapPoints.style.width =
@@ -793,9 +806,9 @@ export class SpectrogramLocator extends Locator {
 
     // adapt the spectrogram's image size to the resulting grid's size
     // since the grid size is rounded up to the number of rows and columns
-    spectrogramImageElem.style.height =
+    spectrogramImageElement.style.height =
       this.interfaceContainer.clientHeight.toString() + 'px'
-    spectrogramImageContainerElem.style.height =
+    spectrogramImageContainerElement.style.height =
       this.interfaceContainer.clientHeight.toString() + 'px'
   }
 
@@ -830,19 +843,19 @@ export class SpectrogramLocator extends Locator {
     numColumns: number,
     numColumnsTop: number
   ): void {
-    const spectrogramImageContainerElem: HTMLElement = document.getElementById(
+    const spectrogramImageContainerElement = document.getElementById(
       'spectrogram-image-container'
     )
-    const spectrogramImageElem: HTMLImageElement = this.container.getElementsByTagName(
+    const spectrogramImageElement = this.container.getElementsByTagName(
       'img'
     )[0]
 
     // restore default height for spectrogram image
-    spectrogramImageElem.style.removeProperty('height')
-    spectrogramImageContainerElem.style.removeProperty('height')
+    spectrogramImageElement.style.removeProperty('height')
+    spectrogramImageContainerElement.style.removeProperty('height')
 
-    const width: number = this.interfaceContainer.clientWidth
-    const height: number = spectrogramImageContainerElem.clientHeight
+    const width = this.interfaceContainer.clientWidth
+    const height = spectrogramImageContainerElement.clientHeight
 
     this.sequencer = new SequencerToggle(this.interfaceContainer.id, {
       size: [width, height],
@@ -860,7 +873,7 @@ export class SpectrogramLocator extends Locator {
 
     // update image scaling to match snap points
     const timeStepWidth_px: number = width / numColumnsTop
-    spectrogramImageElem.width = Math.floor(
+    spectrogramImageElement.width = Math.floor(
       timeStepWidth_px * this.vqvaeTimestepsTop
     )
     this.snapPoints.style.width =
@@ -868,9 +881,9 @@ export class SpectrogramLocator extends Locator {
 
     // adapt the spectrogram's image size to the resulting grid's size
     // since the grid size is rounded up to the number of rows and columns
-    spectrogramImageElem.style.height =
+    spectrogramImageElement.style.height =
       this.interfaceContainer.clientHeight.toString() + 'px'
-    spectrogramImageContainerElem.style.height =
+    spectrogramImageContainerElement.style.height =
       this.interfaceContainer.clientHeight.toString() + 'px'
   }
 
@@ -884,8 +897,8 @@ export class SpectrogramLocator extends Locator {
     Array(this.numScrollSteps)
       .fill(0)
       .forEach(() => {
-        const snapElem = document.createElement('snap')
-        this.snapPoints.appendChild(snapElem)
+        const snapElement = document.createElement('snap')
+        this.snapPoints.appendChild(snapElement)
       })
   }
 
@@ -902,8 +915,8 @@ export class SpectrogramLocator extends Locator {
     return this.numRows * this.numColumns
   }
 
-  protected highlightColumn(columnIndex): void {
-    throw new Error('TODO')
+  protected highlightColumn(columnIndex: number): void {
+    throw new Error('Not implemented')
   }
 
   setCurrentlyPlayingPositionDisplay(progress: number) {
@@ -917,31 +930,31 @@ export class SpectrogramLocator extends Locator {
 function cycleGranularity(increase: boolean) {
   const granularitySelect = $('#granularity-select-container select')
   // if (granularitySelect.length > 0) {
-  const granularitySelectElem = <HTMLSelectElement>granularitySelect[0]
-  // let granularitySelectElem: HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
+  const granularitySelectElement = <HTMLSelectElement>granularitySelect[0]
+  // let granularitySelectElement: HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
   const selectedGranularity = parseInt(granularitySelect.val().toString())
-  const numOptions = granularitySelectElem.children.length
+  const numOptions = granularitySelectElement.children.length
 
   if (increase) {
-    granularitySelectElem.value = Math.min(
+    granularitySelectElement.value = Math.min(
       selectedGranularity + 1,
       numOptions - 1
     ).toString()
   } else {
-    granularitySelectElem.value = Math.max(
+    granularitySelectElement.value = Math.max(
       selectedGranularity - 1,
       0
     ).toString()
   }
 
   // trigger `onchange` callback
-  granularitySelectElem.dispatchEvent(new Event('change'))
+  granularitySelectElement.dispatchEvent(new Event('change'))
   // }
 }
 
 // Drag and Drop
 
-// Allow drag and drop of one timecontainer's content onto another
+// Allow drag and drop of one timeContainer's content onto another
 
 function ondragstartTimecontainer_handler(event: DragEvent) {
   // perform a copy operation of the data in the time container
@@ -989,13 +1002,12 @@ function makeOndropTimecontainer_handler(
 
 // TODO replace this with using a Promise<eOSMD> in the renderZoomControl function
 let zoomTargetOSMD
-export function registerZoomTarget(sheetLocator: SheetLocator) {
+export function registerZoomTarget(sheetLocator: SheetLocator): void {
   zoomTargetOSMD = sheetLocator
 }
 
 export async function renderZoomControls(
-  containerElement: HTMLElement,
-  osmd_target_promise: Promise<SheetLocator>
+  containerElement: HTMLElement
 ): Promise<void> {
   // let osmd_target = await osmd_target_promise;
   const zoomOutButton = document.createElement('i')

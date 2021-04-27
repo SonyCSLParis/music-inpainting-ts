@@ -56,8 +56,8 @@
       "en": "Gain"
     },
 
-    "select-midi-out-label": {
-      "en": "Midi Out Device"
+    "select-midi-output-device-label": {
+      "en": "MIDI Out Device"
     },
 
     "select-midi-input-device-label": {
