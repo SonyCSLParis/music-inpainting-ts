@@ -51,6 +51,10 @@ body.notono {
   min-width: 20vw !important;
   max-width: 35vw !important;
   width: max-content !important;
+
+  &.screen-center {
+    position: fixed !important;
+  }
 }
 
 .trip-progress-steps {
