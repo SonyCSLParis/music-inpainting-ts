@@ -201,9 +201,9 @@ export async function render(useChordsInstrument = false): Promise<void> {
   midiInChannelSelect.render(false, 60)
   midiInChannelSelect.container.classList.add('advanced')
 
-  const midiInDisplayButtonContainer = document.createElement('control-item')
+  const midiInDisplayButtonContainer = document.createElement('div')
   midiInDisplayButtonContainer.id = 'midi-in-display-container'
-  midiInDisplayButtonContainer.classList.add('disable-mouse')
+  midiInDisplayButtonContainer.classList.add('control-item', 'disable-mouse')
   midiInContainerElement.appendChild(midiInDisplayButtonContainer)
   const midiInDisplayButton = new Nexus.Button('#midi-in-display-container', {
     size: [15, 15],
