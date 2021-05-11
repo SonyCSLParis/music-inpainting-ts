@@ -32,6 +32,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramLocat
   protected sampler_B: Tone.Sampler = new Tone.Sampler({
     C4: this.buffer_B,
   }).connect(this.crossFade.b)
+  protected samplers: Tone.Sampler[] = [this.sampler_A, this.sampler_B]
 
   protected crossFadeDuration: Tone.Unit.Time = '1'
   // look-ahead duration to retrieve the state of the crossfade after potential fading operations
@@ -50,13 +51,17 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramLocat
     })
   }
 
-  protected onkeyup(data: NoteEvent) {
-    this.currentSampler().triggerRelease(data.note)
+  protected onkeyup(data: NoteEvent): this {
+    this.samplers.forEach((sampler) => sampler.triggerRelease(data.note))
     return this
   }
 
-  protected onkeydown(data: NoteEvent) {
-    this.currentSampler().triggerAttack(data.note, undefined, data.velocity)
+  // plays the sound on all samplers to ensure smooth transitioning
+  // in the advent of inpainting operations
+  protected onkeydown(data: NoteEvent): this {
+    this.samplers.forEach((sampler) =>
+      sampler.triggerAttack(data.note, undefined, data.velocity)
+    )
     return this
   }
 
