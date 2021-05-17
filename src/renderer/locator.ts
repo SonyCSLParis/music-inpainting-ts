@@ -681,6 +681,7 @@ export class SpectrogramLocator extends Locator {
 
     this.shadowContainer = document.createElement('div')
     this.shadowContainer.id = this.container.id + '-shadow-container'
+    this.shadowContainer.classList.add('glow-shadow')
     this.interfaceContainer.appendChild(this.shadowContainer)
   }
 
