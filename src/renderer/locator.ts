@@ -642,7 +642,7 @@ export class SpectrogramLocator extends Locator {
   readonly shadowContainer: HTMLElement
   readonly interfaceContainer: HTMLElement
   readonly snapPoints: HTMLDivElement
-  private sequencer = null
+  protected sequencer: SequencerToggle
 
   get interfaceElement(): HTMLDivElement {
     return this.sequencer.element
@@ -683,6 +683,18 @@ export class SpectrogramLocator extends Locator {
     this.shadowContainer.id = this.container.id + '-shadow-container'
     this.shadowContainer.classList.add('glow-shadow')
     this.interfaceContainer.appendChild(this.shadowContainer)
+
+    const initialWidth = this.interfaceContainer.clientWidth
+    const initialHeight = this.interfaceContainer.clientHeight
+
+    this.sequencer = new SequencerToggle(this.interfaceContainer.id, {
+      size: [initialWidth, initialHeight],
+      mode: 'toggle',
+      rows: 32,
+      columns: 4,
+    })
+    this.sequencer.colorize('accent', 'rgba(255, 255, 255, 1)')
+    this.sequencer.colorize('fill', 'rgba(255, 255, 255, 0.25)')
   }
 
   public get mask(): number[][] {
