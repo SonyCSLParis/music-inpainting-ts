@@ -671,7 +671,7 @@ export class SpectrogramLocator extends Locator {
     spectrogramPictureElement.appendChild(spectrogramImageElement)
 
     this.snapPoints = document.createElement('div')
-    this.snapPoints.classList.toggle('snap-points')
+    this.snapPoints.id = 'snap-points'
     spectrogramPictureElement.appendChild(this.snapPoints)
 
     // necessary to handle 'busy' state cursor change and pointer events disabling
