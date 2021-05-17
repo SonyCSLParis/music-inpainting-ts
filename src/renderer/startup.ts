@@ -285,7 +285,7 @@ export function render(
       text: 'Start',
     })
 
-    startButton.on('change', async (v: boolean) => {
+    const startCallback = async (v = true): Promise<void> => {
       if (v) {
         Tone.setContext(
           new Tone.Context({
@@ -296,7 +296,14 @@ export function render(
 
         disposeAndStart()
       }
-    })
+    }
+    startButtonElement.addEventListener(
+      'pointerup',
+      () => {
+        void startCallback()
+      },
+      true
+    )
   }
 
   if (globalConfiguration['insert_recaptcha']) {
