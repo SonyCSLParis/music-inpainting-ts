@@ -8,7 +8,8 @@ export function createLabel(
   localizationId?: string,
   containerElement?: HTMLElement
 ): void {
-  const labelElement: HTMLElement = document.createElement('control-label')
+  const labelElement: HTMLElement = document.createElement('div')
+  labelElement.classList.add('control-label')
   labelElement.id = id
   if (localizationId == undefined) {
     localizationId = id

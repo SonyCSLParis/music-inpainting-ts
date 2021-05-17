@@ -41,6 +41,21 @@ header {
 #app-title {
   grid-row: 1;
   grid-column: 2;
+
+  border-width: medium;
+  border-radius: 15px;
+  height: 75%;
+  padding: 0% 8%;
+
+  user-select: none;
+  white-space: nowrap;
+
+  display: flex;
+  align-items: center;
+
+  font-size: min(10vw, 12vh, 2.3em);
+  font-family: 'Julius' !important;
+
 }
 
 body.anonymous-mode {
@@ -97,15 +112,4 @@ header img {
     width: $logo-width-full;
     max-width: unset;
   }
-}
-
-#app-title {
-  user-select: none;
-  white-space: nowrap;
-  cursor: default;
-
-  display: flex;
-
-  font-size: min(10vw, 12vh, 2.3em);
-  font-family: 'Julius' !important;
 }

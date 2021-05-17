@@ -32,8 +32,16 @@ $spectrogram-height-no-scroll: 90%;
 
   &.busy {
     cursor: wait !important;
-    & * {
+    * {
       pointer-events: none !important;
+    }
+    #spectrogram-container-interface-container span {
+      svg * {
+        fill: rgba(0, 0, 0, 0.699);
+      }
+    }
+    * {
+      background: none;
     }
   }
 
@@ -113,7 +121,6 @@ $spectrogram-height-no-scroll: 90%;
   top: 0;
   width: 100%;
   height: 100%;
-  box-shadow: 0 0 20px 3px $spectrogram-background-color;
   z-index: 10;
   pointer-events: none;
 }
@@ -124,6 +131,12 @@ $spectrogram-height-no-scroll: 90%;
   width: measures.$spectrogram-width !important;
   top: 5vh;
   z-index: 0;
+
+  * {
+    transition-property: color, background-color, fill;
+    transition-duration: 0.08s;
+    transition-timing-function: ease-in-out;
+  }
 
   &:before,
   &:after {

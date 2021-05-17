@@ -287,7 +287,7 @@ function render(configuration = defaultConfiguration): void {
     spinnerElement.classList.add('fa-4x')
     spinnerElement.classList.add('fa-spin')
     spinnerElement.classList.add('fa-cog')
-    spinnerElement.id = 'osmd-loading-spinner'
+    spinnerElement.id = 'loading-spinner'
 
     return spinnerElement
   }

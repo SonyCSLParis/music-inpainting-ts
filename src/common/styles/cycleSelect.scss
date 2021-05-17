@@ -3,8 +3,8 @@
 // Styling for the icon-based select element
 
 .CycleSelect-container {
-  width: measures.$CycleSelect-size;
-  height: measures.$CycleSelect-size;
+  width: measures.$CycleSelect-size !important;
+  height: measures.$CycleSelect-size !important;
   border-radius: 64px;
   border-style: solid;
   border-width: clamp(2px, min(0.3vw, 0.2vh), 3.5px);

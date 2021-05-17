@@ -14,11 +14,10 @@ $scrollbar-color: #009ceb;
     margin-right: 10%;
     height: min(10%, 4vh);
     bottom: -12%;
-    background-color: $track-color;
 
     // prevent visual glitches when updating the sheet where the scrollbar
     // goes beyond the available area
-    overflow: hidden;
+    overflow: visible
   }
 }
 
@@ -26,13 +25,10 @@ $scrollbar-color: #009ceb;
   pointer-events: auto;
   cursor: pointer;
   background-color: $scrollbar-color;
-  height: 100% !important;
+  height: 110% !important;
   border-radius: 20px;
-  top: 0 !important;
-
-  &.simplebar-vertical {
-    pointer-events: none;
-  }
+  padding: 0px 1% 0px 1%;
+  top: -5% !important;
 
   &:before {
     background: none;
