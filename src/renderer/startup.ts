@@ -18,6 +18,7 @@ enum ApplicationMode {
 declare let COMPILE_ELECTRON: boolean
 declare const DEFAULT_INPAINTING_API_IP: string
 declare const DEFAULT_INPAINTING_API_PORT: string | null
+declare const INPAINTING_API_USE_HTTPS: boolean
 declare const SPECTROGRAM_ONLY: boolean
 declare const ENABLE_ANONYMOUS_MODE: boolean
 const isDevelopment: boolean = process.env.NODE_ENV !== 'production'
@@ -39,6 +40,8 @@ if (DEFAULT_INPAINTING_API_PORT != null) {
   // is falsy, and would thus get discarded
   defaultConfiguration['inpainting_api_port'] = DEFAULT_INPAINTING_API_PORT
 }
+defaultConfiguration['inpainting_api_use_https'] =
+  INPAINTING_API_USE_HTTPS || defaultConfiguration['inpainting_api_use_https']
 import customConfiguration from '../../config.json'
 const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
 
