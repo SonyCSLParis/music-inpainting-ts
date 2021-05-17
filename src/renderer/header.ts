@@ -90,18 +90,19 @@ export function render(
     acidsLargeLogoElement.type = 'image/png'
     acidsLargeLogoElement.media = '(min-width: 700px) and (min-height: 500px)'
     acidsLargeLogoElement.srcset = getPathToStaticFile(
-      '/icons/logos/acids-flat-logo.png'
+      '/icons/logos/logoircam_noir.png'
     )
     acidsLogoContainerElement.appendChild(acidsLargeLogoElement)
     const acidsSmallLogoElement = document.createElement('img')
     acidsSmallLogoElement.src = getPathToStaticFile(
-      '/icons/logos/acids-flat-logo-no_text.png'
+      '/icons/logos/logoircam_noir-no_text.png'
     )
     acidsSmallLogoElement.alt = 'ACIDS Team Logo'
     acidsLogoContainerElement.appendChild(acidsSmallLogoElement)
 
+    acidsLogoContainerElement.style.cursor = 'pointer'
+    acidsLogoContainerElement.addEventListener('click', () => {
+      document.body.classList.toggle('light')
+    })
   }
-}
-
-if (module.hot) {
 }
