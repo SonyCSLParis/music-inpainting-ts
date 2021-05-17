@@ -4,6 +4,7 @@
   "disable_inpainting_api_parameters_input": false,
   "inpainting_api_ip": "localhost",
   "inpainting_api_port": "5000",
+  "inpainting_api_use_https": false,
 
   "annotation_types": ["fermata"],
 
