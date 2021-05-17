@@ -287,7 +287,11 @@ export function render(
 
     startButton.on('change', async (v: boolean) => {
       if (v) {
-        Tone.setContext(new Tone.Context({ latencyHint: 'interactive' }))
+        Tone.setContext(
+          new Tone.Context({
+            lookAhead: 0,
+          })
+        )
         await Tone.start()
 
         disposeAndStart()
