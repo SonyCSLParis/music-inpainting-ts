@@ -562,9 +562,8 @@ function render(configuration = defaultConfiguration): void {
         scrollElement.scrollLeft /
         (scrollElement.scrollWidth - scrollElement.clientWidth)
       log.error('Fix scroll computation')
-      const numSnapElements: number = spectrogramImageContainerElement
-        .getElementsByTagName('snap-points')
-        .item(0)
+      const numSnapElements: number = document
+        .getElementById('snap-points')
         .getElementsByTagName('snap').length
       // snaps happen on <snap>'s left boundaries
       const numSnapLocations: number = numSnapElements - 1
