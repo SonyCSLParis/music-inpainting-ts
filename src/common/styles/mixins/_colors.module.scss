@@ -8,11 +8,27 @@ $millenial-pink-active-control: #e5f5fd;
 
 $lavender-body-background: #c8dadf;
 $lavender-panes-background: #beb9d4;
+$dark-lavender-body-background: rgb(48, 8, 61);
+$dark-lavender-panes-background: rgb(57, 53, 58);
 $lavender-idle-control: #58a4b0;
 $lavender-active-control: #a3bcf9;
 
 $body-background: #c8dadf;
 $panes-background: #beb9d4;
+
+
+@function controls-box-shadow-color($control-color,
+  $box-shadow-lightness-direction) {
+    @return color.scale(
+      $control-color,
+      $lightness: $box-shadow-lightness-direction * 10%,
+      $alpha: -20%);
+}
+
+@function main-filter($control-color, $box-shadow-lightness-direction){
+  @return drop-shadow(0px 0px 1.3px
+    controls-box-shadow-color($control-color, $box-shadow-lightness-direction));
+}
 
 @mixin theme-colors($theme: lavender) {
   $body: $lavender-body-background;
@@ -23,7 +39,11 @@ $panes-background: #beb9d4;
   $overlay-lightness-factor: -1;
   $text: black;
   @if $theme == lavender {
-    $scrollbar-lightness-factor: -1;
+  } @else if $theme == dark-lavender {
+    $body: $dark-lavender-body-background;
+    $panes: $dark-lavender-panes-background;
+    $overlay-lightness-factor: 1;
+    $text: lightgray;
   } @else if $theme == millenial-pink {
     // TODO(theis): replace with list variables
     $body: $millenial-pink-body-background;
@@ -41,28 +61,66 @@ $panes-background: #beb9d4;
 
   color: $text;
   .trip-navigation * {
-    color: $text;
+    color: $text !important;
   }
-  background-color: $body;
+  #loading-spinner {
+    color: color.scale(lightgray,
+      $lightness: 00%
+    );
+  }
+
+  .logo {
+    background-color: lightgray;
+  }
+
+  // default color, used on the splash screen
+  body {
+    background-color: $panes;
+  }
+
+  #configuration-selection {
+    background-color: color.scale($panes,
+      $lightness: $overlay-lightness-factor * 15%);
+    border: solid thin $panes-border;
+  }
+
+  #main-panel, &.running, body.running {
+    background-color: $body;
+  }
+
   header,
   footer {
     background-color: $panes;
+    border-color: $panes-border;
+    border-width: thin;
+
     .expand-tab {
       background-color: color.scale($panes,
         $lightness: $overlay-lightness-factor * 10%);
     }
   }
+  header {
+    border-bottom-style: solid;
+  }
+  footer {
+    border-top-style: solid;
+  }
+
+  #app-title:hover {
+    background-color: lighten($panes, 15%);
+  }
+
   .trip-block {
     background-color: darken($panes, 50%) !important;
   }
 
   $simplebar-track-color: color.scale(
-    $body,
+    $panes,
     $lightness: 20% * $overlay-lightness-factor
   );
   $simplebar-scrollbar-color: color.scale(
     $panes,
-    $lightness: -20% * $overlay-lightness-factor
+    $lightness: -25% * $overlay-lightness-factor
   );
   @if $theme == millenial-pink {
     $simplebar-track-color: $panes;
@@ -86,7 +144,10 @@ $panes-background: #beb9d4;
   }
 
   .simplebar-scrollbar {
-    box-shadow: 0 0 2px 1px $simplebar-scrollbar-color;
+    box-shadow: 0 0 2px 1px color.scale($simplebar-scrollbar-color,
+      $lightness: $overlay-lightness-factor * 10%);
+    border: solid thin color.scale($simplebar-scrollbar-color,
+      $lightness: $overlay-lightness-factor * 25%);
     background-color: $simplebar-scrollbar-color;
     @media (hover: hover) {
       // no hover effects on touch screens since the effect remains active
@@ -112,6 +173,40 @@ $panes-background: #beb9d4;
 
   .CycleSelect-container {
     color: $idle-control;
+  }
+
+  .glow-shadow, .animated-shadow {
+    background: none;
+    &::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 0 20px 3px color.scale($panes,
+        $lightness: 50% * $overlay-lightness-factor,
+        $alpha: 50%);
+      opacity: 0.75;
+
+
+      background: none;
+    }
+  }
+
+  @keyframes opacity-on-off {
+    0% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  .animated-shadow {
+    // FIXME(theis, 2021_04_29): opacity animation flickers in Chrome
+    // when applied on the spectrogram-shadow-container
+    // animation: opacity-on-off ease-in-out 0.2s infinite alternate;
   }
 
   #spectrogram-container-interface-container {

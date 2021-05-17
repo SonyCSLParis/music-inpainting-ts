@@ -13,14 +13,26 @@ body {
   overflow: hidden;
 }
 
-body {
-  background-color: rgb(255, 242, 255);
+html {
+  // default theme, also used on the splash-screen
+  @include colors.theme-colors(dark-lavender);
+}
+
+body.running {
   &.nonoto {
     @include colors.theme-colors(millenial-pink);
   }
   &.notono {
-    @include colors.theme-colors(lavender);
+    &.dark {
+      @include colors.theme-colors(dark-lavender);
+    }
+    &.light {
+      @include colors.theme-colors(lavender);
+    }
   }
+}
+
+body {
   font-family: fonts.$interface-font-stack;
 
   // disable blue box over objects on touch
@@ -33,10 +45,20 @@ body {
   &.busy {
     cursor: wait !important;
 
-    & #osmd-loading-spinner {
+    & #loading-spinner {
       display: inline-block;
     }
   }
+}
+
+body.notono {
+  .simplebar-track.simplebar-vertical {
+    display: none;
+  }
+}
+
+img {
+  -webkit-user-drag: none;
 }
 
 [nexus-ui] select *,
@@ -63,12 +85,9 @@ body {
   z-index: 0;
 }
 
-#osmd-loading-spinner {
+#loading-spinner {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  margin-left: -32px;
-  margin-top: -32px;
+  align-self: center;
   display: none;
 }
 
@@ -92,7 +111,9 @@ $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
     display: flex;
     align-content: center;
     justify-content: center;
-    transition: all 0.1s ease-in;
+    transition-property: top, height;
+    transition-duration: 0.1s;
+    animation-timing-function: ease-in;
     left: 50%;
     z-index: -1;
     border-radius: 5px 5px 0 0;
@@ -137,8 +158,8 @@ $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
 
 .advanced {
   &,
-  & control-item,
-  & control-label {
+  & .control-item,
+  & .control-label {
     visibility: collapse;
     opacity: 0;
   }
@@ -172,8 +193,8 @@ body.advanced-controls {
   .advanced {
     visibility: visible;
     opacity: 1;
-    control-item,
-    control-label {
+    .control-item,
+    .control-label {
       visibility: visible;
       opacity: 1;
     }

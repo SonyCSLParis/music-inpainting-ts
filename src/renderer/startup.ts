@@ -78,6 +78,8 @@ if (ENABLE_ANONYMOUS_MODE) {
 export function render(
   renderPage: (configuration: typeof globalConfiguration) => void
 ): void {
+  document.body.classList.add('splash-screen')
+
   const configurationWindow = document.createElement('div')
   configurationWindow.classList.add('centeredXY')
   configurationWindow.id = 'configuration-selection'
@@ -367,5 +369,6 @@ export function render(
 function dispose() {
   if (document.getElementById('configuration-selection')) {
     document.getElementById('configuration-selection').remove()
+    document.body.classList.remove('splash-screen')
   }
 }
