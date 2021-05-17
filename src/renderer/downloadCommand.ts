@@ -57,6 +57,7 @@ export class DownloadButton {
   readonly downloadElement: HTMLAnchorElement
   protected readonly interface: HTMLElement
   protected readonly iconElement: HTMLElement
+  protected readonly dragImage: HTMLImageElement
 
   protected mainIconSize = 'fa-3x'
 
@@ -70,6 +71,7 @@ export class DownloadButton {
     this.interface = document.createElement('div')
     this.interface.id = 'download-button-interface'
     this.interface.classList.add('control-item')
+    this.interface.setAttribute('draggable', 'true')
     this.container.appendChild(this.interface)
 
     // create invisible anchor element to handle download logic
@@ -92,15 +94,17 @@ export class DownloadButton {
     this.resizeCanvas.hidden = true
     this.interface.appendChild(this.resizeCanvas)
 
+    this.dragImage = new Image()
+
     if (COMPILE_ELECTRON) {
       // add support for native Drag and Drop
       const ipcRenderer = require('electron').ipcRenderer
 
-      function saveBlob(
+      const saveBlob = (
         blob: Blob,
         fileName: string,
         appDir: 'temp' | 'documents' = 'temp'
-      ): Promise<string> {
+      ): Promise<string> => {
         return new Promise<string>((resolve, _) => {
           const reader = new FileReader()
           const storagePathPromise = ipcRenderer.invoke(
@@ -140,6 +144,14 @@ export class DownloadButton {
         ]).then(([soundPath, imagePath]) => {
           ipcRenderer.send('ondragstart', soundPath, imagePath)
         })
+      })
+    } else {
+      this.interface.addEventListener('dragstart', (event) => {
+        // event.preventDefault()
+        const dragData = `audio/x-wav:${this.filename}:${this.targetURL}`
+        event.dataTransfer.setData('DownloadURL', dragData)
+        const height = 150
+        event.dataTransfer.setDragImage(this.dragImage, 0, height)
       })
     }
   }
@@ -223,6 +235,10 @@ export class DownloadButton {
   set imageContent(imageBlob: Blob) {
     void this.resizeImage(imageBlob, 150, 150).then((blob) => {
       this._imageContent = blob
+
+      URL.revokeObjectURL(this.dragImage.src)
+      const blobUrl = URL.createObjectURL(this.imageContent)
+      this.dragImage.src = blobUrl
     })
   }
 
@@ -232,6 +248,7 @@ export class DownloadButton {
 
   set targetURL(downloadURL: string) {
     this.downloadElement.href = downloadURL
+    this.updateFilename()
   }
 
   readonly defaultFilename: filename
@@ -241,6 +258,10 @@ export class DownloadButton {
   }
 
   set filename(newFilename: string) {
+    this.updateFilename(newFilename)
+  }
+
+  protected updateFilename(newFilename?: string): void {
     this.downloadElement.setAttribute(
       'download',
       this.makeFilenameWithTimestamp(newFilename)
