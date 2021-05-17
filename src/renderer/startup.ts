@@ -84,7 +84,7 @@ export function render(
   document.body.classList.add('splash-screen')
 
   const configurationWindow = document.createElement('div')
-  configurationWindow.classList.add('centeredXY')
+  configurationWindow.classList.add('centeredXY', 'glow-shadow')
   configurationWindow.id = 'configuration-selection'
   document.body.appendChild(configurationWindow)
 
