@@ -1,4 +1,5 @@
 import $ from 'jquery'
+import log from 'loglevel'
 import createActivityDetector from 'activity-detector'
 import { SpectrogramLocator, Locator } from './locator'
 
@@ -17,22 +18,28 @@ export abstract class myTrip {
   protected languages: string[]
   readonly locator: Locator
   protected tripDelay_ms = 10000
-  // launches help tour automatically after two minutes of idle state
-  readonly inactivityDetectorDelay: number = 2 * 1000 * 60
+  readonly inactivityDetectorDelay?: number
 
   constructor(
     languages: string[],
     locator: Locator,
     inactivityDetectorDelay?: number
   ) {
+    // TODO(theis, 2021/02/23: Fix help-tour display, scrambles app layout)
+    log.error('Fix display of help-tour!')
     this.languages = languages
     this.locator = locator
-    this.inactivityDetectorDelay = inactivityDetectorDelay
+    if (inactivityDetectorDelay != undefined) {
+      this.inactivityDetectorDelay = inactivityDetectorDelay
+    }
 
     const tripContents = this.makeContents()
     this.trip = new Trip(tripContents, this.tripOptions)
 
-    if (!(this.inactivityDetectorDelay === null)) {
+    if (
+      this.inactivityDetectorDelay != null &&
+      this.inactivityDetectorDelay > 0
+    ) {
       this.registerIdleStateDetector()
     }
 
