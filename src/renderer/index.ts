@@ -357,7 +357,7 @@ function render(configuration = defaultConfiguration): void {
   $(() => {
     const mainPanel = document.getElementById('main-panel')
 
-    const spinnerElem = insertLoadingSpinner(mainPanel)
+    const spinnerElement = insertLoadingSpinner(mainPanel)
 
     if (configuration['osmd']) {
       const allowOnlyOneFermata: boolean =
