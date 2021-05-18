@@ -34,19 +34,26 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
       getCurrentInstrument = Instruments.getCurrentChordsInstrument
     }
     function getTimingOffset() {
-      return WebMidi.time - Tone.getTransport().immediate() * 1000
+      // https://github.com/Tonejs/Tone.js/issues/805#issuecomment-748172477
+      return WebMidi.time - Tone.getContext().currentTime * 1000
     }
 
     const timingOffset = getTimingOffset()
     function playNote(time, event) {
-      MidiOut.getOutput().then((currentMidiOutput) => {
-        if (currentMidiOutput) {
-          currentMidiOutput.playNote(event.name, midiChannel, {
-            time: time * 1000 + getTimingOffset(),
-            duration: event.duration * 1000,
-          })
+      MidiOut.getOutput().then(
+        (currentMidiOutput) => {
+          if (currentMidiOutput) {
+            currentMidiOutput.playNote(event.name, midiChannel, {
+              time: time * 1000 + timingOffset,
+              duration: event.duration * 1000,
+            })
+          }
+        },
+        (reason) => {
+          log.error('Failed to retrieve current Midi Output with error: ')
+          log.error(reason)
         }
-      })
+      )
 
       const currentInstrument = getCurrentInstrument()
       if ('keyUp' in currentInstrument) {
