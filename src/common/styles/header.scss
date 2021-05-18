@@ -56,6 +56,8 @@ header {
   font-size: min(10vw, 12vh, 2.3em);
   font-family: 'Julius' !important;
 
+  // visual cue for resampling-on-click functionality
+  cursor: pointer;
 }
 
 body.anonymous-mode {
