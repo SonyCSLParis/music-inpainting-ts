@@ -83,6 +83,7 @@ body {
   position: relative !important;
   flex-grow: 1;
   z-index: 0;
+  display: flex;
 }
 
 #loading-spinner {
