@@ -61,11 +61,11 @@ export function render(
     CslSmallLogoElement.alt = 'Sony CSL Logo'
     cslLogoContainerElement.appendChild(CslSmallLogoElement)
 
-    // TODO(theis): remove this hack
+    // TODO(theis): remove this hack, add a proper fullscreen icon
     cslLogoContainerElement.style.cursor = 'pointer'
     cslLogoContainerElement.addEventListener('click', () => {
       if (screenfull.isEnabled) {
-        screenfull.request()
+        void screenfull.toggle()
       }
     })
   }
