@@ -30,8 +30,8 @@
   "display_help_on_idle": false,
   "display_help_on_idle_period_ms": 10000,
 
-  "sony_logo": true,
-  "acids_logo": false,
+  "display_sony_logo": true,
+  "display_acids_logo": false,
 
   "link_channel_prefix": "LINK/",
 
