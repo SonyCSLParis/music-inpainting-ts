@@ -116,7 +116,7 @@ function enableChanges(): void {
 
 function render(configuration = defaultConfiguration): void {
   disableChanges()
-  appConfiguration = configuration
+  document.body.classList.add('running')
 
   if (configuration['osmd']) {
     document.body.classList.add('nonoto')
