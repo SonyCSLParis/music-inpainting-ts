@@ -48,7 +48,7 @@
   font-weight: 500;
 }
 
-.control-label {
+.control-label, .disabled-gridspan {
   font-weight: 400;
   font-size: calc(min(10px + 1vw, 1.1em));
 }
@@ -163,4 +163,15 @@
 
 .multi-column-gridspan {
   grid-template-rows: 1fr;
+}
+
+// used to display an error message in place of controls,
+// e.g. in case of missing Web MIDI API support
+// TODO(theis, 2021_04_21): could replace this with actually rendering
+// the associated controls, but graying them out/visibly disabling them,
+// and offering more info through an info-bubble (with touchscreen support)
+.disabled-gridspan {
+  display: flex;
+  color: gray;
+  justify-content: center;
 }
