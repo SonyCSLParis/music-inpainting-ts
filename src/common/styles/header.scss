@@ -109,9 +109,19 @@ header img {
 
   width: $logo-width-small;
   max-width: 60px;
+
+  border-radius: 30px;
+
+  padding-left: min(15%);
+  padding-right: min(15%);
+  padding-bottom: min(15%, 0.8vh);
+  padding-top: min(15%, 0.8vh);
+
   @media screen and (min-width: 700px) and (min-height: 500px) {
     transition: width 0.3s ease;
     width: $logo-width-full;
     max-width: unset;
+    padding-left: min(7%);
+    padding-right: min(7%);
   }
 }
