@@ -281,7 +281,8 @@ function render(configuration = defaultConfiguration): void {
   }
   const inpaintingApiPort: string = configuration['inpainting_api_port']
   const useCustomPort = inpaintingApiPort != ''
-  const inpaintingApiUrl = `http://${inpaintingApiIp}${
+  const useHTTPS = configuration['inpainting_api_use_https']
+  const inpaintingApiUrl = `http${useHTTPS ? 's' : ''}://${inpaintingApiIp}${
     useCustomPort ? ':' : ''
   }${inpaintingApiPort}/`
 

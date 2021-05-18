@@ -11,6 +11,7 @@ module.exports = {
       // default to communicating with the Flask server on the same port as the window
       // FIXME(theis): retrieved value is empty in compiled Electron app
       DEFAULT_INPAINTING_API_PORT: 'window.location.port',
+      INPAINTING_API_USE_HTTPS: false,
       SPECTROGRAM_ONLY: false,
       ENABLE_ANONYMOUS_MODE: false,
     }),
