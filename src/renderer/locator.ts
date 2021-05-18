@@ -122,6 +122,9 @@ export class SheetLocator extends Locator {
     super()
     this.container = container
     this.sheet = new OpenSheetMusicDisplay(container, options)
+    this.sheet.EngravingRules.RenderMultipleRestMeasures = false
+    this.sheet.EngravingRules.VoiceSpacingMultiplierVexflow = 1
+    this.sheet.EngravingRules.VoiceSpacingAddendVexflow = 10.0
     this._annotationTypes = annotationTypes
     this._boxDurations_quarters = boxDurations_quarters
     this._allowOnlyOneFermata = allowOnlyOneFermata
