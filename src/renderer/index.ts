@@ -67,6 +67,7 @@ let playbackManager: PlaybackManager<Locator>
 let sheetPlaybackManager: SheetPlaybackManager
 let spectrogramPlaybackManager: SpectrogramPlaybackManager
 let bpmControl: BPMControl
+let instrumentConstraintSelect: Nexus.Select
 let pitchRootSelect: Nexus.Select
 let octaveControl: NumberControl
 let instrumentSelect: CycleSelect
@@ -167,6 +168,10 @@ function render(configuration = defaultConfiguration): void {
   $(() => {
     const headerGridElement = document.getElementById('header')
     Header.render(headerGridElement, configuration)
+    const appTitleElement = document.getElementById('app-title')
+    appTitleElement.addEventListener('click', () => {
+      void sampleFromDataset(spectrogramPlaybackManager, inpaintingApiUrl)
+    })
   })
 
   $(() => {
@@ -298,18 +303,23 @@ function render(configuration = defaultConfiguration): void {
         'constraints-gridspan'
       )
 
-      const instrumentSelectGridspanElement: HTMLElement = document.createElement(
+      const instrumentConstraintSelectGridspanElement: HTMLElement = document.createElement(
         'div'
       )
-      instrumentSelectGridspanElement.id = 'instrument-select-gridspan'
-      instrumentSelectGridspanElement.classList.add('gridspan')
-      constraintsGridspanElement.appendChild(instrumentSelectGridspanElement)
-      const instrumentSelectElement = document.createElement('div')
-      instrumentSelectElement.id = 'instrument-control'
-      instrumentSelectElement.classList.add('control-item')
-      instrumentSelectGridspanElement.appendChild(instrumentSelectElement)
+      instrumentConstraintSelectGridspanElement.id =
+        'instrument-select-gridspan'
+      instrumentConstraintSelectGridspanElement.classList.add('gridspan')
+      constraintsGridspanElement.appendChild(
+        instrumentConstraintSelectGridspanElement
+      )
+      const instrumentConstraintSelectElement = document.createElement('div')
+      instrumentConstraintSelectElement.id = 'instrument-control'
+      instrumentConstraintSelectElement.classList.add('control-item')
+      instrumentConstraintSelectGridspanElement.appendChild(
+        instrumentConstraintSelectElement
+      )
       // TODO(theis, 2021_04_20): retrieve instrument options from Inpainting API
-      const instrumentSelectOptions = [
+      const instrumentConstraintSelectOptions = [
         'bass',
         'brass',
         'flute',
@@ -322,17 +332,25 @@ function render(configuration = defaultConfiguration): void {
         'synth_lead',
         'vocal',
       ]
-      instrumentSelect = new Nexus.Select('#instrument-control', {
+      instrumentConstraintSelect = new Nexus.Select('#instrument-control', {
         size: [120, 50],
-        options: instrumentSelectOptions,
-        value: 'organ',
+        options: instrumentConstraintSelectOptions,
       })
+      // set the initial instrument constraint randomly
+      instrumentConstraintSelect.shuffle = function () {
+        instrumentConstraintSelect.value =
+          instrumentConstraintSelectOptions[
+            Math.floor(Math.random() * instrumentConstraintSelectOptions.length)
+          ]
+      }
+      instrumentConstraintSelect.shuffle()
+
       ControlLabels.createLabel(
-        instrumentSelectElement,
+        instrumentConstraintSelectElement,
         'instrument-control-label',
         false,
         null,
-        instrumentSelectGridspanElement
+        instrumentConstraintSelectGridspanElement
       )
       ;[pitchRootSelect, octaveControl] = renderPitchRootAndOctaveControl()
     })
@@ -473,32 +491,7 @@ function render(configuration = defaultConfiguration): void {
       locator = spectrogramLocator
       PlaybackCommands.setPlaybackManager(spectrogramPlaybackManager)
 
-      const sendCodesWithRequest = false
-      const initial_command =
-        '?pitch=' +
-        getMidiPitch().toString() +
-        '&instrument_family_str=' +
-        instrumentSelect.value +
-        '&layer=' +
-        vqvaeLayerSelect.value.split('-')[0] +
-        '&temperature=1' +
-        '&duration_top=4'
-
-      loadAudioAndSpectrogram(
-        spectrogramPlaybackManager,
-        serverUrl,
-        'sample-from-dataset' + initial_command,
-        sendCodesWithRequest
-      ).then(() => {
-        enableChanges()
-        mapTouchEventsToMouseSimplebar()
-        // HACK, TODO(theis): should not be necessary, since there is already
-        // a refresh operation at the end of the loadAudioAndSpectrogram method
-        // but this has to be done on the initial call since the SpectrogramLocator
-        // only gets initialized in that call
-        // should properly initialize the SpectrogramLocator on instantiation
-        spectrogramPlaybackManager.Locator.refresh()
-      })
+      sampleFromDataset(spectrogramPlaybackManager, inpaintingApiUrl)
     }
   })
 
@@ -513,7 +506,10 @@ function render(configuration = defaultConfiguration): void {
     // retrieve up-to-date user-selected conditioning
     const newConditioning_value = new Map()
     newConditioning_value.set('pitch', getMidiPitch())
-    newConditioning_value.set('instrument_family_str', instrumentSelect.value)
+    newConditioning_value.set(
+      'instrument_family_str',
+      instrumentConstraintSelect.value
+    )
 
     for (const [
       modality,
@@ -599,7 +595,7 @@ function render(configuration = defaultConfiguration): void {
           '?pitch=' +
           getMidiPitch().toString() +
           '&instrument_family_str=' +
-          instrumentSelect.value +
+          instrumentConstraintSelect.value +
           '&layer=' +
           vqvaeLayerSelect.value.split('-')[0] +
           '&temperature=1' +
@@ -886,6 +882,61 @@ function render(configuration = defaultConfiguration): void {
     enableChanges()
   }
 
+  async function sampleFromDataset(
+    spectrogramPlaybackManager: SpectrogramPlaybackManager,
+    inpaintingApiUrl: string,
+    timeout = 10000
+  ): Promise<void> {
+    const sendCodesWithRequest = false
+    const sampling_parameters =
+      '?pitch_class=' +
+      (getMidiPitch() % 12).toString() +
+      '&instrument_family_str=' +
+      instrumentConstraintSelect.value +
+      '&duration_top=4'
+
+    return loadAudioAndSpectrogram(
+      spectrogramPlaybackManager,
+      inpaintingApiUrl,
+      'sample-from-dataset' + sampling_parameters,
+      sendCodesWithRequest,
+      undefined,
+      timeout
+    ).then(
+      () => {
+        enableChanges()
+        mapTouchEventsToMouseSimplebar()
+        // HACK, TODO(theis): should not be necessary, since there is already
+        // a refresh operation at the end of the loadAudioAndSpectrogram method
+        // but this has to be done on the initial call since the SpectrogramLocator
+        // only gets initialized in that call
+        // should properly initialize the SpectrogramLocator on instantiation
+        // spectrogramPlaybackManager.Locator.refresh()
+      },
+      (rejectionReason) => {
+        // FIXME(theis, 2021_04_21): sampling can fail in the current setting if either:
+        // - the Inpainting API is not reachable, in which case it might fail instantly,
+        //   and would lead to a very high number of requests in a very short time,
+        // - the sampling procedure didn't manage to find a suitable sample in the database
+        //   in a reasonable time
+        // We should distinguish those two cases and only re-run a sampling if the API is
+        // accessible
+        console.log(rejectionReason)
+        if (rejectionReason.statusText == 'timeout') {
+          log.error(
+            'Failed to sample sound in required time, retrying with new parameters'
+          )
+          instrumentConstraintSelect.shuffle()
+          void sampleFromDataset(
+            spectrogramPlaybackManager,
+            inpaintingApiUrl,
+            timeout
+          )
+        }
+      }
+    )
+  }
+
   function dropHandler(e: DragEvent) {
     // Prevent default behavior (Prevent file from being opened)
     e.preventDefault()
@@ -902,7 +953,7 @@ function render(configuration = defaultConfiguration): void {
             '?pitch=' +
             getMidiPitch().toString() +
             '&instrument_family_str=' +
-            instrumentSelect.value
+            instrumentConstraintSelect.value
           sendAudio(
             file,
             spectrogramPlaybackManager,
