@@ -101,6 +101,7 @@ $spectrogram-height-no-scroll: 90%;
 #spectrogram-picture {
   position: relative;
   left: 5vw;
+  filter: blur(2px);
 
   img {
     background-color: $spectrogram-background-color;
