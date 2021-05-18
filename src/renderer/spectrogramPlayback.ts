@@ -43,7 +43,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramLocat
 
     this.scheduleInitialPlaybackLoop()
 
-    getMidiInputListener().then((midiListener) => {
+    void getMidiInputListener().then((midiListener) => {
       if (midiListener !== null) {
         midiListener.on('keyDown', this.onkeydown.bind(this))
         midiListener.on('keyUp', this.onkeyup.bind(this))
