@@ -76,32 +76,32 @@ export function render(
 
   containerElement.appendChild(nameElement)
 
-  if (configuration['display_acids_logo']) {
-    const acidsLogoLinkElement = document.createElement('a')
-    acidsLogoLinkElement.id = 'acids-logo'
-    acidsLogoLinkElement.classList.add('header-item-right')
+  if (configuration['display_ircam_logo']) {
+    const ircamLogoLinkElement = document.createElement('a')
+    ircamLogoLinkElement.id = 'ircam-logo'
+    ircamLogoLinkElement.classList.add('header-item-right')
 
-    containerElement.appendChild(acidsLogoLinkElement)
+    containerElement.appendChild(ircamLogoLinkElement)
 
-    const acidsLogoContainerElement = document.createElement('picture')
-    acidsLogoContainerElement.classList.add('logo')
-    acidsLogoLinkElement.appendChild(acidsLogoContainerElement)
-    const acidsLargeLogoElement = document.createElement('source')
-    acidsLargeLogoElement.type = 'image/png'
-    acidsLargeLogoElement.media = '(min-width: 700px) and (min-height: 500px)'
-    acidsLargeLogoElement.srcset = getPathToStaticFile(
+    const ircamLogoContainerElement = document.createElement('picture')
+    ircamLogoContainerElement.classList.add('logo')
+    ircamLogoLinkElement.appendChild(ircamLogoContainerElement)
+    const ircamLargeLogoElement = document.createElement('source')
+    ircamLargeLogoElement.type = 'image/png'
+    ircamLargeLogoElement.media = '(min-width: 700px) and (min-height: 500px)'
+    ircamLargeLogoElement.srcset = getPathToStaticFile(
       '/icons/logos/logoircam_noir.png'
     )
-    acidsLogoContainerElement.appendChild(acidsLargeLogoElement)
-    const acidsSmallLogoElement = document.createElement('img')
-    acidsSmallLogoElement.src = getPathToStaticFile(
+    ircamLogoContainerElement.appendChild(ircamLargeLogoElement)
+    const ircamSmallLogoElement = document.createElement('img')
+    ircamSmallLogoElement.src = getPathToStaticFile(
       '/icons/logos/logoircam_noir-no_text.png'
     )
-    acidsSmallLogoElement.alt = 'ACIDS Team Logo'
-    acidsLogoContainerElement.appendChild(acidsSmallLogoElement)
+    ircamSmallLogoElement.alt = 'ircam Team Logo'
+    ircamLogoContainerElement.appendChild(ircamSmallLogoElement)
 
-    acidsLogoContainerElement.style.cursor = 'pointer'
-    acidsLogoContainerElement.addEventListener('click', () => {
+    ircamLogoContainerElement.style.cursor = 'pointer'
+    ircamLogoContainerElement.addEventListener('click', () => {
       document.body.classList.toggle('light')
     })
   }
