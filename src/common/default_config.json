@@ -31,7 +31,7 @@
   "display_help_on_idle_period_ms": 120000,
 
   "display_sony_logo": true,
-  "display_acids_logo": false,
+  "display_ircam_logo": false,
 
   "link_channel_prefix": "LINK/",
 

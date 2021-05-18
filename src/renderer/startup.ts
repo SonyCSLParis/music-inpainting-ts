@@ -69,12 +69,12 @@ const spectrogramConfiguration = cloneJSON(globalConfiguration)
 spectrogramConfiguration['osmd'] = false
 spectrogramConfiguration['spectrogram'] = true
 spectrogramConfiguration['app_name'] = 'notono'
-spectrogramConfiguration['display_acids_logo'] = true
+spectrogramConfiguration['display_ircam_logo'] = true
 
 if (ENABLE_ANONYMOUS_MODE) {
   spectrogramConfiguration['app_name'] = 'VQ-Inpainting'
   spectrogramConfiguration['display_sony_logo'] = false
-  spectrogramConfiguration['display_acids_logo'] = false
+  spectrogramConfiguration['display_ircam_logo'] = false
   document.body.classList.add('anonymous-mode')
 }
 
