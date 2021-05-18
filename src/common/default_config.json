@@ -28,7 +28,7 @@
 
   "insert_help": true,
   "display_help_on_idle": false,
-  "display_help_on_idle_period_ms": 10000,
+  "display_help_on_idle_period_ms": 120000,
 
   "display_sony_logo": true,
   "display_acids_logo": false,

@@ -1355,14 +1355,14 @@ function render(configuration = defaultConfiguration): void {
         helpTrip = new NotonoTrip(
           [configuration['main_language']],
           spectrogramPlaybackManager.Locator,
-          REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : null
+          REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
       } else if (configuration['osmd']) {
         // initialize help menu
         helpTrip = new NonotoTrip(
           [configuration['main_language']],
           sheetLocator,
-          REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : null
+          REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
       }
 
