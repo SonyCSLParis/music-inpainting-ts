@@ -812,7 +812,8 @@ function render(configuration = defaultConfiguration): void {
     inpaintingApiUrl: string,
     generationCommand: string,
     sendCodesWithRequest: boolean,
-    mask?: number[][]
+    mask?: number[][],
+    timeout = 0
   ): Promise<void> {
     disableChanges()
 
@@ -843,6 +844,7 @@ function render(configuration = defaultConfiguration): void {
         data: JSON.stringify(payload_object),
         contentType: 'application/json',
         dataType: 'json',
+        timeout: timeout,
       })
 
       newCodes_top = jsonResponse['top_code']
