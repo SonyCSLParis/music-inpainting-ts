@@ -28,8 +28,11 @@ export async function render(useChordsInstrument = false): Promise<void> {
       globalMidiOutputListener = new MidiOutput(null)
       await MidiOutput.enabled()
     } catch (error) {
-      // fail silently if no Web MIDI API support in the browser
+      // no Web MIDI API support in the browser
       log.error('Failed in rendering Midi-Out controls with error: ', error)
+      midiOutContainerElement.classList.add('disabled-gridspan')
+      midiOutContainerElement.innerHTML =
+        'No Web MIDI API support<br>Try using Chromium'
       return
     }
   }
