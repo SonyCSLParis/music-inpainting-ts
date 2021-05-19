@@ -20,9 +20,7 @@ let merged_defines = mergeWithCustomize({
   plugins: [
     new webpack.DefinePlugin({
       SPECTROGRAM_ONLY: true,
-      DEFAULT_INPAINTING_API_IP: '"notono.api.cslmusic.team"',
-      DEFAULT_INPAINTING_API_PORT: '""',
-      INPAINTING_API_USE_HTTPS: true,
+      DEFAULT_INPAINTING_API_ADDRESS: '"https://notono.api.cslmusic.team"',
     }),
   ],
 })

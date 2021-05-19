@@ -16,9 +16,7 @@ enum ApplicationMode {
 
 // defined at compile-time via webpack.DefinePlugin
 declare let COMPILE_ELECTRON: boolean
-declare const DEFAULT_INPAINTING_API_IP: string
-declare const DEFAULT_INPAINTING_API_PORT: string | null
-declare const INPAINTING_API_USE_HTTPS: boolean
+declare const DEFAULT_INPAINTING_API_ADDRESS: string
 declare const SPECTROGRAM_ONLY: boolean
 declare const ENABLE_ANONYMOUS_MODE: boolean
 const isDevelopment: boolean = process.env.NODE_ENV !== 'production'
@@ -29,23 +27,19 @@ function cloneJSON<T>(obj: T): T {
 }
 
 import defaultConfiguration from '../common/default_config.json'
-// FIXME(theis, 2021_01_02): required hardcoded defaults since default values
-// retrieved from the window via DEFAULT_INPAINTING_API_IP and DEFAULT_INPAINTING_API_PORT
-// are blank in compiled Electron applications
-// FIXME(theis, 2021_04_20): overly complicated setup...
-defaultConfiguration['inpainting_api_ip'] =
-  DEFAULT_INPAINTING_API_IP || defaultConfiguration['inpainting_api_ip']
-if (DEFAULT_INPAINTING_API_PORT != null) {
-  // null test required, since an empty value of `""` for default HTTP(S) port usage gets
-  // is falsy, and would thus get discarded
-  defaultConfiguration['inpainting_api_port'] = DEFAULT_INPAINTING_API_PORT
-}
-defaultConfiguration['inpainting_api_use_https'] =
-  INPAINTING_API_USE_HTTPS || defaultConfiguration['inpainting_api_use_https']
+type applicationConfiguration = typeof defaultConfiguration
 import customConfiguration from '../../config.json'
-const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
+const globalConfiguration: applicationConfiguration = {
+  ...defaultConfiguration,
+  ...customConfiguration,
+}
 
-// TODO don't create modes like this (goes against 12 Factor App principles)
+// fallback to Webpack globals if no value defined in the JSON configuration
+globalConfiguration['inpainting_api_address'] =
+  globalConfiguration['inpainting_api_address'] ||
+  DEFAULT_INPAINTING_API_ADDRESS
+
+// TODO(theis) don't create modes like this (goes against 12 Factor App principles)
 // should have truly orthogonal configuration options
 const osmdConfiguration = cloneJSON(globalConfiguration)
 osmdConfiguration['osmd'] = true
@@ -78,6 +72,9 @@ if (ENABLE_ANONYMOUS_MODE) {
   document.body.classList.add('anonymous-mode')
 }
 
+const spectrogramOnlyMode: boolean =
+  SPECTROGRAM_ONLY || globalConfiguration['spectrogram_only']
+
 export function render(
   renderPage: (configuration: typeof globalConfiguration) => void
 ): void {
@@ -88,49 +85,30 @@ export function render(
   configurationWindow.id = 'configuration-selection'
   document.body.appendChild(configurationWindow)
 
-  let serverConfigElement: HTMLDivElement
-  let serverIpContainer: HTMLDivElement
-  let serverIpInput: HTMLInputElement
-  let serverPortContainer: HTMLDivElement
-  let serverPortInput: HTMLInputElement
   if (!globalConfiguration['disable_inpainting_api_parameters_input']) {
-    serverConfigElement = document.createElement('div')
+    const serverConfigElement = document.createElement('div')
     serverConfigElement.id = 'server-configuration'
     configurationWindow.appendChild(serverConfigElement)
 
-    serverIpContainer = document.createElement('div')
-    serverIpContainer.id = 'server-ip-container'
-    serverConfigElement.appendChild(serverIpContainer)
-    serverIpInput = document.createElement('input')
-    serverIpInput.type = 'url'
-    serverIpInput.id = 'server-ip-input'
-    serverIpInput.placeholder = `${globalConfiguration['inpainting_api_ip']}`
-    serverIpContainer.appendChild(serverIpInput)
+    const serverAddressContainer = document.createElement('div')
+    serverAddressContainer.id = 'server-address-container'
+    serverConfigElement.appendChild(serverAddressContainer)
 
-    serverPortContainer = document.createElement('div')
-    serverPortContainer.id = 'server-port-container'
-    serverConfigElement.appendChild(serverPortContainer)
-    serverPortInput = document.createElement('input')
-    serverPortInput.type = 'url'
-    serverPortInput.id = 'server-port-input'
-    serverPortInput.placeholder = `${globalConfiguration['inpainting_api_port']}`
-    serverPortContainer.appendChild(serverPortInput)
+    const serverAddressInput = document.createElement('input')
+    serverAddressInput.type = 'url'
+    serverAddressInput.id = 'server-address-input'
+    serverAddressInput.placeholder = `${globalConfiguration['inpainting_api_address']}`
+    serverAddressContainer.appendChild(serverAddressInput)
+
+    serverAddressInput.addEventListener('input', checkServerAddress)
   }
 
-  // let serverUrlInputLabel: HTMLLabelElement = document.createElement('label');
-  // serverUrlInputLabel.setAttribute('for', 'server-url-input');
-  //
-
-  let modeConfigElement: HTMLDivElement
-  let applicationModeSelectElement: HTMLSelectElement
-  const spectrogramOnlyMode: boolean =
-    SPECTROGRAM_ONLY || globalConfiguration['spectrogram_only']
   if (!spectrogramOnlyMode) {
-    modeConfigElement = document.createElement('div')
+    const modeConfigElement = document.createElement('div')
     modeConfigElement.id = 'mode-configuration'
     configurationWindow.appendChild(modeConfigElement)
 
-    applicationModeSelectElement = document.createElement('select')
+    const applicationModeSelectElement = document.createElement('select')
     applicationModeSelectElement.style.visibility = 'hidden'
     applicationModeSelectElement.id = 'application-mode-select'
     configurationWindow.appendChild(applicationModeSelectElement)
@@ -237,136 +215,208 @@ export function render(
     })
   }
 
-  function getCurrentConfiguration() {
-    let applicationMode: ApplicationMode
-    if (!spectrogramOnlyMode) {
-      applicationMode = applicationModeSelectElement.value as ApplicationMode
+  if (globalConfiguration['insert_recaptcha']) {
+    renderRecaptcha(renderPage)
+  } else {
+    renderStartButton(renderPage)
+  }
+}
+
+function getCurrentConfiguration() {
+  const applicationModeSelectElement = <HTMLSelectElement>(
+    document.getElementById('application-mode-select')
+  )
+  let applicationMode: ApplicationMode
+  if (!spectrogramOnlyMode) {
+    applicationMode = applicationModeSelectElement.value as ApplicationMode
+  } else {
+    applicationMode = ApplicationMode.Spectrogram
+  }
+  let configuration
+  switch (applicationMode) {
+    case 'chorale':
+      configuration = choraleConfiguration
+      break
+    case 'leadsheet':
+      configuration = leadsheetConfiguration
+      break
+    case 'folk':
+      configuration = folkConfiguration
+      break
+    case 'spectrogram':
+      configuration = spectrogramConfiguration
+      break
+  }
+
+  const serverAddressInput = <HTMLInputElement>(
+    document.getElementById('server-address-input')
+  )
+  if (!globalConfiguration['disable_inpainting_api_parameters_input']) {
+    if (serverAddressInput.value.length > 0) {
+      configuration['inpainting_api_address'] = serverAddressInput.value
+    }
+  }
+
+  return configuration
+}
+
+// TODO(theis, 2021/05/18): check that the address points to a valid API server,
+// through a custom ping-like call
+function checkServerAddress(configuration): boolean {
+  const serverAddressInput = <HTMLInputElement>(
+    document.getElementById('server-address-input')
+  )
+  let address: string
+  if (
+    configuration['disable_inpainting_api_parameters_input'] ||
+    serverAddressInput == null
+  ) {
+    address = configuration['inpainting_api_address']
+  } else {
+    address =
+      serverAddressInput.value.length > 0
+        ? serverAddressInput.value
+        : serverAddressInput.placeholder
+  }
+
+  // taken from https://stackoverflow.com/a/43467144
+  let url: URL
+  let isValid: boolean
+  try {
+    url = new URL(address)
+
+    isValid = url.protocol === 'http:' || url.protocol === 'https:'
+  } catch (_) {
+    isValid = false
+  }
+
+  if (serverAddressInput !== null) {
+    // apply visual feedback
+    if (!isValid) {
+      serverAddressInput.style.borderColor = 'red'
+      serverAddressInput.style.color = 'red'
     } else {
-      applicationMode = ApplicationMode.Spectrogram
+      serverAddressInput.style.borderColor = 'initial'
+      serverAddressInput.style.color = 'initial'
     }
-    let configuration
-    switch (applicationMode) {
-      case 'chorale':
-        configuration = choraleConfiguration
-        break
-      case 'leadsheet':
-        configuration = leadsheetConfiguration
-        break
-      case 'folk':
-        configuration = folkConfiguration
-        break
-      case 'spectrogram':
-        configuration = spectrogramConfiguration
-        break
-    }
-    if (!globalConfiguration['disable_inpainting_api_parameters_input']) {
-      if (serverIpInput.value.length > 0) {
-        configuration['inpainting_api_ip'] = serverIpInput.value
-      }
-      if (serverPortInput.value.length > 0) {
-        configuration['inpainting_api_port'] = serverPortInput.value
-      }
-    }
-
-    return configuration
   }
 
-  function disposeAndStart() {
+  return isValid
+}
+
+// TODO(theis, 2021/05/18): add a shake effect on error
+function checkConfiguration(configuration): boolean {
+  return checkServerAddress(configuration)
+}
+
+function renderStartButton(
+  renderPage: (configuration: typeof globalConfiguration) => void
+) {
+  const configurationWindow = document.getElementById('configuration-selection')
+
+  const startButtonElement = document.createElement('div')
+  startButtonElement.id = 'start-button'
+  startButtonElement.classList.add('control-item')
+  configurationWindow.appendChild(startButtonElement)
+
+  const startButton = new Nexus.TextButton('#start-button', {
+    size: [150, 50],
+    state: false,
+    text: 'Start',
+  })
+
+  const startCallback = async (v = true): Promise<void> => {
+    if (v) {
+      Tone.setContext(
+        new Tone.Context({
+          lookAhead: 0,
+        })
+      )
+      await Tone.start()
+
+      disposeAndStart(renderPage)
+    }
+  }
+  startButtonElement.addEventListener(
+    'pointerup',
+    () => {
+      void startCallback()
+    },
+    true
+  )
+}
+
+function renderRecaptcha(
+  renderPage: (configuration: typeof globalConfiguration) => void
+) {
+  const configurationWindow = document.getElementById('configuration-selection')
+
+  // load recaptcha library asynchronously
+  const recaptcha_script: HTMLScriptElement = document.createElement('script')
+  recaptcha_script.src = 'https://www.google.com/recaptcha/api.js'
+  recaptcha_script.defer = true
+  recaptcha_script.async = true
+  document.head.appendChild(recaptcha_script)
+
+  async function onreceiveRecaptchaResponse(recaptchaResponse: string) {
+    const jsonResponse = await verifyCaptcha(recaptchaResponse)
+    if (jsonResponse['success']) {
+      disposeAndStart(renderPage)
+    }
+  }
+
+  async function verifyCaptcha(recaptchaResponse: string) {
     const currentConfiguration = getCurrentConfiguration()
-    // clean-up the splash screen
-    dispose()
-    renderPage(currentConfiguration)
-  }
-
-  function renderStartButton() {
-    const startButtonElement = document.createElement('div')
-    startButtonElement.id = 'start-button'
-    startButtonElement.classList.add('control-item')
-    configurationWindow.appendChild(startButtonElement)
-
-    const startButton = new Nexus.TextButton('#start-button', {
-      size: [150, 50],
-      state: false,
-      text: 'Start',
+    const recaptchaVerificationIp =
+      globalConfiguration['recaptcha_verification_ip'] ||
+      currentConfiguration['inpainting_api_address']
+    const recaptchaVerificationPort: number =
+      globalConfiguration['recaptcha_verification_port']
+    const recaptchaVerificationCommand: string =
+      globalConfiguration['recaptcha_verification_command']
+    const recaptchaVerificationUrl = `http://${recaptchaVerificationIp}:${recaptchaVerificationPort}/${recaptchaVerificationCommand}`
+    const jsonResponse = await $.post({
+      url: recaptchaVerificationUrl,
+      data: JSON.stringify({
+        recaptchaResponse: recaptchaResponse,
+      }),
+      contentType: 'application/json',
+      dataType: 'json',
     })
 
-    const startCallback = async (v = true): Promise<void> => {
-      if (v) {
-        Tone.setContext(
-          new Tone.Context({
-            lookAhead: 0,
-          })
-        )
-        await Tone.start()
-
-        disposeAndStart()
-      }
-    }
-    startButtonElement.addEventListener(
-      'pointerup',
-      () => {
-        void startCallback()
-      },
-      true
-    )
+    return jsonResponse
   }
 
-  if (globalConfiguration['insert_recaptcha']) {
-    // load recaptcha library asynchronously
-    const recaptcha_script: HTMLScriptElement = document.createElement('script')
-    recaptcha_script.src = 'https://www.google.com/recaptcha/api.js'
-    recaptcha_script.defer = true
-    recaptcha_script.async = true
-    document.head.appendChild(recaptcha_script)
+  const recaptchaElement: HTMLDivElement = document.createElement('div')
+  recaptchaElement.id = 'g-recaptcha'
+  recaptchaElement.classList.add('g-recaptcha')
 
-    async function onreceiveRecaptchaResponse(recaptchaResponse: string) {
-      const jsonResponse = await verifyCaptcha(recaptchaResponse)
-      if (jsonResponse['success']) {
-        disposeAndStart()
-      }
-    }
+  // special all-access development key provided at:
+  // https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do
+  const recaptchaDevSitekey = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
+  const recaptchaSitekey: string = !isDevelopment
+    ? globalConfiguration['recaptcha_sitekey']
+    : recaptchaDevSitekey
+  recaptchaElement.setAttribute('data-sitekey', recaptchaSitekey)
 
-    async function verifyCaptcha(recaptchaResponse: string) {
-      const currentConfiguration = getCurrentConfiguration()
-      const recaptchaVerificationIp =
-        globalConfiguration['recaptcha_verification_ip'] ||
-        currentConfiguration['inpainting_api_ip']
-      const recaptchaVerificationPort: number =
-        globalConfiguration['recaptcha_verification_port']
-      const recaptchaVerificationCommand: string =
-        globalConfiguration['recaptcha_verification_command']
-      const recaptchaVerificationUrl = `http://${recaptchaVerificationIp}:${recaptchaVerificationPort}/${recaptchaVerificationCommand}`
-      const jsonResponse = await $.post({
-        url: recaptchaVerificationUrl,
-        data: JSON.stringify({
-          recaptchaResponse: recaptchaResponse,
-        }),
-        contentType: 'application/json',
-        dataType: 'json',
-      })
+  recaptchaElement.setAttribute('data-theme', 'dark')
+  recaptchaElement.setAttribute('data-callback', 'onreceiveRecaptchaResponse')
+  window['onreceiveRecaptchaResponse'] = onreceiveRecaptchaResponse.bind(this)
+  configurationWindow.appendChild(recaptchaElement)
+}
 
-      return jsonResponse
-    }
+function disposeAndStart(
+  renderPage: (configuration: typeof globalConfiguration) => void
+) {
+  const currentConfiguration = getCurrentConfiguration()
 
-    const recaptchaElement: HTMLDivElement = document.createElement('div')
-    recaptchaElement.id = 'g-recaptcha'
-    recaptchaElement.classList.add('g-recaptcha')
-
-    // special all-access development key provided at:
-    // https://developers.google.com/recaptcha/docs/faq#id-like-to-run-automated-tests-with-recaptcha.-what-should-i-do
-    const recaptchaDevSitekey = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
-    const recaptchaSitekey: string = !isDevelopment
-      ? globalConfiguration['recaptcha_sitekey']
-      : recaptchaDevSitekey
-    recaptchaElement.setAttribute('data-sitekey', recaptchaSitekey)
-
-    recaptchaElement.setAttribute('data-theme', 'dark')
-    recaptchaElement.setAttribute('data-callback', 'onreceiveRecaptchaResponse')
-    window['onreceiveRecaptchaResponse'] = onreceiveRecaptchaResponse.bind(this)
-    configurationWindow.appendChild(recaptchaElement)
-  } else {
-    renderStartButton()
+  if (!checkConfiguration(currentConfiguration)) {
+    return
   }
+
+  // clean-up the splash screen
+  dispose()
+  renderPage(currentConfiguration)
 }
 
 function dispose() {
