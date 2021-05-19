@@ -6,12 +6,8 @@ module.exports = {
       COMPILE_ELECTRON: true,
       // allows to inline this expression to retrieve host details at runtime as default
       // FIXME(theis): retrieved value is empty in compiled Electron app
-      DEFAULT_INPAINTING_API_IP:
-        '(window.location.hostname).replace("127.0.0.1", "localhost")',
-      // default to communicating with the Flask server on the same port as the window
-      // FIXME(theis): retrieved value is empty in compiled Electron app
-      DEFAULT_INPAINTING_API_PORT: 'window.location.port',
-      INPAINTING_API_USE_HTTPS: false,
+      DEFAULT_INPAINTING_API_ADDRESS:
+        "'http://' + (window.location.hostname).replace('127.0.0.1', 'localhost') + ':' + (window.location.port)",
       SPECTROGRAM_ONLY: false,
       ENABLE_ANONYMOUS_MODE: false,
     }),

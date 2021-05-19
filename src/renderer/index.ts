@@ -170,7 +170,7 @@ function render(configuration = defaultConfiguration): void {
     Header.render(headerGridElement, configuration)
     const appTitleElement = document.getElementById('app-title')
     appTitleElement.addEventListener('click', () => {
-      void sampleFromDataset(spectrogramPlaybackManager, inpaintingApiUrl)
+      void sampleFromDataset(spectrogramPlaybackManager, inpaintingApiAddress)
     })
   })
 
@@ -274,17 +274,7 @@ function render(configuration = defaultConfiguration): void {
     }
   })
 
-  let inpaintingApiIp: string = configuration['inpainting_api_ip']
-  if (inpaintingApiIp.charAt(inpaintingApiIp.length - 1) == '/') {
-    // strip irrelevant slash at end of IP or address
-    inpaintingApiIp = inpaintingApiIp.substring(0, inpaintingApiIp.length - 1)
-  }
-  const inpaintingApiPort: string = configuration['inpainting_api_port']
-  const useCustomPort = inpaintingApiPort != ''
-  const useHTTPS = configuration['inpainting_api_use_https']
-  const inpaintingApiUrl = `http${useHTTPS ? 's' : ''}://${inpaintingApiIp}${
-    useCustomPort ? ':' : ''
-  }${inpaintingApiPort}/`
+  const inpaintingApiAddress: string = configuration['inpainting_api_address']
 
   function insertLoadingSpinner(container: HTMLElement): HTMLElement {
     const spinnerElement: HTMLElement = document.createElement('i')
@@ -426,7 +416,7 @@ function render(configuration = defaultConfiguration): void {
         loadMusicXMLandMidi(
           sheetPlaybackManager,
           sheetLocator,
-          inpaintingApiUrl,
+          inpaintingApiAddress,
           generationCommand
         )
       }
@@ -468,7 +458,7 @@ function render(configuration = defaultConfiguration): void {
         loadMusicXMLandMidi(
           sheetPlaybackManager,
           sheetLocator,
-          inpaintingApiUrl,
+          inpaintingApiAddress,
           'generate',
           sendSheetWithRequest
         ).then(() => {
@@ -492,7 +482,7 @@ function render(configuration = defaultConfiguration): void {
       locator = spectrogramLocator
       PlaybackCommands.setPlaybackManager(spectrogramPlaybackManager)
 
-      sampleFromDataset(spectrogramPlaybackManager, inpaintingApiUrl)
+      sampleFromDataset(spectrogramPlaybackManager, inpaintingApiAddress)
     }
   })
 
@@ -628,7 +618,7 @@ function render(configuration = defaultConfiguration): void {
 
         loadAudioAndSpectrogram(
           spectrogramPlaybackManager,
-          inpaintingApiUrl,
+          inpaintingApiAddress,
           command + generationParameters,
           sendCodesWithRequest,
           mask
@@ -707,7 +697,7 @@ function render(configuration = defaultConfiguration): void {
         loadMusicXMLandMidi(
           sheetPlaybackManager,
           sheetLocator,
-          inpaintingApiUrl,
+          inpaintingApiAddress,
           argsGenerationUrl
         )
       }
@@ -716,7 +706,7 @@ function render(configuration = defaultConfiguration): void {
       return function () {
         loadAudioAndSpectrogram(
           spectrogramPlaybackManager,
-          inpaintingApiUrl,
+          inpaintingApiAddress,
           argsGenerationUrl,
           sendCodesWithRequest
         )
@@ -960,7 +950,7 @@ function render(configuration = defaultConfiguration): void {
           sendAudio(
             file,
             spectrogramPlaybackManager,
-            inpaintingApiUrl,
+            inpaintingApiAddress,
             'analyze-audio' + generationParameters
           )
           return // only send the first file
@@ -1224,7 +1214,7 @@ function render(configuration = defaultConfiguration): void {
         loadMusicXMLandMidi(
           sheetPlaybackManager,
           sheetLocator,
-          inpaintingApiUrl,
+          inpaintingApiAddress,
           'get-musicxml'
         )
       )
