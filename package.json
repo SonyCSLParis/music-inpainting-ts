@@ -11,6 +11,7 @@
     "build:notono_web": "webpack --config webpack.notono_web.cjs",
     "build:notono_web_anonymous": "webpack --config webpack.notono_web_anonymous.cjs",
     "serve:web": "http-server -p 8080 -P http://localhost:5000 ./web/dist",
+    "serve:web-no_cache": "http-server -c-1 -p 8080 -P http://localhost:5000 ./web/dist",
     "serve:web_anonymous": "http-server -p 8080 -P http://localhost:5000 ./web/dist_anonymous",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
