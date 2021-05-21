@@ -44,11 +44,8 @@
     row-gap: 1vh;
   }
 
-  &.no-server-config {
-    & #server-port-input,
-    & #server-ip-input {
+  &.no-server-config #server-address-input {
       visibility: hidden;
-    }
   }
 }
 .centeredXY {
@@ -73,28 +70,7 @@
     height: 2rem;
   }
 
-  @media screen {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media screen and (max-width: 800px) {
-    grid-template-columns: 100%;
-  }
-
   width: 100%;
-}
-
-#server-ip-container:before {
-  content: 'IP';
-  display: inline-block;
-  width: 35%;
-  margin-right: auto;
-  white-space: nowrap;
-}
-#server-port-container:before {
-  content: 'Port';
-  display: inline-block;
-  width: 35%;
 }
 
 #mode-configuration {
