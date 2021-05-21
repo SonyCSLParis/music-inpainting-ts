@@ -76,7 +76,7 @@ const spectrogramOnlyMode: boolean =
   SPECTROGRAM_ONLY || globalConfiguration['spectrogram_only']
 
 export function render(
-  renderPage: (configuration: typeof globalConfiguration) => void
+  renderPage: (configuration: applicationConfiguration) => void
 ): void {
   document.body.classList.add('splash-screen')
 
@@ -222,7 +222,7 @@ export function render(
   }
 }
 
-function getCurrentConfiguration() {
+function getCurrentConfiguration(): applicationConfiguration {
   const applicationModeSelectElement = <HTMLSelectElement>(
     document.getElementById('application-mode-select')
   )
@@ -232,7 +232,7 @@ function getCurrentConfiguration() {
   } else {
     applicationMode = ApplicationMode.Spectrogram
   }
-  let configuration
+  let configuration: applicationConfiguration
   switch (applicationMode) {
     case 'chorale':
       configuration = choraleConfiguration
@@ -262,7 +262,7 @@ function getCurrentConfiguration() {
 
 // TODO(theis, 2021/05/18): check that the address points to a valid API server,
 // through a custom ping-like call
-function checkServerAddress(configuration): boolean {
+function checkServerAddress(configuration: applicationConfiguration): boolean {
   const serverAddressInput = <HTMLInputElement>(
     document.getElementById('server-address-input')
   )
@@ -305,12 +305,12 @@ function checkServerAddress(configuration): boolean {
 }
 
 // TODO(theis, 2021/05/18): add a shake effect on error
-function checkConfiguration(configuration): boolean {
+function checkConfiguration(configuration: applicationConfiguration): boolean {
   return checkServerAddress(configuration)
 }
 
 function renderStartButton(
-  renderPage: (configuration: typeof globalConfiguration) => void
+  renderPage: (configuration: applicationConfiguration) => void
 ) {
   const configurationWindow = document.getElementById('configuration-selection')
 
@@ -347,7 +347,7 @@ function renderStartButton(
 }
 
 function renderRecaptcha(
-  renderPage: (configuration: typeof globalConfiguration) => void
+  renderPage: (configuration: applicationConfiguration) => void
 ) {
   const configurationWindow = document.getElementById('configuration-selection')
 
@@ -406,8 +406,8 @@ function renderRecaptcha(
 }
 
 function disposeAndStart(
-  renderPage: (configuration: typeof globalConfiguration) => void
-) {
+  renderPage: (configuration: applicationConfiguration) => void
+): void {
   const currentConfiguration = getCurrentConfiguration()
 
   if (!checkConfiguration(currentConfiguration)) {
@@ -419,7 +419,7 @@ function disposeAndStart(
   renderPage(currentConfiguration)
 }
 
-function dispose() {
+function dispose(): void {
   if (document.getElementById('configuration-selection')) {
     document.getElementById('configuration-selection').remove()
     document.body.classList.remove('splash-screen')
