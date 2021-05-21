@@ -603,6 +603,11 @@ export class SheetLocator extends Locator {
   }
 }
 
+type Cell = {
+  row: number
+  column: number
+}
+
 // monkey-patch Nexus.Sequencer to emit 'toggle' events
 // these are triggered only on actual changes of the pattern,
 // as opposed to the 'change' events which can be emitted even though the actual
@@ -621,13 +626,69 @@ class SequencerToggle extends Nexus.Sequencer {
   colorize: any
   on: any
 
+  inRectangularSelection = false
+  firstCell?: Cell
+  previousCell?: Cell
+  rectangularSelections = true
+
   constructor(container, options) {
     super(container, options)
+
+    if (this.rectangularSelections) {
+      this.element.addEventListener(
+        'pointerup',
+        this.onInteractionEnd.bind(this)
+      )
+      this.element.addEventListener(
+        'pointercancel',
+        this.onInteractionEnd.bind(this)
+      )
+
+      this.element.addEventListener(
+        'pointerdown',
+        this.onInteractionStart.bind(this)
+      )
+    }
+  }
+
+  protected onInteractionEnd(): void {
+    log.debug('Finished interaction')
+    this.inRectangularSelection = false
+    this.firstCell = null
+    this.previousCell = null
+    return
+  }
+
+  protected onInteractionStart(cell: Cell): void {
+    log.debug('Starting interaction')
+    this.inRectangularSelection = true
+    return
+  }
+
+  protected getIndex(cell: Cell): number {
+    return this.matrix.indexOf(cell.row, cell.column)
+  }
+
+  protected turnOn(cell: Cell, emitting: boolean) {
+    this.cells[this.matrix.indexOf(cell.row, cell.column)].turnOn(emitting)
+    if (!emitting) {
+      // manually update the model
+      this.matrix.pattern[cell.row][cell.column] = 1
+    }
+  }
+
+  protected turnOff(cell: Cell, emitting: boolean) {
+    this.cells[this.matrix.indexOf(cell.row, cell.column)].turnOff(emitting)
+    if (!emitting) {
+      // manually update the model
+      this.matrix.pattern[cell.row][cell.column] = 0
+    }
   }
 
   protected keyChange(note, on: boolean) {
-    const cell = this.matrix.locate(note)
+    const cell = <Cell>this.matrix.locate(note)
     const previousState = this.matrix.pattern[cell.row][cell.column]
+
     if (previousState !== on) {
       const data = {
         row: cell.row,
@@ -635,6 +696,48 @@ class SequencerToggle extends Nexus.Sequencer {
         state: on,
       }
       this.emit('toggle', data)
+    }
+
+    if (this.rectangularSelections && this.inRectangularSelection) {
+      if (this.firstCell == null) {
+        this.firstCell = cell
+        this.previousCell = this.cell
+      } else {
+        // TODO(theis, 2021/05/21): could maybe be more efficient by just computing
+        // the delta of cells to turn on and cells to turn off by using the
+        // previous position of the pointer.
+        //  This brute-force version probably has the advantage of being more robust
+        // to very fast mouse movements though, which could lead to `this.previousCell`'s
+        // value not being accurate, resulting in a mismatched update.
+
+        // turn all cells off
+        for (let index = 0; index < this.matrix.length; index++) {
+          const cell = <Cell>this.matrix.locate(index)
+          this.turnOff(cell, false)
+        }
+
+        // activate all cells in the rectangle between the first cell
+        // of the interaction and the current cell
+        const rectangleStart: Cell = {
+          row: Math.min(this.firstCell.row, cell.row),
+          column: Math.min(this.firstCell.column, cell.column),
+        }
+        const rectangleEnd: Cell = {
+          row: Math.max(this.firstCell.row, cell.row),
+          column: Math.max(this.firstCell.column, cell.column),
+        }
+        for (let row = rectangleStart.row; row <= rectangleEnd.row; row++) {
+          for (
+            let column = rectangleStart.column;
+            column <= rectangleEnd.column;
+            column++
+          ) {
+            const index = this.getIndex({ row: row, column: column })
+            this.turnOn({ row: row, column: column }, false)
+          }
+        }
+      }
+      this.previousCell = cell
     }
     super.keyChange(note, on)
   }
