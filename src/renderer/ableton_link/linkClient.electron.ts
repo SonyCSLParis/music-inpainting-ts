@@ -1,5 +1,5 @@
 import log from 'loglevel'
-
+import { ipcRenderer } from 'electron'
 
 import { BPMControl } from '../numberControl'
 import { PlaybackManager } from '../playback'
@@ -46,7 +46,7 @@ export async function enable(playbackManager: PlaybackManager<Locator>) {
     const bpm: number = bpmControl.value
     const quantum: number = linkQuantum
 
-    await ipcRenderer.send(link_channel_prefix + 'init', bpm, quantum)
+    ipcRenderer.send(link_channel_prefix + 'init', bpm, quantum)
     link_initialized = true
   }
   ipcRenderer.send(link_channel_prefix + 'enable')
