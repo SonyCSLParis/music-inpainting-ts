@@ -34,7 +34,7 @@ module.exports = function (config) {
       new ESLintPlugin({
         context: 'src/renderer',
         extensions: ['ts', 'tsx'],
-        failOnError: false,
+        failOnError: false, // HACK(theis): should be true!
       }),
     ],
   })
