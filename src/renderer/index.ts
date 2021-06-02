@@ -244,12 +244,12 @@ function render(configuration = defaultConfiguration): void {
         const newLayer: string = tool.split('-')[0]
         const [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(newLayer)
         const [_, numColumnsTop] = vqvaeLayerDimensions.get('top')
-        spectrogramPlaybackManager.Locator.render(
+        spectrogramPlaybackManager.locator.render(
           newNumRows,
           newNumColumns,
           numColumnsTop
         )
-        spectrogramPlaybackManager.Locator.container.classList.toggle(
+        spectrogramPlaybackManager.locator.container.classList.toggle(
           'eraser',
           tool.includes('eraser')
         )
@@ -553,7 +553,7 @@ function render(configuration = defaultConfiguration): void {
   if (configuration['spectrogram']) {
     $(() => {
       function regenerationCallback() {
-        const mask = spectrogramPlaybackManager.Locator.mask
+        const mask = spectrogramPlaybackManager.locator.mask
         const startIndexTop: number = getCurrentSpectrogramPositionTopLayer()
 
         switch (vqvaeLayerSelect.value) {
@@ -616,7 +616,7 @@ function render(configuration = defaultConfiguration): void {
           mask
         )
       }
-      spectrogramPlaybackManager.Locator.registerCallback(regenerationCallback)
+      spectrogramPlaybackManager.locator.registerCallback(regenerationCallback)
     })
   }
 
@@ -850,7 +850,7 @@ function render(configuration = defaultConfiguration): void {
       await updateAudioAndImage(audioPromise, spectrogramImagePromise)
     } catch (e) {
       console.log(e)
-      spectrogramPlaybackManager.Locator.clear()
+      spectrogramPlaybackManager.locator.clear()
       enableChanges()
       throw e
     }
@@ -860,10 +860,10 @@ function render(configuration = defaultConfiguration): void {
     currentConditioning_top = newConditioning_top
     currentConditioning_bottom = newConditioning_bottom
 
-    spectrogramPlaybackManager.Locator.vqvaeTimestepsTop =
+    spectrogramPlaybackManager.locator.vqvaeTimestepsTop =
       currentCodes_top[0].length
     triggerInterfaceRefresh()
-    spectrogramPlaybackManager.Locator.clear()
+    spectrogramPlaybackManager.locator.clear()
     enableChanges()
   }
 
@@ -896,7 +896,7 @@ function render(configuration = defaultConfiguration): void {
         // but this has to be done on the initial call since the SpectrogramLocator
         // only gets initialized in that call
         // should properly initialize the SpectrogramLocator on instantiation
-        // spectrogramPlaybackManager.Locator.refresh()
+        // spectrogramPlaybackManager.locator.refresh()
       },
       (rejectionReason) => {
         // FIXME(theis, 2021_04_21): sampling can fail in the current setting if either:
@@ -1005,7 +1005,7 @@ function render(configuration = defaultConfiguration): void {
       await updateAudioAndImage(audioPromise, spectrogramImagePromise)
     } catch (e) {
       console.log(e)
-      spectrogramPlaybackManager.Locator.clear()
+      spectrogramPlaybackManager.locator.clear()
       enableChanges()
       return
     }
@@ -1015,10 +1015,10 @@ function render(configuration = defaultConfiguration): void {
     currentConditioning_top = newConditioning_top
     currentConditioning_bottom = newConditioning_bottom
 
-    spectrogramPlaybackManager.Locator.vqvaeTimestepsTop =
+    spectrogramPlaybackManager.locator.vqvaeTimestepsTop =
       currentCodes_top[0].length
     triggerInterfaceRefresh()
-    spectrogramPlaybackManager.Locator.clear()
+    spectrogramPlaybackManager.locator.clear()
     enableChanges()
   }
 
@@ -1334,7 +1334,7 @@ function render(configuration = defaultConfiguration): void {
         // initialize help menu
         helpTrip = new NotonoTrip(
           [configuration['main_language']],
-          spectrogramPlaybackManager.Locator,
+          spectrogramPlaybackManager.locator,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
       } else if (configuration['osmd']) {
