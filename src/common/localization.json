@@ -23,7 +23,7 @@
 
     "granularity-select-label": {
       "de": "Rekompositionsdauer",
-      "en": "Regeneration duration"
+      "en": "Granularity"
     },
 
     "instruments-grid-label": {
