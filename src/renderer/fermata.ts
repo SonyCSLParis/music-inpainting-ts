@@ -31,8 +31,8 @@ export class FermataBox extends AnnotationBox {
     this.draw()
   }
 
-  protected validateTimestampContainer(): void {
-    if (!this.timestampContainer.classList.contains('1_quarterNote_duration')) {
+  protected validateTimestampContainer(timestampContainer: HTMLElement): void {
+    if (!timestampContainer.classList.contains('1_quarterNote_duration')) {
       throw new EvalError('Fermata should be associated to a quarter-note box')
     }
   }
