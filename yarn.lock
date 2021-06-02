@@ -871,10 +871,10 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
-"@fortawesome/fontawesome-free@^5.15.2":
-  version "5.15.2"
-  resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-free/-/fontawesome-free-5.15.2.tgz#218cd7276ab4f9ab57cc3d2efa2697e6a579f25d"
-  integrity sha512-7l/AX41m609L/EXI9EKH3Vs3v0iA8tKlIOGtw+kgcoanI7p+e4I4GYLqW3UXWiTnjSFymKSmTTPKYrivzbxxqA==
+"@fortawesome/fontawesome-free@^5.15.3":
+  version "5.15.3"
+  resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-free/-/fontawesome-free-5.15.3.tgz#c36ffa64a2a239bf948541a97b6ae8d729e09a9a"
+  integrity sha512-rFnSUN/QOtnOAgqFRooTA3H57JLDm0QEG/jPdk+tLQNL/eWd+Aok8g3qCI+Q1xuDPWpGW/i9JySpJVsq8Q0s9w==
 
 "@nodelib/fs.scandir@2.1.4":
   version "2.1.4"
@@ -917,10 +917,10 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@tonejs/midi@^2.0.25":
-  version "2.0.25"
-  resolved "https://registry.yarnpkg.com/@tonejs/midi/-/midi-2.0.25.tgz#c93783d052518b922b20fa76bc3bc92e2e8e4a82"
-  integrity sha512-zT8pZy/upJCGqXHSCO1+U39wgWIaizDg+sv7nVReJehMcT86Peh+zo5kQ42Guwgc/gnv47n7fJhoTRGsJVaqJQ==
+"@tonejs/midi@^2.0.27":
+  version "2.0.27"
+  resolved "https://registry.yarnpkg.com/@tonejs/midi/-/midi-2.0.27.tgz#15ebedf570ce9e3c6f5e0d25e4f4c4d47398a222"
+  integrity sha512-JYiGA8k37rTWKPoiPhbJfWLotnZFCKw0G0rqijHD+u+LdjewTgt/Ubhn2JnD2yR+6+eLXTqHLJRS2a+tNLla3w==
   dependencies:
     array-flatten "^2.1.2"
     midi-file "^1.1.2"
@@ -986,6 +986,13 @@
   version "9.0.6"
   resolved "https://registry.yarnpkg.com/@types/fs-extra/-/fs-extra-9.0.6.tgz#488e56b77299899a608b8269719c1d133027a6ab"
   integrity sha512-ecNRHw4clCkowNOBJH1e77nvbPxHYnWIXMv1IAoG/9+MYGkgoyr3Ppxr7XYFNL41V422EDhyV4/4SSK8L2mlig==
+  dependencies:
+    "@types/node" "*"
+
+"@types/fs-extra@^9.0.11":
+  version "9.0.11"
+  resolved "https://registry.yarnpkg.com/@types/fs-extra/-/fs-extra-9.0.11.tgz#8cc99e103499eab9f347dbc6ca4e99fb8d2c2b87"
+  integrity sha512-mZsifGG4QeQ7hlkhO56u7zt/ycBgGxSVsFI/6lGTU34VtwkiqrrSDgw0+ygs8kFGWcXnFQWMrzF2h7TtDFNixA==
   dependencies:
     "@types/node" "*"
 
@@ -3822,15 +3829,16 @@ eslint-visitor-keys@^2.0.0:
   resolved "https://registry.yarnpkg.com/eslint-visitor-keys/-/eslint-visitor-keys-2.0.0.tgz#21fdc8fbcd9c795cc0321f0563702095751511a8"
   integrity sha512-QudtT6av5WXels9WjIM7qz1XD1cWGvX4gGXvp/zBn9nXG02D0utdU3Em2m/QjTnrsk6bBjmCygl3rmj118msQQ==
 
-eslint-webpack-plugin@^2.5.0:
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/eslint-webpack-plugin/-/eslint-webpack-plugin-2.5.0.tgz#a8f96f30dee245c92384f8109f41f473f603faba"
-  integrity sha512-CCIWiQzkthgPq4P9arnPtj/FtswyO0j6obmSWurZrXW/haOOdDDucezeOxziTXjhUQeEDP4htjS81ARbesjd/A==
+eslint-webpack-plugin@^2.5.4:
+  version "2.5.4"
+  resolved "https://registry.yarnpkg.com/eslint-webpack-plugin/-/eslint-webpack-plugin-2.5.4.tgz#473b84932f1a8e2c2b8e66a402d0497bf440b986"
+  integrity sha512-7rYh0m76KyKSDE+B+2PUQrlNS4HJ51t3WKpkJg6vo2jFMbEPTG99cBV0Dm7LXSHucN4WGCG65wQcRiTFrj7iWw==
   dependencies:
     "@types/eslint" "^7.2.6"
     arrify "^2.0.1"
     jest-worker "^26.6.2"
     micromatch "^4.0.2"
+    normalize-path "^3.0.0"
     schema-utils "^3.0.0"
 
 eslint@^7.19.0:
@@ -6530,10 +6538,10 @@ opener@^1.5.1:
   resolved "https://registry.yarnpkg.com/opener/-/opener-1.5.2.tgz#5d37e1f35077b9dcac4301372271afdeb2a13598"
   integrity sha512-ur5UIdyw5Y7yEj9wLzhqXiy6GZ3Mwx0yGI+5sMn2r0N0v3cKJvUmFH5yPP+WXh9e0xfyzyJX95D8l088DNFj7A==
 
-opensheetmusicdisplay@^0.9.2:
-  version "0.9.2"
-  resolved "https://registry.yarnpkg.com/opensheetmusicdisplay/-/opensheetmusicdisplay-0.9.2.tgz#23617d9fb1ac9a744f0332321ae1acecb7626a5e"
-  integrity sha512-mbOZ10luh4iGFs5Qz0IWobxmZJiAzsYgEtKS4002ycEwI82g1dGobh0iSaZNMdwAMM2Wqjf8J6ThP3ark5E/hg==
+opensheetmusicdisplay@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/opensheetmusicdisplay/-/opensheetmusicdisplay-1.0.0.tgz#db8b7f201ff05ef81e63db8fec0bdf02aa8c3aa7"
+  integrity sha512-euLJXpuvLjEFNWeQgyU5bTlLSKMzXbg2AWJAk6CyWTaXpUruUM/MIWepLXdDd9JEC5eT5OQN6jzT0dU/5BbSAQ==
   dependencies:
     "@types/vexflow" "^3.0.0"
     jszip "3.4.0"
@@ -7907,10 +7915,10 @@ signal-exit@^3.0.0, signal-exit@^3.0.2:
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-3.0.3.tgz#a1410c2edd8f077b08b4e253c8eacfcaf057461c"
   integrity sha512-VUJ49FC8U1OxwZLxIbTTrDvLnf/6TDgxZcK8wxR8zs13xpx7xbG60ndBlhNrFi2EMuFRoeDoJO7wthSLq42EjA==
 
-simplebar@^5.2.0:
-  version "5.3.0"
-  resolved "https://registry.yarnpkg.com/simplebar/-/simplebar-5.3.0.tgz#857de63296401ed0c3026845514fe5db69795be5"
-  integrity sha512-LgrGdIWpwHLLlI9HqfnGql62H/iZlF0KDZ7w3ZNbd2ZLwh9NKsODLHPzQgUlqQ8aZe7Y6/1xJMXK1PU5e810+w==
+simplebar@^5.3.3:
+  version "5.3.3"
+  resolved "https://registry.yarnpkg.com/simplebar/-/simplebar-5.3.3.tgz#7d89fa4374a637da96c493b2662ab5af4408d02e"
+  integrity sha512-OfuSX47Axq9aR6rp9WK3YefAg+1Qw3UKKxS46PdElPpd+FWXMj17/nispYxsHtU3F7mv+ilmqELWmRt7KUgHgg==
   dependencies:
     can-use-dom "^0.1.0"
     core-js "^3.0.1"
@@ -8940,10 +8948,10 @@ use@^3.1.0:
   resolved "https://registry.yarnpkg.com/use/-/use-3.1.1.tgz#d50c8cac79a19fbc20f2911f56eb973f4e10070f"
   integrity sha512-cwESVXlO3url9YWlFW/TA9cshCEhtu7IKJ/p5soJ/gGpj7vbvFrAY/eIioQ6Dw23KjZhYgiIo8HOs1nQ2vr/oQ==
 
-utf-8-validate@^5.0.4:
-  version "5.0.4"
-  resolved "https://registry.yarnpkg.com/utf-8-validate/-/utf-8-validate-5.0.4.tgz#72a1735983ddf7a05a43a9c6b67c5ce1c910f9b8"
-  integrity sha512-MEF05cPSq3AwJ2C7B7sHAA6i53vONoZbMGX8My5auEVm6W+dJ2Jd/TZPyGJ5CH42V2XtbI5FD28HeHeqlPzZ3Q==
+utf-8-validate@^5.0.5:
+  version "5.0.5"
+  resolved "https://registry.yarnpkg.com/utf-8-validate/-/utf-8-validate-5.0.5.tgz#dd32c2e82c72002dc9f02eb67ba6761f43456ca1"
+  integrity sha512-+pnxRYsS/axEpkrrEpzYfNZGXp0IjC/9RIxwM5gntY4Koi8SHmUGSfxfWqxZdRxrtaoVstuOzUp/rbs3JSPELQ==
   dependencies:
     node-gyp-build "^4.2.0"
 
@@ -9056,10 +9064,10 @@ wbuf@^1.1.0, wbuf@^1.7.3:
   dependencies:
     minimalistic-assert "^1.0.0"
 
-webmidi@^2.3.0:
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/webmidi/-/webmidi-2.5.1.tgz#e98b0bb5356afb5112aaff7eaac23606cf0b71d0"
-  integrity sha512-rX9/vBBSnSZR04ZZcLWCe/ujOizH9f/Q9HX11+Zw+HHwOy7edUTbbC3Axc2RjoiDQ2W7RkK1tY4yv0nYSfUcJg==
+webmidi@^2.5.2:
+  version "2.5.2"
+  resolved "https://registry.yarnpkg.com/webmidi/-/webmidi-2.5.2.tgz#0323e906185f0c4ed4224fcbfd1595a250ff5dce"
+  integrity sha512-T/KhiljH0cdaJxB5zl9BEpbFOpKovop8pqCcWLjNPIB8XduIGGg8DkA/NCvy5t2onYCXmn+oMYJ3oYcaIWSvlA==
 
 webpack-cli@^3.3.11:
   version "3.3.12"
