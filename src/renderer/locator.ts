@@ -2,7 +2,11 @@ import $ from 'jquery'
 import 'nipplejs'
 import log from 'loglevel'
 
-import { OpenSheetMusicDisplay, Fraction } from 'opensheetmusicdisplay'
+import {
+  OpenSheetMusicDisplay,
+  Fraction,
+  IOSMDOptions,
+} from 'opensheetmusicdisplay'
 import { FermataBox } from './fermata'
 import { ChordSelector } from './chord_selector'
 
@@ -106,7 +110,7 @@ export abstract class Locator {
 export class SheetLocator extends Locator {
   constructor(
     container: HTMLElement,
-    options: object = {},
+    options: IOSMDOptions,
     boxDurations_quarters: number[],
     annotationTypes: string[] = [],
     allowOnlyOneFermata = false,
@@ -121,10 +125,13 @@ export class SheetLocator extends Locator {
   ) {
     super()
     this.container = container
+
+    // initialize OSMD renderer
     this.sheet = new OpenSheetMusicDisplay(container, options)
     this.sheet.EngravingRules.RenderMultipleRestMeasures = false
     this.sheet.EngravingRules.VoiceSpacingMultiplierVexflow = 1
     this.sheet.EngravingRules.VoiceSpacingAddendVexflow = 10.0
+
     this._annotationTypes = annotationTypes
     this._boxDurations_quarters = boxDurations_quarters
     this._allowOnlyOneFermata = allowOnlyOneFermata
@@ -165,16 +172,16 @@ export class SheetLocator extends Locator {
     return this._boxDurations_quarters
   }
 
-  private _chordSelectors = []
+  private _chordSelectors = new Map<string, ChordSelector>()
 
   public get chordSelectors(): ChordSelector[] {
-    return this._chordSelectors
+    return Array.from(this._chordSelectors.values())
   }
 
-  private _fermatas = []
+  private _fermatas = new Map<string, FermataBox>()
 
   public get fermatas(): FermataBox[] {
-    return this._fermatas
+    return Array.from(this._fermatas.values())
   }
 
   public render(): void {
@@ -310,7 +317,7 @@ export class SheetLocator extends Locator {
   private createTimeContainer(
     divId: string,
     duration_quarters: number,
-    onclick: (PointerEvent) => void,
+    onclick: (PointerEvent?) => void,
     timestamps: [Fraction, Fraction]
   ): HTMLElement {
     // container for positioning the timestamp box and attached boxes
@@ -411,11 +418,14 @@ export class SheetLocator extends Locator {
         duration_quarters == 2
       ) {
         // add chord selection boxes at the half-note level
-        this._chordSelectors.push(new ChordSelector(commonDiv, onclick))
+        this._chordSelectors.set(
+          commonDivId,
+          new ChordSelector(commonDiv, onclick)
+        )
       }
-    }
 
-    return div
+      return div
+    }
   }
 
   public get sequenceDuration_quarters(): number {
@@ -625,6 +635,7 @@ class SequencerToggle extends Nexus.Sequencer {
   resize: any
   colorize: any
   on: any
+  cells: any
 
   inRectangularSelection = false
   firstCell?: Cell
@@ -701,7 +712,7 @@ class SequencerToggle extends Nexus.Sequencer {
     if (this.rectangularSelections && this.inRectangularSelection) {
       if (this.firstCell == null) {
         this.firstCell = cell
-        this.previousCell = this.cell
+        this.previousCell = cell
       } else {
         // TODO(theis, 2021/05/21): could maybe be more efficient by just computing
         // the delta of cells to turn on and cells to turn off by using the
@@ -732,8 +743,8 @@ class SequencerToggle extends Nexus.Sequencer {
             column <= rectangleEnd.column;
             column++
           ) {
-            const index = this.getIndex({ row: row, column: column })
-            this.turnOn({ row: row, column: column }, false)
+            const cell: Cell = { row: row, column: column }
+            this.turnOn(cell, false)
           }
         }
       }
@@ -809,24 +820,18 @@ export class SpectrogramLocator extends Locator {
 
   private _boxDurations_quarters: number[]
 
-  private copyTimecontainerContent: (
-    origin: HTMLElement,
-    target: HTMLElement
-  ) => void
-
   public get boxDurations_quarters(): number[] {
     return this._boxDurations_quarters
   }
 
-  public registerCallback(callback: (ev: any) => void): void {
-    const self = this
+  public registerCallback(callback: () => void): void {
     const registerReleaseCallback = () => {
       // call the actual callback on pointer release to allow for click and drag
       document.addEventListener(
         'pointerup',
-        (v) => {
+        () => {
           if (!this.isEmpty()) {
-            callback.bind(this)(v)
+            callback.bind(this)()
           }
         },
         { once: true } // eventListener removed after being called
@@ -943,13 +948,6 @@ export class SpectrogramLocator extends Locator {
         0
       ) == 0
     )
-  }
-
-  private zoom = 1
-
-  // compute a position accounting for <this>'s zoom level
-  private computePositionZoom(value: number, shift = 0): number {
-    return (value - shift) * 10.0 * this.zoom
   }
 
   protected get numScrollSteps(): number {
@@ -1129,22 +1127,19 @@ export async function renderZoomControls(
   containerElement: HTMLElement
 ): Promise<void> {
   // let osmd_target = await osmd_target_promise;
-  const zoomOutButton = document.createElement('i')
-  const zoomInButton = document.createElement('i')
+  const zoomOutButton = document.createElement('div')
+  zoomOutButton.classList.add('zoom-out')
   containerElement.appendChild(zoomOutButton)
+  const zoomOutButtonIcon = document.createElement('i')
+  zoomOutButtonIcon.classList.add('fas', 'fa-search-minus')
+  zoomOutButton.appendChild(zoomOutButtonIcon)
+
+  const zoomInButton = document.createElement('div')
+  zoomInButton.classList.add('zoom-in')
   containerElement.appendChild(zoomInButton)
-
-  zoomOutButton.classList.add('zoom-out', 'fa-search-minus')
-  zoomInButton.classList.add('zoom-in', 'fa-search-plus')
-
-  const zoomButtons = [zoomOutButton, zoomInButton]
-  zoomButtons.forEach((zoomButton) => {
-    zoomButton.classList.add('fas')
-    zoomButton.style.alignSelf = 'inherit'
-    zoomButton.style.cursor = 'pointer'
-    // FIXME not super visible
-    zoomButton.style.color = 'lightpink'
-  })
+  const zoomInButtonIcon = document.createElement('i')
+  zoomInButtonIcon.classList.add('fas', 'fa-search-plus')
+  zoomInButton.appendChild(zoomInButtonIcon)
 
   zoomOutButton.addEventListener('click', function () {
     zoomTargetOSMD.sheet.Zoom /= 1.2

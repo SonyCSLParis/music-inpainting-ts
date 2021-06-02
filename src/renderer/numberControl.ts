@@ -27,15 +27,19 @@ export class NumberControl {
   readonly id: string
   readonly range: [number, number]
   protected controller
-  readonly onchange: (newValue: number) => void
   private readonly initialValue: number
+
+  protected onchange: (newValue?: number) => void
+  protected onchange_default: (newValue?: number) => void = () => {
+    return
+  }
 
   constructor(
     parent: HTMLElement,
     id: string,
     range: [number, number],
     initialValue: number,
-    onchange: (newValue: number) => void = (v) => {}
+    onchange?: (newValue: number) => void
   ) {
     this._checkRange(range, initialValue)
 
@@ -44,11 +48,13 @@ export class NumberControl {
     this.labelId = this.id + '-label'
     this.interactionId = this.id + '-interaction'
     this.range = range
-    this.onchange = onchange
     this.initialValue = initialValue
+
+    this.onchange =
+      onchange != null ? onchange.bind(this) : this.onchange_default.bind(this)
   }
 
-  protected _checkRange(range: [number, number], initialValue: number) {
+  protected _checkRange(range: [number, number], initialValue: number): void {
     if (range[1] < initialValue || range[0] > initialValue) {
       throw Error(`Selected initial value should be in the accepted range`)
     }
@@ -117,13 +123,13 @@ export class NumberControl {
 }
 
 export class BPMControl extends NumberControl {
+  protected static defaultRange: [number, number] = [30, 300]
+  protected static defaultInitialValue = 100
 
-  protected onchangeCallback_default(newBPM: number): void {
+  protected onchange_default = (newBPM: number): void => {
     Tone.getTransport().bpm.value = newBPM
     LinkClient.updateLinkBPM(newBPM)
   }
-  protected static defaultRange: [number, number] = [30, 300]
-  protected static defaultInitialValue = 100
 
   constructor(
     containerElement: HTMLElement,
@@ -133,9 +139,6 @@ export class BPMControl extends NumberControl {
     onchange?: (newValue: number) => void
   ) {
     super(containerElement, id, range, initialValue, onchange)
-    if (onchange == null) {
-      this.onchange = this.onchangeCallback_default.bind(this)
-    }
   }
 
   protected _checkRange(range: [number, number]) {

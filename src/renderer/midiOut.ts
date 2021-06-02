@@ -45,7 +45,9 @@ export async function render(useChordsInstrument = false): Promise<void> {
   ControlLabels.createLabel(
     midiOutSelectElement,
     'select-midi-output-device-label',
-    true
+    true,
+    undefined,
+    midiOutContainerElement
   )
 
   const disabledOutputId = 'Disabled'

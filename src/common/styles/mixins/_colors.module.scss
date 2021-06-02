@@ -38,6 +38,7 @@ $panes-background: #beb9d4;
   $overlay-lightness-factor: -1;
   $overlay-lightness-factor: -1;
   $text: black;
+
   @if $theme == lavender {
   } @else if $theme == dark-lavender {
     $body: $dark-lavender-body-background;
@@ -64,9 +65,7 @@ $panes-background: #beb9d4;
     color: $text !important;
   }
   #loading-spinner {
-    color: color.scale(lightgray,
-      $lightness: 00%
-    );
+    color: lightgray;
   }
 
   .logo {
@@ -149,6 +148,7 @@ $panes-background: #beb9d4;
     border: solid thin color.scale($simplebar-scrollbar-color,
       $lightness: $overlay-lightness-factor * 25%);
     background-color: $simplebar-scrollbar-color;
+
     @media (hover: hover) {
       // no hover effects on touch screens since the effect remains active
       // until the user effectively touches another zone on the viewport
