@@ -412,7 +412,7 @@ function render(configuration = defaultConfiguration): void {
         sheetContainer,
         {
           autoResize: autoResize,
-          drawingParameters: 'compact',
+          drawingParameters: 'compacttight',
           drawPartNames: false,
         },
         granularities_quarters.map((num) => {
