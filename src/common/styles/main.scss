@@ -57,6 +57,55 @@ body.notono {
   }
 }
 
+.simplebar-track {
+  font-size: x-large;
+  display: flex;
+  justify-content: center;
+
+  &::before {
+    font-family: "FontAwesome";
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    content: "\F3c1";
+    border-radius: 100%;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  &.scroll-lock::before {
+    content: "\F023";
+  }
+
+  &.simplebar-horizontal::before {
+    height: 1.6em;
+    width: fit-content;
+    left: calc(-1.8em - 1.5vw);
+
+    padding-right: 0.3em;
+    padding-left: 0.3em;
+  }
+
+  &.simplebar-vertical::before {
+    width: 1.6em;
+    height: fit-content;
+    top: calc(-1.6em - 1.5vh);
+
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    margin-bottom: 2em;
+  }
+}
+
+
+body.notono, body.nonoto {
+  .simplebar-track.simplebar-vertical::before {
+    display: none;
+  }
+}
+
+
 img {
   -webkit-user-drag: none;
 }

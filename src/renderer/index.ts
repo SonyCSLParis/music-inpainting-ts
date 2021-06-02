@@ -366,18 +366,9 @@ function render(configuration = defaultConfiguration): void {
     if (configuration['osmd']) {
       const allowOnlyOneFermata: boolean =
         configuration['allow_only_one_fermata']
-      /*
-       * Create a container element for OpenSheetMusicDisplay...
-       */
-      const osmdContainerContainer = <HTMLElement>document.createElement('div')
-      osmdContainerContainer.id = 'osmd-container-container'
-      osmdContainerContainer.setAttribute('data-simplebar', '')
-      osmdContainerContainer.setAttribute('data-simplebar-auto-hide', 'false')
-      mainPanel.appendChild(osmdContainerContainer)
-      const osmdContainer = document.createElement('div')
-      osmdContainer.id = 'osmd-container'
-      osmdContainerContainer.appendChild(osmdContainer)
-
+      const sheetContainer = document.createElement('div')
+      sheetContainer.id = 'sheet-container'
+      mainPanel.appendChild(sheetContainer)
       /*
        * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
        * the container we've created in the steps before. The second parameter tells OSMD
@@ -418,7 +409,7 @@ function render(configuration = defaultConfiguration): void {
 
       const autoResize = false
       sheetLocator = new SheetLocator(
-        osmdContainer,
+        sheetContainer,
         {
           autoResize: autoResize,
           drawingParameters: 'compact',

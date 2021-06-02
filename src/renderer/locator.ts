@@ -15,6 +15,7 @@ import '../common/styles/overlays.scss'
 import Nexus from './nexusColored'
 
 export abstract class Locator {
+  readonly container: HTMLElement
   protected resizeTimeoutDuration = 0
   protected resizeTimeout: NodeJS.Timeout
 
@@ -82,11 +83,12 @@ export abstract class Locator {
   }
 
   // retrieve interactive elements of the interface by index
-  abstract getInterfaceElementByIndex(index: number): Element
+  abstract getInterfaceElementByIndex(index: number): Element | null
 
   abstract get numInteractiveElements(): number
 
-  public constructor(...args) {
+  public constructor(container: HTMLElement, ...args) {
+    this.container = container
     this.registerRefreshOnResizeListener()
   }
 
@@ -105,6 +107,32 @@ export abstract class Locator {
 
   // set currently playing interface position by time index
   abstract setCurrentlyPlayingPositionDisplay(timePosition: number): void
+
+  static readonly scrollLockClass = 'scroll-lock'
+  protected readonly scrollElementsClassNames: string = 'simplebar-track'
+
+  get scrollElements(): Element[] {
+    const scrollbars = this.container.getElementsByClassName(
+      this.scrollElementsClassNames
+    )
+    if (scrollbars.length > 0) {
+      return Array.from(scrollbars)
+    } else {
+      throw new EvalError('No scroll-element not found')
+    }
+  }
+
+  get isScrollLocked(): boolean {
+    return this.scrollElements[0].classList.contains(Locator.scrollLockClass)
+  }
+
+  registerScrollLockCallback(): void {
+    this.scrollElements.forEach((element) =>
+      element.addEventListener('click', function (this: HTMLElement): void {
+        this.classList.toggle(Locator.scrollLockClass)
+      })
+    )
+  }
 }
 
 export class SheetLocator extends Locator {
@@ -123,11 +151,27 @@ export class SheetLocator extends Locator {
       target: HTMLElement
     ) => void
   ) {
-    super()
-    this.container = container
+    super(container)
+    /*
+     * Create a container element for OpenSheetMusicDisplay...
+     */
+    this.container.classList.add('sheet-locator')
+    this.container.setAttribute('data-simplebar', '')
+    this.container.setAttribute('data-simplebar-auto-hide', 'false')
+    this.container.setAttribute('data-simplebar-click-on-track', 'false')
+
+    this.interfaceContainer = document.createElement('div')
+    this.interfaceContainer.id = this.container.id + '-overlays'
+    this.interfaceContainer.classList.add('sheet-locator-overlays')
+    this.container.appendChild(this.interfaceContainer)
+
+    this.sheetContainer = document.createElement('div')
+    this.sheetContainer.id = this.container.id + '-interface'
+    this.sheetContainer.classList.add('sheet-locator-sheet')
+    this.interfaceContainer.appendChild(this.sheetContainer)
 
     // initialize OSMD renderer
-    this.sheet = new OpenSheetMusicDisplay(container, options)
+    this.sheet = new OpenSheetMusicDisplay(this.sheetContainer, options)
     this.sheet.EngravingRules.RenderMultipleRestMeasures = false
     this.sheet.EngravingRules.VoiceSpacingMultiplierVexflow = 1
     this.sheet.EngravingRules.VoiceSpacingAddendVexflow = 10.0
@@ -137,12 +181,20 @@ export class SheetLocator extends Locator {
     this._allowOnlyOneFermata = allowOnlyOneFermata
     this.onClickTimestampBoxFactory = onClickTimestampBoxFactory
     this.copyTimecontainerContent = copyTimecontainerContent
+
+    $(() => this.registerScrollLockCallback())
   }
   protected resizeTimeoutDuration = 50
-  readonly container: HTMLElement
+
+  readonly interfaceContainer: HTMLElement
+  readonly sheetContainer: HTMLElement
+
+  protected readonly scrollElementsClassNames =
+    'simplebar-track simplebar-horizontal'
+
   readonly sheet: OpenSheetMusicDisplay
-  protected get graphicElement(): SVGElement {
-    return this.container.getElementsByTagName('svg')[0]
+  protected get graphicElement(): SVGElement | null {
+    return this.sheetContainer.getElementsByTagName('svg').item(0)
   }
 
   protected onClickTimestampBoxFactory?: (
@@ -188,7 +240,7 @@ export class SheetLocator extends Locator {
     this.updateContainerWidth(false)
     this.sheet.render()
     this.drawTimestampBoxes()
-    this.container.setAttribute(
+    this.sheetContainer.setAttribute(
       'sequenceDuration_quarters',
       this.sequenceDuration_quarters.toString()
     )
@@ -211,8 +263,11 @@ export class SheetLocator extends Locator {
     const superLarge_width_px_str = '10000000'
 
     if (
-      this.container.children.length == 0 ||
-      !$('#osmd-container svg')[0].hasAttribute('viewBox')
+      this.sheetContainer.children.length == 0 ||
+      !this.graphicElement
+        // FIXME(theis, 2021/06/01): upgrade to webpack^5 and to support
+        // conditional chaining!
+        .hasAttribute('viewBox')
     ) {
       // OSMD renderer hasn't been initialized yet, do nothing
       return
@@ -252,7 +307,7 @@ export class SheetLocator extends Locator {
     }
 
     // update the width of the container so the scrollbar operates properly
-    this.container.style.width = `${newWidth_px_str}px`
+    this.sheetContainer.style.width = `${newWidth_px_str}px`
     // update the width of the svg so the scrollbar operates properly
     this.graphicElement.setAttribute('width', `${newWidth_px_str}`)
 
@@ -592,7 +647,7 @@ export class SheetLocator extends Locator {
   }
 
   protected get activeElements() {
-    return this.container.getElementsByClassName('notebox active')
+    return this.interfaceContainer.getElementsByClassName('notebox active')
   }
 
   getInterfaceElementByIndex(index: number): Element | null {
@@ -755,7 +810,6 @@ class SequencerToggle extends Nexus.Sequencer {
 }
 
 export class SpectrogramLocator extends Locator {
-  readonly container: HTMLElement
   readonly shadowContainer: HTMLElement
   readonly interfaceContainer: HTMLElement
   readonly snapPoints: HTMLDivElement
@@ -768,10 +822,12 @@ export class SpectrogramLocator extends Locator {
   // TODO(theis): should provide initial values for numRows and numColumns,
   // so that the instance can be properly rendered/refreshed on initialization
   constructor(container: HTMLElement, options: Record<string, unknown> = {}) {
-    super()
-    this.container = container
+    super(container)
 
     const spectrogramImageContainerElement = document.createElement('div')
+    // TODO(theis, 2021/06/02): switch to class-based styling instead of referring
+    // to the interface elements via their ID in the CSS, and switch
+    // to this.container.id + '...'-style IDs for the different blocks
     spectrogramImageContainerElement.id = 'spectrogram-image-container'
     spectrogramImageContainerElement.toggleAttribute('data-simplebar', true)
     spectrogramImageContainerElement.setAttribute(
@@ -1024,7 +1080,7 @@ export class SpectrogramLocator extends Locator {
     this.container.classList.toggle('no-scroll', force)
   }
 
-  getInterfaceElementByIndex(index: number): Element {
+  getInterfaceElementByIndex(index: number): Element | null {
     return this.interfaceElement.children.item(index)
   }
 
