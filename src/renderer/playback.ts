@@ -40,14 +40,10 @@ abstract class TonePlaybackManager implements MinimalPlaybackManager {
 abstract class VisualPlaybackManager<
   VisualLocator extends Locator
 > extends TonePlaybackManager {
-  protected locator: VisualLocator
-
-  get Locator(): VisualLocator {
-    return this.locator
-  }
+  abstract readonly locator: VisualLocator
 
   protected setPlaybackPositionDisplay(progress: number): void {
-    this.Locator.setCurrentlyPlayingPositionDisplay(progress)
+    this.locator.setCurrentlyPlayingPositionDisplay(progress)
   }
 
   protected nowPlayingDisplayCallback(_: any, progress: number): void {
@@ -143,6 +139,8 @@ export interface PlaybackManager<VisualLocator extends Locator>
     SynchronizedPlaybackManager {}
 
 export abstract class PlaybackManager<VisualLocator extends Locator> {
+  readonly locator: VisualLocator
+
   constructor(locator: VisualLocator, toneDisplayUpdateInterval = '4n') {
     this.locator = locator
     this.scheduleAutomaticResync()

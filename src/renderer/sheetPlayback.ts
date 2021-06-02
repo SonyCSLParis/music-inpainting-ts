@@ -78,7 +78,9 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
   protected nowPlayingDisplayCallback(_: any, progress: number): void {
     super.nowPlayingDisplayCallback(null, progress)
     // scroll display to current step if necessary
-    const step: number = Math.round(progress * this.sheetDuration_quarters)
+    const step: number = Math.round(
+      progress * this.locator.sequenceDuration_quarters
+    )
     this.scrollToStep(step)
   }
 
@@ -274,12 +276,12 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
       currentSixteenth,
     ] = Tone.getTransport().position.toString().split(':')
 
-    const sheetDuration_quarters = this.sheetDuration_quarters
+    const sequenceDuration_quarters = this.locator.sequenceDuration_quarters
 
     // FIXME assumes a Time Signature of 4/4
     const currentStep: number =
       (4 * parseInt(currentBar) + parseInt(currentQuarter)) %
-      sheetDuration_quarters
+      sequenceDuration_quarters
     return currentStep
   }
 
