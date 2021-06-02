@@ -2,7 +2,7 @@ import { AnnotationBox } from './annotationBox'
 import $ from 'jquery'
 import deepEqual from 'deep-equal'
 
-const Raphael = require('./dependencies/wheelnav/raphael')
+import './dependencies/wheelnav/raphael'
 import 'wheelnav'
 
 declare let wheelnav: any

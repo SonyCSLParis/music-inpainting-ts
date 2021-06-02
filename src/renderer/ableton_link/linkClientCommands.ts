@@ -6,7 +6,7 @@ import { PlaybackManager } from '../playback'
 import { Locator } from '../locator'
 import log from 'loglevel'
 
-function render(playbackManager: PlaybackManager<Locator>) {
+export function render(playbackManager: PlaybackManager<Locator>): void {
   const bottomControlsElementID = 'bottom-controls'
   const bottomControlsGridElement = document.getElementById(
     bottomControlsElementID
@@ -55,7 +55,7 @@ function render(playbackManager: PlaybackManager<Locator>) {
 function renderSyncButton(
   container: HTMLElement,
   playbackManager: PlaybackManager<Locator>
-) {
+): void {
   const linkbuttonElement = document.createElement('div')
   linkbuttonElement.id = 'sync-button'
   linkbuttonElement.classList.add('control-item', 'advanced')
@@ -81,7 +81,7 @@ function renderSyncButton(
   )
 }
 
-export function renderDownbeatDisplay(): void {
+function renderDownbeatDisplay(): void {
   const abletonLinkSettingsGridspan = document.getElementById(
     'ableton-link-settings-gridspan'
   )

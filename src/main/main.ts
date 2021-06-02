@@ -52,11 +52,11 @@ ipcMain.handle(
   }
 )
 
-ipcMain.handle('save-file', (event, fileName, buffer) => {
+ipcMain.handle('save-file', (event, fileName: string, buffer: Buffer) => {
   return outputFile(fileName, buffer)
 })
 
-ipcMain.on('ondragstart', (event, filePath, iconPath) => {
+ipcMain.on('ondragstart', (event, filePath: string, iconPath: string) => {
   event.sender.startDrag({
     file: filePath,
     icon: iconPath,

@@ -47,8 +47,8 @@ import * as SplashScreen from './startup'
 
 import 'simplebar'
 import 'simplebar/src/simplebar.css'
-import '../common/styles/simplebar.scss'
 
+import '../common/styles/simplebar.scss'
 import '../common/styles/osmd.scss'
 import '../common/styles/spectrogram.scss'
 import '../common/styles/main.scss'
@@ -70,10 +70,8 @@ let bpmControl: BPMControl
 let instrumentConstraintSelect: Nexus.Select
 let pitchRootSelect: Nexus.Select
 let octaveControl: NumberControl
-let instrumentSelect: CycleSelect
 let vqvaeLayerSelect: CycleSelect
 let downloadButton: DownloadButton
-let helpTrip: myTrip
 
 function getMidiPitch(): number {
   return pitchRootSelect.selectedIndex + 12 * octaveControl.value
@@ -278,12 +276,9 @@ function render(configuration = defaultConfiguration): void {
 
   function insertLoadingSpinner(container: HTMLElement): HTMLElement {
     const spinnerElement: HTMLElement = document.createElement('i')
-    container.appendChild(spinnerElement)
-    spinnerElement.classList.add('fas')
-    spinnerElement.classList.add('fa-4x')
-    spinnerElement.classList.add('fa-spin')
-    spinnerElement.classList.add('fa-cog')
+    spinnerElement.classList.add('fas', 'fa-4x', 'fa-spin', 'fa-cog')
     spinnerElement.id = 'loading-spinner'
+    container.appendChild(spinnerElement)
 
     return spinnerElement
   }
@@ -455,16 +450,13 @@ function render(configuration = defaultConfiguration): void {
       $(() => {
         // requesting the initial sheet, so can't send any sheet along
         const sendSheetWithRequest = false
-        loadMusicXMLandMidi(
+        void loadMusicXMLandMidi(
           sheetPlaybackManager,
           sheetLocator,
           inpaintingApiAddress,
           'generate',
           sendSheetWithRequest
-        ).then(() => {
-          spinnerElement.style.visibility = 'hidden'
-          mainPanel.classList.remove('loading')
-        })
+        )
       })
     } else if (configuration['spectrogram']) {
       const spectrogramContainerElement = document.createElement('div')
@@ -974,8 +966,6 @@ function render(configuration = defaultConfiguration): void {
   ) {
     disableChanges()
 
-    const payload_object = {}
-
     const form = new FormData()
     form.append('audio', audioBlob)
 
@@ -1100,7 +1090,7 @@ function render(configuration = defaultConfiguration): void {
       }
 
       const commandURL = new URL(generationCommand, inpaintingApiUrl)
-      $.post({
+      void $.post({
         url: commandURL.href,
         data: JSON.stringify(payload_object),
         contentType: 'application/json',
@@ -1274,7 +1264,7 @@ function render(configuration = defaultConfiguration): void {
     $(() => {
       // Insert zoom controls
       const zoomControlsGridElement = document.createElement('div')
-      zoomControlsGridElement.id = 'osmd-zoom-controls'
+      zoomControlsGridElement.id = 'zoom-control'
       // zoomControlsGridElement.classList.add('two-columns');
       const mainPanel = document.getElementById('main-panel')
       mainPanel.appendChild(zoomControlsGridElement)

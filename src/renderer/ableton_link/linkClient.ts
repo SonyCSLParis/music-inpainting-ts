@@ -1,5 +1,5 @@
-import LinkElectronModule = require('./linkClient.electron')
-import LinkSocketModule = require('./linkClient.socket-io')
+import * as LinkClientElectron from './linkClient.electron'
+import * as LinkClientSocket from './linkClient.socket-io'
 
 // wrapper for the different available implementations of the Link Client
 // implemented as described in
@@ -8,15 +8,15 @@ import LinkSocketModule = require('./linkClient.socket-io')
 let Client
 
 // defined at compile-time via webpack.DefinePlugin
-declare let COMPILE_ELECTRON: boolean
+declare const COMPILE_ELECTRON: boolean
 
 if (COMPILE_ELECTRON) {
-  const LinkElectron = <typeof LinkElectronModule>(
+  const LinkElectron = <typeof LinkClientElectron>(
     require('./linkClient.electron')
   )
   Client = LinkElectron
 } else {
-  const LinkSocket = <typeof LinkSocketModule>require('./linkClient.socket-io')
+  const LinkSocket = <typeof LinkClientSocket>require('./linkClient.socket-io')
   Client = LinkSocket
 }
 

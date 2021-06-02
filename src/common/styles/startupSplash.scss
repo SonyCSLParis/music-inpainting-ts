@@ -48,6 +48,7 @@
       visibility: hidden;
   }
 }
+
 .centeredXY {
   position: fixed;
   top: 50%;
@@ -56,7 +57,7 @@
 }
 
 #server-configuration {
-  &:before {
+  &::before {
     grid-row: 1;
     content: 'Server configuration';
     grid-column: 1/-1;
@@ -74,7 +75,7 @@
 }
 
 #mode-configuration {
-  &:before {
+  &::before {
     content: 'Interface mode';
     grid-column: 1/-1;
     display: inline-block;

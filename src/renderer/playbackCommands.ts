@@ -43,8 +43,7 @@ export function render(container: HTMLElement): void {
   const playButtonInterface = document.createElement('i')
   playButtonInterface.id = 'play-button-interface'
   playbuttonContainer.appendChild(playButtonInterface)
-  playButtonInterface.classList.add('fas')
-  playButtonInterface.classList.add(mainIconSize)
+  playButtonInterface.classList.add('fas', mainIconSize)
   playButtonInterface.style.alignSelf = 'inherit'
   playButtonInterface.style.cursor = 'pointer'
 

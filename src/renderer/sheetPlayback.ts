@@ -5,11 +5,9 @@ import { PlaybackManager } from './playback'
 import * as Tone from 'tone'
 import { Piano as PianoType } from '@tonejs/piano'
 import * as log from 'loglevel'
-import { Midi } from '@tonejs/midi'
+import { Midi, Track } from '@tonejs/midi'
 import WebMidi from 'webmidi'
 import $ from 'jquery'
-
-const Nexus = require('./nexusColored')
 
 import * as Instruments from './instruments'
 import * as MidiOut from './midiOut'
@@ -126,7 +124,7 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
     return centerPosition
   }
 
-  protected scrollToStep(step: number) {
+  protected scrollToStep(step: number): void {
     // scroll display to keep the center of the currently playing
     // quarter note container in the center of the sheet window
     //
@@ -195,12 +193,14 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
     }
   }
 
-  private resetScrollPosition(duration: JQuery.Duration = this.shortScroll) {
+  private resetScrollPosition(
+    duration: JQuery.Duration = this.shortScroll
+  ): void {
     this.scrollToStep(0)
   }
 
   // Return the time in seconds between beats
-  private getInterbeatTime_s() {
+  private getInterbeatTime_s(): number {
     const currentBPM: number = Tone.getTransport().bpm.value
     const interbeatTime_s = 60 / currentBPM
     return interbeatTime_s
@@ -210,7 +210,7 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
 
   public scheduleTrackToInstrument(
     sequenceDuration_toneTime: Tone.TimeClass,
-    midiTrack,
+    midiTrack: Track,
     midiChannel = 1
   ) {
     const notes = midiTrack.notes
@@ -238,7 +238,6 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
     }, midiTrack.controlChanges[64]).start(0)
 
     log.trace('Midi track content')
-    log.trace(midiTrack.noteOffs)
     log.trace(midiTrack.notes)
 
     // set correct loop points for all tracks and activate infinite looping
@@ -286,7 +285,7 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
 
   private midiRequestWithData(
     url: string,
-    data = null,
+    data?: Document | BodyInit,
     method = 'GET'
   ): Promise<[Midi, string]> {
     return new Promise<[Midi, string]>((success, fail) => {

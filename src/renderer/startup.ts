@@ -97,10 +97,13 @@ export function render(
     const serverAddressInput = document.createElement('input')
     serverAddressInput.type = 'url'
     serverAddressInput.id = 'server-address-input'
+    serverAddressInput.value = `${globalConfiguration['inpainting_api_address']}`
     serverAddressInput.placeholder = `${globalConfiguration['inpainting_api_address']}`
     serverAddressContainer.appendChild(serverAddressInput)
 
-    serverAddressInput.addEventListener('input', checkServerAddress)
+    serverAddressInput.addEventListener('input', () => {
+      checkServerAddress()
+    })
   }
 
   if (!spectrogramOnlyMode) {
@@ -140,12 +143,6 @@ export function render(
       spectrogram: 'Spectrogram',
     }
 
-    // TODO(theis): create proper subclass
-    class applicationModeButton extends Nexus.TextButton {
-      constructor(containerId: string, options) {
-        super(containerId, options)
-      }
-    }
     const createApplicationModeButton = (
       applicationMode: ApplicationMode
     ): void => {
@@ -262,14 +259,15 @@ function getCurrentConfiguration(): applicationConfiguration {
 
 // TODO(theis, 2021/05/18): check that the address points to a valid API server,
 // through a custom ping-like call
-function checkServerAddress(configuration: applicationConfiguration): boolean {
+function checkServerAddress(configuration?: applicationConfiguration): boolean {
   const serverAddressInput = <HTMLInputElement>(
     document.getElementById('server-address-input')
   )
   let address: string
   if (
-    configuration['disable_inpainting_api_parameters_input'] ||
-    serverAddressInput == null
+    configuration != null &&
+    (configuration['disable_inpainting_api_parameters_input'] ||
+      serverAddressInput == null)
   ) {
     address = configuration['inpainting_api_address']
   } else {
@@ -319,7 +317,7 @@ function renderStartButton(
   startButtonElement.classList.add('control-item')
   configurationWindow.appendChild(startButtonElement)
 
-  const startButton = new Nexus.TextButton('#start-button', {
+  new Nexus.TextButton('#start-button', {
     size: [150, 50],
     state: false,
     text: 'Start',
@@ -337,6 +335,7 @@ function renderStartButton(
       disposeAndStart(renderPage)
     }
   }
+
   startButtonElement.addEventListener(
     'pointerup',
     () => {

@@ -17,16 +17,10 @@ export function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     title: globalConfiguration['app_name'],
-    webPreferences:
-      process.env.NODE_ENV === 'development'
-        ? { nodeIntegration: true }
-        : {
-            // TODO(theis): fix this, should not enable nodeIntegration!
-            // check: https://www.electronjs.org/docs/tutorial/security
-            // and https://github.com/doyensec/electronegativity
-            nodeIntegration: true,
-            // preload: path.join(__dirname, 'renderer.prod.js')
-          },
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
   })
 
   if (isDevelopment) {
