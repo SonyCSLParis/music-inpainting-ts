@@ -378,11 +378,16 @@ export class SheetLocator extends Locator {
     // container for positioning the timestamp box and attached boxes
     // needed to properly filter click actions
     const commonDivId = divId + '-common'
-    const commonDiv =
-      document.getElementById(commonDivId) || document.createElement('div')
-    const div = document.getElementById(divId) || document.createElement('div')
+    const maybeDiv = document.getElementById(divId)
 
-    if (commonDiv.id !== commonDivId) {
+    // FIXME(theis, 2021/05/25): these boxes actually get deleted on each\
+    // call of OSMD.render()
+    if (maybeDiv != null) {
+      return maybeDiv
+    } else {
+      const div = document.createElement('div')
+      const commonDiv = document.createElement('div')
+
       // the div has no ID set yet: was created in this call
       commonDiv.id = commonDivId
       commonDiv.classList.add(
@@ -452,8 +457,7 @@ export class SheetLocator extends Locator {
       )
 
       // add div to the rendering backend's <HTMLElement> for positioning
-      const inner = this.graphicElement.parentElement
-      inner.appendChild(commonDiv)
+      this.interfaceContainer.appendChild(commonDiv)
       commonDiv.appendChild(div)
 
       if (this.annotationTypes.includes('fermata') && duration_quarters == 1) {
