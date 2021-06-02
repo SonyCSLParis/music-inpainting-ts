@@ -16,7 +16,18 @@
   }
 }
 
-#osmd-container {
+.sheet-locator {
+  width: 100%;
+}
+
+.sheet-locator-overlays {
+  width: max-content;
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sheet-locator-sheet {
   pointer-events: none;
   margin-left: auto;
   margin-right: auto;

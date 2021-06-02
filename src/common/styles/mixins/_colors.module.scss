@@ -113,21 +113,39 @@ $panes-background: #beb9d4;
     background-color: darken($panes, 50%) !important;
   }
 
-  $simplebar-track-color: color.scale(
-    $panes,
-    $lightness: 20% * $overlay-lightness-factor
-  );
-  $simplebar-scrollbar-color: color.scale(
-    $panes,
-    $lightness: -25% * $overlay-lightness-factor
-  );
+  $simplebar-track-color: null;
+  $simplebar-scrollbar-color: null;
   @if $theme == millenial-pink {
     $simplebar-track-color: $panes;
-    $simplebar-scrollbar-color: #4392f1;
+    $simplebar-scrollbar-color: $active-control;
+  } @else {
+    $simplebar-track-color: color.scale(
+      $panes,
+      $lightness: 20% * $overlay-lightness-factor
+    );
+    $simplebar-scrollbar-color: color.scale(
+      $panes,
+      $lightness: -25% * $overlay-lightness-factor
+    );
   }
 
+  $simplebar-track-color: color.scale(
+    $simplebar-track-color,
+    $alpha: -30%
+  );
+  $simplebar-scrollbar-color: color.scale(
+    $simplebar-scrollbar-color,
+    $alpha: -10%
+  );
+
   .simplebar-track {
-    background-color: $simplebar-track-color;
+    &, &::before {
+      background-color: $simplebar-track-color;
+    }
+    &::before {
+      color: $simplebar-scrollbar-color
+    }
+
     box-shadow: inset 0px 3px 20px 0.5px
         color.scale(
           $simplebar-track-color,

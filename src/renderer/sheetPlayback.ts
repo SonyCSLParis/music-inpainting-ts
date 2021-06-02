@@ -127,6 +127,9 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
   }
 
   protected scrollToStep(step: number): void {
+    if (this.locator.isScrollLocked) {
+      return
+    }
     // scroll display to keep the center of the currently playing
     // quarter note container in the center of the sheet window
     //
@@ -250,22 +253,6 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
       // add the part to the array of currently scheduled parts
       this.midiParts.push(part)
     }
-  }
-
-  private get sheetDuration_quarters(): number {
-    const osmdContainer: HTMLElement = document.getElementById('osmd-container')
-    if (osmdContainer === null) {
-      throw new Error('Cannot access OSMD container')
-    }
-    const maxStep: number = parseInt(
-      osmdContainer.getAttribute('sequenceDuration_quarters')
-    )
-    if (maxStep === null) {
-      throw new Error(
-        'Property sequenceDuration_quarters not found on OSMD container'
-      )
-    }
-    return maxStep
   }
 
   protected getCurrentDisplayTimestep(): number {
