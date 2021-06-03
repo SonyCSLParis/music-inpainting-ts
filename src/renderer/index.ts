@@ -150,17 +150,24 @@ function render(configuration = defaultConfiguration): void {
   })
 
   $(() => {
+    let applicationElement = document.getElementById('app')
+    if (applicationElement == null) {
+      applicationElement = document.createElement('div')
+      applicationElement.id = 'app'
+      document.body.appendChild(applicationElement)
+    }
+
     const headerGridElement = document.createElement('header')
     headerGridElement.id = 'header'
-    document.body.appendChild(headerGridElement)
+    applicationElement.appendChild(headerGridElement)
 
     const mainPanel = document.createElement('div')
     mainPanel.id = 'main-panel'
-    document.body.appendChild(mainPanel)
+    applicationElement.appendChild(mainPanel)
 
     const bottomControlsGridElement = document.createElement('footer')
     bottomControlsGridElement.id = 'bottom-controls'
-    document.body.appendChild(bottomControlsGridElement)
+    applicationElement.appendChild(bottomControlsGridElement)
   })
 
   $(() => {

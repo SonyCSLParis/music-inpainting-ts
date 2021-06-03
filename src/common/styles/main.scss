@@ -123,14 +123,47 @@ img {
   font-weight: 700 !important;
 }
 
-body {
-  display: flex;
-  flex-direction: column;
+#app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto;
+  height: 100%;
+  // width: 100vw;
+  grid-template-areas:
+    'header'
+    'main'
+    'footer';
+
+  @media screen and (max-height: 300px) {
+    grid-template-areas:
+      'main'
+      'footer';
+
+    header {
+      display: none;
+    }
+  }
+}
+
+#app > header {
+  grid-area: header;
+}
+
+#app > #main-panel {
+  grid-area: main;
+  overflow: hidden; // ensures the main panel does not push the footer down
+}
+
+#app > footer {
+  grid-area: footer;
+}
+
+header, #main-panel, footer {
+  width: 100vw;
 }
 
 #main-panel {
   position: relative !important;
-  flex-grow: 1;
   z-index: 0;
   display: flex;
 }
@@ -190,11 +223,13 @@ $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
 
   display: grid;
   transform-style: preserve-3D;
-  width: 100%;
   margin-top: calc(#{measures.$expand-tab-height} / 2);
   padding-top: calc(#{measures.$expand-tab-height} / 4);
   grid-template-columns: repeat(4, 25%);
   grid-template-rows: 2.5fr 1fr 0 0 1vh;
+  @media screen and (max-width: 270px) {
+    grid-template-rows: 2.5fr 0 1vh;
+  }
   align-items: center;
   justify-items: center;
   z-index: 0;
@@ -204,6 +239,12 @@ $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
   box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
 
   text-align: center;
+}
+
+.control-label {
+  @media screen and (max-width: 270px) {
+    display: none;
+  }
 }
 
 .advanced {

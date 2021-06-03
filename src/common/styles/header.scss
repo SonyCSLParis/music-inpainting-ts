@@ -2,10 +2,6 @@
 @use "mixins/colors.module";
 
 header {
-  @media screen and (max-height: 300px) {
-    display: none;
-  }
-
   display: grid;
   width: 100%;
   min-height: measures.$header-height;
