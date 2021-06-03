@@ -10,6 +10,9 @@
   height: max-content;
   width: max-content;
 }
+.control-item {
+  cursor: pointer;
+}
 
 .fas {
   font-size: measures.$CycleSelect-size;
