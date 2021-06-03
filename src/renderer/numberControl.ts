@@ -29,17 +29,16 @@ export class NumberControl {
   protected controller
   private readonly initialValue: number
 
-  protected onchange: (newValue?: number) => void
-  protected onchange_default: (newValue?: number) => void = () => {
-    return
-  }
+  protected onchange: (newValue: number) => void
 
   constructor(
     parent: HTMLElement,
     id: string,
     range: [number, number],
     initialValue: number,
-    onchange?: (newValue: number) => void
+    onchange: (newValue: number) => void = () => {
+      return
+    }
   ) {
     this._checkRange(range, initialValue)
 
@@ -50,8 +49,7 @@ export class NumberControl {
     this.range = range
     this.initialValue = initialValue
 
-    this.onchange =
-      onchange != null ? onchange.bind(this) : this.onchange_default.bind(this)
+    this.onchange = onchange.bind(this)
   }
 
   protected _checkRange(range: [number, number], initialValue: number): void {
@@ -126,17 +124,15 @@ export class BPMControl extends NumberControl {
   protected static defaultRange: [number, number] = [30, 300]
   protected static defaultInitialValue = 100
 
-  protected onchange_default = (newBPM: number): void => {
-    Tone.getTransport().bpm.value = newBPM
-    LinkClient.updateLinkBPM(newBPM)
-  }
-
   constructor(
     containerElement: HTMLElement,
     id: string,
     range: [number, number] = BPMControl.defaultRange,
     initialValue: number = BPMControl.defaultInitialValue,
-    onchange?: (newValue: number) => void
+    onchange: (newValue: number) => void = (newBPM: number): void => {
+      Tone.getTransport().bpm.value = newBPM
+      LinkClient.updateLinkBPM(newBPM)
+    }
   ) {
     super(containerElement, id, range, initialValue, onchange)
   }
