@@ -42,15 +42,6 @@ export abstract class myTrip {
     ) {
       this.registerIdleStateDetector()
     }
-
-    const oldRun = this.trip.run.bind(this.trip)
-    this.trip.run = function () {
-      // pushes the <footer> element as last child of the body so as not to
-      // disrupt layout, since Trip.start() always recreates the .trip-block element
-      // and appends it to the body prior to calling Trip.run()
-      $('body').append($('footer'))
-      oldRun()
-    }.bind(this.trip)
   }
 
   public start(): void {
