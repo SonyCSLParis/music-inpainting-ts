@@ -27,7 +27,8 @@ function cloneJSON<T>(obj: T): T {
 }
 
 import defaultConfiguration from '../common/default_config.json'
-type applicationConfiguration = typeof defaultConfiguration
+export type applicationConfiguration = typeof defaultConfiguration
+
 import customConfiguration from '../../config.json'
 const globalConfiguration: applicationConfiguration = {
   ...defaultConfiguration,
