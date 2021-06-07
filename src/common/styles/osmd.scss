@@ -44,8 +44,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   justify-items: center;
-
-  background-color: lightgray;
   padding: 0.05em;
   border-radius: 40px;
   column-gap: 0.1em;
@@ -53,7 +51,6 @@
   filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.1));
 
   div {
-    background-color: darkgray;
     width: fit-content;
     padding: clamp(0.2em, 4vw, 0.5em);
     cursor: pointer;
@@ -64,7 +61,6 @@
     i {
       opacity: 0.8;
       font-size: clamp(1em, min(15vw, 15vh), 1.6em);
-      color: lightpink;
     }
     &:hover {
       & {
