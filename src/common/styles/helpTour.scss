@@ -20,19 +20,19 @@ div.trip-overlay {
 
 #help-icon {
   top: 1.5vh;
-  right: 1.5vw;
+  right: 10px;
   position: absolute;
   justify-self: right;
   align-self: inherit;
   cursor: pointer;
-  font-size: xx-large;
+  font-size: 2.1em;
   opacity: 0.4;
 
   &:hover {
     opacity: 1;
   }
 
-  &:before {
+  &::before {
     content: '\F05A';
     font-family: 'FontAwesome';
   }
