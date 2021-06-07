@@ -189,8 +189,9 @@ $panes-background: #beb9d4;
     color: black;
   }
 
-  .CycleSelect-container {
+  .cycleSelect {
     color: $idle-control;
+    background-color: $panes;
   }
 
   .glow-shadow, .animated-shadow {

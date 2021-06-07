@@ -12,10 +12,22 @@
 }
 .control-item {
   cursor: pointer;
+
+  display: grid;
+  grid-auto-flow: row;
 }
 
+.loading-control {
+  cursor: wait;
+
+  & * {
+    pointer-events: none !important;
+  }
+}
+
+
 .fas {
-  font-size: measures.$CycleSelect-size;
+  font-size: measures.$cycleSelect-size;
 }
 
 #bottom-controls [nexus-ui] {
@@ -56,6 +68,11 @@
   font-size: calc(min(10px + 1vw, 1.1em));
 }
 
+.control-item::after {
+  font-weight: 400;
+  font-size: 1em;
+}
+
 #granularity-select-container,
 #edit-tool-select-container {
   grid-row: 1;
@@ -71,6 +88,30 @@
 #instruments-grid {
   grid-row: 1;
   grid-column: 3;
+  grid-auto-flow: column;
+
+  .main-instrument-select {
+    grid-column: 1;
+    &::after {
+      content: "Lead"
+    }
+  }
+  .chords-instrument-select {
+    grid-column: 2;
+    &::after {
+      content: "Chords"
+    }
+  }
+  .instrument-samples-download {
+    &::after {
+      content: "Load samplers"
+    }
+    &.loading-control {
+      &::after {
+        content: "Loading..."
+      }
+    }
+  }
 }
 
 #instruments-grid-label {

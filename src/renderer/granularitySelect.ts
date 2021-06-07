@@ -65,7 +65,7 @@ export function renderGranularitySelect(
   const granularitySelect = new CycleSelect(
     granularitySelectContainerElement,
     'granularity-select',
-    { handleEvent: granularityOnChange },
+    granularityOnChange,
     granularityIcons,
     iconsBasePath
   )

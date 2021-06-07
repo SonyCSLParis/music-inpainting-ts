@@ -265,7 +265,7 @@ function render(configuration = defaultConfiguration): void {
       vqvaeLayerSelect = new CycleSelect(
         granularitySelectContainerElement,
         'edit-tool-select',
-        { handleEvent: vqvaeLayerOnChange },
+        vqvaeLayerOnChange,
         vqvaeLayerIcons,
         iconsBasePath
       )
@@ -1154,7 +1154,7 @@ function render(configuration = defaultConfiguration): void {
       )
       const instrumentsGridElement = document.createElement('div')
       instrumentsGridElement.id = 'instruments-grid'
-      instrumentsGridElement.classList.add('two-columns')
+      instrumentsGridElement.classList.add('grid-auto-column')
       bottomControlsGridElement.appendChild(instrumentsGridElement)
 
       ControlLabels.createLabel(
@@ -1165,7 +1165,7 @@ function render(configuration = defaultConfiguration): void {
       Instruments.initializeInstruments()
       Instruments.renderInstrumentSelect(instrumentsGridElement)
       if (configuration['use_chords_instrument']) {
-        Instruments.renderChordInstrumentSelect(instrumentsGridElement)
+        Instruments.renderChordsInstrumentSelect(instrumentsGridElement)
       }
       Instruments.renderDownloadButton(
         instrumentsGridElement,
