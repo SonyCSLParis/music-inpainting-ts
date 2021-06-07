@@ -300,20 +300,13 @@ select {
   text-align-last: center; // see https://stackoverflow.com/a/34532555
 }
 
-.two-columns {
+.grid-auto-column {
   align-items: center;
   justify-items: center;
   display: grid;
-  grid-template-columns: 50%;
   width: 100%;
-
-  & .left-column {
-    grid-column: 1;
-  }
-
-  & .right-column {
-    grid-column: 2;
-  }
+  grid-auto-flow: column;
+  row-gap: 5%;
 }
 
 .disabled {
