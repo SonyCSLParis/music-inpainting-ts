@@ -2,52 +2,43 @@
 @use "mixins/colors.module";
 // Styling for the icon-based select element
 
-.CycleSelect-container {
-  width: measures.$CycleSelect-size !important;
-  height: measures.$CycleSelect-size !important;
-  border-radius: 64px;
+.cycleSelect {
+  position: relative;
+  width: measures.$cycleSelect-size;
+  height: measures.$cycleSelect-size;
+  border-radius: 100%;
   border-style: solid;
   border-width: clamp(2px, min(0.3vw, 0.2vh), 3.5px);
   box-sizing: border-box;
 
-  align-self: center;
-  justify-self: center;
-}
+  display: flex;
+  justify-content: center;
 
-.CycleSelect-inner-container {
-  width: inherit !important;
-  height: inherit !important;
+  select {
+    display: none;
+  }
 
-  // HACK: invisible border to allow clicking on the border of the selector
-  border-radius: 64px;
-  border-style: solid;
-  border-width: thick;
-  border-color: inherit; // fallback if no opacity support
-  border-color: rgba(0, 0, 0, 0);
+  &.pulsing {
+    transform: scale(1);
+    animation: 0.6s pulse ease-in-out 2 alternate;
+  }
 
-  top: -5px;
-}
-
-.CycleSelect-container {
-  &.CycleSelect-disabled {
+  &.cycleSelect-disabled {
     cursor: not-allowed !important;
+    pointer-events: none !important;
 
     color: rgba(0, 0, 0, 0.8);
-
-    &:after {
+    // display cross-out line
+    &::after {
       content: '';
       position: absolute;
-      bottom: 2px;
-      left: 2px;
+      bottom: 6px;
+      left: 5px;
       border-top-width: thick;
       border-top-style: solid;
-      width: measures.$CycleSelect-size;
+      width: 100%;
       transform: rotate(-45deg);
       transform-origin: 0% 0%;
-    }
-
-    & > .CycleSelect-inner-container {
-      pointer-events: none !important;
     }
 
     & img {
@@ -56,36 +47,34 @@
   }
 }
 
-.CycleSelect-container {
-  display: grid;
-}
-
-.CycleSelect-inner-container {
-  display: flex;
-}
-
-.CycleSelect-container,
-.CycleSelect-inner-container {
-  position: relative;
-  justify-content: center;
-
-  cursor: pointer;
-}
-
-.CycleSelect-inner-container {
-  width: 100%;
-  height: 100%;
-}
-
-.CycleSelect-container img {
+.cycleSelect  img {
   position: absolute;
   align-self: center;
-  width: 65%;
-  padding-bottom: 2px;
+
+  width: 70%;
 
   visibility: hidden;
+  display: none;
 
-  &.CycleSelect-visible {
+  &.cycleSelect-currentValue {
+    display: initial;
     visibility: visible;
   }
+}
+
+
+@keyframes pulse {
+	0% {
+		transform: scale(1);
+		box-shadow: 0 0 0 0;
+	}
+
+	// 70% {
+	// 	box-shadow: 0 0 0 3px rgba(0, 0, 0, 0);
+	// }
+
+	100% {
+		transform: scale(1.5);
+		box-shadow: 0 0 0 0 6px rgba(0, 0, 0, 0);
+	}
 }
