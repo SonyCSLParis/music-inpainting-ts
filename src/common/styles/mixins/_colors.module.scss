@@ -267,6 +267,21 @@ $panes-background: #beb9d4;
         main-filter($active-control, $overlay-lightness-factor);
     }
   }
+
+  $main-zoom-background-color: gray;
+  .zoom-control {
+    background-color: color.scale(
+      $main-zoom-background-color,
+      $lightness: $overlay-lightness-factor * 10%
+    );
+
+    * {
+      background-color: color.scale(
+        $main-zoom-background-color,
+        $lightness: -$overlay-lightness-factor * 10%
+      );
+    }
+  }
 }
 
 :export {

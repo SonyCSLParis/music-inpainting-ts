@@ -1183,10 +1183,7 @@ export function registerZoomTarget(sheetLocator: SheetLocator): void {
   zoomTargetOSMD = sheetLocator
 }
 
-export async function renderZoomControls(
-  containerElement: HTMLElement
-): Promise<void> {
-  // let osmd_target = await osmd_target_promise;
+export function renderZoomControls(containerElement: HTMLElement): void {
   const zoomOutButton = document.createElement('div')
   zoomOutButton.classList.add('zoom-out')
   containerElement.appendChild(zoomOutButton)
