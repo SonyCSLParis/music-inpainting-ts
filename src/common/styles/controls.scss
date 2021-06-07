@@ -6,9 +6,6 @@
   align-self: center;
   align-content: normal;
   align-items: center;
-
-  height: max-content;
-  width: max-content;
 }
 .control-item {
   cursor: pointer;
@@ -35,8 +32,8 @@
     border-radius: 4px !important;
   }
 
-  width: max-content !important;
-  height: max-content !important;
+  width: fit-content;
+  height: fit-content;
 
   select,
   input {
