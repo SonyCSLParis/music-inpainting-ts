@@ -1262,7 +1262,7 @@ function render(configuration = defaultConfiguration): void {
     $(() => {
       // Insert zoom controls
       const zoomControlsGridElement = document.createElement('div')
-      zoomControlsGridElement.id = 'zoom-control'
+      zoomControlsGridElement.classList.add('zoom-control', 'control-item')
       // zoomControlsGridElement.classList.add('two-columns');
       const mainPanel = document.getElementById('main-panel')
       mainPanel.appendChild(zoomControlsGridElement)
