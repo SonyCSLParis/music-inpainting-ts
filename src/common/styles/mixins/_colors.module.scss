@@ -227,8 +227,8 @@ $panes-background: #beb9d4;
     // animation: opacity-on-off ease-in-out 0.2s infinite alternate;
   }
 
-  #spectrogram-container-interface-container {
-    &:before {
+  .spectrogram-locator-interface-container {
+    &::before {
       left: calc(0vw - #{measures.$spectrogram-margin-width});
       background: radial-gradient(
         ellipse farthest-corner at right,

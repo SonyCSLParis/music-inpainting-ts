@@ -9,13 +9,13 @@ $spectrogram-height: 80%;
 $spectrogram-height-no-scroll: 90%;
 
 #spectrogram-image-container,
-#spectrogram-container-interface-container {
+.spectrogram-locator-interface-container {
   height: $spectrogram-height;
 }
 
 #spectrogram-container.no-scroll {
   & #spectrogram-image-container,
-  & #spectrogram-container-interface-container {
+  & .spectrogram-locator-interface-container {
     height: $spectrogram-height-no-scroll;
   }
 }
@@ -35,7 +35,7 @@ $spectrogram-height-no-scroll: 90%;
     * {
       pointer-events: none !important;
     }
-    #spectrogram-container-interface-container span {
+    .spectrogram-locator-interface-container span {
       svg * {
         fill: rgba(0, 0, 0, 0.699);
       }
@@ -117,7 +117,7 @@ $spectrogram-height-no-scroll: 90%;
   }
 }
 
-#spectrogram-container-shadow-container {
+.spectrogram-locator-shadow-container {
   position: absolute;
   top: 0;
   width: 100%;
@@ -126,7 +126,7 @@ $spectrogram-height-no-scroll: 90%;
   pointer-events: none;
 }
 
-#spectrogram-container-interface-container {
+.spectrogram-locator-interface-container {
   position: absolute;
   margin-left: measures.$spectrogram-margin-width;
   width: measures.$spectrogram-width !important;
@@ -139,7 +139,7 @@ $spectrogram-height-no-scroll: 90%;
     transition-timing-function: ease-in-out;
   }
 
-  &:before,
+  &::before,
   &:after {
     z-index: 0;
     content: '';
