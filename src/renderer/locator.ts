@@ -854,10 +854,14 @@ export class SpectrogramLocator extends Locator {
     // necessary to handle 'busy' state cursor change and pointer events disabling
     this.interfaceContainer = document.createElement('div')
     this.interfaceContainer.id = this.container.id + '-interface-container'
+    this.interfaceContainer.classList.add(
+      'spectrogram-locator-interface-container'
+    )
     this.container.appendChild(this.interfaceContainer)
 
     this.shadowContainer = document.createElement('div')
     this.shadowContainer.id = this.container.id + '-shadow-container'
+    this.shadowContainer.classList.add('spectrogram-locator-shadow-container')
     this.shadowContainer.classList.add('glow-shadow')
     this.interfaceContainer.appendChild(this.shadowContainer)
 

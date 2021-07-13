@@ -262,7 +262,7 @@ export class NotonoTrip extends myTrip {
         exposeContainer: 'bottom-controls',
       },
       {
-        sel: '#spectrogram-container-shadow-container',
+        sel: $('.spectrogram-locator-shadow-container'),
         content: this.makeHTMLContent(
           helpContents['notono']['spectrogram_general']
         ),
@@ -271,19 +271,19 @@ export class NotonoTrip extends myTrip {
         header: 'Spectrogram 1: General',
         onTripStart: () => {
           $(
-            '#spectrogram-container-interface-container'
+            '.spectrogram-locator-interface-container'
           )[0].children[1].classList.add('trip-hidden')
           this.toggleExpose(document.getElementById('main-panel'), true)
         },
         onTripEnd: () => {
           $(
-            '#spectrogram-container-interface-container'
+            '.spectrogram-locator-interface-container'
           )[0].children[1].classList.remove('trip-hidden')
           this.toggleExpose(document.getElementById('main-panel'), false)
         },
       },
       {
-        sel: '#spectrogram-container-shadow-container',
+        sel: $('.spectrogram-locator-shadow-container'),
         content: this.makeHTMLContent(
           helpContents['notono']['spectrogram_interaction']
         ),
@@ -353,7 +353,7 @@ export class NotonoTrip extends myTrip {
     super.cleanup()
 
     $(
-      '#spectrogram-container-interface-container'
+      '.spectrogram-locator-interface-container'
     )[0].children[1].classList.remove('trip-hidden')
   }
 }
