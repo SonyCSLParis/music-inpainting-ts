@@ -3,8 +3,8 @@ import * as localizations from '../common/localization.json'
 
 export function createLabel(
   controlElement: HTMLElement,
-  id: string,
-  isAdvancedControl = false,
+  id: string, // TOTO(theis, 2021/08/02): remove this, unnecessary to set an ID
+  isAdvancedControl = false, // FIXME(theis, 2021/08/02): redundant, could be infered from associated controlElement
   localizationId?: string,
   containerElement?: HTMLElement
 ): void {
@@ -26,7 +26,10 @@ export function createLabel(
     )
   }
   labelElement.innerHTML = controlLabel
-  labelElement.classList.toggle('advanced', isAdvancedControl)
+  labelElement.classList.toggle(
+    'advanced',
+    controlElement.classList.contains('advanced') || isAdvancedControl
+  )
 
   if (containerElement == undefined) {
     const defaultContainerId = 'bottom-controls'

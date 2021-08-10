@@ -5,18 +5,30 @@ import * as path from 'path'
 
 import '../common/styles/cycleSelect.scss'
 
-export class CycleSelect<T extends string> extends EventEmitter {
+const enum CycleSelectEvents {
+  ValueChanged = 'value-changed',
+  ActiveOptionsChanged = 'active-options-changed',
+}
+
+export class CycleSelect<T> extends EventEmitter {
   static interfaceCssClass = 'cycleSelect'
   static disabledCssClass = 'cycleSelect-disabled'
   static currentValueCssClass = 'cycleSelect-currentValue'
+  readonly events = {
+    ValueChanged: CycleSelectEvents.ValueChanged,
+    ActiveOptionsChanged: CycleSelectEvents.ActiveOptionsChanged,
+  }
 
   readonly containerElement: HTMLElement
   readonly interfaceElement: HTMLDivElement
   readonly onchangeCallback: (e: Event) => void
   readonly basePath: string
   readonly icons: Map<T, string>
+  readonly iconElements: Map<T, HTMLElement>
   readonly options: T[]
   protected _activeOptions: Set<T> = new Set()
+
+  protected _value: T
 
   get activeOptions(): readonly T[] {
     return Array.from(this._activeOptions)
@@ -40,14 +52,18 @@ export class CycleSelect<T extends string> extends EventEmitter {
       this.selectNextOption()
     }
 
-    this.emit('changed')
+    this.emit(CycleSelectEvents.ActiveOptionsChanged)
   }
 
-  protected _selectElement: HTMLSelectElement
+  on(event: CycleSelectEvents, listener: (...args: any[]) => void): this {
+    return super.on(event, listener)
+  }
+  emit(event: CycleSelectEvents): boolean {
+    return super.emit(event)
+  }
 
   constructor(
     containerElement: HTMLElement,
-    selectElemID: string,
     onchangeCallback: (e: Event) => void,
     icons: Map<T, string>,
     basePath = '',
@@ -68,10 +84,6 @@ export class CycleSelect<T extends string> extends EventEmitter {
     this.interfaceElement.classList.add(CycleSelect.interfaceCssClass)
     this.containerElement.appendChild(this.interfaceElement)
 
-    this._selectElement = document.createElement('select')
-    this._selectElement.id = selectElemID
-    this.interfaceElement.appendChild(this._selectElement)
-
     this.onchangeCallback = onchangeCallback.bind(this)
 
     this.icons = icons
@@ -79,89 +91,91 @@ export class CycleSelect<T extends string> extends EventEmitter {
     this.options = Array.from(this.icons.keys())
     this.activeOptions = activeOptions != null ? activeOptions : this.options
 
-    this.populateSelect()
-    this.populateContainer()
+    this.iconElements = this.createIconElements()
 
-    this._selectElement.addEventListener('change', (e) => {
-      this.updateVisuals()
-      this.onchangeCallback(e)
-    })
-    this.containerElement.addEventListener('click', () => {
-      this.selectNextOption.bind(this)()
-    })
+    this.containerElement.addEventListener('click', () =>
+      this.selectNextOption()
+    )
 
     this.updateVisuals()
 
-    this.on('changed', this.callToAction.bind(this))
-  }
+    this.on(this.events.ActiveOptionsChanged, () => this.callToAction())
+    this.on(this.events.ValueChanged, (e) => {
+      this.updateVisuals()
+      this.onchangeCallback(e)
+    })
 
-  protected makeOptionId(key: string): string {
-    // create an id for an <option> element
-    return this.containerElement.id + '--' + key
+    this.value = this.activeOptions[0]
   }
 
   public get value(): T {
-    // return the name of the currently selected option
-    return this.options[parseInt(this._selectElement.value)]
+    return this._value
   }
 
   public set value(newValue: T) {
     // set the value of the <select> element and update the visuals
     if (!this.options.includes(newValue)) {
-      throw EvalError('Unexpected value ' + newValue)
+      throw EvalError('Unexpected value')
     }
     if (!this.activeOptions.includes(newValue)) {
-      throw EvalError('Trying to set inactive option: ' + newValue)
+      throw EvalError('Trying to set inactive option')
     }
-    this._selectElement.value = this.options.indexOf(newValue).toString()
-    this._selectElement.dispatchEvent(new Event('change'))
+    if (newValue == this.value) {
+      return
+    }
+    this._value = newValue
+    this.emit(this.events.ValueChanged)
   }
 
   protected updateVisuals(): void {
     // display icon for the current option and hide all others
-    $(`#${this.containerElement.id} img`).removeClass(
-      CycleSelect.currentValueCssClass
-    )
+    Array.from(
+      this.containerElement.getElementsByTagName('img')
+    ).forEach((img) => img.classList.remove(CycleSelect.currentValueCssClass))
 
-    this.getCurrentElement().classList.toggle(
-      CycleSelect.currentValueCssClass,
-      true
-    )
+    this.getCurrentElement().classList.add(CycleSelect.currentValueCssClass)
   }
 
   protected getCurrentElement(): HTMLElement {
     // return the currently selected element
-    return document.getElementById(this.makeOptionId(this.value))
+    return this.iconElements.get(this.value)
   }
 
-  protected populateContainer(): void {
+  protected createIconElements(): Map<T, HTMLElement> {
     // append all images as <img> to the container
-    const self = this
-    this.icons.forEach((iconPath, iconName) => {
+    const iconElements = new Map<T, HTMLElement>()
+    this.icons.forEach((iconPath, option) => {
       const imageElement = document.createElement('img')
-      imageElement.id = this.makeOptionId(iconName)
       imageElement.src = path.join(this.basePath, iconPath)
-      self.interfaceElement.appendChild(imageElement)
+      this.interfaceElement.appendChild(imageElement)
+      iconElements.set(option, imageElement)
     })
-  }
-
-  protected populateSelect(): void {
-    // append all options to the inner <select> element
-    this.options.forEach((optionName, optionIndex) => {
-      const newOption = document.createElement('option')
-      newOption.value = optionIndex.toString()
-      newOption.textContent = optionName
-      this._selectElement.appendChild(newOption)
-    })
+    return iconElements
   }
 
   protected selectNextOption(): void {
-    // select the next option in the list, cycle to the beginning if needed
+    this.cycleOptions(true, true)
+  }
+
+  cycleOptions(increasing = true, looping = true): void {
+    // select the previous/next option in the list, cycle to the beginning if needed
     const currentOptionIndex: number = this.activeOptions.indexOf(this.value)
     // fails gracefully if the current value is not within the activeOptions,
     // since the resulting newIndex would then be 0
-    const newIndex: number =
-      (currentOptionIndex + 1) % this.activeOptions.length
+    let newIndex: number
+    if (looping) {
+      newIndex =
+        (currentOptionIndex + (increasing ? 1 : -1)) % this.activeOptions.length
+    } else {
+      if (increasing) {
+        newIndex = Math.min(
+          currentOptionIndex + 1,
+          this.activeOptions.length - 1
+        )
+      } else {
+        newIndex = Math.max(currentOptionIndex - 1, 0)
+      }
+    }
     this.value = this.activeOptions[newIndex]
   }
 

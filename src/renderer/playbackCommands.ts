@@ -1,39 +1,34 @@
 import '@fortawesome/fontawesome-free/css/all.css'
 
 import { PlaybackManager } from './playback'
-import { Locator } from './locator'
 import * as ControlLabels from './controlLabels'
 
-let playbackManager: PlaybackManager<Locator>
-
-export function setPlaybackManager(
-  newPlaybackManager: PlaybackManager<Locator>
+export function render(
+  container: HTMLElement,
+  playbackManager: PlaybackManager
 ): void {
-  playbackManager = newPlaybackManager
-}
-
-export function render(container: HTMLElement): void {
-  async function playbackCallback(play: boolean) {
+  function playbackCallback(play: boolean): void {
     if (play) {
-      await playbackManager.play()
+      void playbackManager.play()
     } else {
-      await playbackManager.stop()
+      void playbackManager.stop()
     }
   }
 
   const stoppedClasses: string[] = ['stopped', 'fa-play-circle']
   const playingClasses: string[] = ['playing', 'fa-stop-circle']
   const waitingClass = 'fa-circle-notch'
+  const spinningClass = 'fa-spin'
 
   const mainIconSize = 'fa-4x'
 
-  const playbuttonContainer = document.createElement('div')
-  playbuttonContainer.id = 'play-button-container'
-  playbuttonContainer.classList.add('control-item')
-  container.appendChild(playbuttonContainer)
+  const playButtonContainer = document.createElement('div')
+  playButtonContainer.id = 'play-button-container'
+  playButtonContainer.classList.add('control-item')
+  container.appendChild(playButtonContainer)
 
   ControlLabels.createLabel(
-    playbuttonContainer,
+    playButtonContainer,
     'play-button-label',
     false,
     undefined,
@@ -42,65 +37,73 @@ export function render(container: HTMLElement): void {
 
   const playButtonInterface = document.createElement('i')
   playButtonInterface.id = 'play-button-interface'
-  playbuttonContainer.appendChild(playButtonInterface)
+  playButtonContainer.appendChild(playButtonInterface)
   playButtonInterface.classList.add('fas', mainIconSize)
   playButtonInterface.style.alignSelf = 'inherit'
   playButtonInterface.style.cursor = 'pointer'
 
   function setPlayingClass(isPlaying: boolean) {
     // Update Play/Stop CSS classes
-    unsetWaitingClass()
+    unsetSpinningClass()
     if (isPlaying) {
       playButtonInterface.classList.add(...playingClasses)
       playButtonInterface.classList.remove(...stoppedClasses)
 
       // updates interface colors
-      playbuttonContainer.classList.add('active')
+      playButtonContainer.classList.add('active')
     } else {
       playButtonInterface.classList.add(...stoppedClasses)
       playButtonInterface.classList.remove(...playingClasses)
 
       // updates interface colors
-      playbuttonContainer.classList.remove('active')
+      playButtonContainer.classList.remove('active')
     }
+    unsetWaitingClass()
   }
   function setWaitingClass() {
     // Replace the playback icon with a rotating 'wait' icon until
     // playback state correctly updated
+    playButtonInterface.classList.add(waitingClass)
     playButtonInterface.classList.remove(...playingClasses, ...stoppedClasses)
-
-    playButtonInterface.classList.add('fa-spin', waitingClass) // spinning icon
+    playButtonInterface.classList.add(spinningClass)
   }
   function unsetWaitingClass() {
     // Remove rotating 'wait' icon
-    playButtonInterface.classList.remove('fa-spin', waitingClass) // spinning icon
+    playButtonInterface.classList.remove(waitingClass)
+  }
+  function unsetSpinningClass() {
+    // Remove rotating 'wait' icon
+    playButtonInterface.classList.remove(spinningClass)
   }
   // Initialize playback to stopped
-  setPlayingClass(false)
+  setPlayingClass(playbackManager.transport.state == 'started')
 
-  async function playCallback(play: boolean) {
+  function playCallback(play: boolean) {
     setWaitingClass()
-    await playbackCallback(play)
-    unsetWaitingClass()
-    setPlayingClass(play)
+    void playbackCallback(play)
   }
 
-  async function pressPlay() {
-    await playCallback(true)
+  function pressPlay() {
+    playCallback(true)
   }
 
-  async function pressStop() {
-    await playCallback(false)
+  function pressStop() {
+    playCallback(false)
   }
 
-  async function togglePlayback() {
-    await playCallback(
-      playButtonInterface.classList.contains(stoppedClasses[0])
-    )
+  function togglePlayback() {
+    playCallback(playbackManager.transport.state != 'started')
   }
 
   playButtonInterface.addEventListener('click', () => {
     togglePlayback()
+  })
+
+  playbackManager.transport.on('start', () => {
+    setPlayingClass(true)
+  })
+  playbackManager.transport.on('stop', () => {
+    setPlayingClass(false)
   })
 
   document.addEventListener('keydown', (event) => {
@@ -110,15 +113,15 @@ export function render(container: HTMLElement): void {
       case ' ':
         // disable scrolling on Spacebar press
         event.preventDefault()
-        togglePlayback()
+        void togglePlayback()
         break
       case 'p':
         event.preventDefault()
-        pressPlay()
+        void pressPlay()
         break
       case 's':
         event.preventDefault()
-        pressStop()
+        void pressStop()
         break
     }
   })

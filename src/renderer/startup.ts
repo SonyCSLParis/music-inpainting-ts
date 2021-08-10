@@ -4,6 +4,7 @@
 import * as Tone from 'tone'
 
 import Nexus from './nexusColored'
+import { NexusTextButton } from 'nexusui'
 
 import '../common/styles/startupSplash.scss'
 
@@ -58,7 +59,7 @@ leadsheetConfiguration['annotation_types'] = ['chord_selector']
 const folkConfiguration = cloneJSON(osmdConfiguration)
 folkConfiguration['use_chords_instrument'] = false
 folkConfiguration['annotation_types'] = []
-folkConfiguration['granularities_quarters'] = ['1', '4', '8', '16']
+folkConfiguration['granularities_quarters'] = [1, 4, 8, 16]
 
 const spectrogramConfiguration = cloneJSON(globalConfiguration)
 spectrogramConfiguration['osmd'] = false
@@ -135,7 +136,7 @@ export function render(
       applicationModeSelectElement.appendChild(applicationModeOptionElement)
     }
 
-    const applicationModeButtons = new Map<ApplicationMode, Nexus.TextButton>()
+    const applicationModeButtons = new Map<ApplicationMode, NexusTextButton>()
 
     const applicationModeButtonsLabel: Record<ApplicationMode, string> = {
       chorale: 'Chorales',
@@ -166,7 +167,7 @@ export function render(
 
     const selectMode = (applicationMode: ApplicationMode) => {
       const emitting = false
-      applicationModeButtons.forEach((button: Nexus.TextButton) => {
+      applicationModeButtons.forEach((button: NexusTextButton) => {
         button.turnOff(emitting)
       })
       applicationModeButtons.get(applicationMode).turnOn(emitting)
@@ -174,7 +175,7 @@ export function render(
     }
 
     applicationModeButtons.forEach(
-      (button: Nexus.TextButton, applicationMode: ApplicationMode) => {
+      (button: NexusTextButton, applicationMode: ApplicationMode) => {
         button.on('change', () => {
           selectMode(applicationMode)
         })

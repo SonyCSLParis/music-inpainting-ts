@@ -9,23 +9,28 @@ import '../common/styles/helpTour.scss'
 import Trip from 'trip.js'
 
 import localizations from '../common/localization.json'
+import { PlaybackManager } from './playback'
 const helpContents = localizations['help']
 
-type TripStepOptions = Record<string, string | boolean | (() => void)>
+type TripStepOptions = Record<
+  string,
+  string | boolean | (() => void) | JQuery<Element>
+>
 
 export abstract class myTrip {
   protected trip: typeof Trip
   protected languages: string[]
-  readonly locator: Locator
+  readonly locator: Locator<PlaybackManager, unknown>
   protected tripDelay_ms = 10000
   readonly inactivityDetectorDelay?: number
 
   constructor(
     languages: string[],
-    locator: Locator,
+    locator: Locator<PlaybackManager, unknown>,
     inactivityDetectorDelay?: number
   ) {
-    // TODO(theis, 2021/02/23: Fix help-tour display, scrambles app layout)
+    // TODO, FIXME(theis, 2021/02/23): Fix help-tour display,
+    // scrambles app layout
     log.error('Fix display of help-tour!')
     this.languages = languages
     this.locator = locator

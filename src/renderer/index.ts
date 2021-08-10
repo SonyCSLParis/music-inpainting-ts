@@ -1,27 +1,29 @@
-// import * as nipplejs from "nipplejs";
-import {
-  SheetLocator,
-  renderZoomControls,
-  SpectrogramLocator,
-  registerZoomTarget,
-  Locator,
-} from './locator'
 import { Fraction } from 'opensheetmusicdisplay'
 import $ from 'jquery'
-import * as Tone from 'tone'
 
 import log from 'loglevel'
 log.setLevel(log.levels.INFO)
 
-import Nexus from './nexusColored'
+import {
+  SheetLocator,
+  SpectrogramLocator,
+  VqvaeLayer,
+  NotonoTool,
+  LayerAndTool,
+  Locator,
+} from './locator'
+import { NexusSelect } from 'nexusui'
+import {
+  NexusSelectWithShuffle,
+  setColors as setNexusColors,
+} from './nexusColored'
 
 import * as Header from './header'
 
 import * as PlaybackCommands from './playbackCommands'
 import { PlaybackManager } from './playback'
-import SheetPlaybackManager from './sheetPlayback'
+import MidiSheetPlaybackManager from './sheetPlayback'
 import { MultiChannelSpectrogramPlaybackManager as SpectrogramPlaybackManager } from './spectrogramPlayback'
-import * as SpectrogramPlayback from './spectrogramPlayback'
 
 import * as Instruments from './instruments'
 import {
@@ -57,69 +59,34 @@ import '../common/styles/disableMouse.scss'
 
 import colors from '../common/styles/mixins/_colors.module.scss'
 
-declare let ohSnap: any
 declare let COMPILE_ELECTRON: boolean
 
 import defaultConfiguration from '../common/default_config.json'
+import { applicationConfiguration } from './startup'
 
-let locator: Locator
-let playbackManager: PlaybackManager<Locator>
-let sheetPlaybackManager: SheetPlaybackManager
+// TODO(@tbazin, 2021/08/05): clean-up this usage of unknown
+let locator: Locator<PlaybackManager, unknown>
+let playbackManager: PlaybackManager
+let sheetPlaybackManager: MidiSheetPlaybackManager
 let spectrogramPlaybackManager: SpectrogramPlaybackManager
 let bpmControl: BPMControl
-let instrumentConstraintSelect: Nexus.Select
-let pitchRootSelect: Nexus.Select
-let octaveControl: NumberControl
-let vqvaeLayerSelect: CycleSelect
+let instrumentConstraintSelect: NexusSelectWithShuffle
+let pitchClassConstraintSelect: NexusSelect
+let octaveConstraintControl: NumberControl
 let downloadButton: DownloadButton
 
-function getMidiPitch(): number {
-  return pitchRootSelect.selectedIndex + 12 * octaveControl.value
-}
-
-function triggerInterfaceRefresh(): void {
-  // TODO(theis): use a proper interface
-  vqvaeLayerSelect.value = vqvaeLayerSelect.value
-}
-
-function toggleBusyClass(state: boolean): void {
-  // TODO(theis, 2021_04_22): clean this up!
-  $('body').toggleClass('busy', state)
-  $('.notebox').toggleClass('busy', state)
-  $('.notebox').toggleClass('available', !state)
-  $('#spectrogram-container').toggleClass('busy', state)
-}
-
-function blockall(e) {
-  // block propagation of events in bubbling/capturing
-  e.stopPropagation()
-  e.preventDefault()
-}
-
-function disableChanges(): void {
-  toggleBusyClass(true)
-  $('.timeContainer').addClass('busy')
-  $('.timeContainer').each(function () {
-    this.addEventListener('click', blockall, true)
-  })
-}
-
-function enableChanges(): void {
-  $('.timeContainer').each(function () {
-    this.removeEventListener('click', blockall, true)
-  })
-  $('.timeContainer').removeClass('busy')
-  toggleBusyClass(false)
-}
-
-function render(configuration = defaultConfiguration): void {
-  disableChanges()
+function render(
+  configuration: applicationConfiguration = defaultConfiguration
+): void {
+  // disableChanges()
   document.body.classList.add('running')
 
   if (configuration['osmd']) {
     document.body.classList.add('nonoto')
-    Nexus.colors.accent = colors.millenial_pink_active_control
-    Nexus.colors.fill = colors.millenial_pink_idle_control
+    setNexusColors(
+      colors.millenial_pink_active_control,
+      colors.millenial_pink_idle_control
+    )
   } else if (configuration['spectrogram']) {
     document.body.classList.add('notono')
   }
@@ -143,11 +110,9 @@ function render(configuration = defaultConfiguration): void {
     }
   })
 
-  const granularities_quarters: string[] = (<string[]>(
-    configuration['granularities_quarters']
-  )).sort((a, b) => {
-    return parseInt(a) - parseInt(b)
-  })
+  const granularities_quarters: number[] = configuration[
+    'granularities_quarters'
+  ].sort()
 
   $(() => {
     let applicationElement = document.getElementById('app')
@@ -175,7 +140,7 @@ function render(configuration = defaultConfiguration): void {
     Header.render(headerGridElement, configuration)
     const appTitleElement = document.getElementById('app-title')
     appTitleElement.addEventListener('click', () => {
-      void sampleFromDataset(spectrogramPlaybackManager, inpaintingApiAddress)
+      sampleNewData(inpaintingApiAddress)
     })
   })
 
@@ -211,63 +176,46 @@ function render(configuration = defaultConfiguration): void {
   })
 
   $(() => {
+    if (configuration['spectrogram']) {
+    }
+  })
+
+  $(() => {
+    const isAdvancedControl = true
     const bottomControlsGridElement = document.getElementById('bottom-controls')
-    if (configuration['osmd']) {
-      GranularitySelect.renderGranularitySelect(
-        bottomControlsGridElement,
-        granularities_quarters
-      )
-    } else if (configuration['spectrogram']) {
-      const vqvaeLayerIcons: Map<string, string> = new Map([
-        ['top-brush', 'paint-roller.svg'],
-        ['bottom-brush', 'paint-brush-small.svg'],
-        ['top-brush-random', 'paint-roller-random.svg'],
-        ['bottom-brush-random', 'paint-brush-small-random.svg'],
-        ['top-eraser', 'edit-tools.svg'],
-      ])
+    let defaultFilename: filenameType
+    if (configuration['spectrogram']) {
+      defaultFilename = { name: 'notono', extension: '.wav' }
+    } else if (configuration['osmd']) {
+      defaultFilename = { name: 'nonoto', extension: '.mid' }
+    }
 
-      const vqvaeLayerDimensions: Map<string, [number, number]> = new Map([
-        ['bottom', [64, 8]],
-        ['top', [32, 4]],
-      ])
+    const downloadCommandsGridspan = document.createElement('div')
+    downloadCommandsGridspan.id = 'download-button-gridspan'
+    downloadCommandsGridspan.classList.add('gridspan')
+    downloadCommandsGridspan.classList.toggle('advanced', isAdvancedControl)
+    bottomControlsGridElement.appendChild(downloadCommandsGridspan)
+    downloadButton = new DownloadButton(
+      downloadCommandsGridspan,
+      defaultFilename,
+      isAdvancedControl
+    )
 
-      const iconsBasePath = getPathToStaticFile('icons')
-
-      const granularitySelectContainerElement = document.createElement('div')
-      granularitySelectContainerElement.id = 'edit-tool-select-container'
-      granularitySelectContainerElement.classList.add('control-item')
-      const bottomControlsGridElement = document.getElementById(
-        'bottom-controls'
-      )
-      bottomControlsGridElement.appendChild(granularitySelectContainerElement)
-
+    if (COMPILE_ELECTRON) {
       ControlLabels.createLabel(
-        granularitySelectContainerElement,
-        'edit-tool-select-label'
+        bottomControlsGridElement,
+        'download-button-label',
+        isAdvancedControl,
+        'download-button-label-with-native-drag',
+        downloadButton.container
       )
-
-      function vqvaeLayerOnChange(ev) {
-        const tool: string = this.value
-        const newLayer: string = tool.split('-')[0]
-        const [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(newLayer)
-        const [_, numColumnsTop] = vqvaeLayerDimensions.get('top')
-        spectrogramPlaybackManager.locator.render(
-          newNumRows,
-          newNumColumns,
-          numColumnsTop
-        )
-        spectrogramPlaybackManager.locator.container.classList.toggle(
-          'eraser',
-          tool.includes('eraser')
-        )
-      }
-
-      vqvaeLayerSelect = new CycleSelect(
-        granularitySelectContainerElement,
-        'edit-tool-select',
-        vqvaeLayerOnChange,
-        vqvaeLayerIcons,
-        iconsBasePath
+    } else {
+      ControlLabels.createLabel(
+        bottomControlsGridElement,
+        'download-button-label',
+        isAdvancedControl,
+        undefined,
+        downloadButton.container
       )
     }
   })
@@ -279,7 +227,9 @@ function render(configuration = defaultConfiguration): void {
     }
   })
 
-  const inpaintingApiAddress: string = configuration['inpainting_api_address']
+  const inpaintingApiAddress: URL = new URL(
+    configuration['inpainting_api_address']
+  )
 
   function insertLoadingSpinner(container: HTMLElement): HTMLElement {
     const spinnerElement: HTMLElement = document.createElement('i')
@@ -325,17 +275,14 @@ function render(configuration = defaultConfiguration): void {
         'synth_lead',
         'vocal',
       ]
-      instrumentConstraintSelect = new Nexus.Select('#instrument-control', {
-        size: [120, 50],
-        options: instrumentConstraintSelectOptions,
-      })
+      instrumentConstraintSelect = new NexusSelectWithShuffle(
+        '#instrument-control',
+        {
+          size: [120, 50],
+          options: instrumentConstraintSelectOptions,
+        }
+      )
       // set the initial instrument constraint randomly
-      instrumentConstraintSelect.shuffle = function () {
-        instrumentConstraintSelect.value =
-          instrumentConstraintSelectOptions[
-            Math.floor(Math.random() * instrumentConstraintSelectOptions.length)
-          ]
-      }
       instrumentConstraintSelect.shuffle()
 
       ControlLabels.createLabel(
@@ -345,7 +292,12 @@ function render(configuration = defaultConfiguration): void {
         null,
         instrumentConstraintSelectGridspanElement
       )
-      ;[pitchRootSelect, octaveControl] = renderPitchRootAndOctaveControl()
+      const {
+        pitchClassSelect,
+        octaveControl,
+      } = renderPitchRootAndOctaveControl()
+      pitchClassConstraintSelect = pitchClassSelect
+      octaveConstraintControl = octaveControl
     })
   }
 
@@ -355,22 +307,27 @@ function render(configuration = defaultConfiguration): void {
     const midiOutImplementation: typeof MidiOut = require('./midiOut')
     const midiInImplementation: typeof MidiIn = require('./midiIn')
     if (configuration['insert_advanced_controls'] && configuration['osmd']) {
-      midiOutImplementation.render()
+      void midiOutImplementation.render()
     } else if (
       configuration['insert_advanced_controls'] &&
       configuration['spectrogram']
     ) {
-      midiInImplementation.render()
+      void midiInImplementation.render()
     }
   })
 
   let sheetLocator: SheetLocator
   $(() => {
     const mainPanel = document.getElementById('main-panel')
-
+    const bottomControlsGridElement = document.getElementById('bottom-controls')
     const spinnerElement = insertLoadingSpinner(mainPanel)
 
     if (configuration['osmd']) {
+      const granularitySelect = GranularitySelect.renderGranularitySelect(
+        bottomControlsGridElement,
+        granularities_quarters
+      )
+
       const allowOnlyOneFermata: boolean =
         configuration['allow_only_one_fermata']
       const sheetContainer = document.createElement('div')
@@ -381,770 +338,151 @@ function render(configuration = defaultConfiguration): void {
        * the container we've created in the steps before. The second parameter tells OSMD
        * not to redraw on resize.
        */
-      function copyTimecontainerContent(
-        origin: HTMLElement,
-        target: HTMLElement
-      ) {
-        // retrieve quarter-note positions for origin and target
-        function getContainedQuarters(timeContainer: HTMLElement): number[] {
-          return timeContainer
-            .getAttribute('containedQuarterNotes')
-            .split(', ')
-            .map((x) => parseInt(x, 10))
-        }
-        const originContainedQuarters: number[] = getContainedQuarters(origin)
-        const targetContainedQuarters: number[] = getContainedQuarters(target)
-
-        const originStart_quarter: number = originContainedQuarters[0]
-        const targetStart_quarter: number = targetContainedQuarters[0]
-        const originEnd_quarter: number = originContainedQuarters.pop()
-        const targetEnd_quarter: number = targetContainedQuarters.pop()
-
-        const generationCommand: string =
-          '/copy' +
-          `?origin_start_quarter=${originStart_quarter}` +
-          `&origin_end_quarter=${originEnd_quarter}` +
-          `&target_start_quarter=${targetStart_quarter}` +
-          `&target_end_quarter=${targetEnd_quarter}`
-        loadMusicXMLandMidi(
-          sheetPlaybackManager,
-          sheetLocator,
-          inpaintingApiAddress,
-          generationCommand
-        )
-      }
 
       const autoResize = false
+      // TODO(theis): check proper way of enforcing subtype
+      sheetPlaybackManager = new MidiSheetPlaybackManager()
       sheetLocator = new SheetLocator(
+        sheetPlaybackManager,
         sheetContainer,
+        granularitySelect,
+        inpaintingApiAddress,
         {
           autoResize: autoResize,
           drawingParameters: 'compacttight',
           drawPartNames: false,
         },
-        granularities_quarters.map((num) => {
-          return parseInt(num, 10)
-        }),
         configuration['annotation_types'],
-        allowOnlyOneFermata,
-        onClickTimestampBoxFactory,
-        copyTimecontainerContent
+        allowOnlyOneFermata
       )
       locator = sheetLocator
-      // TODO(theis): check proper way of enforcing subtype
-      sheetPlaybackManager = new SheetPlaybackManager(sheetLocator)
 
       playbackManager = sheetPlaybackManager
 
-      PlaybackCommands.setPlaybackManager(sheetPlaybackManager)
-      registerZoomTarget(sheetLocator)
-
       if (configuration['use_chords_instrument']) {
         sheetPlaybackManager.scheduleChordsPlayer(
-          sheetLocator,
-          configuration['chords_midi_channel']
+          configuration['chords_midi_channel'],
+          sheetLocator
         )
       }
       $(() => {
         // requesting the initial sheet, so can't send any sheet along
         const sendSheetWithRequest = false
-        void loadMusicXMLandMidi(
-          sheetPlaybackManager,
-          sheetLocator,
+        void sheetLocator.loadMusicXMLandMidi(
           inpaintingApiAddress,
           'generate',
           sendSheetWithRequest
         )
       })
     } else if (configuration['spectrogram']) {
+      // create and render editToolSelect element
+      const vqvaeLayerIcons: Map<LayerAndTool, string> = new Map([
+        [
+          { layer: VqvaeLayer.Top, tool: NotonoTool.Inpaint },
+          'paint-roller.svg',
+        ],
+        [
+          { layer: VqvaeLayer.Bottom, tool: NotonoTool.Inpaint },
+          'paint-brush-small.svg',
+        ],
+        [
+          { layer: VqvaeLayer.Top, tool: NotonoTool.InpaintRandom },
+          'paint-roller-random.svg',
+        ],
+        [
+          { layer: VqvaeLayer.Bottom, tool: NotonoTool.Inpaint },
+          'paint-brush-small-random.svg',
+        ],
+        [{ layer: VqvaeLayer.Top, tool: NotonoTool.Eraser }, 'edit-tools.svg'],
+      ])
+
+      const vqvaeLayerDimensions: Map<VqvaeLayer, [number, number]> = new Map([
+        [VqvaeLayer.Top, [32, 4]],
+        [VqvaeLayer.Bottom, [64, 8]],
+      ])
+
+      const iconsBasePath = getPathToStaticFile('icons')
+
+      const editToolSelectContainerElement = document.createElement('div')
+      editToolSelectContainerElement.id = 'edit-tool-select-container'
+      editToolSelectContainerElement.classList.add('control-item')
+      bottomControlsGridElement.appendChild(editToolSelectContainerElement)
+      ControlLabels.createLabel(
+        editToolSelectContainerElement,
+        'edit-tool-select-label'
+      )
+
+      const vqvaeLayerOnChange = function (
+        this: CycleSelect<LayerAndTool>
+      ): void {
+        const [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(
+          this.value.layer
+        )
+        const [_, numColumnsTop] = vqvaeLayerDimensions.get(VqvaeLayer.Top)
+        locator.render(newNumRows, newNumColumns, numColumnsTop)
+        locator.interfaceContainer.classList.toggle(
+          'eraser',
+          this.value.tool == NotonoTool.Eraser
+        )
+      }
+
+      const editToolSelect = new CycleSelect(
+        editToolSelectContainerElement,
+        vqvaeLayerOnChange,
+        vqvaeLayerIcons,
+        iconsBasePath
+      )
+
       const spectrogramContainerElement = document.createElement('div')
       spectrogramContainerElement.id = 'spectrogram-container'
       mainPanel.appendChild(spectrogramContainerElement)
 
+      spectrogramPlaybackManager = new SpectrogramPlaybackManager()
       const spectrogramLocator = new SpectrogramLocator(
-        spectrogramContainerElement
+        spectrogramPlaybackManager,
+        spectrogramContainerElement,
+        inpaintingApiAddress,
+        editToolSelect,
+        downloadButton,
+        instrumentConstraintSelect,
+        octaveConstraintControl,
+        pitchClassConstraintSelect
       )
 
-      spectrogramPlaybackManager = new SpectrogramPlaybackManager(
-        spectrogramLocator
+      const isAdvancedControl = true
+      const volumeControlsGridElement = document.createElement('div')
+      volumeControlsGridElement.id = 'volume-controls-gridspan'
+      volumeControlsGridElement.classList.add('gridspan')
+      volumeControlsGridElement.classList.toggle('advanced', isAdvancedControl)
+      bottomControlsGridElement.appendChild(volumeControlsGridElement)
+
+      spectrogramLocator.playbackManager.renderFadeInControl(
+        volumeControlsGridElement
       )
+      spectrogramLocator.playbackManager.renderGainControl(
+        volumeControlsGridElement
+      )
+
       playbackManager = spectrogramPlaybackManager
       locator = spectrogramLocator
-      PlaybackCommands.setPlaybackManager(spectrogramPlaybackManager)
 
-      sampleFromDataset(spectrogramPlaybackManager, inpaintingApiAddress)
+      void spectrogramLocator.sample()
     }
   })
-
-  // TODO(theis): could use a more strict type-hint (number[][]|string[][])
-  // but this has the TS type-schecker fail, considering the map method (which
-  // receives a union type itself) non-callable
-  // see https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-3.html#caveats
-  function updateConditioningMap(
-    mask: number[][],
-    currentConditioningMap: Map<string, (number | string)[][]>
-  ): Map<string, (number | string)[][]> {
-    // retrieve up-to-date user-selected conditioning
-    const newConditioning_value = new Map()
-    newConditioning_value.set('pitch', getMidiPitch())
-    newConditioning_value.set(
-      'instrument_family_str',
-      instrumentConstraintSelect.value
-    )
-
-    for (const [
-      modality,
-      conditioning_map,
-    ] of currentConditioningMap.entries()) {
-      currentConditioningMap.set(
-        modality,
-        conditioning_map.map((row: (number | string)[], row_index: number) => {
-          return row.map(
-            (
-              currentConditioning_value: number | string,
-              column_index: number
-            ) => {
-              if (mask[row_index][column_index] == 1) {
-                return newConditioning_value.get(modality)
-              } else {
-                return currentConditioning_value
-              }
-            }
-          )
-        })
-      )
-    }
-    return currentConditioningMap
-  }
-
-  function getCurrentSpectrogramPositionTopLayer(): number {
-    const spectrogramImageContainerElement = document.getElementById(
-      'spectrogram-image-container'
-    )
-    if (spectrogramImageContainerElement == null) {
-      throw Error('Spectrogram container not initialized')
-    }
-    const scrollElement = spectrogramImageContainerElement.getElementsByClassName(
-      'simplebar-content-wrapper'
-    )[0]
-    // HACK(theis, 2021_04_21): check `isScrollable` test,
-    // testing if scrollWidth - clientWidth > 1 avoids some edge cases
-    // of very slightly different widths, but does not seem very robust
-    const isScrollable: boolean =
-      scrollElement.scrollWidth - scrollElement.clientWidth > 1
-    if (!isScrollable) {
-      return 0
-    } else {
-      const currentScrollRatio =
-        scrollElement.scrollLeft /
-        (scrollElement.scrollWidth - scrollElement.clientWidth)
-      log.error('Fix scroll computation')
-      const numSnapElements: number = document
-        .getElementById('snap-points')
-        .getElementsByTagName('snap').length
-      // snaps happen on <snap>'s left boundaries
-      const numSnapLocations: number = numSnapElements - 1
-      return Math.round(currentScrollRatio * numSnapLocations)
-    }
-  }
-
-  if (configuration['spectrogram']) {
-    $(() => {
-      function regenerationCallback() {
-        const mask = spectrogramPlaybackManager.locator.mask
-        const startIndexTop: number = getCurrentSpectrogramPositionTopLayer()
-
-        switch (vqvaeLayerSelect.value) {
-          case 'top': {
-            currentConditioning_top = updateConditioningMap(
-              mask,
-              currentConditioning_top
-            )
-            break
-          }
-          case 'bottom': {
-            currentConditioning_bottom = updateConditioningMap(
-              mask,
-              currentConditioning_bottom
-            )
-            break
-          }
-        }
-
-        const sendCodesWithRequest = true
-        let generationParameters =
-          '?pitch=' +
-          getMidiPitch().toString() +
-          '&instrument_family_str=' +
-          instrumentConstraintSelect.value +
-          '&layer=' +
-          vqvaeLayerSelect.value.split('-')[0] +
-          '&temperature=1' +
-          '&eraser_amplitude=0.1' +
-          '&start_index_top=' +
-          startIndexTop
-        const split_tool_select = vqvaeLayerSelect.value.split('-')
-        let command: string
-        if (split_tool_select.length >= 2) {
-          switch (split_tool_select[1]) {
-            case 'eraser': {
-              command = 'erase'
-              break
-            }
-            case 'brush': {
-              command = 'timerange-change'
-              break
-            }
-          }
-        } else {
-          throw EvalError
-        }
-
-        generationParameters +=
-          '&uniform_sampling=' +
-          (
-            split_tool_select.length == 3 && split_tool_select[2] == 'random'
-          ).toString()
-
-        loadAudioAndSpectrogram(
-          spectrogramPlaybackManager,
-          inpaintingApiAddress,
-          command + generationParameters,
-          sendCodesWithRequest,
-          mask
-        )
-      }
-      spectrogramPlaybackManager.locator.registerCallback(regenerationCallback)
-    })
-  }
 
   $(() => {
     const playbackCommandsGridspan = document.getElementById(
       'playback-commands-gridspan'
     )
-    PlaybackCommands.render(playbackCommandsGridspan)
+    PlaybackCommands.render(playbackCommandsGridspan, playbackManager)
   })
 
-  function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void {
-    // Strip MusicXML document of title/composer tags
-    const titleNode = xmlDocument.getElementsByTagName('work-title')[0]
-    const movementTitleNode = xmlDocument.getElementsByTagName(
-      'movement-title'
-    )[0]
-    const composerNode = xmlDocument.getElementsByTagName('creator')[0]
-
-    titleNode.textContent = movementTitleNode.textContent = composerNode.textContent =
-      ''
-  }
-
-  function getFermatas(): number[] {
-    const activeFermataElements = $('.Fermata.active')
-    const containedQuarterNotesList = []
-    for (const activeFemataElement of activeFermataElements) {
-      containedQuarterNotesList.push(
-        parseInt(
-          // TODO(theis): store and retrieve containedQuarterNotes
-          // to and from TypeScript Fermata objects
-          activeFemataElement.parentElement.getAttribute(
-            'containedQuarterNotes'
-          )
-        )
-      )
+  function sampleNewData(inpaintingApiAddress: URL) {
+    if (locator.dataType == 'sheet') {
+      void locator.generate(inpaintingApiAddress)
+    } else if (locator.dataType == 'spectrogram') {
+      void locator.sample(inpaintingApiAddress)
     }
-    return containedQuarterNotesList
-  }
-
-  function getChordLabels(sheetLocator: SheetLocator): object[] {
-    // return a stringified JSON object describing the current chords
-    const chordLabels = []
-    for (const chordSelector of sheetLocator.chordSelectors) {
-      chordLabels.push(chordSelector.currentChord)
-    }
-    return chordLabels
-  }
-
-  function getMetadata(sheetLocator: SheetLocator) {
-    return {
-      fermatas: getFermatas(),
-      chordLabels: getChordLabels(sheetLocator),
-    }
-  }
-
-  function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
-    // FIXME(theis) hardcoded 4/4 time-signature
-    const [timeRangeStart_quarter, timeRangeEnd_quarter] = [
-      timeStart,
-      timeEnd,
-    ].map((timeFrac) => Math.round(4 * timeFrac.RealValue))
-
-    const argsGenerationUrl =
-      'timerange-change' +
-      `?time_range_start_quarter=${timeRangeStart_quarter}` +
-      `&time_range_end_quarter=${timeRangeEnd_quarter}`
-
-    if (configuration['osmd']) {
-      return function () {
-        loadMusicXMLandMidi(
-          sheetPlaybackManager,
-          sheetLocator,
-          inpaintingApiAddress,
-          argsGenerationUrl
-        )
-      }
-    } else if (configuration['spectrogram']) {
-      const sendCodesWithRequest = true
-      return function () {
-        loadAudioAndSpectrogram(
-          spectrogramPlaybackManager,
-          inpaintingApiAddress,
-          argsGenerationUrl,
-          sendCodesWithRequest
-        )
-      }
-    } else {
-      throw new Error(`Unsupported application type`)
-    }
-  }
-
-  // TODO don't create globals like this
-  const serializer = new XMLSerializer()
-  const parser = new DOMParser()
-  let currentCodes_top: number[][]
-  let currentCodes_bottom: number[][]
-
-  type ConditioningMap = Map<string, (number | string)[][]>
-  let currentConditioning_top: ConditioningMap
-  let currentConditioning_bottom: ConditioningMap
-
-  let currentXML: XMLDocument
-
-  function loadNewMap(
-    newConditioningMap: Record<string, (number | string)[][]>
-  ): ConditioningMap {
-    const conditioning_map: ConditioningMap = new Map<
-      string,
-      (number | string)[][]
-    >()
-    conditioning_map.set('pitch', newConditioningMap['pitch'])
-    conditioning_map.set(
-      'instrument_family_str',
-      newConditioningMap['instrument_family_str']
-    )
-    return conditioning_map
-  }
-
-  function mapToObject(conditioning_map: ConditioningMap) {
-    return {
-      pitch: conditioning_map.get('pitch'),
-      instrument_family_str: conditioning_map.get('instrument_family_str'),
-    }
-  }
-
-  async function updateAudio(audioBlob: Blob): Promise<void> {
-    // clear previous blob URL
-    downloadButton.revokeBlobURL()
-
-    // allocate new local blobURL for the received audio
-    const blobUrl = URL.createObjectURL(audioBlob)
-    downloadButton.content = audioBlob
-
-    return spectrogramPlaybackManager.loadAudio(blobUrl).then(() => {
-      downloadButton.targetURL = blobUrl
-    })
-  }
-
-  async function updateSpectrogramImage(imageBlob: Blob): Promise<void> {
-    return new Promise((resolve, _) => {
-      const blobUrl = URL.createObjectURL(imageBlob)
-      // HACK(theis, 2021_04_25): update the thumbnail stored in the Download button
-      // for drag-and-drop, could try and generate the thumbnail only on drag-start
-      // to avoid requiring this call here which one could easily forget to perform...
-      downloadButton.imageContent = imageBlob
-      const spectrogramImageElement: HTMLImageElement = <HTMLImageElement>(
-        document.getElementById('spectrogram-image')
-      )
-      spectrogramImageElement.src = blobUrl
-      $(() => {
-        URL.revokeObjectURL(blobUrl)
-        resolve()
-      })
-    })
-  }
-
-  async function updateAudioAndImage(
-    audioPromise: Promise<Blob>,
-    spectrogramImagePromise: Promise<Blob>
-  ): Promise<void> {
-    return await Promise.all([audioPromise, spectrogramImagePromise]).then(
-      // unpack the received results and update the interface
-      ([audioBlob, spectrogramImageBlob]: [Blob, Blob]) => {
-        updateAudio(audioBlob)
-        updateSpectrogramImage(spectrogramImageBlob)
-      }
-    )
-  }
-
-  /**
-   * Load a MusicXml file via xHTTP request, and display its contents.
-   */
-  async function loadAudioAndSpectrogram(
-    spectrogramPlaybackManager: SpectrogramPlaybackManager,
-    inpaintingApiUrl: string,
-    generationCommand: string,
-    sendCodesWithRequest: boolean,
-    mask?: number[][],
-    timeout = 0
-  ): Promise<void> {
-    disableChanges()
-
-    const payload_object = {}
-
-    if (sendCodesWithRequest) {
-      payload_object['top_code'] = currentCodes_top
-      payload_object['bottom_code'] = currentCodes_bottom
-      payload_object['top_conditioning'] = mapToObject(currentConditioning_top)
-      payload_object['bottom_conditioning'] = mapToObject(
-        currentConditioning_bottom
-      )
-    }
-    if (mask != null) {
-      // send the mask with low-frequencies first
-      payload_object['mask'] = mask.reverse()
-    }
-
-    let newCodes_top: number[][]
-    let newCodes_bottom: number[][]
-    let newConditioning_top: Map<string, (string | number)[][]>
-    let newConditioning_bottom: Map<string, (string | number)[][]>
-
-    try {
-      const generationUrl = new URL(generationCommand, inpaintingApiUrl)
-      const jsonResponse = await $.post({
-        url: generationUrl.href,
-        data: JSON.stringify(payload_object),
-        contentType: 'application/json',
-        dataType: 'json',
-        timeout: timeout,
-      })
-
-      newCodes_top = jsonResponse['top_code']
-      newCodes_bottom = jsonResponse['bottom_code']
-      newConditioning_top = loadNewMap(jsonResponse['top_conditioning'])
-      newConditioning_bottom = loadNewMap(jsonResponse['bottom_conditioning'])
-
-      const audioPromise = getAudioRequest(
-        spectrogramPlaybackManager,
-        inpaintingApiUrl,
-        newCodes_top,
-        newCodes_bottom
-      )
-      const spectrogramImagePromise = getSpectrogramImageRequest(
-        spectrogramPlaybackManager,
-        inpaintingApiUrl,
-        newCodes_top,
-        newCodes_bottom
-      )
-
-      await updateAudioAndImage(audioPromise, spectrogramImagePromise)
-    } catch (e) {
-      console.log(e)
-      spectrogramPlaybackManager.locator.clear()
-      enableChanges()
-      throw e
-    }
-
-    currentCodes_top = newCodes_top
-    currentCodes_bottom = newCodes_bottom
-    currentConditioning_top = newConditioning_top
-    currentConditioning_bottom = newConditioning_bottom
-
-    spectrogramPlaybackManager.locator.vqvaeTimestepsTop =
-      currentCodes_top[0].length
-    triggerInterfaceRefresh()
-    spectrogramPlaybackManager.locator.clear()
-    enableChanges()
-  }
-
-  async function sampleFromDataset(
-    spectrogramPlaybackManager: SpectrogramPlaybackManager,
-    inpaintingApiUrl: string,
-    timeout = 10000
-  ): Promise<void> {
-    const sendCodesWithRequest = false
-    const sampling_parameters =
-      '?pitch_class=' +
-      (getMidiPitch() % 12).toString() +
-      '&instrument_family_str=' +
-      instrumentConstraintSelect.value +
-      '&duration_top=4'
-
-    return loadAudioAndSpectrogram(
-      spectrogramPlaybackManager,
-      inpaintingApiUrl,
-      'sample-from-dataset' + sampling_parameters,
-      sendCodesWithRequest,
-      undefined,
-      timeout
-    ).then(
-      () => {
-        enableChanges()
-        mapTouchEventsToMouseSimplebar()
-        // HACK, TODO(theis): should not be necessary, since there is already
-        // a refresh operation at the end of the loadAudioAndSpectrogram method
-        // but this has to be done on the initial call since the SpectrogramLocator
-        // only gets initialized in that call
-        // should properly initialize the SpectrogramLocator on instantiation
-        // spectrogramPlaybackManager.locator.refresh()
-      },
-      (rejectionReason) => {
-        // FIXME(theis, 2021_04_21): sampling can fail in the current setting if either:
-        // - the Inpainting API is not reachable, in which case it might fail instantly,
-        //   and would lead to a very high number of requests in a very short time,
-        // - the sampling procedure didn't manage to find a suitable sample in the database
-        //   in a reasonable time
-        // We should distinguish those two cases and only re-run a sampling if the API is
-        // accessible
-        console.log(rejectionReason)
-        if (rejectionReason.statusText == 'timeout') {
-          log.error(
-            'Failed to sample sound in required time, retrying with new parameters'
-          )
-          instrumentConstraintSelect.shuffle()
-          void sampleFromDataset(
-            spectrogramPlaybackManager,
-            inpaintingApiUrl,
-            timeout
-          )
-        }
-      }
-    )
-  }
-
-  function dropHandler(e: DragEvent) {
-    // Prevent default behavior (Prevent file from being opened)
-    e.preventDefault()
-    e.stopPropagation()
-
-    if (e.dataTransfer.items) {
-      // Use DataTransferItemList interface to access the file(s)
-      for (let i = 0; i < e.dataTransfer.items.length; i++) {
-        // If dropped items aren't files, reject them
-        if (e.dataTransfer.items[i].kind === 'file') {
-          const file = e.dataTransfer.items[i].getAsFile()
-          console.log('... file[' + i + '].name = ' + file.name)
-          const generationParameters =
-            '?pitch=' +
-            getMidiPitch().toString() +
-            '&instrument_family_str=' +
-            instrumentConstraintSelect.value
-          sendAudio(
-            file,
-            spectrogramPlaybackManager,
-            inpaintingApiAddress,
-            'analyze-audio' + generationParameters
-          )
-          return // only send the first file
-        }
-      }
-    } else {
-      // Use DataTransfer interface to access the file(s)
-      for (let i = 0; i < e.dataTransfer.files.length; i++) {
-        console.log(
-          '... file[' + i + '].name = ' + e.dataTransfer.files[i].name
-        )
-      }
-    }
-  }
-
-  async function sendAudio(
-    audioBlob: Blob,
-    spectrogramPlaybackManager: SpectrogramPlaybackManager,
-    inpaintingApiUrl: string,
-    generationCommand: string
-  ) {
-    disableChanges()
-
-    const form = new FormData()
-    form.append('audio', audioBlob)
-
-    let newCodes_top: number[][]
-    let newCodes_bottom: number[][]
-    let newConditioning_top: Map<string, (string | number)[][]>
-    let newConditioning_bottom: Map<string, (string | number)[][]>
-
-    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
-    try {
-      const jsonResponse = await $.post({
-        url: generationUrl.href,
-        data: form,
-        contentType: false,
-        dataType: 'json',
-        processData: false,
-      })
-
-      newCodes_top = jsonResponse['top_code']
-      newCodes_bottom = jsonResponse['bottom_code']
-      newConditioning_top = loadNewMap(jsonResponse['top_conditioning'])
-      newConditioning_bottom = loadNewMap(jsonResponse['bottom_conditioning'])
-
-      const audioPromise = getAudioRequest(
-        spectrogramPlaybackManager,
-        inpaintingApiUrl,
-        newCodes_top,
-        newCodes_bottom
-      )
-      const spectrogramImagePromise = getSpectrogramImageRequest(
-        spectrogramPlaybackManager,
-        inpaintingApiUrl,
-        newCodes_top,
-        newCodes_bottom
-      )
-
-      await updateAudioAndImage(audioPromise, spectrogramImagePromise)
-    } catch (e) {
-      console.log(e)
-      spectrogramPlaybackManager.locator.clear()
-      enableChanges()
-      return
-    }
-
-    currentCodes_top = newCodes_top
-    currentCodes_bottom = newCodes_bottom
-    currentConditioning_top = newConditioning_top
-    currentConditioning_bottom = newConditioning_bottom
-
-    spectrogramPlaybackManager.locator.vqvaeTimestepsTop =
-      currentCodes_top[0].length
-    triggerInterfaceRefresh()
-    spectrogramPlaybackManager.locator.clear()
-    enableChanges()
-  }
-
-  async function getAudioRequest(
-    spectrogramPlaybackManager: SpectrogramPlaybackManager,
-    inpaintingApiUrl: string,
-    top_code: number[][],
-    bottom_code: number[][]
-  ): Promise<Blob> {
-    const payload_object = {}
-    payload_object['top_code'] = top_code
-    payload_object['bottom_code'] = bottom_code
-
-    const generationCommand = '/get-audio'
-    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
-    return $.post({
-      url: generationUrl.href,
-      data: JSON.stringify(payload_object),
-      xhrFields: {
-        responseType: 'blob',
-      },
-      contentType: 'application/json',
-    })
-  }
-
-  async function getSpectrogramImageRequest(
-    spectrogramPlaybackManager: SpectrogramPlaybackManager,
-    inpaintingApiUrl: string,
-    top_code: number[][],
-    bottom_code: number[][]
-  ): Promise<Blob> {
-    const payload_object = {}
-
-    payload_object['top_code'] = top_code
-    payload_object['bottom_code'] = bottom_code
-
-    const generationCommand = '/get-spectrogram-image'
-    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
-    return $.post({
-      url: generationUrl.href,
-      data: JSON.stringify(payload_object),
-      xhrFields: {
-        responseType: 'blob',
-      },
-      contentType: 'application/json',
-    })
-  }
-
-  /**
-   * Load a MusicXml file via xhttp request, and display its contents.
-   */
-  function loadMusicXMLandMidi(
-    playbackManager: SheetPlaybackManager,
-    sheetLocator: SheetLocator,
-    inpaintingApiUrl: string,
-    generationCommand: string,
-    sendSheetWithRequest = true
-  ) {
-    return new Promise<void>((resolve, _) => {
-      disableChanges()
-
-      const payload_object = getMetadata(sheetLocator)
-
-      log.trace('Metadata:')
-      log.trace(JSON.stringify(payload_object))
-
-      if (sendSheetWithRequest) {
-        payload_object['sheet'] = serializer.serializeToString(currentXML)
-      }
-
-      const commandURL = new URL(generationCommand, inpaintingApiUrl)
-      void $.post({
-        url: commandURL.href,
-        data: JSON.stringify(payload_object),
-        contentType: 'application/json',
-        dataType: 'json',
-        success: (jsonResponse: {}) => {
-          // update metadata
-          // TODO: must check if json HAS the given metadata key first!
-          // const new_fermatas = jsonResponse["fermatas"];
-          if (!generationCommand.includes('generate')) {
-            // TODO updateFermatas(newFermatas);
-          }
-
-          // load the received MusicXML
-          const xml_sheet_string = jsonResponse['sheet']
-          const xmldata = parser.parseFromString(xml_sheet_string, 'text/xml')
-          removeMusicXMLHeaderNodes(xmldata)
-          currentXML = xmldata
-
-          // save current zoom level to restore it after load
-          const zoom = sheetLocator.sheet.Zoom
-          sheetLocator.sheet.load(currentXML).then(
-            async () => {
-              // restore pre-load zoom level
-              sheetLocator.sheet.Zoom = zoom
-              sheetLocator.render()
-
-              const sequenceDuration = Tone.Time(
-                `0:${sheetLocator.sequenceDuration_quarters}:0`
-              )
-              const midiConversionURL = new URL(
-                '/musicxml-to-midi',
-                inpaintingApiUrl
-              )
-              const midiBlobURL = await playbackManager.loadMidi(
-                midiConversionURL.href,
-                currentXML,
-                Tone.Time(sequenceDuration),
-                bpmControl
-              )
-              downloadButton.revokeBlobURL()
-              downloadButton.targetURL = midiBlobURL
-
-              enableChanges()
-              resolve()
-            },
-            (err) => {
-              log.error(err)
-              enableChanges()
-            }
-          )
-        },
-      }).fail((err) => {
-        log.error(err)
-        enableChanges()
-      })
-    })
   }
 
   if (configuration['osmd']) {
@@ -1195,59 +533,14 @@ function render(configuration = defaultConfiguration): void {
     })
   }
 
-  $(() => {
-    const insertWavInput: boolean = configuration['insert_wav_input']
-    if (insertWavInput) {
-      createWavInput(() =>
-        loadMusicXMLandMidi(
-          sheetPlaybackManager,
-          sheetLocator,
-          inpaintingApiAddress,
-          'get-musicxml'
-        )
-      )
-    }
-  })
-
-  $(() => {
-    const isAdvancedControl = true
-    const bottomControlsGridElement = document.getElementById('bottom-controls')
-    let defaultFilename: filenameType
-    if (configuration['spectrogram']) {
-      defaultFilename = { name: 'notono', extension: '.wav' }
-    } else if (configuration['osmd']) {
-      defaultFilename = { name: 'nonoto', extension: '.mid' }
-    }
-
-    const downloadCommandsGridspan = document.createElement('div')
-    downloadCommandsGridspan.id = 'download-button-gridspan'
-    downloadCommandsGridspan.classList.add('gridspan')
-    downloadCommandsGridspan.classList.toggle('advanced', isAdvancedControl)
-    bottomControlsGridElement.appendChild(downloadCommandsGridspan)
-    downloadButton = new DownloadButton(
-      downloadCommandsGridspan,
-      defaultFilename,
-      isAdvancedControl
-    )
-
-    if (COMPILE_ELECTRON) {
-      ControlLabels.createLabel(
-        bottomControlsGridElement,
-        'download-button-label',
-        isAdvancedControl,
-        'download-button-label-with-native-drag',
-        downloadButton.container
-      )
-    } else {
-      ControlLabels.createLabel(
-        bottomControlsGridElement,
-        'download-button-label',
-        isAdvancedControl,
-        undefined,
-        downloadButton.container
-      )
-    }
-  })
+  // $(() => {
+  //   const insertWavInput: boolean = configuration['insert_wav_input']
+  //   if (insertWavInput) {
+  //     createWavInput(
+  //       (data: Blob) => void locator.analyze(data, inpaintingApiAddress)
+  //     )
+  //   }
+  // })
 
   $(() => {
     const isAdvancedControl = true
@@ -1266,64 +559,9 @@ function render(configuration = defaultConfiguration): void {
       // zoomControlsGridElement.classList.add('two-columns');
       const mainPanel = document.getElementById('main-panel')
       mainPanel.appendChild(zoomControlsGridElement)
-      renderZoomControls(zoomControlsGridElement)
+      sheetLocator.renderZoomControls(zoomControlsGridElement)
     })
   }
-
-  $(() => {
-    // register file drop handler
-    document.body.addEventListener('drop', dropHandler)
-  })
-
-  $(() => {
-    if (configuration['spectrogram']) {
-      const isAdvancedControl = true
-      const bottomControlsGridElement = document.getElementById(
-        'bottom-controls'
-      )
-      const volumeControlsGridElement: HTMLElement = document.createElement(
-        'div'
-      )
-      volumeControlsGridElement.id = 'volume-controls-gridspan'
-      volumeControlsGridElement.classList.add('gridspan')
-      volumeControlsGridElement.classList.toggle('advanced', isAdvancedControl)
-      bottomControlsGridElement.appendChild(volumeControlsGridElement)
-
-      const fadeInControlElement = document.createElement('div')
-      fadeInControlElement.id = 'fade-in-control'
-      fadeInControlElement.classList.add('control-item')
-      fadeInControlElement.classList.toggle('advanced', isAdvancedControl)
-      volumeControlsGridElement.appendChild(fadeInControlElement)
-      SpectrogramPlayback.renderFadeInControl(
-        fadeInControlElement,
-        spectrogramPlaybackManager
-      )
-      ControlLabels.createLabel(
-        fadeInControlElement,
-        'fade-in-control-label',
-        isAdvancedControl,
-        undefined,
-        volumeControlsGridElement
-      )
-
-      const gainControlElement = document.createElement('div')
-      gainControlElement.id = 'gain-control'
-      gainControlElement.classList.add('control-item')
-      gainControlElement.classList.toggle('advanced', isAdvancedControl)
-      volumeControlsGridElement.appendChild(gainControlElement)
-      SpectrogramPlayback.renderGainControl(
-        gainControlElement,
-        spectrogramPlaybackManager
-      )
-      ControlLabels.createLabel(
-        gainControlElement,
-        'gain-control-label',
-        isAdvancedControl,
-        undefined,
-        volumeControlsGridElement
-      )
-    }
-  })
 
   $(() => {
     if (configuration['insert_help']) {
@@ -1332,7 +570,7 @@ function render(configuration = defaultConfiguration): void {
         // initialize help menu
         helpTrip = new NotonoTrip(
           [configuration['main_language']],
-          spectrogramPlaybackManager.locator,
+          locator,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
       } else if (configuration['osmd']) {
@@ -1375,73 +613,3 @@ $(() => {
     false
   )
 })
-
-function mapTouchEventsToMouseSimplebar(): void {
-  // enables using touch events to drag the simplebar scrollbar
-  // tweaked version of this initial proposition:
-  // https://github.com/Grsmto/simplebar/issues/156#issuecomment-376137543
-  const target = $('[data-simplebar]')[0]
-  function mapTouchEvents(event: TouchEvent, simulatedType: string) {
-    //Ignore any mapping if more than 1 fingers touching
-    if (event.changedTouches.length > 1) {
-      return
-    }
-
-    const touch = event.changedTouches[0]
-
-    const eventToSimulate = new MouseEvent(simulatedType, {
-      bubbles: true,
-      cancelable: false,
-      view: window,
-      detail: 1,
-      screenX: touch.screenX,
-      screenY: touch.screenY,
-      clientX: touch.clientX,
-      clientY: touch.clientY,
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false,
-      button: 0,
-    })
-
-    touch.target.dispatchEvent(eventToSimulate)
-  }
-
-  const addEventListenerOptions: AddEventListenerOptions = {
-    capture: true,
-  }
-  target.addEventListener(
-    'touchstart',
-    function (e) {
-      // required to trigger an update of the mouse position stored by simplebar,
-      // emulates moving the mouse onto the scrollbar THEN clicking,
-      // otherwise simplebar uses the last clicked/swiped position, usually outside of the
-      // scrollbar and therefore considers that the click happened outside of the bar
-      mapTouchEvents(e, 'mousemove')
-      mapTouchEvents(e, 'mousedown')
-    },
-    addEventListenerOptions
-  )
-  target.addEventListener(
-    'touchmove',
-    function (e) {
-      mapTouchEvents(e, 'mousemove')
-    },
-    addEventListenerOptions
-  )
-  target.addEventListener(
-    'touchend',
-    function (e) {
-      mapTouchEvents(e, 'mouseup')
-    },
-    addEventListenerOptions
-  )
-  target.addEventListener(
-    'touchcancel',
-    function (e) {
-      mapTouchEvents(e, 'mouseup')
-    },
-    addEventListenerOptions
-  )
-}

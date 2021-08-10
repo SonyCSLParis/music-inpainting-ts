@@ -3,6 +3,7 @@
 
   "compilerOptions": {
     "pretty": true,
+    "target": "ES2018",
     "lib": ["dom", "es7"],
     "removeComments": true,
     "declaration": true,
@@ -10,6 +11,7 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "strict": false, // HACK(theis): should be true!
+    "strictBindCallApply": true, // HACK
     "noUnusedLocals": false, // HACK(theis): should be true!
     "noImplicitAny": false, // HACK(theis): should be true!
   },

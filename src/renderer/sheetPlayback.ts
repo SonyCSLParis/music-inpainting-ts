@@ -6,6 +6,7 @@ import * as Tone from 'tone'
 import { Piano as PianoType } from '@tonejs/piano'
 import * as log from 'loglevel'
 import { Midi, Track } from '@tonejs/midi'
+import { Note as MidiNote } from '@tonejs/midi/src/Note'
 import WebMidi from 'webmidi'
 import $ from 'jquery'
 
@@ -13,16 +14,13 @@ import * as Instruments from './instruments'
 import * as MidiOut from './midiOut'
 import * as Chord from './chord'
 import { BPMControl } from './numberControl'
-
 import { SheetLocator } from './locator'
-
-const scrollElementSelector = '.simplebar-content-wrapper'
 
 $.fn.exists = function () {
   return this.length !== 0
 }
 
-export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> {
+export default class MidiSheetPlaybackManager extends PlaybackManager {
   private getPlayNoteByMidiChannel(
     midiChannel: number,
     useChordsInstruments = false
@@ -31,13 +29,36 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
     if (useChordsInstruments) {
       getCurrentInstrument = Instruments.getCurrentChordsInstrument
     }
-    function getTimingOffset() {
+    const getTimingOffset = () => {
       // https://github.com/Tonejs/Tone.js/issues/805#issuecomment-748172477
-      return WebMidi.time - Tone.getContext().currentTime * 1000
+      return WebMidi.time - this.transport.context.currentTime * 1000
     }
 
     const timingOffset = getTimingOffset()
-    function playNote(time, event) {
+    function playNote(time: number, event: Track.Note) {
+      const currentInstrument = getCurrentInstrument(midiChannel)
+      if (currentInstrument != null) {
+        if ('keyUp' in currentInstrument) {
+          currentInstrument.keyDown({
+            note: event.name,
+            time: time,
+            velocity: event.velocity,
+          })
+          currentInstrument.keyUp({
+            note: event.name,
+            time: time + event.duration,
+          })
+        } else if ('triggerAttackRelease' in currentInstrument) {
+          currentInstrument.triggerAttackRelease(
+            event.name,
+            event.duration,
+            time,
+            event.velocity
+          )
+        }
+        log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event))
+      }
+
       MidiOut.getOutput().then(
         (currentMidiOutput) => {
           if (currentMidiOutput) {
@@ -52,192 +73,113 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
           log.error(reason)
         }
       )
-
-      const currentInstrument = getCurrentInstrument()
-      if ('keyUp' in currentInstrument) {
-        const piano: PianoType = <PianoType>currentInstrument
-        piano.keyDown({
-          note: event.name,
-          time: time,
-          velocity: event.velocity,
-        })
-        piano.keyUp({ note: event.name, time: time + event.duration })
-      } else if ('triggerAttackRelease' in currentInstrument) {
-        getCurrentInstrument().triggerAttackRelease(
-          event.name,
-          event.duration,
-          time,
-          event.velocity
-        )
-      }
-      log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event))
     }
+
     return playNote
   }
 
-  protected nowPlayingDisplayCallback(_: any, progress: number): void {
-    super.nowPlayingDisplayCallback(null, progress)
-    // scroll display to current step if necessary
-    const step: number = Math.round(
-      progress * this.locator.sequenceDuration_quarters
-    )
-    this.scrollToStep(step)
-  }
+  protected quartersProgress(): number {
+    const [currentBar, currentQuarter] = this.transport.position
+      .toString()
+      .split(':')
+      .map((value) => Math.floor(parseFloat(value)))
+      .slice(0, 2)
 
-  protected resetPlaybackPositionDisplay(): void {
-    super.resetPlaybackPositionDisplay()
-    this.resetScrollPosition()
-  }
-
-  private getTimecontainerPosition(
-    step: number
-  ): { left: number; right: number } {
-    const containerElementSelector = $(
-      `.timeContainer[containedQuarterNotes='${step}']`
-    )
-
-    if (!containerElementSelector.exists()) {
-      throw new Error('Inaccessible step')
-    }
-
-    const containerElementStyle = containerElementSelector[0].style
-
-    return {
-      left: parseFloat(containerElementStyle.left),
-      // FIXME implement and use timeContainer method
-      right:
-        parseFloat(containerElementStyle.left) +
-        parseFloat(containerElementStyle.width),
-    }
-  }
-
-  // TODO disabe scrooling behaviour when user touches scrollbar and re-enable it
-  // on pressing stop (or add a 'track playback' button)
-
-  private shortScroll: JQuery.Duration = 50
-
-  private getDisplayCenterPosition_px(): number {
-    // return the current position within the sheet display
-    const scrollContentElement: HTMLElement = $(scrollElementSelector)[0]
-    const currentSheetDisplayWidth: number = scrollContentElement.clientWidth
-    const centerPosition: number =
-      scrollContentElement.scrollLeft + currentSheetDisplayWidth / 2
-
-    return centerPosition
-  }
-
-  protected scrollToStep(step: number): void {
-    if (this.locator.isScrollLocked) {
-      return
-    }
-    // scroll display to keep the center of the currently playing
-    // quarter note container in the center of the sheet window
-    //
-    // We do this by scheduling a scroll to the next step with duration
-    // equal to one quarter-note time (dependent on the current BPM)
-    // Inversely, scrolling to a position earlier in time (e.g. when pressing
-    // stop or reaching the end of the loop) is super-fast
-    log.debug(`Scrolling to step: ${step}`)
-    const scrollContentElement: HTMLElement = $(scrollElementSelector)[0]
-    const currentSheetDisplayWidth_px: number = scrollContentElement.clientWidth
-    const currentCenterPosition_px: number = this.getDisplayCenterPosition_px()
-
-    let positionTarget_px: number
-    let newScrollLeft_px: number
-    try {
-      // try to retrieve the position of the (potentially non-existing) next
-      // quarter-note
-      const nextStepBoxDelimiters = this.getTimecontainerPosition(step)
-      const nextStepBoxWidth_px: number =
-        nextStepBoxDelimiters.right - nextStepBoxDelimiters.left
-      log.debug(
-        `nextStepPosition: [${nextStepBoxDelimiters.left}, ${nextStepBoxDelimiters.right}]`
-      )
-
-      // Center of the box containing the next quarter note
-      const containerCenter =
-        nextStepBoxDelimiters.left + nextStepBoxWidth_px / 2
-      positionTarget_px = nextStepBoxDelimiters.right
-    } catch (e) {
-      // reached last container box
-      // FIXME make and catch specific error
-      const lastStepPosition = this.getTimecontainerPosition(step)
-      log.debug(
-        `Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`
-      )
-
-      // right-side delimiter of the last quarter note box
-      const containerRight = lastStepPosition.right
-      positionTarget_px = containerRight
-    }
-    newScrollLeft_px = positionTarget_px - currentSheetDisplayWidth_px / 2
-
-    log.debug(`currentSheetDisplayWidth: ${currentSheetDisplayWidth_px}`)
-    log.debug(`currentCenterPosition: ${currentCenterPosition_px}`)
-    log.debug(`positionTarget: ${positionTarget_px}`)
-    log.debug(`scrollOffsetTarget: ${newScrollLeft_px}`)
-    if (currentCenterPosition_px > positionTarget_px) {
-      // scrolling to a previous position: super-fast scroll
-      $(scrollElementSelector).stop(true, false).animate(
-        {
-          scrollLeft: newScrollLeft_px,
-        },
-        10,
-        'linear'
-      )
-    } else {
-      // synchronize scrolling with the tempo for smooth scrolling
-      const scrollDuration_ms = this.getInterbeatTime_s() * 1000
-      $(scrollElementSelector).stop(true, false).animate(
-        {
-          scrollLeft: newScrollLeft_px,
-        },
-        scrollDuration_ms,
-        'linear'
-      )
-    }
-  }
-
-  private resetScrollPosition(
-    duration: JQuery.Duration = this.shortScroll
-  ): void {
-    this.scrollToStep(0)
+    // FIXME assumes a constant Time Signature of 4/4
+    const currentStep: number = 4 * currentBar + currentQuarter // % sequenceDuration_quarters
+    return currentStep
   }
 
   // Return the time in seconds between beats
-  private getInterbeatTime_s(): number {
-    const currentBPM: number = Tone.getTransport().bpm.value
+  get interbeatTime_s(): number {
+    const currentBPM: number = this.transport.bpm.value
     const interbeatTime_s = 60 / currentBPM
     return interbeatTime_s
   }
 
-  private midiParts: Tone.Part[] = []
+  protected midiParts_A = new Map<number, Tone.Part<MidiNote>>()
+  protected midiParts_B = new Map<number, Tone.Part<MidiNote>>()
+  protected get midiParts(): Map<number, Tone.Part<MidiNote>>[] {
+    return [this.midiParts_A, this.midiParts_B]
+  }
+
+  protected getPlayingMidiParts(): Map<number, Tone.Part<MidiNote>> {
+    if (this.midiParts_B.size == 0) {
+      return this.midiParts_A
+    } else {
+      if (Array.from(this.midiParts_A.values())[0].mute) {
+        return this.midiParts_B
+      } else {
+        return this.midiParts_A
+      }
+    }
+  }
+
+  protected getNextMidiParts(): Map<number, Tone.Part<MidiNote>> {
+    if (this.midiParts_A.size == 0) {
+      return this.midiParts_A
+    } else {
+      if (Array.from(this.midiParts_A.values())[0].mute) {
+        return this.midiParts_A
+      } else {
+        return this.midiParts_B
+      }
+    }
+  }
+
+  protected switchTracks(): void {
+    const playing = this.getPlayingMidiParts()
+    const next = this.getNextMidiParts()
+    next.forEach((part) => {
+      part.mute = false
+    })
+    if (playing != next) {
+      playing.forEach((part) => {
+        part.mute = true
+      })
+    }
+  }
 
   public scheduleTrackToInstrument(
     sequenceDuration_toneTime: Tone.TimeClass,
     midiTrack: Track,
     midiChannel = 1
   ) {
-    const notes = midiTrack.notes
+    const notes: MidiNote[] = midiTrack.notes
 
-    let playNote_callback
-    playNote_callback = this.getPlayNoteByMidiChannel(midiChannel)
+    const playNote_callback = this.getPlayNoteByMidiChannel(midiChannel)
 
-    const part = new Tone.Part(playNote_callback, notes)
-    part.start(0) // schedule events on the Tone timeline
-    part.loop = true
-    part.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
-    this.midiParts.push(part)
+    let part = this.getNextMidiParts().get(midiChannel)
+    if (part == undefined) {
+      log.debug('Creating new part')
+      part = new Tone.Part<MidiNote>(playNote_callback, notes)
+      part.mute = true
+
+      part.start(0) // schedule events on the Tone timeline
+      part.loop = true
+      part.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
+      this.getNextMidiParts().set(midiChannel, part)
+    } else {
+      part.mute = true
+      part.clear()
+      notes.forEach((note) => {
+        part.add(note)
+      })
+      part.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
+    }
+
+    // FIXME(theis, 2021/05/28): re-enable this!
+    console.log('FIXME: Schedule the pedal!')
+    return
 
     // schedule the pedal
     const sustain = new Tone.Part((time, event) => {
       const currentInstrument = Instruments.getCurrentInstrument()
       if ('pedalUp' in currentInstrument) {
-        const piano = <PianoType>currentInstrument
         if (event.value) {
-          piano.pedalDown({ time: time })
+          currentInstrument.pedalDown({ time: time })
         } else {
-          piano.pedalUp({ time: time })
+          currentInstrument.pedalUp({ time: time })
         }
       }
     }, midiTrack.controlChanges[64]).start(0)
@@ -251,25 +193,8 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
       part.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
 
       // add the part to the array of currently scheduled parts
-      this.midiParts.push(part)
+      this.getNextMidiParts().set(midiChannel + 1000, part)
     }
-  }
-
-  protected getCurrentDisplayTimestep(): number {
-    // HACK should use proper typings for Tone
-    const [
-      currentBar,
-      currentQuarter,
-      currentSixteenth,
-    ] = Tone.getTransport().position.toString().split(':')
-
-    const sequenceDuration_quarters = this.locator.sequenceDuration_quarters
-
-    // FIXME assumes a Time Signature of 4/4
-    const currentStep: number =
-      (4 * parseInt(currentBar) + parseInt(currentQuarter)) %
-      sequenceDuration_quarters
-    return currentStep
   }
 
   private midiRequestWithData(
@@ -300,6 +225,10 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
     })
   }
 
+  // FIXME(theis): critical bug in MIDI scheduling
+  // timing becomes completely wrong at high tempos
+  // should implement a MusicXML to Tone.js formatter instead, using
+  // musical rhythm notation rather than concrete seconds-based timing
   async loadMidi(
     serverURL: string,
     musicXML: XMLDocument,
@@ -313,18 +242,11 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
 
     const midiBlobURL = this.midiRequestWithData(serverURL, payload, 'POST')
       .then(([midi, blobURL]) => {
-        for (
-          let midiPartIndex = 0, numMidiParts = this.midiParts.length;
-          midiPartIndex < numMidiParts;
-          midiPartIndex++
-        ) {
-          const midiPart = this.midiParts.pop()
-          midiPart.dispose()
+        if (!this.transport.loop) {
+          this.transport.loop = true
+          this.transport.loopStart = 0
         }
-
-        Tone.getTransport().loop = true
-        Tone.getTransport().loopStart = 0
-        Tone.getTransport().loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
+        this.transport.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
 
         // assumes constant BPM or defaults to 120BPM if no tempo information available
         const BPM =
@@ -337,10 +259,10 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
         // TODO(theis): this will probably lead to phase-drift if repeated
         // updates are performed successively, should catch up somehow on
         // the desynchronisation introduced by this temporary tempo change
-        Tone.getTransport().bpm.value = BPM
+        this.transport.bpm.value = BPM
 
         // Required for Tone.Time conversions to properly work
-        Tone.getTransport().timeSignature =
+        this.transport.timeSignature =
           midi.header.timeSignatures[0].timeSignature
 
         const numTracks = midi.tracks.length
@@ -356,7 +278,10 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
         }
 
         // change Transport BPM back to the displayed value
-        Tone.getTransport().bpm.value = bpmControl.value // WARNING if bpmCounter is a floor'ed value, this is wrong
+        // FIXME(theis): if bpmCounter is a floor'ed value, this is wrong
+        this.transport.bpm.value = bpmControl.value
+
+        this.switchTracks()
         return blobURL
       })
       .catch((error) => {
@@ -367,15 +292,15 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
     return midiBlobURL
   }
 
-  scheduleChordsPlayer(sheetLocator: SheetLocator, midiChannel: number): void {
+  scheduleChordsPlayer(midiChannel: number, locator: SheetLocator): void {
     // schedule callback to play the chords contained in the OSMD
     const useChordsInstruments = true
 
     const playChord = (time: number) => {
-      const currentStep = this.getCurrentDisplayTimestep()
+      const currentStep = this.quartersProgress()
       if (currentStep % 2 == 0) {
         const chord =
-          sheetLocator.chordSelectors[Math.floor(currentStep / 2)].currentChord
+          locator.chordSelectors[Math.floor(currentStep / 2)].currentChord
         const events = Chord.getNoteEvents(
           chord.note + chord.accidental,
           chord.chordType,
@@ -403,7 +328,7 @@ export default class SheetPlaybackManager extends PlaybackManager<SheetLocator> 
 
   disposeScheduledParts(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      this.midiParts.forEach((part) => part.dispose())
+      this.midiParts.forEach((parts) => parts.forEach((part) => part.dispose()))
       resolve()
     })
   }

@@ -113,7 +113,6 @@ export async function render(useChordsInstrument = false): Promise<void> {
   const midiInDeviceSelectElement: HTMLElement = document.createElement(
     'control-item'
   )
-  midiInDeviceSelectElement.id = 'select-midi-input-device'
   midiInDeviceSelectElement.classList.add('advanced')
   midiInContainerElement.appendChild(midiInDeviceSelectElement)
   ControlLabels.createLabel(
@@ -132,7 +131,7 @@ export async function render(useChordsInstrument = false): Promise<void> {
     return [disabledInputId, 'All'].concat(devicesNames)
   }
 
-  const midiInSelect = new Nexus.Select('#select-midi-input-device', {
+  const midiInSelect = new Nexus.Select(midiInDeviceSelectElement, {
     size: [150, 50],
     options: await makeOptions(),
   })
@@ -202,10 +201,9 @@ export async function render(useChordsInstrument = false): Promise<void> {
   midiInChannelSelect.container.classList.add('advanced')
 
   const midiInDisplayButtonContainer = document.createElement('div')
-  midiInDisplayButtonContainer.id = 'midi-in-display-container'
   midiInDisplayButtonContainer.classList.add('control-item', 'disable-mouse')
   midiInContainerElement.appendChild(midiInDisplayButtonContainer)
-  const midiInDisplayButton = new Nexus.Button('#midi-in-display-container', {
+  const midiInDisplayButton = new Nexus.Button(midiInDisplayButtonContainer, {
     size: [15, 15],
     state: false,
     mode: 'impulse',

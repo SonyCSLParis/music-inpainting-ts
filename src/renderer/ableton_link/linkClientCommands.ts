@@ -54,7 +54,7 @@ export function render(playbackManager: PlaybackManager<Locator>): void {
 
 function renderSyncButton(
   container: HTMLElement,
-  playbackManager: PlaybackManager<Locator>
+  playbackManager: PlaybackManager
 ): void {
   const linkbuttonElement = document.createElement('div')
   linkbuttonElement.id = 'sync-button'
