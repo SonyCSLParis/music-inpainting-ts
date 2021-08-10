@@ -8,7 +8,7 @@
 
   "allow_only_one_fermata": false,
 
-  "granularities_quarters": ["1", "2", "4"],
+  "granularities_quarters": [1, 2, 4],
 
   "insert_variations_lfo": false,
 

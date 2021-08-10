@@ -85,7 +85,7 @@ export function initializeInstruments(): void {
   const steelpan = new Tone.PolySynth(Tone.Synth).set({
     oscillator: {
       type: 'fatsawtooth17',
-      partials: [0.2, 1, 0, 0.5, 0.1],
+      // partials: [0.2, 1, 0, 0.5, 0.1],
       spread: 40,
       count: 3,
     },
@@ -303,7 +303,6 @@ export function renderInstrumentSelect(containerElement: HTMLElement): void {
 
   instrumentSelect = new CycleSelect(
     instrumentSelectElement,
-    'instrument-select-lead',
     instrumentOnChange,
     mainInstrumentsIcons,
     instrumentIconsBasePath,
@@ -334,7 +333,6 @@ export function renderChordsInstrumentSelect(containerElement: HTMLElement) {
 
   chordsInstrumentSelect = new CycleSelect(
     chordsInstrumentSelectElement,
-    'instrument-select-chord',
     chordsInstrumentOnChange,
     chordsInstrumentsIcons,
     instrumentIconsBasePath,

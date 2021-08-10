@@ -12,12 +12,43 @@ import { ChordSelector } from './chord_selector'
 
 import '../common/styles/overlays.scss'
 
-import Nexus from './nexusColored'
+import Nexus, { NexusSelectWithShuffle } from './nexusColored'
+import type { NexusSelect } from 'nexusui'
 
-export abstract class Locator {
+import { PlaybackManager } from './playback'
+import MidiSheetPlaybackManager from './sheetPlayback'
+import * as Tone from 'tone'
+import { SpectrogramPlaybackManager } from './spectrogramPlayback'
+import { CycleSelect } from './cycleSelect'
+import { NumberControl } from './numberControl'
+import { DownloadButton } from './downloadCommand'
+import { mapTouchEventsToMouseSimplebar } from './utils/simplebar'
+
+const enum apiCommand {
+  Analyze = 'analyze',
+  Inpaint = 'timerange-change',
+  Erase = 'erase',
+  Sample = 'sample-from-dataset',
+  Generate = 'generate',
+}
+
+export abstract class Locator<
+  PlaybackManagerT extends PlaybackManager,
+  EditToolT
+> {
+  readonly playbackManager: PlaybackManagerT
+
   readonly container: HTMLElement
+  readonly interfaceContainer: HTMLElement
   protected resizeTimeoutDuration = 0
-  protected resizeTimeout: NodeJS.Timeout
+  protected resizeTimeout = setTimeout(() => {
+    return
+  }, 0)
+  readonly editToolSelect: CycleSelect<EditToolT>
+
+  abstract readonly dataType: 'sheet' | 'spectrogram'
+
+  abstract get stepProgress(): number
 
   // render the interface on the DOM and bind callbacks
   public abstract render(...args): void
@@ -39,11 +70,11 @@ export abstract class Locator {
   // subclass this
   protected abstract _refresh(): void
 
-  callToActionHighlightedCells = 16
+  callToActionHighlightedCellsNumber = 16
 
   // triggers an animation to catch the user's eye
   public callToAction(
-    hightlightedCellsNumber = this.callToActionHighlightedCells
+    highlightedCellsNumber = this.callToActionHighlightedCellsNumber
   ): void {
     function delay(ms: number): Promise<void> {
       return new Promise((resolve) => setTimeout(resolve, ms))
@@ -52,7 +83,7 @@ export abstract class Locator {
     let promise = Promise.resolve()
     const interval = 100
 
-    const randomIndexes: number[] = Array(hightlightedCellsNumber)
+    const randomIndexes: number[] = Array(highlightedCellsNumber)
       .fill(0)
       .map(() => {
         return Math.floor(Math.random() * this.numInteractiveElements)
@@ -69,7 +100,7 @@ export abstract class Locator {
       })
     })
 
-    promise.then(() => {
+    void promise.then(() => {
       setTimeout(() => {
         randomIndexes.forEach((index) => {
           const element = this.getInterfaceElementByIndex(index)
@@ -78,7 +109,7 @@ export abstract class Locator {
             element.classList.remove('highlight')
           }
         })
-      }, 4 * interval * hightlightedCellsNumber)
+      }, 4 * interval * highlightedCellsNumber)
     })
   }
 
@@ -87,9 +118,118 @@ export abstract class Locator {
 
   abstract get numInteractiveElements(): number
 
-  public constructor(container: HTMLElement, ...args) {
+  public constructor(
+    playbackManager: PlaybackManagerT,
+    container: HTMLElement,
+    editToolSelect: CycleSelect<EditToolT>,
+    defaultApiAddress: URL,
+    toneDisplayUpdateInterval = '4n',
+    ...args
+  ) {
+    this.playbackManager = playbackManager
     this.container = container
+    this.editToolSelect = editToolSelect
+    this.defaultApiAddress = defaultApiAddress
     this.registerRefreshOnResizeListener()
+    this.scheduleDisplayLoop(toneDisplayUpdateInterval)
+  }
+
+  readonly defaultApiAddress: URL
+
+  protected abstract _apiRequest(
+    command: apiCommand,
+    restParameters: string,
+    apiAddress: URL,
+    sendCodesWithRequest: boolean,
+    data?,
+    timeout?: number
+  ): Promise<this>
+
+  // retrieve new data without conditioning
+  async generate(apiAddress: URL = this.defaultApiAddress): Promise<this> {
+    return this._apiRequest(
+      apiCommand.Generate,
+      this.restParameters,
+      apiAddress,
+      false
+    )
+  }
+
+  // sample new codes from a remote dataset
+  async sample(
+    apiAddress: URL = this.defaultApiAddress,
+    timeout?: number
+  ): Promise<this> {
+    return this._apiRequest(
+      apiCommand.Sample,
+      this.restParameters,
+      apiAddress,
+      false,
+      null,
+      timeout
+    )
+  }
+
+  // perform an inpainting operation on the current data
+  async inpaint(mask, apiAddress: URL = this.defaultApiAddress): Promise<this> {
+    return this._apiRequest(
+      apiCommand.Inpaint,
+      this.restParameters,
+      apiAddress,
+      true,
+      mask
+    )
+  }
+
+  protected abstract get restParameters(): string
+
+  // import and analyze a new user-supplied media
+  // TODO(theis, 2021/07/26): rename this to encode to better reflect
+  // encoder/decoder structure?
+  async analyze(
+    data: Blob,
+    apiAddress: URL = this.defaultApiAddress
+  ): Promise<this> {
+    return this._apiRequest(
+      apiCommand.Analyze,
+      this.restParameters,
+      apiAddress,
+      false,
+      data
+    )
+  }
+
+  protected toggleBusyClass(state: boolean): void {
+    // TODO(theis, 2021_04_22): clean this up!
+    // FIXME(theis, 2021/08/02): avoid applying classes to 'body', breaks encapsulation
+    $('body').toggleClass('busy', state)
+    $('.notebox').toggleClass('busy', state)
+    $('.notebox').toggleClass('available', !state)
+    $('.spectrogram-locator').toggleClass('busy', state)
+  }
+
+  protected blockEvent(e: Event): void {
+    // block propagation of events in bubbling/capturing
+    e.stopPropagation()
+    e.preventDefault()
+  }
+
+  protected disableChanges(): void {
+    this.toggleBusyClass(true)
+    $('.timeContainer').addClass('busy')
+    const blockPropagationCallback = (e: Event) => this.blockEvent(e)
+    $('.timeContainer').each(function () {
+      this.addEventListener('click', blockPropagationCallback, true)
+    })
+  }
+
+  protected enableChanges(): void {
+    const blockPropagationCallback = (e: Event) => this.blockEvent(e)
+    $('.timeContainer').each(function () {
+      this.removeEventListener('click', blockPropagationCallback, true)
+    })
+    $('.timeContainer').removeClass('busy')
+    this.toggleBusyClass(false)
   }
 
   protected registerRefreshOnResizeListener(): void {
@@ -105,8 +245,8 @@ export abstract class Locator {
     })
   }
 
-  // set currently playing interface position by time index
-  abstract setCurrentlyPlayingPositionDisplay(timePosition: number): void
+  // set currently playing interface position by progress ratio
+  abstract setCurrentlyPlayingPositionDisplay(progress: number): void
 
   static readonly scrollLockClass = 'scroll-lock'
   protected readonly scrollElementsClassNames: string = 'simplebar-track'
@@ -133,25 +273,153 @@ export abstract class Locator {
       })
     )
   }
+
+  protected nowPlayingDisplayCallback(_: any, step: number): void {
+    // scroll display to current step if necessary
+    this.setCurrentlyPlayingPositionDisplay(
+      this.playbackManager.transport.progress
+    )
+    this.scrollToStep(step)
+  }
+
+  protected shortScroll: JQuery.Duration = 50
+
+  protected readonly scrollElementSelector = '.simplebar-content-wrapper'
+
+  protected getDisplayCenterPosition_px(): number {
+    // return the current position within the sheet display
+    const scrollContentElement: HTMLElement = $(this.scrollElementSelector)[0]
+    const currentSheetDisplayWidth: number = scrollContentElement.clientWidth
+    const centerPosition: number =
+      scrollContentElement.scrollLeft + currentSheetDisplayWidth / 2
+
+    return centerPosition
+  }
+
+  protected resetScrollPosition(): void {
+    this.scrollTo(0)
+  }
+
+  protected scrollTo(progress: number): void {
+    this.scrollToStep(this.progressToStep(progress))
+  }
+
+  abstract progressToStep(progress: number): number
+
+  protected scrollToPosition(targetPosition_px: number): void {
+    if (this.isScrollLocked) {
+      return
+    }
+    const scrollContentElement: HTMLElement = $(this.scrollElementSelector)[0]
+
+    const currentDisplayWidth_px: number = scrollContentElement.clientWidth
+    const newScrollLeft_px = targetPosition_px - currentDisplayWidth_px / 2
+
+    const currentCenterPosition_px: number = this.getDisplayCenterPosition_px()
+    if (currentCenterPosition_px > targetPosition_px) {
+      // scrolling to a previous position: super-fast scroll
+      $(this.scrollElementSelector).stop(true, false).animate(
+        {
+          scrollLeft: newScrollLeft_px,
+        },
+        10,
+        'linear'
+      )
+    } else {
+      // synchronize scrolling with the tempo for smooth scrolling
+      const scrollDuration_ms = this.playbackManager.interbeatTime_s * 1000
+      $(this.scrollElementSelector).stop(true, false).animate(
+        {
+          scrollLeft: newScrollLeft_px,
+        },
+        scrollDuration_ms,
+        'linear'
+      )
+    }
+  }
+
+  protected scrollToStep(step: number): void {
+    // scroll display to keep the center of the currently playing
+    // quarter note container in the center of the sheet window
+    //
+    // We do this by scheduling a scroll to the next step with duration
+    // equal to one quarter-note time (dependent on the current BPM)
+    // Inversely, scrolling to a position earlier in time (e.g. when pressing
+    // stop or reaching the end of the loop) is super-fast
+    let targetPosition_px: number
+    try {
+      // try to retrieve the position of the (potentially non-existing) next
+      // quarter-note
+      const nextStepBoxDelimiters = this.getTimecontainerPosition(step)
+      targetPosition_px = nextStepBoxDelimiters.right
+    } catch (e) {
+      // reached last container box
+      // FIXME make and catch specific error
+      const lastStepPosition = this.getTimecontainerPosition(step)
+      log.debug(
+        `Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`
+      )
+
+      // right-side delimiter of the last quarter note box
+      const containerRight = lastStepPosition.right
+      targetPosition_px = containerRight
+    }
+    this.scrollToPosition(targetPosition_px)
+  }
+
+  protected abstract getTimecontainerPosition(
+    step: number
+  ): { left: number; right: number }
+
+  // retrieve index of the current display-step
+  protected abstract getCurrentDisplayTimestep(): number
+
+  protected updateCursorPosition(): void {
+    this.nowPlayingDisplayCallback(null, this.stepProgress)
+  }
+
+  protected scheduleDisplayLoop(toneDisplayUpdateInterval: string): void {
+    // initialize playback display scheduler
+    const self = this
+    const drawCallback = (time) => {
+      // DOM modifying callback should be put in Tone.getDraw() scheduler!
+      // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
+      Tone.getDraw().schedule(function () {
+        self.updateCursorPosition()
+      }, time)
+    }
+
+    // schedule quarter-notes clock
+    log.debug('Scheduling draw callback sequence')
+    // FIXME assumes a TimeSignature of 4/4
+    new Tone.Loop(drawCallback, toneDisplayUpdateInterval).start(0)
+  }
 }
 
-export class SheetLocator extends Locator {
+// type SheetGranularity =
+
+export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
+  readonly dataType = 'sheet'
+
+  protected readonly serializer = new XMLSerializer()
+  protected readonly parser = new DOMParser()
+  currentXML: XMLDocument
+
   constructor(
+    sheetPlaybackManager: MidiSheetPlaybackManager,
     container: HTMLElement,
+    granularitiesSelect: CycleSelect<number>,
+    defaultApiAddress: URL,
     options: IOSMDOptions,
-    boxDurations_quarters: number[],
     annotationTypes: string[] = [],
-    allowOnlyOneFermata = false,
-    onClickTimestampBoxFactory?: (
-      timeStart: Fraction,
-      timeEnd: Fraction
-    ) => (event: PointerEvent) => void,
-    copyTimecontainerContent?: (
-      origin: HTMLElement,
-      target: HTMLElement
-    ) => void
+    allowOnlyOneFermata = false
   ) {
-    super(container)
+    super(
+      sheetPlaybackManager,
+      container,
+      granularitiesSelect,
+      defaultApiAddress
+    )
     /*
      * Create a container element for OpenSheetMusicDisplay...
      */
@@ -161,12 +429,10 @@ export class SheetLocator extends Locator {
     this.container.setAttribute('data-simplebar-click-on-track', 'false')
 
     this.interfaceContainer = document.createElement('div')
-    this.interfaceContainer.id = this.container.id + '-overlays'
     this.interfaceContainer.classList.add('sheet-locator-overlays')
     this.container.appendChild(this.interfaceContainer)
 
     this.sheetContainer = document.createElement('div')
-    this.sheetContainer.id = this.container.id + '-interface'
     this.sheetContainer.classList.add('sheet-locator-sheet')
     this.interfaceContainer.appendChild(this.sheetContainer)
 
@@ -176,11 +442,10 @@ export class SheetLocator extends Locator {
     this.sheet.EngravingRules.VoiceSpacingMultiplierVexflow = 1
     this.sheet.EngravingRules.VoiceSpacingAddendVexflow = 10.0
 
-    this._annotationTypes = annotationTypes
-    this._boxDurations_quarters = boxDurations_quarters
-    this._allowOnlyOneFermata = allowOnlyOneFermata
-    this.onClickTimestampBoxFactory = onClickTimestampBoxFactory
-    this.copyTimecontainerContent = copyTimecontainerContent
+    this.annotationTypes = annotationTypes
+    this.allowOnlyOneFermata = allowOnlyOneFermata
+
+    this.boxDurations_quarters = this.editToolSelect.options
 
     $(() => this.registerScrollLockCallback())
   }
@@ -197,41 +462,70 @@ export class SheetLocator extends Locator {
     return this.sheetContainer.getElementsByTagName('svg').item(0)
   }
 
-  protected onClickTimestampBoxFactory?: (
+  protected onClickTimestampBoxFactory(
     timeStart: Fraction,
     timeEnd: Fraction
-  ) => (event: PointerEvent) => void
+  ): (event: PointerEvent) => void {
+    // FIXME(theis) hardcoded 4/4 time-signature
+    const [timeRangeStart_quarter, timeRangeEnd_quarter] = [
+      timeStart,
+      timeEnd,
+    ].map((timeFrac) => Math.round(4 * timeFrac.RealValue))
 
-  private _boxDurations_quarters: number[]
+    const argsGenerationUrl =
+      'timerange-change' +
+      `?time_range_start_quarter=${timeRangeStart_quarter}` +
+      `&time_range_end_quarter=${timeRangeEnd_quarter}`
 
-  private _annotationTypes: string[]
-  private _allowOnlyOneFermata: boolean
-
-  private copyTimecontainerContent: (
-    origin: HTMLElement,
-    target: HTMLElement
-  ) => void
-
-  public get annotationTypes(): string[] {
-    return this._annotationTypes
+    return () => {
+      // TODO(theis, 2021-08-10): use locator.inpaint method
+      void this.loadMusicXMLandMidi(
+        this.defaultApiAddress,
+        argsGenerationUrl,
+        true
+      )
+    }
   }
 
-  public get allowOnlyOneFermata(): boolean {
-    return this._allowOnlyOneFermata
+  protected copyTimecontainerContent(origin: HTMLElement, target: HTMLElement) {
+    // retrieve quarter-note positions for origin and target
+    function getContainedQuarters(timeContainer: HTMLElement): number[] {
+      return timeContainer
+        .getAttribute('containedQuarterNotes')
+        .split(', ')
+        .map((x) => parseInt(x, 10))
+    }
+    const originContainedQuarters: number[] = getContainedQuarters(origin)
+    const targetContainedQuarters: number[] = getContainedQuarters(target)
+
+    const originStart_quarter: number = originContainedQuarters[0]
+    const targetStart_quarter: number = targetContainedQuarters[0]
+    const originEnd_quarter: number = originContainedQuarters.pop()
+    const targetEnd_quarter: number = targetContainedQuarters.pop()
+
+    const generationCommand: string =
+      '/copy' +
+      `?origin_start_quarter=${originStart_quarter}` +
+      `&origin_end_quarter=${originEnd_quarter}` +
+      `&target_start_quarter=${targetStart_quarter}` +
+      `&target_end_quarter=${targetEnd_quarter}`
+    void this.loadMusicXMLandMidi(
+      this.defaultApiAddress,
+      generationCommand,
+      true
+    )
   }
 
-  public get boxDurations_quarters(): number[] {
-    return this._boxDurations_quarters
-  }
+  readonly boxDurations_quarters: number[]
+  readonly annotationTypes: string[]
+  readonly allowOnlyOneFermata: boolean
 
-  private _chordSelectors = new Map<string, ChordSelector>()
-
+  protected _chordSelectors = new Map<string, ChordSelector>()
   public get chordSelectors(): ChordSelector[] {
     return Array.from(this._chordSelectors.values())
   }
 
-  private _fermatas = new Map<string, FermataBox>()
-
+  protected _fermatas = new Map<string, FermataBox>()
   public get fermatas(): FermataBox[] {
     return Array.from(this._fermatas.values())
   }
@@ -245,6 +539,33 @@ export class SheetLocator extends Locator {
       this.sequenceDuration_quarters.toString()
     )
     this.updateContainerWidth(true)
+  }
+
+  renderZoomControls(containerElement: HTMLElement): void {
+    const zoomOutButton = document.createElement('div')
+    zoomOutButton.classList.add('zoom-out')
+    containerElement.appendChild(zoomOutButton)
+    const zoomOutButtonIcon = document.createElement('i')
+    zoomOutButtonIcon.classList.add('fas', 'fa-search-minus')
+    zoomOutButton.appendChild(zoomOutButtonIcon)
+
+    const zoomInButton = document.createElement('div')
+    zoomInButton.classList.add('zoom-in')
+    containerElement.appendChild(zoomInButton)
+    const zoomInButtonIcon = document.createElement('i')
+    zoomInButtonIcon.classList.add('fas', 'fa-search-plus')
+    zoomInButton.appendChild(zoomInButtonIcon)
+
+    zoomOutButton.addEventListener('click', () => {
+      this.sheet.Zoom /= 1.2
+      this.render()
+      log.info(`OSMD zoom level now: ${this.sheet.Zoom}`)
+    })
+    zoomInButton.addEventListener('click', () => {
+      this.sheet.Zoom *= 1.2
+      this.render()
+      log.info(`OSMD zoom level now: ${this.sheet.Zoom}`)
+    })
   }
 
   protected _refresh(): void {
@@ -325,7 +646,7 @@ export class SheetLocator extends Locator {
   }
 
   // compute a position accounting for <this>'s zoom level
-  private computePositionZoom(value: number, shift = 1): number {
+  protected computePositionZoom(value: number, shift = 1): number {
     return (value - shift) * 10.0 * this.sheet.zoom
   }
 
@@ -349,7 +670,7 @@ export class SheetLocator extends Locator {
   /*
     Update sizing of the box with given ID
     */
-  private updateTimeContainerSize(
+  protected updateTimeContainerSize(
     divId: string,
     x: number,
     y: number,
@@ -360,16 +681,16 @@ export class SheetLocator extends Locator {
     const commonDiv =
       document.getElementById(commonDivId) || document.createElement('div')
 
-    commonDiv.style.top = this.computePositionZoom(y, 0) + 'px'
-    commonDiv.style.height = this.computePositionZoom(height, 0) + 'px'
-    commonDiv.style.left = this.computePositionZoom(x, 1) + 'px'
-    commonDiv.style.width = this.computePositionZoom(width) + 'px'
+    commonDiv.style.top = `${this.computePositionZoom(y, 0)}px`
+    commonDiv.style.height = `${this.computePositionZoom(height, 0)}px`
+    commonDiv.style.left = `${this.computePositionZoom(x, 1)}px`
+    commonDiv.style.width = `${this.computePositionZoom(width)}px`
   }
 
   /*
     Create an overlay box with given shape and assign it the given divClass
     */
-  private createTimeContainer(
+  protected createTimeContainer(
     divId: string,
     duration_quarters: number,
     onclick: (PointerEvent?) => void,
@@ -414,13 +735,7 @@ export class SheetLocator extends Locator {
       // div.setAttribute('containedQuarterNotes',
       //     commonDiv.getAttribute('containedQuarterNotes'));
 
-      const granularitySelect: HTMLSelectElement = <HTMLSelectElement>(
-        $('#granularity-select-container select')[0]
-      )
-      const currentGranularity: number = parseInt(
-        granularitySelect.options[parseInt(granularitySelect.value)].innerText
-      )
-      if (currentGranularity == duration_quarters) {
+      if (this.editToolSelect.value == duration_quarters) {
         div.classList.add('active')
       }
 
@@ -436,10 +751,10 @@ export class SheetLocator extends Locator {
       // use bubbling and preventDefault to block window scrolling
       div.addEventListener(
         'wheel',
-        function (event: WheelEvent) {
+        (event: WheelEvent) => {
           event.preventDefault()
           const scrollUp = -event.deltaY >= 0
-          cycleGranularity(scrollUp)
+          this.editToolSelect.cycleOptions(scrollUp, false)
         },
         false
       )
@@ -452,7 +767,9 @@ export class SheetLocator extends Locator {
       div.addEventListener('dragleave', ondragleaveTimecontainer_handler, true)
       div.addEventListener(
         'drop',
-        makeOndropTimecontainer_handler(this.copyTimecontainerContent),
+        makeOndropTimecontainer_handler(
+          this.copyTimecontainerContent.bind(this)
+        ),
         true
       )
 
@@ -507,7 +824,6 @@ export class SheetLocator extends Locator {
   }
 
   public drawTimestampBoxes(): void {
-    const onclickFactory = this.onClickTimestampBoxFactory
     // FIXME this assumes a time signature of 4/4
     const measureList = this.sheet.GraphicSheet.MeasureList
     const numMeasures = measureList.length
@@ -610,12 +926,6 @@ export class SheetLocator extends Locator {
             }
           }
           const width = xEndBox - xBeginBox
-          let onclick: (event: PointerEvent) => void = () => {
-            return
-          }
-          if (onclickFactory) {
-            onclick = onclickFactory(currentBeginTimestamp, currentEndTimestamp)
-          }
 
           const timeContainerID = SheetLocator.makeGranularityID(
             boxDuration_quarters,
@@ -670,12 +980,194 @@ export class SheetLocator extends Locator {
       `.timeContainer[containedQuarterNotes~='${timePosition}'] .notebox`
     ).addClass('playing')
   }
+
+  // return the offset of the desired step
+  protected getStepDisplayOffset(step: number): number | null {
+    let positionTarget_px: number
+    try {
+      // try to retrieve the position of the (potentially non-existing) next
+      // quarter-note
+      const nextStepBoxDelimiters = this.getTimecontainerPosition(step)
+      positionTarget_px = nextStepBoxDelimiters.right
+    } catch (e) {
+      // reached last container box
+      // FIXME make and catch specific error
+      const lastStepPosition = this.getTimecontainerPosition(step)
+      log.debug(
+        `Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`
+      )
+
+      // right-side delimiter of the last quarter note box
+      const containerRight = lastStepPosition.right
+      positionTarget_px = containerRight
+    }
+    return positionTarget_px
+  }
+
+  protected getTimecontainerPosition(
+    step: number
+  ): { left: number; right: number } {
+    const containerElementSelector = $(
+      `.timeContainer[containedQuarterNotes='${step}']`
+    )
+
+    if (!containerElementSelector.exists()) {
+      throw new Error('Inaccessible step')
+    }
+
+    const containerElementStyle = containerElementSelector[0].style
+
+    return {
+      left: parseFloat(containerElementStyle.left),
+      // FIXME implement and use timeContainer method
+      right:
+        parseFloat(containerElementStyle.left) +
+        parseFloat(containerElementStyle.width),
+    }
+  }
+
+  protected get sequenceDurationQuarters(): number {
+    return this.sheet.GraphicSheet.MeasureList.length * 4
+  }
+
+  get stepProgress(): number {
+    return Math.floor(
+      this.playbackManager.transport.progress * this.sequenceDurationQuarters
+    )
+  }
+
+  protected getFermatas(): number[] {
+    const activeFermataElements = $('.Fermata.active')
+    const containedQuarterNotesList: number[] = []
+    for (const activeFemataElement of activeFermataElements) {
+      containedQuarterNotesList.push(
+        // TODO(theis): store and retrieve containedQuarterNotes
+        // to and from TypeScript Fermata objects
+        parseInt(
+          activeFemataElement.parentElement.getAttribute(
+            'containedQuarterNotes'
+          )
+        )
+      )
+    }
+    return containedQuarterNotesList
+  }
+
+  protected getChordLabels(): object[] {
+    // return a stringified JSON object describing the current chords
+    const chordLabels = []
+    for (const chordSelector of this.chordSelectors) {
+      chordLabels.push(chordSelector.currentChord)
+    }
+    return chordLabels
+  }
+
+  protected getMetadata() {
+    return {
+      fermatas: this.getFermatas(),
+      chordLabels: this.getChordLabels(),
+    }
+  }
+
+  protected removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void {
+    // Strip MusicXML document of title/composer tags
+    const titleNode = xmlDocument.getElementsByTagName('work-title')[0]
+    const movementTitleNode = xmlDocument.getElementsByTagName(
+      'movement-title'
+    )[0]
+    const composerNode = xmlDocument.getElementsByTagName('creator')[0]
+
+    titleNode.textContent = movementTitleNode.textContent = composerNode.textContent =
+      ''
+  }
+
+  /**
+   * Load a MusicXml file via xhttp request, and display its contents.
+   */
+  loadMusicXMLandMidi(
+    inpaintingApiUrl: URL,
+    generationCommand: string,
+    sendSheetWithRequest = true
+  ): Promise<void> {
+    return new Promise<void>((resolve, _) => {
+      this.disableChanges()
+
+      const payload_object = this.getMetadata()
+
+      log.trace('Metadata:')
+      log.trace(JSON.stringify(payload_object))
+
+      if (sendSheetWithRequest) {
+        payload_object['sheet'] = this.serializer.serializeToString(
+          this.currentXML
+        )
+      }
+
+      const commandURL = new URL(generationCommand, inpaintingApiUrl)
+      void $.post({
+        url: commandURL.href,
+        data: JSON.stringify(payload_object),
+        contentType: 'application/json',
+        dataType: 'json',
+        success: (jsonResponse: {}) => {
+          // update metadata
+          // TODO: must check if json HAS the given metadata key first!
+          // const new_fermatas = jsonResponse["fermatas"];
+          if (!generationCommand.includes('generate')) {
+            // TODO updateFermatas(newFermatas);
+          }
+
+          // load the received MusicXML
+          const xml_sheet_string = jsonResponse['sheet']
+          const xmldata = this.parser.parseFromString(
+            xml_sheet_string,
+            'text/xml'
+          )
+          this.removeMusicXMLHeaderNodes(xmldata)
+          this.currentXML = xmldata
+
+          // save current zoom level to restore it after load
+          const zoom = this.sheet.Zoom
+          this.sheet.load(this.currentXML).then(
+            async () => {
+              // restore pre-load zoom level
+              this.sheet.Zoom = zoom
+              this.render()
+
+              const sequenceDuration = Tone.Time(
+                `0:${this.sequenceDuration_quarters}:0`
+              )
+              const midiConversionURL = new URL(
+                '/musicxml-to-midi',
+                inpaintingApiUrl
+              )
+              const midiBlobURL = await this.playbackManager.loadMidi(
+                midiConversionURL.href,
+                this.currentXML,
+                Tone.Time(sequenceDuration),
+                bpmControl
+              )
+              this.downloadButton.revokeBlobURL()
+              this.downloadButton.targetURL = midiBlobURL
+
+              this.enableChanges()
+              resolve()
+            },
+            (err) => {
+              log.error(err)
+              this.enableChanges()
+            }
+          )
+        },
+      }).fail((err) => {
+        log.error(err)
+        this.enableChanges()
+      })
+    })
+  }
 }
 
-type Cell = {
-  row: number
-  column: number
-}
+type MatrixCellPosition = { row: number; column: number }
 
 // monkey-patch Nexus.Sequencer to emit 'toggle' events
 // these are triggered only on actual changes of the pattern,
@@ -683,25 +1175,12 @@ type Cell = {
 // content of the matrix does not change (e.g. when touching the same cell twice
 // in a single Touch action)
 class SequencerToggle extends Nexus.Sequencer {
-  // TODO(theis): add proper types (create typing for Nexus.\)
-  matrix: any
-  emit: any
-  element: HTMLDivElement
-  stepper: any
-  rows: any
-  columns: any
-  destroy: any
-  resize: any
-  colorize: any
-  on: any
-  cells: any
-
   inRectangularSelection = false
-  firstCell?: Cell
-  previousCell?: Cell
+  firstCell?: MatrixCellPosition
+  previousCell?: MatrixCellPosition
   rectangularSelections = true
 
-  constructor(container, options) {
+  constructor(container: string | HTMLElement, options) {
     super(container, options)
 
     if (this.rectangularSelections) {
@@ -729,17 +1208,17 @@ class SequencerToggle extends Nexus.Sequencer {
     return
   }
 
-  protected onInteractionStart(cell: Cell): void {
+  protected onInteractionStart(): void {
     log.debug('Starting interaction')
     this.inRectangularSelection = true
     return
   }
 
-  protected getIndex(cell: Cell): number {
+  protected getIndex(cell: MatrixCellPosition): number {
     return this.matrix.indexOf(cell.row, cell.column)
   }
 
-  protected turnOn(cell: Cell, emitting: boolean) {
+  protected turnOn(cell: MatrixCellPosition, emitting: boolean) {
     this.cells[this.matrix.indexOf(cell.row, cell.column)].turnOn(emitting)
     if (!emitting) {
       // manually update the model
@@ -747,7 +1226,7 @@ class SequencerToggle extends Nexus.Sequencer {
     }
   }
 
-  protected turnOff(cell: Cell, emitting: boolean) {
+  protected turnOff(cell: MatrixCellPosition, emitting: boolean) {
     this.cells[this.matrix.indexOf(cell.row, cell.column)].turnOff(emitting)
     if (!emitting) {
       // manually update the model
@@ -755,10 +1234,10 @@ class SequencerToggle extends Nexus.Sequencer {
     }
   }
 
-  protected keyChange(note, on: boolean) {
-    const cell = <Cell>this.matrix.locate(note)
-    const previousState = this.matrix.pattern[cell.row][cell.column]
-
+  keyChange(note, on: boolean) {
+    const cell = this.matrix.locate(note)
+    const previousState: boolean =
+      this.matrix.pattern[cell.row][cell.column] == 1
     if (previousState !== on) {
       const data = {
         row: cell.row,
@@ -782,17 +1261,17 @@ class SequencerToggle extends Nexus.Sequencer {
 
         // turn all cells off
         for (let index = 0; index < this.matrix.length; index++) {
-          const cell = <Cell>this.matrix.locate(index)
+          const cell = this.matrix.locate(index)
           this.turnOff(cell, false)
         }
 
         // activate all cells in the rectangle between the first cell
         // of the interaction and the current cell
-        const rectangleStart: Cell = {
+        const rectangleStart: MatrixCellPosition = {
           row: Math.min(this.firstCell.row, cell.row),
           column: Math.min(this.firstCell.column, cell.column),
         }
-        const rectangleEnd: Cell = {
+        const rectangleEnd: MatrixCellPosition = {
           row: Math.max(this.firstCell.row, cell.row),
           column: Math.max(this.firstCell.column, cell.column),
         }
@@ -802,7 +1281,7 @@ class SequencerToggle extends Nexus.Sequencer {
             column <= rectangleEnd.column;
             column++
           ) {
-            const cell: Cell = { row: row, column: column }
+            const cell = { row: row, column: column }
             this.turnOn(cell, false)
           }
         }
@@ -813,62 +1292,132 @@ class SequencerToggle extends Nexus.Sequencer {
   }
 }
 
-export class SpectrogramLocator extends Locator {
+type Codemap = number[][]
+type InpaintingMask = boolean[][]
+
+type ConditioningMap = Map<string, (number | string)[][]>
+
+function formatConditioningMap(conditioning_map: ConditioningMap) {
+  return {
+    pitch: conditioning_map.get('pitch'),
+    instrument_family_str: conditioning_map.get('instrument_family_str'),
+  }
+}
+
+function parseConditioningMap(
+  newConditioningMap: Record<string, (number | string)[][]>
+): ConditioningMap {
+  const conditioning_map: ConditioningMap = new Map<
+    string,
+    (number | string)[][]
+  >()
+  conditioning_map.set('pitch', newConditioningMap['pitch'])
+  conditioning_map.set(
+    'instrument_family_str',
+    newConditioningMap['instrument_family_str']
+  )
+  return conditioning_map
+}
+
+export const enum VqvaeLayer {
+  Top = 'top',
+  Bottom = 'bottom',
+}
+
+export const enum NotonoTool {
+  Inpaint = 'inpaint',
+  InpaintRandom = 'inpaint-random',
+  Eraser = 'erase',
+}
+
+export type LayerAndTool = { layer: VqvaeLayer; tool: NotonoTool }
+
+export class SpectrogramLocator extends Locator<
+  SpectrogramPlaybackManager,
+  LayerAndTool
+> {
+  protected getTimecontainerPosition(
+    step: number
+  ): { left: number; right: number } {
+    throw Error('Not implemented')
+  }
+  readonly dataType = 'spectrogram'
+  readonly imageContainer: HTMLElement
+  readonly imageElement: HTMLImageElement
   readonly shadowContainer: HTMLElement
   readonly interfaceContainer: HTMLElement
   readonly snapPoints: HTMLDivElement
+  readonly addColumnIconsContainer: HTMLDivElement
   protected sequencer: SequencerToggle
+
+  readonly downloadButton: DownloadButton
+  readonly instrumentConstraintSelect: NexusSelectWithShuffle
+  readonly pitchClassConstraintSelect?: NexusSelect
+  readonly octaveConstraintControl: NumberControl
+
+  // TODO(theis, 2021/07/13): add proper typing. Create a VQVAE class?
+  protected _codemap_top?: Codemap
+  protected get codemap_top(): Codemap | undefined {
+    return this._codemap_top
+  }
+  protected set codemap_top(codemap: Codemap | undefined) {
+    this._codemap_top = codemap
+    this.toggleNoscroll(this.numScrollSteps == 1)
+  }
+
+  protected codemap_bottom?: Codemap
+  protected currentConditioning_top?: ConditioningMap
+  protected currentConditioning_bottom?: ConditioningMap
 
   get interfaceElement(): HTMLDivElement {
     return this.sequencer.element
   }
 
-  // TODO(theis): should provide initial values for numRows and numColumns,
-  // so that the instance can be properly rendered/refreshed on initialization
-  constructor(container: HTMLElement, options: Record<string, unknown> = {}) {
-    super(container)
+  constructor(
+    playbackManager: SpectrogramPlaybackManager,
+    container: HTMLElement,
+    inpaintingApiAddress: URL,
+    vqvaeLayerSelect: CycleSelect<LayerAndTool>,
+    downloadButton: DownloadButton,
+    instrumentConstraintSelect: NexusSelectWithShuffle,
+    octaveConstraintControl: NumberControl,
+    pitchClassConstraintSelect?: NexusSelect,
+    options: Record<string, unknown> = {}
+  ) {
+    super(playbackManager, container, vqvaeLayerSelect, inpaintingApiAddress)
 
-    const spectrogramImageContainerElement = document.createElement('div')
-    // TODO(theis, 2021/06/02): switch to class-based styling instead of referring
-    // to the interface elements via their ID in the CSS, and switch
-    // to this.container.id + '...'-style IDs for the different blocks
-    spectrogramImageContainerElement.id = 'spectrogram-image-container'
-    spectrogramImageContainerElement.toggleAttribute('data-simplebar', true)
-    spectrogramImageContainerElement.setAttribute(
-      'data-simplebar-click-on-track',
-      'false'
-    )
-    this.container.appendChild(spectrogramImageContainerElement)
+    this.container.classList.add('spectrogram-locator')
+
+    this.imageContainer = document.createElement('div')
+    this.imageContainer.classList.add('spectrogram-locator-image-container')
+    this.imageContainer.toggleAttribute('data-simplebar', true)
+    this.imageContainer.setAttribute('data-simplebar-click-on-track', 'false')
+    this.container.appendChild(this.imageContainer)
 
     const spectrogramPictureElement = document.createElement('picture')
-    spectrogramPictureElement.id = 'spectrogram-picture'
-    spectrogramImageContainerElement.appendChild(spectrogramPictureElement)
-    const spectrogramImageElement = document.createElement('img')
-    spectrogramImageElement.id = 'spectrogram-image'
-    spectrogramPictureElement.appendChild(spectrogramImageElement)
+    this.imageContainer.appendChild(spectrogramPictureElement)
+    this.imageElement = document.createElement('img')
+    spectrogramPictureElement.appendChild(this.imageElement)
 
     this.snapPoints = document.createElement('div')
-    this.snapPoints.id = 'snap-points'
+    this.snapPoints.classList.add('spectrogram-locator-snap-points')
     spectrogramPictureElement.appendChild(this.snapPoints)
 
     // necessary to handle 'busy' state cursor change and pointer events disabling
     this.interfaceContainer = document.createElement('div')
-    this.interfaceContainer.id = this.container.id + '-interface-container'
     this.interfaceContainer.classList.add(
       'spectrogram-locator-interface-container'
     )
     this.container.appendChild(this.interfaceContainer)
 
     this.shadowContainer = document.createElement('div')
-    this.shadowContainer.id = this.container.id + '-shadow-container'
     this.shadowContainer.classList.add('spectrogram-locator-shadow-container')
     this.shadowContainer.classList.add('glow-shadow')
     this.interfaceContainer.appendChild(this.shadowContainer)
 
     const initialWidth = this.interfaceContainer.clientWidth
     const initialHeight = this.interfaceContainer.clientHeight
-
-    this.sequencer = new SequencerToggle(this.interfaceContainer.id, {
+    this.sequencer = new SequencerToggle(this.interfaceContainer, {
       size: [initialWidth, initialHeight],
       mode: 'toggle',
       rows: 32,
@@ -876,16 +1425,119 @@ export class SpectrogramLocator extends Locator {
     })
     this.sequencer.colorize('accent', 'rgba(255, 255, 255, 1)')
     this.sequencer.colorize('fill', 'rgba(255, 255, 255, 0.25)')
+
+    this.downloadButton = downloadButton
+    this.instrumentConstraintSelect = instrumentConstraintSelect
+    this.octaveConstraintControl = octaveConstraintControl
+
+    // if no pitchClassConstraintSelect interface is passed, the pitchClass constraint
+    // defaults to C
+    this.pitchClassConstraintSelect = pitchClassConstraintSelect
+
+    this.registerCallback(this.regenerationCallback.bind(this))
+    this.container.addEventListener('drop', (e) => this.dropHandler(e))
   }
 
-  public get mask(): number[][] {
-    return this.sequencer.matrix.pattern
+  protected _apiRequest(
+    command: apiCommand,
+    restParameters: string,
+    apiAddress: URL,
+    sendCodesWithRequest: boolean,
+    data?,
+    timeout = 0
+  ): Promise<this> {
+    return this.loadAudioAndSpectrogram(
+      apiAddress,
+      command + restParameters,
+      sendCodesWithRequest,
+      data,
+      timeout
+    )
   }
 
-  private _boxDurations_quarters: number[]
+  public get midiPitchConstraint(): number {
+    let pitchClass = 0 // Default to C
+    if (this.pitchClassConstraintSelect != undefined) {
+      pitchClass = this.pitchClassConstraintSelect.selectedIndex
+    }
+    return pitchClass + 12 * this.octaveConstraintControl.value
+  }
 
-  public get boxDurations_quarters(): number[] {
-    return this._boxDurations_quarters
+  public get instrumentConstraint(): string {
+    return this.instrumentConstraintSelect.value
+  }
+
+  public get mask(): InpaintingMask {
+    return this.sequencer.matrix.pattern.map((row) =>
+      row.map((value) => value == 1)
+    )
+  }
+
+  readonly boxDurations_quarters: number[]
+
+  protected regenerationCallback(): void {
+    switch (this.editToolSelect.value.layer) {
+      case VqvaeLayer.Top: {
+        this.currentConditioning_top = this.updateConditioningMap(
+          this.mask,
+          this.currentConditioning_top
+        )
+        break
+      }
+      case VqvaeLayer.Bottom: {
+        this.currentConditioning_bottom = this.updateConditioningMap(
+          this.mask,
+          this.currentConditioning_bottom
+        )
+        break
+      }
+    }
+
+    const sendCodesWithRequest = true
+    void this._apiRequest(
+      this.generationCommand,
+      this.restParameters,
+      this.defaultApiAddress,
+      sendCodesWithRequest,
+      this.mask
+    )
+  }
+
+  protected get generationCommand(): apiCommand {
+    const tool = this.editToolSelect.value.tool
+    let command: apiCommand
+    switch (tool) {
+      case NotonoTool.Eraser:
+        command = apiCommand.Erase
+        break
+      case NotonoTool.Inpaint:
+      case NotonoTool.InpaintRandom:
+        command = apiCommand.Inpaint
+    }
+    return command
+  }
+
+  protected get restParameters(): string {
+    const startIndexTop: number = this.getCurrentScrollPositionTopLayer()
+    let generationParameters =
+      '?pitch=' +
+      this.midiPitchConstraint.toString() +
+      '&pitch_class=' +
+      (this.midiPitchConstraint % 12).toString() +
+      '&instrument_family_str=' +
+      this.instrumentConstraint +
+      '&layer=' +
+      this.editToolSelect.value.layer +
+      '&temperature=1' +
+      '&eraser_amplitude=0.1' +
+      '&start_index_top=' +
+      startIndexTop.toString() +
+      '&duration_top=' +
+      this.numColumnsTop.toString()
+    const tool = this.editToolSelect.value.tool
+    generationParameters +=
+      '&uniform_sampling=' + (tool == NotonoTool.InpaintRandom).toString()
+    return generationParameters
   }
 
   public registerCallback(callback: () => void): void {
@@ -894,7 +1546,7 @@ export class SpectrogramLocator extends Locator {
       document.addEventListener(
         'pointerup',
         () => {
-          if (!this.isEmpty()) {
+          if (!this.hasEmptyMask) {
             callback.bind(this)()
           }
         },
@@ -908,8 +1560,77 @@ export class SpectrogramLocator extends Locator {
     )
   }
 
-  setPosition(timePosition: number): void {
-    this.sequencer.stepper.value = timePosition
+  protected getCurrentScrollPositionTopLayer(): number {
+    const spectrogramImageContainerElement = this.imageContainer
+    if (spectrogramImageContainerElement == null) {
+      throw Error('Spectrogram container not initialized')
+    }
+    const scrollElement = spectrogramImageContainerElement.getElementsByClassName(
+      'simplebar-content-wrapper'
+    )[0]
+    if (scrollElement == null) {
+      return 0
+    }
+    // HACK(theis, 2021_04_21): check `isScrollable` test,
+    // testing if scrollWidth - clientWidth > 1 avoids some edge cases
+    // of very slightly different widths, but does not seem very robust
+    const isScrollable: boolean =
+      scrollElement.scrollWidth - scrollElement.clientWidth > 1
+    if (!isScrollable) {
+      return 0
+    } else {
+      const currentScrollRatio =
+        scrollElement.scrollLeft /
+        (scrollElement.scrollWidth - scrollElement.clientWidth)
+      log.error('Fix scroll computation')
+      const numSnapElements: number = this.snapPoints.getElementsByTagName(
+        'snap'
+      ).length
+      // snaps happen on <snap>'s left boundaries
+      const numSnapLocations: number = numSnapElements - 1
+      return Math.round(currentScrollRatio * numSnapLocations)
+    }
+  }
+
+  // TODO(theis): could use a more strict type-hint (number[][]|string[][])
+  // but this has the TS type-schecker fail, considering the map method (which
+  // receives a union type itself) non-callable
+  // see https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-3.html#caveats
+  updateConditioningMap(
+    mask: boolean[][],
+    currentConditioningMap: Map<string, (number | string)[][]>
+  ): Map<string, (number | string)[][]> {
+    // retrieve up-to-date user-selected conditioning
+    const newConditioning_value = new Map<string, number | string>()
+    newConditioning_value.set('pitch', this.midiPitchConstraint)
+    newConditioning_value.set(
+      'instrument_family_str',
+      this.instrumentConstraintSelect.value
+    )
+
+    for (const [
+      modality,
+      conditioning_map,
+    ] of currentConditioningMap.entries()) {
+      currentConditioningMap.set(
+        modality,
+        conditioning_map.map((row: (number | string)[], row_index: number) => {
+          return row.map(
+            (
+              currentConditioning_value: number | string,
+              column_index: number
+            ) => {
+              if (mask[row_index][column_index]) {
+                return newConditioning_value.get(modality)
+              } else {
+                return currentConditioning_value
+              }
+            }
+          )
+        })
+      )
+    }
+    return currentConditioningMap
   }
 
   protected get numRows(): number {
@@ -920,13 +1641,20 @@ export class SpectrogramLocator extends Locator {
     return this.sequencer.columns
   }
 
-  protected _vqvaeTimestepsTop = 4
-  public get vqvaeTimestepsTop(): number {
-    return this._vqvaeTimestepsTop
+  protected get columnWidth(): number {
+    if (this.sequencer.cells.length > 0) {
+      return this.sequencer.cells[0].width
+    } else {
+      return 0
+    }
   }
-  public set vqvaeTimestepsTop(vqvaeTimestepsTop: number) {
-    this._vqvaeTimestepsTop = vqvaeTimestepsTop
-    this.toggleNoscroll(this.numScrollSteps == 1)
+
+  public get vqvaeTimestepsTop(): number {
+    if (this.codemap_top != null) {
+      return this.codemap_top[0].length
+    } else {
+      return 4 // HACK(theis, 2021/07/30): default value hardcoded here
+    }
   }
 
   protected _numColumnsTop = 4
@@ -938,7 +1666,7 @@ export class SpectrogramLocator extends Locator {
     this.toggleNoscroll(this.numColumnsTop == 1)
   }
 
-  public ontoggle(data: number[][]): void {
+  public ontoggle(): void {
     // called every time the interface changes
     if (window.navigator.vibrate) {
       // Vibration API is available, perform haptic feedback
@@ -949,17 +1677,17 @@ export class SpectrogramLocator extends Locator {
   public render(
     numRows: number,
     numColumns: number,
-    numColumnsTop: number,
-    onclickFactory = undefined
+    numColumnsTop: number
   ): void {
     if (this.sequencer !== null) {
       this.sequencer.destroy()
     }
-    this.drawTimestampBoxes(onclickFactory, numRows, numColumns, numColumnsTop)
+    this.drawTimestampBoxes(numRows, numColumns, numColumnsTop)
+    // this.insertGridExpansionIcons()
 
     $(() => {
       // wait for all 'change' events to have been emitted
-      this.sequencer.on('toggle', this.ontoggle)
+      this.sequencer.on('toggle', this.ontoggle.bind(this.sequencer))
     })
   }
 
@@ -967,26 +1695,26 @@ export class SpectrogramLocator extends Locator {
     this.resize()
   }
 
-  public resize(): void {
-    const spectrogramImageContainerElement = document.getElementById(
-      'spectrogram-image-container'
-    )
-    const spectrogramImageElement = this.container.getElementsByTagName(
-      'img'
-    )[0]
+  // TODO(theis, 2021/08/02)
+  // insert Plus/Minus-sign icons for adding and removing codemap columns
+  // Allows to expand or shrink a sound in time
+  protected insertGridExpansionIcons() {
+    throw new Error('Not implemented yet')
+  }
 
+  public resize(): void {
     // restore default height for spectrogram image
-    spectrogramImageElement.style.removeProperty('height')
-    spectrogramImageContainerElement.style.removeProperty('height')
+    this.imageElement.style.removeProperty('height')
+    this.imageContainer.style.removeProperty('height')
 
     const width = this.interfaceContainer.clientWidth
-    const height = spectrogramImageContainerElement.clientHeight
+    const height = this.imageContainer.clientHeight
 
     this.sequencer.resize(width, height)
 
     // update image scaling to match snap points
     const timeStepWidth_px: number = width / this.numColumnsTop
-    spectrogramImageElement.width = Math.floor(
+    this.imageElement.width = Math.floor(
       timeStepWidth_px * this.vqvaeTimestepsTop
     )
     this.snapPoints.style.width =
@@ -994,9 +1722,9 @@ export class SpectrogramLocator extends Locator {
 
     // adapt the spectrogram's image size to the resulting grid's size
     // since the grid size is rounded up to the number of rows and columns
-    spectrogramImageElement.style.height =
+    this.imageElement.style.height =
       this.interfaceContainer.clientHeight.toString() + 'px'
-    spectrogramImageContainerElement.style.height =
+    this.imageContainer.style.height =
       this.interfaceContainer.clientHeight.toString() + 'px'
   }
 
@@ -1004,13 +1732,13 @@ export class SpectrogramLocator extends Locator {
     this.sequencer.matrix.populate.all(0)
   }
 
-  public isEmpty(): boolean {
+  public get hasEmptyMask(): boolean {
     // check if the mask contains at least one active cell to regenerate
-    return (
-      this.mask.reduce(
-        (acc, val) => acc + val.reduce((acc, val) => acc + val, 0),
-        0
-      ) == 0
+    return !this.mask.reduce(
+      (accumulator, row) =>
+        accumulator ||
+        row.reduce((accumulator, cellValue) => accumulator || cellValue, false),
+      false
     )
   }
 
@@ -1019,26 +1747,18 @@ export class SpectrogramLocator extends Locator {
   }
 
   public drawTimestampBoxes(
-    onclickFactory: undefined,
     numRows: number,
     numColumns: number,
     numColumnsTop: number
   ): void {
-    const spectrogramImageContainerElement = document.getElementById(
-      'spectrogram-image-container'
-    )
-    const spectrogramImageElement = this.container.getElementsByTagName(
-      'img'
-    )[0]
-
     // restore default height for spectrogram image
-    spectrogramImageElement.style.removeProperty('height')
-    spectrogramImageContainerElement.style.removeProperty('height')
+    this.imageElement.style.removeProperty('height')
+    this.imageContainer.style.removeProperty('height')
 
     const width = this.interfaceContainer.clientWidth
-    const height = spectrogramImageContainerElement.clientHeight
+    const height = this.imageContainer.clientHeight
 
-    this.sequencer = new SequencerToggle(this.interfaceContainer.id, {
+    this.sequencer = new SequencerToggle(this.interfaceContainer, {
       size: [width, height],
       mode: 'toggle',
       rows: numRows,
@@ -1054,7 +1774,7 @@ export class SpectrogramLocator extends Locator {
 
     // update image scaling to match snap points
     const timeStepWidth_px: number = width / numColumnsTop
-    spectrogramImageElement.width = Math.floor(
+    this.imageElement.width = Math.floor(
       timeStepWidth_px * this.vqvaeTimestepsTop
     )
     this.snapPoints.style.width =
@@ -1062,9 +1782,9 @@ export class SpectrogramLocator extends Locator {
 
     // adapt the spectrogram's image size to the resulting grid's size
     // since the grid size is rounded up to the number of rows and columns
-    spectrogramImageElement.style.height =
+    this.imageElement.style.height =
       this.interfaceContainer.clientHeight.toString() + 'px'
-    spectrogramImageContainerElement.style.height =
+    this.imageContainer.style.height =
       this.interfaceContainer.clientHeight.toString() + 'px'
   }
 
@@ -1106,37 +1826,311 @@ export class SpectrogramLocator extends Locator {
     )
     this.highlightColumn(currentlyPlayingColumn)
   }
-}
 
-function cycleGranularity(increase: boolean) {
-  const granularitySelect = $('#granularity-select-container select')
-  // if (granularitySelect.length > 0) {
-  const granularitySelectElement = <HTMLSelectElement>granularitySelect[0]
-  // let granularitySelectElement: HTMLSelectElement = <HTMLSelectElement>document.getElementById('select-granularity').children[0]
-  const selectedGranularity = parseInt(granularitySelect.val().toString())
-  const numOptions = granularitySelectElement.children.length
+  protected async getAudio(
+    inpaintingApiUrl: URL,
+    top?: Codemap,
+    bottom?: Codemap
+  ): Promise<Blob> {
+    const payload_object = {
+      top_code: top != null ? top : this.codemap_top,
+      bottom_code: bottom != null ? bottom : this.codemap_bottom,
+    }
 
-  if (increase) {
-    granularitySelectElement.value = Math.min(
-      selectedGranularity + 1,
-      numOptions - 1
-    ).toString()
-  } else {
-    granularitySelectElement.value = Math.max(
-      selectedGranularity - 1,
-      0
-    ).toString()
+    const generationCommand = '/get-audio'
+    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
+    return $.post({
+      url: generationUrl.href,
+      data: JSON.stringify(payload_object),
+      xhrFields: {
+        responseType: 'blob',
+      },
+      contentType: 'application/json',
+    })
   }
 
-  // trigger `onchange` callback
-  granularitySelectElement.dispatchEvent(new Event('change'))
-  // }
+  protected async getSpectrogramImage(
+    inpaintingApiUrl: URL,
+    top?: Codemap,
+    bottom?: Codemap
+  ): Promise<Blob> {
+    const payload_object = {
+      top_code: top != null ? top : this.codemap_top,
+      bottom_code: bottom != null ? bottom : this.codemap_bottom,
+    }
+
+    const generationCommand = '/get-spectrogram-image'
+    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
+    return $.post({
+      url: generationUrl.href,
+      data: JSON.stringify(payload_object),
+      xhrFields: {
+        responseType: 'blob',
+      },
+      contentType: 'application/json',
+    })
+  }
+
+  protected async updateAudio(audioBlob: Blob): Promise<void> {
+    // clear previous blob URL
+    this.downloadButton.revokeBlobURL()
+
+    // allocate new local blobURL for the received audio
+    const blobUrl = URL.createObjectURL(audioBlob)
+    this.downloadButton.content = audioBlob
+
+    return this.playbackManager.loadAudio(blobUrl).then(() => {
+      this.downloadButton.targetURL = blobUrl
+    })
+  }
+
+  protected async updateSpectrogramImage(imageBlob: Blob): Promise<void> {
+    return new Promise((resolve, _) => {
+      const blobUrl = URL.createObjectURL(imageBlob)
+      // HACK(theis, 2021_04_25): update the thumbnail stored in the Download button
+      // for drag-and-drop, could try and generate the thumbnail only on drag-start
+      // to avoid requiring this call here which one could easily forget to perform...
+      this.downloadButton.imageContent = imageBlob
+      this.imageElement.src = blobUrl
+      $(() => {
+        URL.revokeObjectURL(blobUrl)
+        resolve()
+      })
+    })
+  }
+
+  protected async updateAudioAndImage(
+    audioPromise: Promise<Blob>,
+    spectrogramImagePromise: Promise<Blob>
+  ): Promise<void> {
+    return await Promise.all([audioPromise, spectrogramImagePromise]).then(
+      // unpack the received results and update the interface
+      ([audioBlob, spectrogramImageBlob]: [Blob, Blob]) => {
+        void this.updateAudio(audioBlob)
+        void this.updateSpectrogramImage(spectrogramImageBlob)
+      }
+    )
+  }
+
+  protected async sendAudio(
+    audioBlob: Blob,
+    generationCommand: string,
+    inpaintingApiUrl = this.defaultApiAddress
+  ): Promise<void> {
+    this.disableChanges()
+
+    const form = new FormData()
+    form.append('audio', audioBlob)
+
+    let newCodes_top: number[][]
+    let newCodes_bottom: number[][]
+    let newConditioning_top: Map<string, (string | number)[][]>
+    let newConditioning_bottom: Map<string, (string | number)[][]>
+
+    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
+    try {
+      const jsonResponse = await $.post({
+        url: generationUrl.href,
+        data: form,
+        contentType: false,
+        dataType: 'json',
+        processData: false,
+      })
+
+      newCodes_top = jsonResponse['top_code']
+      newCodes_bottom = jsonResponse['bottom_code']
+      newConditioning_top = parseConditioningMap(
+        jsonResponse['top_conditioning']
+      )
+      newConditioning_bottom = parseConditioningMap(
+        jsonResponse['bottom_conditioning']
+      )
+
+      const audioPromise = this.getAudio(
+        inpaintingApiUrl,
+        newCodes_top,
+        newCodes_bottom
+      )
+      const spectrogramImagePromise = this.getSpectrogramImage(
+        inpaintingApiUrl,
+        newCodes_top,
+        newCodes_bottom
+      )
+
+      await this.updateAudioAndImage(audioPromise, spectrogramImagePromise)
+    } catch (e) {
+      console.log(e)
+      this.clear()
+      this.enableChanges()
+      return
+    }
+
+    this.codemap_top = newCodes_top
+    this.codemap_bottom = newCodes_bottom
+    this.currentConditioning_top = newConditioning_top
+    this.currentConditioning_bottom = newConditioning_bottom
+
+    this.triggerInterfaceRefresh()
+    this.clear()
+    this.enableChanges()
+  }
+
+  /**
+   *
+   */
+  protected async loadAudioAndSpectrogram(
+    inpaintingApiUrl: URL,
+    generationCommand: string,
+    sendCodesWithRequest: boolean,
+    mask?: number[][],
+    timeout = 0
+  ): Promise<this> {
+    this.disableChanges()
+
+    let payload_object = {}
+    if (sendCodesWithRequest) {
+      payload_object = {
+        top_code: this.codemap_top,
+        bottom_code: this.codemap_bottom,
+        top_conditioning: formatConditioningMap(this.currentConditioning_top),
+        bottom_conditioning: formatConditioningMap(
+          this.currentConditioning_bottom
+        ),
+      }
+    }
+    if (mask != null) {
+      // send the mask with low-frequencies first
+      payload_object['mask'] = mask.reverse()
+    }
+
+    let newCodes_top: number[][]
+    let newCodes_bottom: number[][]
+    let newConditioning_top: Map<string, (string | number)[][]>
+    let newConditioning_bottom: Map<string, (string | number)[][]>
+
+    try {
+      const generationUrl = new URL(generationCommand, inpaintingApiUrl)
+      const jsonResponse = await $.post({
+        url: generationUrl.href,
+        data: JSON.stringify(payload_object),
+        contentType: 'application/json',
+        dataType: 'json',
+        timeout: timeout,
+      })
+
+      newCodes_top = jsonResponse['top_code']
+      newCodes_bottom = jsonResponse['bottom_code']
+      newConditioning_top = parseConditioningMap(
+        jsonResponse['top_conditioning']
+      )
+      newConditioning_bottom = parseConditioningMap(
+        jsonResponse['bottom_conditioning']
+      )
+
+      const audioPromise = this.getAudio(
+        inpaintingApiUrl,
+        newCodes_top,
+        newCodes_bottom
+      )
+      const spectrogramImagePromise = this.getSpectrogramImage(
+        inpaintingApiUrl,
+        newCodes_top,
+        newCodes_bottom
+      )
+
+      await this.updateAudioAndImage(audioPromise, spectrogramImagePromise)
+    } catch (e) {
+      console.log(e)
+      this.enableChanges()
+      throw e
+    }
+
+    this.codemap_top = newCodes_top
+    this.codemap_bottom = newCodes_bottom
+    this.currentConditioning_top = newConditioning_top
+    this.currentConditioning_bottom = newConditioning_bottom
+
+    this.triggerInterfaceRefresh()
+    this.clear()
+    this.enableChanges()
+    return this
+  }
+
+  sample(
+    inpaintingApiUrl = this.defaultApiAddress,
+    timeout = 10000
+  ): Promise<this> {
+    return super.sample(inpaintingApiUrl, timeout).then(
+      () => {
+        this.enableChanges()
+        mapTouchEventsToMouseSimplebar()
+        // HACK, TODO(theis): should not be necessary, since there is already
+        // a refresh operation at the end of the loadAudioAndSpectrogram method
+        // but this has to be done on the initial call since the SpectrogramLocator
+        // only gets initialized in that call
+        // should properly initialize the SpectrogramLocator on instantiation
+        // locator.refresh()
+        return this
+      },
+      (rejectionReason) => {
+        // FIXME(theis, 2021_04_21): sampling can fail in the current setting if either:
+        // - the Inpainting API is not reachable, in which case it might fail instantly,
+        //   and would lead to a very high number of requests in a very short time,
+        // - the sampling procedure didn't manage to find a suitable sample in the database
+        //   in a reasonable time
+        // We should distinguish those two cases and only re-run a sampling if the API is
+        // accessible
+        console.log(rejectionReason)
+        if (rejectionReason.statusText == 'timeout') {
+          log.error(
+            'Failed to sample appropriate sound in required time, retrying with new parameters'
+          )
+          this.instrumentConstraintSelect.shuffle()
+          return this.sample(inpaintingApiUrl, timeout)
+        } else {
+          throw rejectionReason
+        }
+      }
+    )
+  }
+
+  protected dropHandler(e: DragEvent) {
+    // Prevent default behavior (Prevent file from being opened)
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (e.dataTransfer.items) {
+      // Use DataTransferItemList interface to access the file(s)
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        // If dropped items aren't files, reject them
+        if (e.dataTransfer.items[i].kind === 'file') {
+          const file = e.dataTransfer.items[i].getAsFile()
+          console.log(`... file[${i}].name = ` + file.name)
+          const generationParameters =
+            '?pitch=' +
+            this.midiPitchConstraint.toString() +
+            '&instrument_family_str=' +
+            this.instrumentConstraint
+          void this.sendAudio(file, 'analyze-audio' + generationParameters)
+          return // only send the first file
+        }
+      }
+    } else {
+      // Use DataTransfer interface to access the file(s)
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
+        console.log(`... file[${i}].name = ` + e.dataTransfer.files[i].name)
+      }
+    }
+  }
+
+  triggerInterfaceRefresh(): void {
+    this.editToolSelect.emit(this.editToolSelect.events.ValueChanged)
+  }
 }
 
+// TODO(@tbazin, 2021/08/05): move this inside SheetLocator
 // Drag and Drop
-
 // Allow drag and drop of one timeContainer's content onto another
-
 function ondragstartTimecontainer_handler(event: DragEvent) {
   // perform a copy operation of the data in the time container
   event.dataTransfer.dropEffect = 'copy'
@@ -1179,37 +2173,4 @@ function makeOndropTimecontainer_handler(
       targetElement.classList.remove('dragover')
     }
   }
-}
-
-// TODO replace this with using a Promise<eOSMD> in the renderZoomControl function
-let zoomTargetOSMD
-export function registerZoomTarget(sheetLocator: SheetLocator): void {
-  zoomTargetOSMD = sheetLocator
-}
-
-export function renderZoomControls(containerElement: HTMLElement): void {
-  const zoomOutButton = document.createElement('div')
-  zoomOutButton.classList.add('zoom-out')
-  containerElement.appendChild(zoomOutButton)
-  const zoomOutButtonIcon = document.createElement('i')
-  zoomOutButtonIcon.classList.add('fas', 'fa-search-minus')
-  zoomOutButton.appendChild(zoomOutButtonIcon)
-
-  const zoomInButton = document.createElement('div')
-  zoomInButton.classList.add('zoom-in')
-  containerElement.appendChild(zoomInButton)
-  const zoomInButtonIcon = document.createElement('i')
-  zoomInButtonIcon.classList.add('fas', 'fa-search-plus')
-  zoomInButton.appendChild(zoomInButtonIcon)
-
-  zoomOutButton.addEventListener('click', function () {
-    zoomTargetOSMD.sheet.Zoom /= 1.2
-    zoomTargetOSMD.render()
-    log.info(`OSMD zoom level now: ${zoomTargetOSMD.sheet.Zoom}`)
-  })
-  zoomInButton.addEventListener('click', function () {
-    zoomTargetOSMD.sheet.Zoom *= 1.2
-    zoomTargetOSMD.render()
-    log.info(`OSMD zoom level now: ${zoomTargetOSMD.sheet.Zoom}`)
-  })
 }

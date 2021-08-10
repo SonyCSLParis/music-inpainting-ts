@@ -1,12 +1,12 @@
 import * as Tone from 'tone'
 
 import { PlaybackManager } from './playback'
-import { SpectrogramLocator } from './locator'
 
 import Nexus from './nexusColored'
 
 import { getMidiInputListener } from './midiIn'
 import { IMidiChannel } from 'webmidi'
+import * as ControlLabels from './controlLabels'
 
 interface NoteEvent {
   note: string
@@ -14,7 +14,7 @@ interface NoteEvent {
   velocity: number
 }
 
-export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramLocator> {
+export class SpectrogramPlaybackManager extends PlaybackManager {
   // initialize crossfade to play player A
   protected masterLimiter: Tone.Limiter = new Tone.Limiter(-10).toDestination()
   protected masterGain: Tone.Gain = new Tone.Gain(1).connect(this.masterLimiter)
@@ -38,8 +38,8 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramLocat
   // look-ahead duration to retrieve the state of the crossfade after potential fading operations
   protected crossFadeOffset: Tone.Unit.Time = '+1.1'
 
-  constructor(locator: SpectrogramLocator) {
-    super(locator)
+  constructor() {
+    super()
 
     this.scheduleInitialPlaybackLoop()
 
@@ -68,10 +68,6 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramLocat
   // duration of the currently playing player in seconds
   public get duration_s(): number {
     return this.currentPlayer().buffer.duration
-  }
-
-  protected setPlaybackPositionDisplay(timePosition: number): void {
-    this.locator.setPosition(timePosition)
   }
 
   protected getCurrentDisplayTimestep(): number {
@@ -160,20 +156,59 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramLocat
   set Gain(newGain: number) {
     this.masterGain.gain.value = newGain
   }
-}
 
-export function renderFadeInControl(
-  element: HTMLElement,
-  spectrogramPlaybackManager: SpectrogramPlaybackManager
-): void {
-  const fadeInControl = new Nexus.Toggle(element.id, {
-    size: [40, 20],
-    state: false,
-  })
-  const fadeIn_duration_s = 0.01
-  fadeInControl.on('change', function (useFadeIn: boolean) {
-    spectrogramPlaybackManager.setFadeIn(useFadeIn ? fadeIn_duration_s : 0)
-  })
+  renderGainControl(container: HTMLElement): void {
+    const gainControlElement = document.createElement('div')
+    gainControlElement.classList.add('control-item', 'advanced')
+    container.appendChild(gainControlElement)
+
+    const gainControl = new Nexus.Slider(gainControlElement, {
+      size: [60, 20],
+      mode: 'absolute',
+      min: 0,
+      max: 1.2,
+      step: 0,
+      value: 1,
+    })
+    gainControl.on('change', (newGain: number) => {
+      this.Gain = newGain
+    })
+    gainControl.value = 1
+    gainControl
+
+    const localizationId = 'gain-control-label'
+    ControlLabels.createLabel(
+      gainControlElement,
+      localizationId,
+      true,
+      localizationId,
+      container
+    )
+  }
+
+  renderFadeInControl(container: HTMLElement): void {
+    const fadeInControlElement = document.createElement('div')
+    fadeInControlElement.classList.add('control-item', 'advanced')
+    container.appendChild(fadeInControlElement)
+
+    const fadeInControl = new Nexus.Toggle(fadeInControlElement, {
+      size: [40, 20],
+      state: false,
+    })
+    const fadeIn_duration_s = 0.01
+    fadeInControl.on('change', (useFadeIn: boolean) => {
+      this.setFadeIn(useFadeIn ? fadeIn_duration_s : 0)
+    })
+
+    const localizationId = 'fade-in-control-label'
+    ControlLabels.createLabel(
+      fadeInControlElement,
+      localizationId,
+      true,
+      localizationId,
+      container
+    )
+  }
 }
 
 interface NoteEventWithChannel extends NoteEvent {
@@ -185,8 +220,8 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
   protected voices_A: Tone.Sampler[]
   protected voices_B: Tone.Sampler[]
 
-  constructor(locator: SpectrogramLocator) {
-    super(locator)
+  constructor() {
+    super()
 
     this.voices_A = Array(this.numVoices)
       .fill(0)
@@ -204,14 +239,14 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
       })
   }
 
-  protected onkeydown(data: NoteEventWithChannel) {
+  protected onkeydown(data: NoteEventWithChannel): this {
     this.getSamplersByMidiChannel(data.channel).forEach((voice) =>
       voice.triggerAttack(data.note, undefined, data.velocity)
     )
     return this
   }
 
-  protected onkeyup(data: NoteEventWithChannel) {
+  protected onkeyup(data: NoteEventWithChannel): this {
     this.getSamplersByMidiChannel(data.channel).forEach((voice) => {
       voice.triggerRelease(data.note)
     })
@@ -272,7 +307,7 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
     })
   }
 
-  setFadeIn(duration_s: number) {
+  setFadeIn(duration_s: number): void {
     super.setFadeIn(duration_s)
     this.voices_A.forEach((voice) => {
       voice.attack = duration_s
@@ -281,23 +316,4 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
       voice.attack = duration_s
     })
   }
-}
-
-export function renderGainControl(
-  element: HTMLElement,
-  spectrogramPlaybackManager: SpectrogramPlaybackManager
-): void {
-  const gainControl = new Nexus.Slider(element.id, {
-    size: [60, 20],
-    mode: 'absolute',
-    min: 0,
-    max: 1.2,
-    step: 0,
-    value: 1,
-  })
-
-  gainControl.on('change', function (newGain: number) {
-    spectrogramPlaybackManager.Gain = newGain
-  })
-  gainControl.value = 1
 }

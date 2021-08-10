@@ -8,13 +8,13 @@ $spectrogram-background-color: #744a86;
 $spectrogram-height: 80%;
 $spectrogram-height-no-scroll: 90%;
 
-#spectrogram-image-container,
+.spectrogram-locator-image-container,
 .spectrogram-locator-interface-container {
   height: $spectrogram-height;
 }
 
-#spectrogram-container.no-scroll {
-  & #spectrogram-image-container,
+.spectrogram-locator.no-scroll {
+  & .spectrogram-locator-image-container,
   & .spectrogram-locator-interface-container {
     height: $spectrogram-height-no-scroll;
   }
@@ -56,7 +56,7 @@ $spectrogram-height-no-scroll: 90%;
     visibility: hidden;
   }
 
-  #snap-points {
+  .spectrogram-locator-snap-points {
     // ensures snap points are within the visible spectrogram image canvas
     // this is required so that they are taken into account
     position: absolute;
@@ -68,7 +68,7 @@ $spectrogram-height-no-scroll: 90%;
   }
 }
 
-#spectrogram-container.eraser svg {
+.spectrogram-locator .eraser svg {
   cursor: url('../images/eraser-solid.png') 0 18, pointer !important;
 }
 
@@ -91,31 +91,32 @@ $spectrogram-height-no-scroll: 90%;
   }
 }
 
-#spectrogram-image-container {
+.spectrogram-locator-image-container {
   position: absolute;
   width: 100vw;
   top: 5vh;
   pointer-events: none;
-}
 
-#spectrogram-picture {
-  position: relative;
-  left: 5vw;
-  filter: blur(2px);
-
-  img {
-    background-color: $spectrogram-background-color;
-    margin-right: 5vw;
-    top: 0;
-  }
-
-  > * {
-    top: 0;
+  picture {
     position: relative;
-    pointer-events: none;
-    z-index: -1000;
+    left: 5vw;
+    filter: blur(2px);
+
+    img {
+      background-color: $spectrogram-background-color;
+      margin-right: 5vw;
+      top: 0;
+    }
+
+    > * {
+      top: 0;
+      position: relative;
+      pointer-events: none;
+      z-index: -1000;
+    }
   }
 }
+
 
 .spectrogram-locator-shadow-container {
   position: absolute;

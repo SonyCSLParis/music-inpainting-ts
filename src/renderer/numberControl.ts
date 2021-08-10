@@ -1,5 +1,6 @@
 import * as Tone from 'tone'
 import Nexus from './nexusColored'
+import { NexusNumber, NexusSlider } from 'nexusui'
 
 import LinkClient from './ableton_link/linkClient'
 import * as ControlLabels from './controlLabels'
@@ -9,7 +10,7 @@ import * as ControlLabels from './controlLabels'
 class UniformChangeRateNumber extends Nexus.Number {
   changeFactor = 1
 
-  constructor(container: string, options: {}) {
+  constructor(container: string | HTMLElement, options: {}) {
     super(container, options)
   }
 
@@ -26,7 +27,7 @@ export class NumberControl {
   readonly labelId: string
   readonly id: string
   readonly range: [number, number]
-  protected controller
+  protected controller: NexusSlider | NexusNumber
   private readonly initialValue: number
 
   protected onchange: (newValue: number) => void
@@ -82,7 +83,7 @@ export class NumberControl {
     )
 
     if (!useSimpleSlider) {
-      const interactionElement: HTMLElement = document.createElement('div')
+      const interactionElement = document.createElement('div')
       interactionElement.id = this.interactionId
       containerElement.appendChild(interactionElement)
       this.controller = new UniformChangeRateNumber('#' + this.interactionId, {
@@ -94,13 +95,13 @@ export class NumberControl {
       this.controller.element.style.width =
         Math.round(elementWidth).toString() + 'px'
     } else {
-      const bpmSliderElement: HTMLElement = document.createElement('div')
+      const bpmSliderElement = document.createElement('div')
       bpmSliderElement.id = this.id
       containerElement.appendChild(bpmSliderElement)
 
-      this.controller = new Nexus.Slider('#' + this.id, {
+      this.controller = new Nexus.Slider(bpmSliderElement, {
         size: [100, 40],
-        mode: 'absolute', // 'relative' or 'absolute'
+        mode: 'absolute',
         min: this.range[0],
         max: this.range[1],
         step: (this.range[1] - this.range[0]) / 10,
@@ -171,7 +172,7 @@ export class BPMControl extends NumberControl {
   }
 }
 
-export function renderPitchRootAndOctaveControl() {
+export function renderPitchRootAndOctaveControl(lockPitchClassToC = false) {
   const constraintsGridspanElement = document.getElementById(
     'constraints-gridspan'
   )
@@ -181,7 +182,7 @@ export function renderPitchRootAndOctaveControl() {
   constraintsGridspanElement.appendChild(pitchSelectGridspanElement)
 
   const pitchSelectContainer = document.createElement('div')
-  pitchSelectContainer.id = 'pitch-control-root-select'
+  pitchSelectContainer.id = 'pitch-control-pitch-class-select'
   pitchSelectContainer.classList.add('control-item')
   pitchSelectGridspanElement.appendChild(pitchSelectContainer)
   const notes = [
@@ -198,19 +199,27 @@ export function renderPitchRootAndOctaveControl() {
     'B♭',
     'B',
   ]
-  const pitchRootSelect = new Nexus.Select('#pitch-control-root-select', {
-    size: [20, 30],
-    options: notes,
-  })
+  const pitchClassSelect = new Nexus.Select(
+    '#pitch-control-pitch-class-select',
+    {
+      size: [20, 30],
+      options: lockPitchClassToC ? ['C'] : notes,
+    }
+  )
   pitchSelectContainer.style.width = ''
   pitchSelectContainer.style.height = ''
-  ControlLabels.createLabel(
-    pitchSelectContainer,
-    'pitch-control-root-select-label',
-    false,
-    undefined,
-    pitchSelectGridspanElement
-  )
+  if (lockPitchClassToC) {
+    // TODO(theis, 2021/07/27): check this setup
+    ;(<HTMLElement>pitchClassSelect.element).style.display = 'none'
+  } else {
+    ControlLabels.createLabel(
+      pitchSelectContainer,
+      'pitch-control-pitch-class-select-label',
+      false,
+      undefined,
+      pitchSelectGridspanElement
+    )
+  }
 
   const octaveControl = new NumberControl(
     pitchSelectGridspanElement,
@@ -222,5 +231,5 @@ export function renderPitchRootAndOctaveControl() {
   const elementWidth_px = 40
   octaveControl.render(useSimpleSlider, elementWidth_px)
 
-  return [pitchRootSelect, octaveControl]
+  return { pitchClassSelect, octaveControl }
 }

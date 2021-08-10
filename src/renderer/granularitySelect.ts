@@ -4,18 +4,18 @@ import { CycleSelect } from './cycleSelect'
 import { SheetLocator } from './locator'
 
 const availableGranularityIcons = new Map([
-  ['1', 'quarter-note.svg'],
-  ['2', 'half-note.svg'],
-  ['4', 'whole.svg'],
-  ['8', 'whole-two.png'],
-  ['12', 'whole-three.png'],
-  ['16', 'whole-four.png'],
+  [1, 'quarter-note.svg'],
+  [2, 'half-note.svg'],
+  [4, 'whole.svg'],
+  [8, 'whole-two.png'],
+  [12, 'whole-three.png'],
+  [16, 'whole-four.png'],
 ])
 
 function makeGranularityIconsList(
-  granularities_quarters: string[]
-): Map<string, string> {
-  const granularitiesIcons = new Map()
+  granularities_quarters: number[]
+): Map<number, string> {
+  const granularitiesIcons = new Map<number, string>()
   const sortedGranularities = granularities_quarters.sort()
 
   for (
@@ -38,8 +38,8 @@ function makeGranularityIconsList(
 // Time-granularity selector
 export function renderGranularitySelect(
   containerElement: HTMLElement,
-  granularities_quarters: string[]
-): void {
+  granularities_quarters: number[]
+): CycleSelect<number> {
   const iconsBasePath: string = getPathToStaticFile('icons')
   const granularityIcons = makeGranularityIconsList(granularities_quarters)
 
@@ -53,7 +53,7 @@ export function renderGranularitySelect(
     'granularity-select-label'
   )
 
-  function granularityOnChange(ev) {
+  function granularityOnChange(this: CycleSelect<string>) {
     const duration_quarters: number = parseInt(this.value)
     const durationCSSClass: string = SheetLocator.makeGranularityCSSClass(
       duration_quarters
@@ -64,11 +64,9 @@ export function renderGranularitySelect(
 
   const granularitySelect = new CycleSelect(
     granularitySelectContainerElement,
-    'granularity-select',
     granularityOnChange,
     granularityIcons,
     iconsBasePath
   )
-
-  granularitySelect.value = granularities_quarters[0]
+  return granularitySelect
 }

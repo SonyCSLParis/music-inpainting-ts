@@ -15,7 +15,7 @@ const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
 
 export function createWindow(): void {
   // Create the browser window.
-  let window = new BrowserWindow({
+  const window = new BrowserWindow({
     title: globalConfiguration['app_name'],
     webPreferences: {
       nodeIntegration: true,
@@ -25,9 +25,8 @@ export function createWindow(): void {
   openWindows.set(window.id, window)
 
   if (isDevelopment) {
-    const electronWebpackWebDevelopmentServerPort = <string>(
+    const electronWebpackWebDevelopmentServerPort =
       process.env.ELECTRON_WEBPACK_WDS_PORT
-    )
     void window.loadURL(
       'http://localhost:' + electronWebpackWebDevelopmentServerPort
     )
@@ -35,13 +34,15 @@ export function createWindow(): void {
     void window.loadURL('file://' + path.join(__dirname, 'index.html'))
   }
 
-  // Emitted when the window is closed.
-  window.on('closed', function () {
+  const windowID = window.id
+  function onWindowClosed() {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    openWindows.delete(window.id)
-  })
+    openWindows.delete(windowID)
+  }
+  window.on('closed', onWindowClosed)
+  window.on('close', onWindowClosed)
 
   window.webContents.on('devtools-opened', () => {
     if (window != null) {

@@ -38,7 +38,6 @@ export async function render(useChordsInstrument = false): Promise<void> {
   }
 
   const midiOutSelectElement = document.createElement('div')
-  midiOutSelectElement.id = 'select-midi-out'
   midiOutSelectElement.classList.add('control-item', 'advanced')
   midiOutContainerElement.appendChild(midiOutSelectElement)
 
@@ -58,7 +57,7 @@ export async function render(useChordsInstrument = false): Promise<void> {
     return [disabledOutputId, 'All'].concat(devicesNames)
   }
 
-  const midiOutSelect = new Nexus.Select('#select-midi-out', {
+  const midiOutSelect = new Nexus.Select(midiOutSelectElement, {
     size: [150, 50],
     options: await makeOptions(),
   })
