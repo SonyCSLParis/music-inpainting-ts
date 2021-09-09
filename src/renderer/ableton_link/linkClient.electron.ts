@@ -40,7 +40,7 @@ export function isInitialized(): boolean {
   return link_initialized
 }
 
-export async function enable(playbackManager: PlaybackManager<Locator>) {
+export async function enable(playbackManager: PlaybackManager) {
   if (!isInitialized()) {
     log.debug('Must initialize LINK')
     const bpm: number = bpmControl.value

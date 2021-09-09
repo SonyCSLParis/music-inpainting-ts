@@ -6,7 +6,7 @@ import { PlaybackManager } from '../playback'
 import { Locator } from '../locator'
 import log from 'loglevel'
 
-export function render(playbackManager: PlaybackManager<Locator>): void {
+export function render(playbackManager: PlaybackManager): void {
   const bottomControlsElementID = 'bottom-controls'
   const bottomControlsGridElement = document.getElementById(
     bottomControlsElementID

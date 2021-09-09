@@ -1,5 +1,3 @@
-// <reference path='./jquery-exists.d.ts'/>
-
 import * as Tone from 'tone'
 import { Transport as ToneTransport } from 'tone/build/esm/core/clock/Transport'
 import log from 'loglevel'
@@ -14,11 +12,21 @@ export interface MinimalPlaybackManager {
 }
 
 abstract class TonePlaybackManager {
+  static readonly playbackLookahead = 0.3
+
   get transport(): ToneTransport {
     return Tone.getTransport()
   }
 
-  readonly safeStartDuration: Tone.Unit.Time = '+0.1'
+  get context(): Tone.BaseContext {
+    return this.transport.context
+  }
+
+  protected async resumeContext(): Promise<void> {
+    return this.transport.context.resume()
+  }
+
+  readonly safeStartDuration: Tone.Unit.Time = '+0.2'
 
   // adds a small delay to ensure playback as recommended in the Tone.js docs
   protected safeStartPlayback(): void {
@@ -26,7 +34,7 @@ abstract class TonePlaybackManager {
   }
 
   async play() {
-    await Tone.getContext().resume()
+    await this.resumeContext()
     // start the normal way
     this.safeStartPlayback()
   }
@@ -36,8 +44,21 @@ abstract class TonePlaybackManager {
   }
 
   async stop() {
-    await Tone.getContext().resume()
+    await this.resumeContext()
     this.stopSound()
+  }
+
+  toggleLowLatency(force?: boolean): void {
+    if (force != undefined) {
+      force
+        ? (this.transport.context.lookAhead = 0)
+        : (this.transport.context.lookAhead = PlaybackManager.playbackLookahead)
+    } else {
+      this.transport.context.lookAhead == PlaybackManager.playbackLookahead
+        ? (this.transport.context.lookAhead = 0)
+        : (this.transport.context.lookAhead = PlaybackManager.playbackLookahead)
+    }
+    this.context.emit('statechange')
   }
 }
 
@@ -49,14 +70,14 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
 
   // Start playback either immediately or in sync with Link if Link is enabled
   async play() {
-    await Tone.getContext().resume()
+    await this.resumeContext()
     if (!LinkClient.isEnabled()) {
       // start the normal way
       this.safeStartPlayback()
     } else {
       log.info('LINK: Waiting for `downbeat` message...')
       // wait for Link-socket to give downbeat signal
-      await LinkClient.once('downbeat', async () => {
+      await LinkClient.once('downbeat', () => {
         this.startPlaybackNowFromBeginning()
       })
       log.info('LINK: Received `downbeat` message, starting playback')
@@ -66,16 +87,16 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
   // Set the position in the current measure to the provided phase
   // TODO(theis): should we use the `link.quantum` value?
   synchronizeToLink(): void {
-    if (Tone.getTransport().state == 'started' && LinkClient.isEnabled()) {
+    if (this.transport.state == 'started' && LinkClient.isEnabled()) {
       const currentMeasure = this.getCurrentMeasure().toString()
-      Tone.getTransport().position =
+      this.transport.position =
         currentMeasure + ':' + LinkClient.getPhaseSynchronous().toString()
     }
   }
 
   // Helper function to access the current measure in the Transport
   protected getCurrentMeasure(): number {
-    const currentMeasure = Tone.getTransport().position.toString().split('')[0]
+    const currentMeasure = this.transport.position.toString().split('')[0]
     return parseInt(currentMeasure)
   }
 

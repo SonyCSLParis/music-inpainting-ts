@@ -6,6 +6,7 @@ import * as Instruments from './instruments'
 import * as ControlLabels from './controlLabels'
 
 import Nexus from './nexusColored'
+import { PlaybackManager } from './playback'
 
 let globalMidiOutputListener: MidiOutput = null
 
@@ -14,7 +15,7 @@ export async function getMidiOutputListener(): Promise<MidiOutput> {
   return globalMidiOutputListener
 }
 
-export async function render(useChordsInstrument = false): Promise<void> {
+export async function render(playbackManager: PlaybackManager): Promise<void> {
   const bottomControlsGridElement = document.getElementById('bottom-controls')
 
   const midiOutContainerElement: HTMLElement = document.createElement('div')
@@ -86,13 +87,14 @@ export async function render(useChordsInstrument = false): Promise<void> {
   }
 
   const midiOutputListener = await getMidiOutputListener()
-  midiOutputListener.on('connect', updateOptions)
-  midiOutputListener.on('disconnect', updateOptions)
+  midiOutputListener.on('connect', () => void updateOptions())
+  midiOutputListener.on('disconnect', () => void updateOptions())
 
-  async function midiOutOnChange(_: any): Promise<void> {
+  async function midiOutOnChange(this: typeof midiOutSelect): Promise<void> {
     const previousOutput = midiOutputListener.deviceId
     if (this.value == disabledOutputId) {
       midiOutputListener.deviceId = null
+      playbackManager.toggleLowLatency(false)
       Instruments.mute(false)
     } else {
       if (this.value == 'All') {
@@ -100,6 +102,7 @@ export async function render(useChordsInstrument = false): Promise<void> {
       } else {
         midiOutputListener.deviceId = await getDeviceId(this.value)
       }
+      playbackManager.toggleLowLatency(true)
       Instruments.mute(true)
     }
     if (midiOutputListener.deviceId != previousOutput) {
@@ -107,8 +110,8 @@ export async function render(useChordsInstrument = false): Promise<void> {
     }
   }
 
-  midiOutSelect.on('change', midiOutOnChange.bind(midiOutSelect))
-  midiOutSelect.value = await makeOptions()[0]
+  midiOutSelect.on('change', () => void midiOutOnChange.bind(midiOutSelect)())
+  midiOutSelect.value = (await makeOptions())[0]
 }
 
 export async function getOutput(): Promise<false | Output> {

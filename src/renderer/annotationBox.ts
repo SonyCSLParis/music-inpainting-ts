@@ -1,5 +1,3 @@
-import '../common/styles/overlays.scss'
-
 export abstract class AnnotationBox {
   readonly containedQuarterNotes: number[]
 

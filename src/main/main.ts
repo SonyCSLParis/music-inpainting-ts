@@ -11,9 +11,9 @@ import LinkServer from './ableton_link/linkServer'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 if (isDevelopment) {
-  log.setLevel('debug')
+  log.setLevel(log.levels.DEBUG)
 } else {
-  log.setLevel('info')
+  log.setLevel(log.levels.INFO)
 }
 
 // This method will be called when Electron has finished

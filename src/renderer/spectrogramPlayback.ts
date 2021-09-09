@@ -66,13 +66,8 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
   }
 
   // duration of the currently playing player in seconds
-  public get duration_s(): number {
+  public get duration(): Tone.Unit.Seconds {
     return this.currentPlayer().buffer.duration
-  }
-
-  protected getCurrentDisplayTimestep(): number {
-    // TODO(theis): fix method name, this returns the ratio of progress in the playback
-    return Tone.getTransport().progress
   }
 
   protected currentPlayerIsA(): boolean {
@@ -105,19 +100,19 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
   }
 
   // crossfade between the two players
-  protected switchPlayers() {
-    const currentScheduledValue: number = this.crossFade.fade.getValueAtTime(
+  protected switchPlayers(): void {
+    const currentlyScheduledCrossFadeValue: number = this.crossFade.fade.getValueAtTime(
       this.crossFadeOffset
     )
-    const newValue: number = Math.round(1 - currentScheduledValue) // round ensures binary values
-    this.crossFade.fade.linearRampTo(newValue, this.crossFadeDuration)
+    const newCrossFadeValue = Math.round(1 - currentlyScheduledCrossFadeValue) // round ensures binary values
+    this.crossFade.fade.linearRampTo(newCrossFadeValue, this.crossFadeDuration)
   }
 
   // initialize the Transport loop and synchronize the two players
-  protected scheduleInitialPlaybackLoop() {
+  protected scheduleInitialPlaybackLoop(): void {
     this.player_A.sync()
     this.player_B.sync()
-    Tone.getTransport().loop = true
+    this.transport.loop = true
   }
 
   // load a remote audio file into the next player and switch playback to it
@@ -135,18 +130,13 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     this.nextPlayer().sync()
 
     // reschedule the Transport loop
-    Tone.getTransport().setLoopPoints(0, this.nextPlayer().buffer.duration)
+    this.transport.setLoopPoints(0, this.nextPlayer().buffer.duration)
     this.nextPlayer().start(0)
 
     this.switchPlayers()
   }
 
-  // TODO(theis): move methods from index.ts to this class
-  loadSpectrogram(serverURL: string, command: string, codes: number[][]): void {
-    throw new Error('Not implemented')
-  }
-
-  setFadeIn(duration_s: number) {
+  setFadeIn(duration_s: number): void {
     this.player_A.fadeIn = this.player_B.fadeIn = this.sampler_A.attack = this.sampler_B.attack = duration_s
   }
 
@@ -270,9 +260,6 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
   }
 
   protected updateBuffers(): void {
-    // this.currentVoices.forEach((voice) => voice.set({urls: {
-    //     'C4': this.currentBuffer().get()}})
-    // );
     this.voices_A.forEach((voice) => {
       voice.dispose()
     })

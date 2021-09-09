@@ -1,5 +1,5 @@
-import { Fraction } from 'opensheetmusicdisplay'
 import $ from 'jquery'
+import Tone from 'tone'
 
 import log from 'loglevel'
 log.setLevel(log.levels.INFO)
@@ -47,17 +47,20 @@ import * as GranularitySelect from './granularitySelect'
 import { createWavInput } from './file_upload'
 import * as SplashScreen from './startup'
 
+// WARNING: importing style sheets, order matters!
 import 'simplebar'
 import 'simplebar/src/simplebar.css'
 
+import colors from '../common/styles/mixins/_colors.module.scss'
+
+import '../common/styles/main.scss'
 import '../common/styles/simplebar.scss'
+import '../common/styles/controls.scss'
+import '../common/styles/overlays.scss'
+
 import '../common/styles/osmd.scss'
 import '../common/styles/spectrogram.scss'
-import '../common/styles/main.scss'
-import '../common/styles/controls.scss'
 import '../common/styles/disableMouse.scss'
-
-import colors from '../common/styles/mixins/_colors.module.scss'
 
 declare let COMPILE_ELECTRON: boolean
 
@@ -175,10 +178,16 @@ function render(
     }
   })
 
-  $(() => {
-    if (configuration['spectrogram']) {
-    }
-  })
+  if (configuration['osmd']) {
+    $(() => {
+      const useSimpleSlider = !configuration['insert_advanced_controls']
+      const bottomControlsGridElement = document.getElementById(
+        'bottom-controls'
+      )
+      bpmControl = new BPMControl(bottomControlsGridElement, 'bpm-control')
+      bpmControl.render(useSimpleSlider, 200)
+    })
+  }
 
   $(() => {
     const isAdvancedControl = true
@@ -233,7 +242,7 @@ function render(
 
   function insertLoadingSpinner(container: HTMLElement): HTMLElement {
     const spinnerElement: HTMLElement = document.createElement('i')
-    spinnerElement.classList.add('fas', 'fa-4x', 'fa-spin', 'fa-cog')
+    spinnerElement.classList.add('fas', 'fa-7x', 'fa-spin', 'fa-cog')
     spinnerElement.id = 'loading-spinner'
     container.appendChild(spinnerElement)
 
@@ -301,21 +310,6 @@ function render(
     })
   }
 
-  $(() => {
-    // HACK(theis): delayed import necessary to avoid
-    // failure on startup if the browser does not support the Web MIDI API
-    const midiOutImplementation: typeof MidiOut = require('./midiOut')
-    const midiInImplementation: typeof MidiIn = require('./midiIn')
-    if (configuration['insert_advanced_controls'] && configuration['osmd']) {
-      void midiOutImplementation.render()
-    } else if (
-      configuration['insert_advanced_controls'] &&
-      configuration['spectrogram']
-    ) {
-      void midiInImplementation.render()
-    }
-  })
-
   let sheetLocator: SheetLocator
   $(() => {
     const mainPanel = document.getElementById('main-panel')
@@ -341,11 +335,12 @@ function render(
 
       const autoResize = false
       // TODO(theis): check proper way of enforcing subtype
-      sheetPlaybackManager = new MidiSheetPlaybackManager()
+      sheetPlaybackManager = new MidiSheetPlaybackManager(bpmControl)
       sheetLocator = new SheetLocator(
         sheetPlaybackManager,
         sheetContainer,
         granularitySelect,
+        downloadButton,
         inpaintingApiAddress,
         {
           autoResize: autoResize,
@@ -359,21 +354,22 @@ function render(
 
       playbackManager = sheetPlaybackManager
 
+      // set the initial tempo for the app
+      // if (LinkClient.isEnabled()) {
+      // // if Link is enabled, use the Link tempo
+      //     LinkClient.setBPMtoLinkBPM_async();
+      // }
+      // else
+      {
+        bpmControl.value = 110
+      }
+
       if (configuration['use_chords_instrument']) {
         sheetPlaybackManager.scheduleChordsPlayer(
           configuration['chords_midi_channel'],
           sheetLocator
         )
       }
-      $(() => {
-        // requesting the initial sheet, so can't send any sheet along
-        const sendSheetWithRequest = false
-        void sheetLocator.loadMusicXMLandMidi(
-          inpaintingApiAddress,
-          'generate',
-          sendSheetWithRequest
-        )
-      })
     } else if (configuration['spectrogram']) {
       // create and render editToolSelect element
       const vqvaeLayerIcons: Map<LayerAndTool, string> = new Map([
@@ -396,9 +392,12 @@ function render(
         [{ layer: VqvaeLayer.Top, tool: NotonoTool.Eraser }, 'edit-tools.svg'],
       ])
 
-      const vqvaeLayerDimensions: Map<VqvaeLayer, [number, number]> = new Map([
-        [VqvaeLayer.Top, [32, 4]],
-        [VqvaeLayer.Bottom, [64, 8]],
+      const vqvaeLayerDimensions: Map<
+        VqvaeLayer,
+        [number, number, Tone.Unit.Seconds]
+      > = new Map([
+        [VqvaeLayer.Top, [32, 4, 1]],
+        [VqvaeLayer.Bottom, [64, 8, 0.5]],
       ])
 
       const iconsBasePath = getPathToStaticFile('icons')
@@ -415,10 +414,13 @@ function render(
       const vqvaeLayerOnChange = function (
         this: CycleSelect<LayerAndTool>
       ): void {
-        const [newNumRows, newNumColumns] = vqvaeLayerDimensions.get(
-          this.value.layer
-        )
-        const [_, numColumnsTop] = vqvaeLayerDimensions.get(VqvaeLayer.Top)
+        const numColumnsTop = vqvaeLayerDimensions.get(VqvaeLayer.Top)[1]
+        const [
+          newNumRows,
+          newNumColumns,
+          columnDuration,
+        ] = vqvaeLayerDimensions.get(this.value.layer)
+        spectrogramLocator.columnDuration = columnDuration
         locator.render(newNumRows, newNumColumns, numColumnsTop)
         locator.interfaceContainer.classList.toggle(
           'eraser',
@@ -465,9 +467,8 @@ function render(
 
       playbackManager = spectrogramPlaybackManager
       locator = spectrogramLocator
-
-      void spectrogramLocator.sample()
     }
+    playbackManager.toggleLowLatency(false)
   })
 
   $(() => {
@@ -476,14 +477,6 @@ function render(
     )
     PlaybackCommands.render(playbackCommandsGridspan, playbackManager)
   })
-
-  function sampleNewData(inpaintingApiAddress: URL) {
-    if (locator.dataType == 'sheet') {
-      void locator.generate(inpaintingApiAddress)
-    } else if (locator.dataType == 'spectrogram') {
-      void locator.sample(inpaintingApiAddress)
-    }
-  }
 
   if (configuration['osmd']) {
     $(() => {
@@ -512,26 +505,20 @@ function render(
     })
   }
 
-  if (configuration['osmd']) {
-    $(() => {
-      const useSimpleSlider = !configuration['insert_advanced_controls']
-      const bottomControlsGridElement = document.getElementById(
-        'bottom-controls'
-      )
-      bpmControl = new BPMControl(bottomControlsGridElement, 'bpm-control')
-      bpmControl.render(useSimpleSlider, 200)
-
-      // set the initial tempo for the app
-      // if (LinkClient.isEnabled()) {
-      // // if Link is enabled, use the Link tempo
-      //     LinkClient.setBPMtoLinkBPM_async();
-      // }
-      // else
-      {
-        bpmControl.value = 110
-      }
-    })
-  }
+  $(() => {
+    // HACK(theis): delayed import necessary to avoid
+    // failure on startup if the browser does not support the Web MIDI API
+    const midiOutImplementation: typeof MidiOut = require('./midiOut')
+    const midiInImplementation: typeof MidiIn = require('./midiIn')
+    if (configuration['insert_advanced_controls'] && configuration['osmd']) {
+      void midiOutImplementation.render(playbackManager)
+    } else if (
+      configuration['insert_advanced_controls'] &&
+      configuration['spectrogram']
+    ) {
+      void midiInImplementation.render()
+    }
+  })
 
   // $(() => {
   //   const insertWavInput: boolean = configuration['insert_wav_input']
@@ -584,6 +571,23 @@ function render(
 
       helpTrip.renderIcon(document.getElementById('main-panel'))
     }
+  })
+
+  function sampleNewData(inpaintingApiAddress: URL) {
+    let promise: Promise<Locator<PlaybackManager, unknown>>
+    if (locator.dataType == 'sheet') {
+      promise = locator.generate(inpaintingApiAddress)
+    } else if (locator.dataType == 'spectrogram') {
+      promise = locator.sample(inpaintingApiAddress)
+    }
+    promise.then(
+      () => log.info('Retrieved new media from server'),
+      () => log.error('Could not retrieve initial media')
+    )
+  }
+
+  $(() => {
+    sampleNewData(inpaintingApiAddress)
   })
 }
 

@@ -13,17 +13,15 @@ body {
   overflow: hidden;
 }
 
-html {
-  // default theme, also used on the splash-screen
-  @include colors.theme-colors(dark-lavender);
-}
+// default theme, also used on the splash-screen
+@include colors.theme-colors(dark-lavender);
 
 body.running {
   &.nonoto {
     @include colors.theme-colors(millenial-pink);
   }
   &.notono {
-    &.dark {
+    &, &.dark {
       @include colors.theme-colors(dark-lavender);
     }
     &.light {
@@ -46,7 +44,7 @@ body {
     cursor: wait !important;
 
     & #loading-spinner {
-      display: inline-block;
+      opacity: 1;
     }
   }
 }
@@ -75,6 +73,7 @@ body.notono {
     cursor: pointer;
   }
   &.scroll-lock::before {
+    color: firebrick;
     content: "\F023";
   }
 
@@ -128,7 +127,6 @@ img {
   grid-template-rows: auto 1fr auto;
   grid-template-columns: auto;
   height: 100%;
-  // width: 100vw;
   grid-template-areas:
     'header'
     'main'
@@ -171,7 +169,11 @@ header, #main-panel, footer {
 #loading-spinner {
   position: absolute;
   align-self: center;
-  display: none;
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+
+  transition: all 0.1s;
 }
 
 $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
@@ -215,7 +217,6 @@ $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
     }
 
     &:hover {
-      // transform: translate(-50%, 0);
       height: measures.$expand-tab-height;
       top: calc(0px - #{measures.$expand-tab-height});
     }
