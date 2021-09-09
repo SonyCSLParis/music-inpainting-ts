@@ -9,8 +9,7 @@ import {
 } from 'opensheetmusicdisplay'
 import { FermataBox } from './fermata'
 import { ChordSelector } from './chord_selector'
-
-import '../common/styles/overlays.scss'
+import type { Chord } from './chord'
 
 import Nexus, { NexusSelectWithShuffle } from './nexusColored'
 import type { NexusSelect } from 'nexusui'
@@ -23,6 +22,77 @@ import { CycleSelect } from './cycleSelect'
 import { NumberControl } from './numberControl'
 import { DownloadButton } from './downloadCommand'
 import { mapTouchEventsToMouseSimplebar } from './utils/simplebar'
+import SimpleBar from 'simplebar'
+import type { Options as SimpleBarOptions } from 'simplebar'
+import type { MatrixCell } from 'nexusui'
+
+class ScrollLockSimpleBar extends SimpleBar {
+  axis: {
+    x: {
+      track: { el: HTMLElement; rect: DOMRect }
+      scrollbar: { el: HTMLElement; rect: DOMRect }
+    }
+    y: {
+      track: { el: HTMLElement; rect: DOMRect }
+      scrollbar: { el: HTMLElement; rect: DOMRect }
+    }
+  }
+
+  static readonly scrollLockClass = 'scroll-lock'
+  protected readonly scrollTracksClassNames: string = 'simplebar-track'
+  protected readonly scrollHandlesClassNames: string = 'simplebar-scrollbar'
+
+  constructor(element: HTMLElement, options?: SimpleBarOptions) {
+    super(element, options)
+    this.registerScrollLockCallback()
+  }
+
+  get scrollTracks(): Element[] {
+    const scrollTracks = this.el.getElementsByClassName(
+      this.scrollTracksClassNames
+    )
+    if (scrollTracks.length > 0) {
+      return Array.from(scrollTracks)
+    } else {
+      throw new EvalError('No scroll-element not found')
+    }
+  }
+
+  get scrollHandles(): Element[] {
+    return this.scrollTracks.map((element) =>
+      element.getElementsByClassName(this.scrollHandlesClassNames).item(0)
+    )
+  }
+
+  get isScrollLocked(): boolean {
+    return this.scrollTracks[0].classList.contains(
+      ScrollLockSimpleBar.scrollLockClass
+    )
+  }
+
+  registerScrollLockCallback(): void {
+    // HACK(@tbazin, 2021/09/07): detects click events on the simplebar-track
+    //   in order to toggle scroll-lock, this breaks if clickOnTrack is enabled
+    this.scrollTracks.forEach((element) =>
+      element.addEventListener('click', function (this: HTMLElement): void {
+        this.classList.toggle(ScrollLockSimpleBar.scrollLockClass)
+      })
+    )
+  }
+
+  toggleScrollLock(axis: 'x' | 'y', force?: boolean) {
+    this.axis[axis].track.el.classList.toggle(
+      ScrollLockSimpleBar.scrollLockClass,
+      force
+    )
+  }
+
+  onDragStart(e, axis: 'x' | 'y' = 'y') {
+    this.toggleScrollLock(axis, true)
+    // @ts-ignore
+    super.onDragStart(e, axis)
+  }
+}
 
 const enum apiCommand {
   Analyze = 'analyze',
@@ -37,18 +107,31 @@ export abstract class Locator<
   EditToolT
 > {
   readonly playbackManager: PlaybackManagerT
+  readonly downloadButton: DownloadButton
 
   readonly container: HTMLElement
-  readonly interfaceContainer: HTMLElement
+  abstract readonly interfaceContainer: HTMLElement
+
+  // enable this if the scrollbars can be displayed over the content
+  // to ensure visibility of the underlying content
+  abstract readonly useTransparentScrollbars: boolean
+
+  toggleTransparentScrollbars(): void {
+    this.container.classList.toggle(
+      'transparent-scrollbar',
+      this.useTransparentScrollbars
+    )
+  }
+
   protected resizeTimeoutDuration = 0
   protected resizeTimeout = setTimeout(() => {
     return
   }, 0)
   readonly editToolSelect: CycleSelect<EditToolT>
 
-  abstract readonly dataType: 'sheet' | 'spectrogram'
+  protected displayLoop: Tone.Loop = new Tone.Loop()
 
-  abstract get stepProgress(): number
+  abstract readonly dataType: 'sheet' | 'spectrogram'
 
   // render the interface on the DOM and bind callbacks
   public abstract render(...args): void
@@ -122,16 +205,31 @@ export abstract class Locator<
     playbackManager: PlaybackManagerT,
     container: HTMLElement,
     editToolSelect: CycleSelect<EditToolT>,
+    downloadButton: DownloadButton,
     defaultApiAddress: URL,
-    toneDisplayUpdateInterval = '4n',
+    displayUpdateRate: Tone.Unit.Time,
+    // toneDisplayUpdateInterval: Tone.Unit.Time = '4n',
     ...args
   ) {
     this.playbackManager = playbackManager
+    this.playbackManager.context.on('statechange', () => {
+      // reschedule the display loop if the context changed,
+      // this can happen when the value of context.lookAhead is changed
+      // e.g. when toggling between built-in playback with a safety latency
+      // and low-latency MIDI-based playback
+      this.scheduleDisplayLoop()
+    })
     this.container = container
     this.editToolSelect = editToolSelect
+    this.downloadButton = downloadButton
     this.defaultApiAddress = defaultApiAddress
+
     this.registerRefreshOnResizeListener()
-    this.scheduleDisplayLoop(toneDisplayUpdateInterval)
+
+    this.displayUpdateRate = displayUpdateRate
+    this.scheduleDisplayLoop()
+
+    this.toggleTransparentScrollbars()
   }
 
   readonly defaultApiAddress: URL
@@ -152,7 +250,10 @@ export abstract class Locator<
       this.restParameters,
       apiAddress,
       false
-    )
+    ).then((locator) => {
+      locator.refreshNowPlayingDisplay()
+      return locator
+    })
   }
 
   // sample new codes from a remote dataset
@@ -167,7 +268,10 @@ export abstract class Locator<
       false,
       null,
       timeout
-    )
+    ).then((locator) => {
+      locator.refreshNowPlayingDisplay()
+      return locator
+    })
   }
 
   // perform an inpainting operation on the current data
@@ -178,7 +282,10 @@ export abstract class Locator<
       apiAddress,
       true,
       mask
-    )
+    ).then((locator) => {
+      locator.refreshNowPlayingDisplay()
+      return locator
+    })
   }
 
   protected abstract get restParameters(): string
@@ -196,7 +303,10 @@ export abstract class Locator<
       apiAddress,
       false,
       data
-    )
+    ).then((locator) => {
+      locator.refreshNowPlayingDisplay()
+      return locator
+    })
   }
 
   protected toggleBusyClass(state: boolean): void {
@@ -204,11 +314,11 @@ export abstract class Locator<
     // FIXME(theis, 2021/08/02): avoid applying classes to 'body', breaks encapsulation
     $('body').toggleClass('busy', state)
     $('.notebox').toggleClass('busy', state)
-    $('.notebox').toggleClass('available', !state)
     $('.spectrogram-locator').toggleClass('busy', state)
+    this.interfaceContainer.classList.toggle('busy', state)
   }
 
-  protected blockEvent(e: Event): void {
+  protected static blockEventCallback: (e: Event) => void = (e: Event) => {
     // block propagation of events in bubbling/capturing
     e.stopPropagation()
     e.preventDefault()
@@ -216,19 +326,9 @@ export abstract class Locator<
 
   protected disableChanges(): void {
     this.toggleBusyClass(true)
-    $('.timeContainer').addClass('busy')
-    const blockPropagationCallback = (e: Event) => this.blockEvent(e)
-    $('.timeContainer').each(function () {
-      this.addEventListener('click', blockPropagationCallback, true)
-    })
   }
 
   protected enableChanges(): void {
-    const blockPropagationCallback = (e: Event) => this.blockEvent(e)
-    $('.timeContainer').each(function () {
-      this.removeEventListener('click', blockPropagationCallback, true)
-    })
-    $('.timeContainer').removeClass('busy')
     this.toggleBusyClass(false)
   }
 
@@ -246,52 +346,33 @@ export abstract class Locator<
   }
 
   // set currently playing interface position by progress ratio
-  abstract setCurrentlyPlayingPositionDisplay(progress: number): void
+  protected abstract setCurrentlyPlayingPositionDisplay(progress: number): void
 
-  static readonly scrollLockClass = 'scroll-lock'
-  protected readonly scrollElementsClassNames: string = 'simplebar-track'
-
-  get scrollElements(): Element[] {
-    const scrollbars = this.container.getElementsByClassName(
-      this.scrollElementsClassNames
-    )
-    if (scrollbars.length > 0) {
-      return Array.from(scrollbars)
-    } else {
-      throw new EvalError('No scroll-element not found')
-    }
-  }
-
-  get isScrollLocked(): boolean {
-    return this.scrollElements[0].classList.contains(Locator.scrollLockClass)
-  }
-
-  registerScrollLockCallback(): void {
-    this.scrollElements.forEach((element) =>
-      element.addEventListener('click', function (this: HTMLElement): void {
-        this.classList.toggle(Locator.scrollLockClass)
-      })
-    )
-  }
-
-  protected nowPlayingDisplayCallback(_: any, step: number): void {
+  protected simpleBar: ScrollLockSimpleBar
+  protected readonly nowPlayingDisplayCallbacks: (() => void)[] = [
     // scroll display to current step if necessary
-    this.setCurrentlyPlayingPositionDisplay(
-      this.playbackManager.transport.progress
-    )
-    this.scrollToStep(step)
+    (): void => this.scrollTo(this.playbackManager.transport.progress),
+    (): void =>
+      this.setCurrentlyPlayingPositionDisplay(
+        this.playbackManager.transport.progress
+      ),
+  ]
+
+  refreshNowPlayingDisplay(): void {
+    this.nowPlayingDisplayCallbacks.forEach((callback) => callback())
   }
 
   protected shortScroll: JQuery.Duration = 50
 
-  protected readonly scrollElementSelector = '.simplebar-content-wrapper'
+  protected get scrollableElement(): Element {
+    return this.container.getElementsByClassName('simplebar-content-wrapper')[0]
+  }
 
   protected getDisplayCenterPosition_px(): number {
     // return the current position within the sheet display
-    const scrollContentElement: HTMLElement = $(this.scrollElementSelector)[0]
-    const currentSheetDisplayWidth: number = scrollContentElement.clientWidth
+    const visibleWidth: number = this.scrollableElement.clientWidth
     const centerPosition: number =
-      scrollContentElement.scrollLeft + currentSheetDisplayWidth / 2
+      this.scrollableElement.scrollLeft + visibleWidth / 2
 
     return centerPosition
   }
@@ -304,31 +385,28 @@ export abstract class Locator<
     this.scrollToStep(this.progressToStep(progress))
   }
 
-  abstract progressToStep(progress: number): number
+  protected abstract progressToStep(progress: number): number
+  get currentlyPlayingStep(): number {
+    return this.progressToStep(this.playbackManager.transport.progress)
+  }
 
   protected scrollToPosition(targetPosition_px: number): void {
-    if (this.isScrollLocked) {
+    if (this.simpleBar.isScrollLocked) {
       return
     }
-    const scrollContentElement: HTMLElement = $(this.scrollElementSelector)[0]
-
-    const currentDisplayWidth_px: number = scrollContentElement.clientWidth
+    const currentDisplayWidth_px: number = this.scrollableElement.clientWidth
     const newScrollLeft_px = targetPosition_px - currentDisplayWidth_px / 2
 
     const currentCenterPosition_px: number = this.getDisplayCenterPosition_px()
     if (currentCenterPosition_px > targetPosition_px) {
-      // scrolling to a previous position: super-fast scroll
-      $(this.scrollElementSelector).stop(true, false).animate(
-        {
-          scrollLeft: newScrollLeft_px,
-        },
-        10,
-        'linear'
-      )
+      // scrolling to a previous position: instant scroll
+      $(this.scrollableElement).stop(true, false)
+      this.scrollableElement.scrollLeft = newScrollLeft_px
     } else {
       // synchronize scrolling with the tempo for smooth scrolling
-      const scrollDuration_ms = this.playbackManager.interbeatTime_s * 1000
-      $(this.scrollElementSelector).stop(true, false).animate(
+      log.debug('scrolling to position ', newScrollLeft_px)
+      const scrollDuration_ms = this.scrollIntervalDuration_seconds * 1000
+      $(this.scrollableElement).stop(true, false).animate(
         {
           scrollLeft: newScrollLeft_px,
         },
@@ -336,6 +414,18 @@ export abstract class Locator<
         'linear'
       )
     }
+  }
+
+  // Duration between two scroll snap points,
+  //  e.g. 1 beat for a sheet in NONOTO
+  //  or 1 second for sounds in NOTONO using a 1-seconds-resolution VQ-VAE
+  abstract readonly scrollIntervalDuration: Tone.Unit.Time
+
+  readonly displayUpdateRate: Tone.Unit.Time
+
+  // Return the time in seconds between beats
+  get scrollIntervalDuration_seconds(): number {
+    return this.playbackManager.transport.toSeconds(this.scrollIntervalDuration)
   }
 
   protected scrollToStep(step: number): void {
@@ -355,7 +445,8 @@ export abstract class Locator<
     } catch (e) {
       // reached last container box
       // FIXME make and catch specific error
-      const lastStepPosition = this.getTimecontainerPosition(step)
+      const lastStepIndex = this.progressToStep(1) - 1
+      const lastStepPosition = this.getTimecontainerPosition(lastStepIndex)
       log.debug(
         `Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`
       )
@@ -371,32 +462,22 @@ export abstract class Locator<
     step: number
   ): { left: number; right: number }
 
-  // retrieve index of the current display-step
-  protected abstract getCurrentDisplayTimestep(): number
-
-  protected updateCursorPosition(): void {
-    this.nowPlayingDisplayCallback(null, this.stepProgress)
-  }
-
-  protected scheduleDisplayLoop(toneDisplayUpdateInterval: string): void {
-    // initialize playback display scheduler
-    const self = this
-    const drawCallback = (time) => {
-      // DOM modifying callback should be put in Tone.getDraw() scheduler!
-      // see: https://github.com/Tonejs/Tone.js/wiki/Performance#syncing-visuals
-      Tone.getDraw().schedule(function () {
-        self.updateCursorPosition()
-      }, time)
+  protected scheduleDisplayLoop(): void {
+    this.displayLoop.dispose()
+    const drawCallback = (time: Tone.Unit.Time) => {
+      const draw = this.playbackManager.transport.context.draw
+      this.nowPlayingDisplayCallbacks.forEach((callback) =>
+        draw.schedule(() => {
+          callback()
+        }, this.playbackManager.transport.toSeconds(time) + this.playbackManager.transport.context.lookAhead)
+      )
     }
-
-    // schedule quarter-notes clock
-    log.debug('Scheduling draw callback sequence')
-    // FIXME assumes a TimeSignature of 4/4
-    new Tone.Loop(drawCallback, toneDisplayUpdateInterval).start(0)
+    this.displayLoop = new Tone.Loop(
+      drawCallback,
+      this.displayUpdateRate
+    ).start(0)
   }
 }
-
-// type SheetGranularity =
 
 export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
   readonly dataType = 'sheet'
@@ -409,6 +490,7 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
     sheetPlaybackManager: MidiSheetPlaybackManager,
     container: HTMLElement,
     granularitiesSelect: CycleSelect<number>,
+    downloadButton: DownloadButton,
     defaultApiAddress: URL,
     options: IOSMDOptions,
     annotationTypes: string[] = [],
@@ -418,15 +500,14 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
       sheetPlaybackManager,
       container,
       granularitiesSelect,
-      defaultApiAddress
+      downloadButton,
+      defaultApiAddress,
+      SheetLocator.displayUpdateRate
     )
     /*
      * Create a container element for OpenSheetMusicDisplay...
      */
     this.container.classList.add('sheet-locator')
-    this.container.setAttribute('data-simplebar', '')
-    this.container.setAttribute('data-simplebar-auto-hide', 'false')
-    this.container.setAttribute('data-simplebar-click-on-track', 'false')
 
     this.interfaceContainer = document.createElement('div')
     this.interfaceContainer.classList.add('sheet-locator-overlays')
@@ -447,20 +528,28 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
 
     this.boxDurations_quarters = this.editToolSelect.options
 
-    $(() => this.registerScrollLockCallback())
+    this.simpleBar = new ScrollLockSimpleBar(this.container, {
+      autoHide: false,
+      clickOnTrack: false,
+    })
   }
   protected resizeTimeoutDuration = 50
 
   readonly interfaceContainer: HTMLElement
   readonly sheetContainer: HTMLElement
+  readonly useTransparentScrollbars = true
 
-  protected readonly scrollElementsClassNames =
+  protected readonly scrollTracksClassNames =
     'simplebar-track simplebar-horizontal'
 
   readonly sheet: OpenSheetMusicDisplay
   protected get graphicElement(): SVGElement | null {
     return this.sheetContainer.getElementsByTagName('svg').item(0)
   }
+
+  readonly scrollIntervalDuration = '4n'
+
+  static readonly displayUpdateRate = '4n'
 
   protected onClickTimestampBoxFactory(
     timeStart: Fraction,
@@ -718,7 +807,6 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
 
       div.id = divId
       div.classList.add('notebox')
-      div.classList.add('available')
       // div.classList.add(divClass);
 
       // FIXME constrains granularity
@@ -935,6 +1023,10 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
 
           if (!document.getElementById(timeContainerID)) {
             // the time container does not yet exist, create it
+            const onclick = this.onClickTimestampBoxFactory(
+              currentBeginTimestamp,
+              currentEndTimestamp
+            )
             this.createTimeContainer(
               timeContainerID,
               boxDuration_quarters,
@@ -960,7 +1052,7 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
     }
   }
 
-  protected get activeElements() {
+  protected get activeElements(): HTMLCollectionOf<Element> {
     return this.interfaceContainer.getElementsByClassName('notebox active')
   }
 
@@ -972,8 +1064,8 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
     return this.activeElements.length
   }
 
-  setCurrentlyPlayingPositionDisplay(progress: number): void {
-    const timePosition = Math.round(progress * this.sequenceDuration_quarters)
+  protected setCurrentlyPlayingPositionDisplay(progress: number): void {
+    const timePosition = Math.floor(progress * this.sequenceDuration_quarters)
 
     $('.notebox').removeClass('playing')
     $(
@@ -992,7 +1084,8 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
     } catch (e) {
       // reached last container box
       // FIXME make and catch specific error
-      const lastStepPosition = this.getTimecontainerPosition(step)
+      const lastStepIndex = this.progressToStep(1) - 1
+      const lastStepPosition = this.getTimecontainerPosition(lastStepIndex)
       log.debug(
         `Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`
       )
@@ -1007,19 +1100,19 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
   protected getTimecontainerPosition(
     step: number
   ): { left: number; right: number } {
+    // TODO(@tbazin, 2021/08/31): remove use of JQuery
+    // FIXME implement and use timeContainer method
     const containerElementSelector = $(
       `.timeContainer[containedQuarterNotes='${step}']`
     )
 
-    if (!containerElementSelector.exists()) {
+    if (containerElementSelector.length == 0) {
       throw new Error('Inaccessible step')
     }
 
     const containerElementStyle = containerElementSelector[0].style
-
     return {
       left: parseFloat(containerElementStyle.left),
-      // FIXME implement and use timeContainer method
       right:
         parseFloat(containerElementStyle.left) +
         parseFloat(containerElementStyle.width),
@@ -1030,10 +1123,8 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
     return this.sheet.GraphicSheet.MeasureList.length * 4
   }
 
-  get stepProgress(): number {
-    return Math.floor(
-      this.playbackManager.transport.progress * this.sequenceDurationQuarters
-    )
+  protected progressToStep(progress: number): number {
+    return Math.floor(progress * this.sequenceDurationQuarters)
   }
 
   protected getFermatas(): number[] {
@@ -1053,16 +1144,16 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
     return containedQuarterNotesList
   }
 
-  protected getChordLabels(): object[] {
+  protected getChordLabels(): Chord[] {
     // return a stringified JSON object describing the current chords
-    const chordLabels = []
+    const chordLabels: Chord[] = []
     for (const chordSelector of this.chordSelectors) {
       chordLabels.push(chordSelector.currentChord)
     }
     return chordLabels
   }
 
-  protected getMetadata() {
+  protected getMetadata(): { fermatas: number[]; chordLabels: Chord[] } {
     return {
       fermatas: this.getFermatas(),
       chordLabels: this.getChordLabels(),
@@ -1081,6 +1172,25 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
       ''
   }
 
+  protected get restParameters(): string {
+    return ''
+  }
+
+  protected _apiRequest(
+    command: apiCommand,
+    restParameters: string,
+    apiAddress: URL,
+    sendSheetWithRequest: boolean,
+    data?,
+    timeout = 0
+  ): Promise<this> {
+    return this.loadMusicXMLandMidi(
+      apiAddress,
+      command + restParameters,
+      sendSheetWithRequest
+    )
+  }
+
   /**
    * Load a MusicXml file via xhttp request, and display its contents.
    */
@@ -1088,8 +1198,8 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
     inpaintingApiUrl: URL,
     generationCommand: string,
     sendSheetWithRequest = true
-  ): Promise<void> {
-    return new Promise<void>((resolve, _) => {
+  ): Promise<this> {
+    return new Promise<this>((resolve, _) => {
       this.disableChanges()
 
       const payload_object = this.getMetadata()
@@ -1144,14 +1254,13 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
               const midiBlobURL = await this.playbackManager.loadMidi(
                 midiConversionURL.href,
                 this.currentXML,
-                Tone.Time(sequenceDuration),
-                bpmControl
+                Tone.Time(sequenceDuration)
               )
               this.downloadButton.revokeBlobURL()
               this.downloadButton.targetURL = midiBlobURL
 
               this.enableChanges()
-              resolve()
+              resolve(this)
             },
             (err) => {
               log.error(err)
@@ -1167,7 +1276,10 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
   }
 }
 
-type MatrixCellPosition = { row: number; column: number }
+type GridPosition = {
+  row: number
+  column: number
+}
 
 // monkey-patch Nexus.Sequencer to emit 'toggle' events
 // these are triggered only on actual changes of the pattern,
@@ -1176,65 +1288,102 @@ type MatrixCellPosition = { row: number; column: number }
 // in a single Touch action)
 class SequencerToggle extends Nexus.Sequencer {
   inRectangularSelection = false
-  firstCell?: MatrixCellPosition
-  previousCell?: MatrixCellPosition
+  firstCell?: GridPosition
+  previousCell?: GridPosition
   rectangularSelections = true
+
+  readonly columnsOverlay: HTMLElement
+  static readonly nowPlayingCSSClass = 'sequencer-playing'
 
   constructor(container: string | HTMLElement, options) {
     super(container, options)
 
     if (this.rectangularSelections) {
-      this.element.addEventListener(
-        'pointerup',
-        this.onInteractionEnd.bind(this)
-      )
-      this.element.addEventListener(
-        'pointercancel',
-        this.onInteractionEnd.bind(this)
-      )
-
-      this.element.addEventListener(
-        'pointerdown',
-        this.onInteractionStart.bind(this)
-      )
+      this.element.addEventListener('pointerdown', this.onInteractionStart)
     }
+
+    this.columnsOverlay = document.createElement('div')
+    this.columnsOverlay.classList.add('sequencer-grid-overlay')
+    this.element.appendChild(this.columnsOverlay)
+    Array(this.columns)
+      .fill(0)
+      .forEach(() => {
+        this.columnsOverlay.appendChild(document.createElement('span'))
+      })
   }
 
-  protected onInteractionEnd(): void {
+  protected get columnsOverlayColumns(): HTMLElement[] {
+    return Array.from(this.columnsOverlay.getElementsByTagName('span'))
+  }
+
+  setPlayingColumn(columnIndex: number): void {
+    this.columnsOverlayColumns.forEach((elem, index) =>
+      elem.classList.toggle(
+        SequencerToggle.nowPlayingCSSClass,
+        index == columnIndex
+      )
+    )
+  }
+
+  clearNowPlayingDisplay(): void {
+    this.columnsOverlayColumns.forEach((elem) =>
+      elem.classList.remove(SequencerToggle.nowPlayingCSSClass)
+    )
+  }
+
+  protected registerEventListeners(): void {
+    document.addEventListener('pointerup', this.onInteractionEnd)
+    document.addEventListener('pointercancel', this.onInteractionEnd)
+  }
+
+  protected removeEventListeners(): void {
+    document.removeEventListener('pointerup', this.onInteractionEnd)
+    document.removeEventListener('pointercancel', this.onInteractionEnd)
+  }
+
+  protected onInteractionEnd: () => void = () => {
     log.debug('Finished interaction')
     this.inRectangularSelection = false
     this.firstCell = null
     this.previousCell = null
+    this.removeEventListeners()
     return
   }
 
-  protected onInteractionStart(): void {
+  protected onInteractionStart: () => void = () => {
     log.debug('Starting interaction')
+    this.registerEventListeners()
     this.inRectangularSelection = true
     return
   }
 
-  protected getIndex(cell: MatrixCellPosition): number {
+  protected getCell(cell: GridPosition): MatrixCell {
+    return this.cells[this.getIndex(cell)]
+  }
+
+  protected getIndex(cell: GridPosition): number {
     return this.matrix.indexOf(cell.row, cell.column)
   }
 
-  protected turnOn(cell: MatrixCellPosition, emitting: boolean) {
-    this.cells[this.matrix.indexOf(cell.row, cell.column)].turnOn(emitting)
+  protected turnOn(cell: GridPosition, emitting: boolean): void {
+    const matrixCell = this.getCell(cell)
+    matrixCell.turnOn(emitting)
     if (!emitting) {
       // manually update the model
       this.matrix.pattern[cell.row][cell.column] = 1
     }
   }
 
-  protected turnOff(cell: MatrixCellPosition, emitting: boolean) {
-    this.cells[this.matrix.indexOf(cell.row, cell.column)].turnOff(emitting)
+  protected turnOff(cell: GridPosition, emitting: boolean): void {
+    const matrixCell = this.cells[this.matrix.indexOf(cell.row, cell.column)]
+    matrixCell.turnOff(emitting)
     if (!emitting) {
       // manually update the model
       this.matrix.pattern[cell.row][cell.column] = 0
     }
   }
 
-  keyChange(note, on: boolean) {
+  keyChange(note, on: boolean): void {
     const cell = this.matrix.locate(note)
     const previousState: boolean =
       this.matrix.pattern[cell.row][cell.column] == 1
@@ -1267,11 +1416,11 @@ class SequencerToggle extends Nexus.Sequencer {
 
         // activate all cells in the rectangle between the first cell
         // of the interaction and the current cell
-        const rectangleStart: MatrixCellPosition = {
+        const rectangleStart = {
           row: Math.min(this.firstCell.row, cell.row),
           column: Math.min(this.firstCell.column, cell.column),
         }
-        const rectangleEnd: MatrixCellPosition = {
+        const rectangleEnd = {
           row: Math.max(this.firstCell.row, cell.row),
           column: Math.max(this.firstCell.column, cell.column),
         }
@@ -1339,8 +1488,17 @@ export class SpectrogramLocator extends Locator<
   protected getTimecontainerPosition(
     step: number
   ): { left: number; right: number } {
-    throw Error('Not implemented')
+    const left = step * this.columnWidth
+    return {
+      left: left,
+      right: left + this.columnWidth,
+    }
   }
+
+  protected progressToStep(progress: number): number {
+    return Math.floor(progress * this.numColumnsTotal)
+  }
+
   readonly dataType = 'spectrogram'
   readonly imageContainer: HTMLElement
   readonly imageElement: HTMLImageElement
@@ -1349,23 +1507,47 @@ export class SpectrogramLocator extends Locator<
   readonly snapPoints: HTMLDivElement
   readonly addColumnIconsContainer: HTMLDivElement
   protected sequencer: SequencerToggle
+  readonly useTransparentScrollbars = false
 
-  readonly downloadButton: DownloadButton
   readonly instrumentConstraintSelect: NexusSelectWithShuffle
   readonly pitchClassConstraintSelect?: NexusSelect
   readonly octaveConstraintControl: NumberControl
 
+  // TODO(theis, 2021/08/26): retrieve this value from the API
+  readonly scrollIntervalDuration = 0
+
+  static readonly displayUpdateRate = 0.1
+
   // TODO(theis, 2021/07/13): add proper typing. Create a VQVAE class?
+  protected _columnDuration?: Tone.Unit.Seconds
+  get columnDuration(): Tone.Unit.Seconds {
+    return this._columnDuration
+  }
+  set columnDuration(columnDuration: Tone.Unit.Seconds) {
+    this._columnDuration = columnDuration
+  }
+
   protected _codemap_top?: Codemap
   protected get codemap_top(): Codemap | undefined {
     return this._codemap_top
   }
   protected set codemap_top(codemap: Codemap | undefined) {
     this._codemap_top = codemap
-    this.toggleNoscroll(this.numScrollSteps == 1)
   }
 
   protected codemap_bottom?: Codemap
+
+  protected get activeCodemap(): Codemap | null {
+    switch (this.editToolSelect.value.layer) {
+      case VqvaeLayer.Top:
+        return this.codemap_top
+        break
+      case VqvaeLayer.Bottom:
+        return this.codemap_bottom
+        break
+    }
+  }
+
   protected currentConditioning_top?: ConditioningMap
   protected currentConditioning_bottom?: ConditioningMap
 
@@ -1384,14 +1566,19 @@ export class SpectrogramLocator extends Locator<
     pitchClassConstraintSelect?: NexusSelect,
     options: Record<string, unknown> = {}
   ) {
-    super(playbackManager, container, vqvaeLayerSelect, inpaintingApiAddress)
+    super(
+      playbackManager,
+      container,
+      vqvaeLayerSelect,
+      downloadButton,
+      inpaintingApiAddress,
+      SpectrogramLocator.displayUpdateRate
+    )
 
     this.container.classList.add('spectrogram-locator')
 
     this.imageContainer = document.createElement('div')
     this.imageContainer.classList.add('spectrogram-locator-image-container')
-    this.imageContainer.toggleAttribute('data-simplebar', true)
-    this.imageContainer.setAttribute('data-simplebar-click-on-track', 'false')
     this.container.appendChild(this.imageContainer)
 
     const spectrogramPictureElement = document.createElement('picture')
@@ -1402,6 +1589,10 @@ export class SpectrogramLocator extends Locator<
     this.snapPoints = document.createElement('div')
     this.snapPoints.classList.add('spectrogram-locator-snap-points')
     spectrogramPictureElement.appendChild(this.snapPoints)
+
+    this.simpleBar = new ScrollLockSimpleBar(this.imageContainer, {
+      clickOnTrack: false,
+    })
 
     // necessary to handle 'busy' state cursor change and pointer events disabling
     this.interfaceContainer = document.createElement('div')
@@ -1422,11 +1613,12 @@ export class SpectrogramLocator extends Locator<
       mode: 'toggle',
       rows: 32,
       columns: 4,
+      paddingColumn: 1,
+      paddingRow: 1,
     })
     this.sequencer.colorize('accent', 'rgba(255, 255, 255, 1)')
-    this.sequencer.colorize('fill', 'rgba(255, 255, 255, 0.25)')
+    this.sequencer.colorize('fill', 'rgba(255, 255, 255, 0.4)')
 
-    this.downloadButton = downloadButton
     this.instrumentConstraintSelect = instrumentConstraintSelect
     this.octaveConstraintControl = octaveConstraintControl
 
@@ -1434,8 +1626,11 @@ export class SpectrogramLocator extends Locator<
     // defaults to C
     this.pitchClassConstraintSelect = pitchClassConstraintSelect
 
-    this.registerCallback(this.regenerationCallback.bind(this))
+    this.registerCallback(() => void this.regenerationCallback())
     this.container.addEventListener('drop', (e) => this.dropHandler(e))
+    this.scrollableElement.addEventListener('scroll', () => {
+      this.setCurrentlyPlayingPositionDisplay()
+    })
   }
 
   protected _apiRequest(
@@ -1475,7 +1670,7 @@ export class SpectrogramLocator extends Locator<
 
   readonly boxDurations_quarters: number[]
 
-  protected regenerationCallback(): void {
+  protected async regenerationCallback(): Promise<this> {
     switch (this.editToolSelect.value.layer) {
       case VqvaeLayer.Top: {
         this.currentConditioning_top = this.updateConditioningMap(
@@ -1494,13 +1689,16 @@ export class SpectrogramLocator extends Locator<
     }
 
     const sendCodesWithRequest = true
-    void this._apiRequest(
+    return this._apiRequest(
       this.generationCommand,
       this.restParameters,
       this.defaultApiAddress,
       sendCodesWithRequest,
       this.mask
-    )
+    ).then((locator) => {
+      this.refreshNowPlayingDisplay()
+      return locator
+    })
   }
 
   protected get generationCommand(): apiCommand {
@@ -1533,7 +1731,7 @@ export class SpectrogramLocator extends Locator<
       '&start_index_top=' +
       startIndexTop.toString() +
       '&duration_top=' +
-      this.numColumnsTop.toString()
+      this.vqvaeTimestepsTop.toString()
     const tool = this.editToolSelect.value.tool
     generationParameters +=
       '&uniform_sampling=' + (tool == NotonoTool.InpaintRandom).toString()
@@ -1554,10 +1752,10 @@ export class SpectrogramLocator extends Locator<
       )
     }
 
-    this.interfaceContainer.addEventListener(
-      'pointerdown',
-      registerReleaseCallback
-    )
+    this.interfaceContainer.addEventListener('pointerdown', () => {
+      this.simpleBar.toggleScrollLock('x', true)
+      registerReleaseCallback()
+    })
   }
 
   protected getCurrentScrollPositionTopLayer(): number {
@@ -1565,9 +1763,7 @@ export class SpectrogramLocator extends Locator<
     if (spectrogramImageContainerElement == null) {
       throw Error('Spectrogram container not initialized')
     }
-    const scrollElement = spectrogramImageContainerElement.getElementsByClassName(
-      'simplebar-content-wrapper'
-    )[0]
+    const scrollElement = this.simpleBar.getScrollElement()
     if (scrollElement == null) {
       return 0
     }
@@ -1582,7 +1778,6 @@ export class SpectrogramLocator extends Locator<
       const currentScrollRatio =
         scrollElement.scrollLeft /
         (scrollElement.scrollWidth - scrollElement.clientWidth)
-      log.error('Fix scroll computation')
       const numSnapElements: number = this.snapPoints.getElementsByTagName(
         'snap'
       ).length
@@ -1641,29 +1836,38 @@ export class SpectrogramLocator extends Locator<
     return this.sequencer.columns
   }
 
+  protected get numColumnsTotal(): number {
+    return this.activeCodemap[0].length
+  }
+
   protected get columnWidth(): number {
     if (this.sequencer.cells.length > 0) {
-      return this.sequencer.cells[0].width
+      return (
+        this.sequencer.cells[0].width +
+        2 * this.sequencer.cells[0].paddingColumn
+      )
     } else {
       return 0
     }
   }
 
+  // Duration of the current sound in number of columns at the Top-layer scale
   public get vqvaeTimestepsTop(): number {
     if (this.codemap_top != null) {
       return this.codemap_top[0].length
     } else {
-      return 4 // HACK(theis, 2021/07/30): default value hardcoded here
+      return 6 // HACK(theis, 2021/07/30): default value hardcoded here
     }
   }
 
   protected _numColumnsTop = 4
+  // Number of columns / time-range of the Top VQVAE-layer
+  // Note: This is used to establish the scrolling behavior
   protected get numColumnsTop(): number {
     return this._numColumnsTop
   }
   protected set numColumnsTop(numColumnsTop: number) {
     this._numColumnsTop = numColumnsTop
-    this.toggleNoscroll(this.numColumnsTop == 1)
   }
 
   public ontoggle(): void {
@@ -1683,23 +1887,26 @@ export class SpectrogramLocator extends Locator<
       this.sequencer.destroy()
     }
     this.drawTimestampBoxes(numRows, numColumns, numColumnsTop)
-    // this.insertGridExpansionIcons()
+    this.insertGridExpansionIcons()
 
     $(() => {
-      // wait for all 'change' events to have been emitted
       this.sequencer.on('toggle', this.ontoggle.bind(this.sequencer))
     })
+
+    this.refresh()
   }
 
   protected _refresh(): void {
     this.resize()
+    this.simpleBar.recalculate()
   }
 
-  // TODO(theis, 2021/08/02)
+  // TODO(theis, 2021/08/02):
   // insert Plus/Minus-sign icons for adding and removing codemap columns
   // Allows to expand or shrink a sound in time
-  protected insertGridExpansionIcons() {
-    throw new Error('Not implemented yet')
+  protected insertGridExpansionIcons(): void {
+    log.info('TODO: implement insertGridExpansionIcons')
+    // throw new Error('Not implemented yet')
   }
 
   public resize(): void {
@@ -1709,8 +1916,9 @@ export class SpectrogramLocator extends Locator<
 
     const width = this.interfaceContainer.clientWidth
     const height = this.imageContainer.clientHeight
-
     this.sequencer.resize(width, height)
+
+    this.updateSnapPoints()
 
     // update image scaling to match snap points
     const timeStepWidth_px: number = width / this.numColumnsTop
@@ -1720,12 +1928,11 @@ export class SpectrogramLocator extends Locator<
     this.snapPoints.style.width =
       Math.round(timeStepWidth_px * this.numScrollSteps).toString() + 'px'
 
+    const interfaceHeight =
+      this.interfaceContainer.clientHeight.toString() + 'px'
     // adapt the spectrogram's image size to the resulting grid's size
     // since the grid size is rounded up to the number of rows and columns
-    this.imageElement.style.height =
-      this.interfaceContainer.clientHeight.toString() + 'px'
-    this.imageContainer.style.height =
-      this.interfaceContainer.clientHeight.toString() + 'px'
+    this.imageElement.style.height = this.imageContainer.style.height = interfaceHeight
   }
 
   public clear(): void {
@@ -1751,50 +1958,35 @@ export class SpectrogramLocator extends Locator<
     numColumns: number,
     numColumnsTop: number
   ): void {
-    // restore default height for spectrogram image
-    this.imageElement.style.removeProperty('height')
-    this.imageContainer.style.removeProperty('height')
-
     const width = this.interfaceContainer.clientWidth
     const height = this.imageContainer.clientHeight
-
     this.sequencer = new SequencerToggle(this.interfaceContainer, {
       size: [width, height],
       mode: 'toggle',
       rows: numRows,
       columns: numColumns,
     })
-
-    this.numColumnsTop = numColumnsTop
     // make the matrix overlay transparent
     this.sequencer.colorize('accent', 'rgba(255, 255, 255, 1)')
     this.sequencer.colorize('fill', 'rgba(255, 255, 255, 0.4)')
 
-    this.updateSnapPoints()
+    this.numColumnsTop = numColumnsTop
 
-    // update image scaling to match snap points
-    const timeStepWidth_px: number = width / numColumnsTop
-    this.imageElement.width = Math.floor(
-      timeStepWidth_px * this.vqvaeTimestepsTop
-    )
-    this.snapPoints.style.width =
-      Math.round(timeStepWidth_px * this.numScrollSteps).toString() + 'px'
-
-    // adapt the spectrogram's image size to the resulting grid's size
-    // since the grid size is rounded up to the number of rows and columns
-    this.imageElement.style.height =
-      this.interfaceContainer.clientHeight.toString() + 'px'
-    this.imageContainer.style.height =
-      this.interfaceContainer.clientHeight.toString() + 'px'
+    this.resize()
   }
 
   protected updateSnapPoints(): void {
+    if (
+      this.snapPoints.getElementsByTagName('snap').length == this.numScrollSteps
+    ) {
+      return
+    }
+
     // clear existing snap points
     while (this.snapPoints.firstChild) {
       this.snapPoints.removeChild(this.snapPoints.lastChild)
     }
-
-    this.toggleNoscroll(this.numScrollSteps == 1)
+    // create new snap points
     Array(this.numScrollSteps)
       .fill(0)
       .forEach(() => {
@@ -1803,9 +1995,13 @@ export class SpectrogramLocator extends Locator<
       })
   }
 
-  protected toggleNoscroll(force?: boolean): void {
+  protected updateNoScroll(): void {
     // when set, prevents the scroll-bar from appearing
-    this.container.classList.toggle('no-scroll', force)
+    const disableScroll =
+      Math.round(this.playbackManager.duration) ==
+      Math.round(this.numColumns * this.columnDuration)
+    this.container.classList.toggle('no-scroll', disableScroll)
+    this.container.getElementsByClassName('simplebar-horizontal')
   }
 
   getInterfaceElementByIndex(index: number): Element | null {
@@ -1816,15 +2012,39 @@ export class SpectrogramLocator extends Locator<
     return this.numRows * this.numColumns
   }
 
-  protected highlightColumn(columnIndex: number): void {
-    throw new Error('Not implemented')
+  protected setPlayingColumn(columnIndex: number): void {
+    return this.sequencer.setPlayingColumn(columnIndex)
   }
 
-  setCurrentlyPlayingPositionDisplay(progress: number) {
-    const currentlyPlayingColumn: number = Math.round(
-      progress * this.numColumns
-    )
-    this.highlightColumn(currentlyPlayingColumn)
+  protected clearNowPlayingDisplay(): void {
+    return this.sequencer.clearNowPlayingDisplay()
+  }
+
+  protected setCurrentlyPlayingPositionDisplay(): void {
+    const scaleRatio = this.numColumns / this.numColumnsTop
+    const currentlyPlayingColumn: number =
+      Math.floor(
+        this.playbackManager.transport.progress * this.activeCodemap[0].length
+      ) -
+      this.getCurrentScrollPositionTopLayer() * scaleRatio
+
+    if (
+      currentlyPlayingColumn < 0 ||
+      currentlyPlayingColumn > this.numColumns
+    ) {
+      // desired column is outside the visible range, can happen e.g. before
+      // the scroll is updated to the appropriate value
+      // clean-up the display
+      if (
+        this.interfaceContainer.getElementsByClassName('sequencer-playing')
+          .length > 0
+      ) {
+        this.clearNowPlayingDisplay()
+      }
+      return
+    }
+
+    this.setPlayingColumn(currentlyPlayingColumn)
   }
 
   protected async getAudio(
@@ -1881,6 +2101,7 @@ export class SpectrogramLocator extends Locator<
 
     return this.playbackManager.loadAudio(blobUrl).then(() => {
       this.downloadButton.targetURL = blobUrl
+      this.updateNoScroll()
     })
   }
 
@@ -1902,12 +2123,14 @@ export class SpectrogramLocator extends Locator<
   protected async updateAudioAndImage(
     audioPromise: Promise<Blob>,
     spectrogramImagePromise: Promise<Blob>
-  ): Promise<void> {
+  ): Promise<[void, void]> {
     return await Promise.all([audioPromise, spectrogramImagePromise]).then(
       // unpack the received results and update the interface
       ([audioBlob, spectrogramImageBlob]: [Blob, Blob]) => {
-        void this.updateAudio(audioBlob)
-        void this.updateSpectrogramImage(spectrogramImageBlob)
+        return Promise.all([
+          this.updateAudio(audioBlob),
+          this.updateSpectrogramImage(spectrogramImageBlob),
+        ])
       }
     )
   }
@@ -1970,7 +2193,7 @@ export class SpectrogramLocator extends Locator<
     this.currentConditioning_top = newConditioning_top
     this.currentConditioning_bottom = newConditioning_bottom
 
-    this.triggerInterfaceRefresh()
+    // this.triggerInterfaceRefresh()
     this.clear()
     this.enableChanges()
   }
@@ -2050,7 +2273,8 @@ export class SpectrogramLocator extends Locator<
     this.currentConditioning_top = newConditioning_top
     this.currentConditioning_bottom = newConditioning_bottom
 
-    this.triggerInterfaceRefresh()
+    // this.triggerInterfaceRefresh()
+    this.refresh()
     this.clear()
     this.enableChanges()
     return this
@@ -2064,12 +2288,6 @@ export class SpectrogramLocator extends Locator<
       () => {
         this.enableChanges()
         mapTouchEventsToMouseSimplebar()
-        // HACK, TODO(theis): should not be necessary, since there is already
-        // a refresh operation at the end of the loadAudioAndSpectrogram method
-        // but this has to be done on the initial call since the SpectrogramLocator
-        // only gets initialized in that call
-        // should properly initialize the SpectrogramLocator on instantiation
-        // locator.refresh()
         return this
       },
       (rejectionReason) => {
@@ -2124,6 +2342,7 @@ export class SpectrogramLocator extends Locator<
   }
 
   triggerInterfaceRefresh(): void {
+    // HACK(@tbazin, 2021/09/01): clean this up
     this.editToolSelect.emit(this.editToolSelect.events.ValueChanged)
   }
 }

@@ -325,17 +325,10 @@ function renderStartButton(
     text: 'Start',
   })
 
-  const startCallback = async (v = true): Promise<void> => {
-    if (v) {
-      Tone.setContext(
-        new Tone.Context({
-          lookAhead: 0,
-        })
-      )
-      await Tone.start()
+  const startCallback = async (): Promise<void> => {
+    await Tone.start()
 
-      disposeAndStart(renderPage)
-    }
+    disposeAndStart(renderPage)
   }
 
   startButtonElement.addEventListener(

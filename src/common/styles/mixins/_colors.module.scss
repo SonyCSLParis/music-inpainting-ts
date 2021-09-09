@@ -59,7 +59,15 @@ $panes-background: #beb9d4;
     $lightness: $overlay-lightness-factor * 20%
   );
 
-  color: $text;
+  // default color, used on the splash screen
+  body {
+    background-color: $panes;
+  }
+
+  body, #app {
+    color: $text;
+  }
+
   .trip-navigation * {
     color: $text !important;
   }
@@ -71,18 +79,13 @@ $panes-background: #beb9d4;
     background-color: lightgray;
   }
 
-  // default color, used on the splash screen
-  body {
-    background-color: $panes;
-  }
-
   #configuration-selection {
     background-color: color.scale($panes,
       $lightness: $overlay-lightness-factor * 15%);
     border: solid thin $panes-border;
   }
 
-  #main-panel, &.running, body.running {
+  #main-panel, > * {
     background-color: $body;
   }
 
@@ -128,11 +131,11 @@ $panes-background: #beb9d4;
     );
   }
 
-  $simplebar-track-color: color.scale(
+  $simplebar-track-color-transparent: color.scale(
     $simplebar-track-color,
     $alpha: -30%
   );
-  $simplebar-scrollbar-color: color.scale(
+  $simplebar-scrollbar-color-transparent: color.scale(
     $simplebar-scrollbar-color,
     $alpha: -10%
   );
@@ -159,6 +162,19 @@ $panes-background: #beb9d4;
         );
   }
 
+  .transparent-scrollbar .simplebar-track {
+    &, &::before {
+      background-color: $simplebar-track-color-transparent;
+    }
+    &::before {
+      color: $simplebar-scrollbar-color-transparent
+    }
+  }
+
+  .Fermata {
+    background-color: color.scale($body, $alpha: -50%);
+  }
+
   .simplebar-scrollbar {
     box-shadow: 0 0 2px 1px color.scale($simplebar-scrollbar-color,
       $lightness: $overlay-lightness-factor * 10%);
@@ -172,6 +188,20 @@ $panes-background: #beb9d4;
       &:hover {
         background-color: color.scale(
           $simplebar-scrollbar-color,
+          $lightness: 5%
+        );
+      }
+    }
+  }
+
+  .transparent-scrollbar .simplebar-scrollbar {
+    background-color: $simplebar-scrollbar-color-transparent;
+    @media (hover: hover) {
+      // no hover effects on touch screens since the effect remains active
+      // until the user effectively touches another zone on the viewport
+      &:hover {
+        background-color: color.scale(
+          $simplebar-scrollbar-color-transparent,
           $lightness: 5%
         );
       }
@@ -193,7 +223,7 @@ $panes-background: #beb9d4;
     background-color: $panes;
   }
 
-  .glow-shadow, .animated-shadow {
+  .glow-shadow {
     background: none;
     &::after {
       content: "";
@@ -220,11 +250,6 @@ $panes-background: #beb9d4;
     100% {
       opacity: 1;
     }
-  }
-  .animated-shadow {
-    // FIXME(theis, 2021_04_29): opacity animation flickers in Chrome
-    // when applied on the spectrogram-shadow-container
-    // animation: opacity-on-off ease-in-out 0.2s infinite alternate;
   }
 
   .spectrogram-locator-interface-container {
@@ -268,7 +293,7 @@ $panes-background: #beb9d4;
     }
   }
 
-  $main-zoom-background-color: gray;
+  $main-zoom-background-color: lightgray;
   .zoom-control {
     background-color: color.scale(
       $main-zoom-background-color,

@@ -1,6 +1,14 @@
 import { AnnotationBox } from './annotationBox'
 import $ from 'jquery'
 import deepEqual from 'deep-equal'
+import {
+  Chord,
+  ChordType,
+  Accidental,
+  NoteOrSlur,
+  Note,
+  SlurSymbol,
+} from './chord'
 
 import './dependencies/wheelnav/raphael'
 import 'wheelnav'
@@ -9,10 +17,10 @@ declare let wheelnav: any
 declare let slicePath: any
 
 export class ChordSelector extends AnnotationBox {
-  private slur_symbol = '-'
+  protected readonly slurSymbol = SlurSymbol.slur
   private useSlurSymbol: boolean
-  private notes: string[]
-  private accidentals: string[]
+  protected notes: NoteOrSlur[]
+  protected accidentals: Accidental[]
 
   constructor(
     timestampContainer: HTMLElement,
@@ -42,28 +50,42 @@ export class ChordSelector extends AnnotationBox {
     }
   }
 
-  private makeNotes(): string[] {
-    const mainNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+  private makeNotes(): NoteOrSlur[] {
+    const mainNotes: Note[] = [
+      Note.C,
+      Note.D,
+      Note.E,
+      Note.F,
+      Note.G,
+      Note.A,
+      Note.B,
+    ]
 
-    const notes = mainNotes
+    const notes: NoteOrSlur[] = mainNotes
     if (this.useSlurSymbol) {
-      notes.push(this.slur_symbol)
+      notes.push(this.slurSymbol)
     }
 
     return notes
   }
 
-  private makeAccidentals(): string[] {
-    const accidentals = []
+  private makeAccidentals(): Accidental[] {
+    const accidentals: Accidental[] = []
     const numNotes: number = this.notes.length
     for (let i = 0; i < numNotes; i++) {
-      accidentals.push('b')
-      accidentals.push('#')
+      accidentals.push(Accidental.flat)
+      accidentals.push(Accidental.sharp)
     }
     return accidentals
   }
 
-  private chordTypes = ['M', 'm', 'm7', 'M7', '7']
+  private chordTypes = [
+    ChordType.major,
+    ChordType.minor,
+    ChordType.minorSeventh,
+    ChordType.majorSeventh,
+    ChordType.seventh,
+  ]
 
   private noteWheel: any
   private accidentalWheel: any
@@ -71,31 +93,31 @@ export class ChordSelector extends AnnotationBox {
 
   private wheelSize_px: number
 
-  // keep track the previously selected index to detect re-clicks
-  // on the same note and don't disaply accidental selector in that case
+  // keep track of the previously selected index to detect re-clicks
+  // on the same note and don't display accidental selector in that case
   private previouslySelectedNoteIndex: number = null
 
   private onChordChange: () => void
 
-  private get currentNote() {
+  private get currentNote(): NoteOrSlur {
     return this.notes[this.noteWheel.selectedNavItemIndex]
   }
 
-  private set currentNote(note: string) {
-    const note_index = this.notes.indexOf(note)
-    this.noteWheel.navigateWheel(note_index)
+  private set currentNote(note: NoteOrSlur) {
+    const noteIndex = this.notes.indexOf(note)
+    this.noteWheel.navigateWheel(noteIndex)
   }
 
-  private get currentAccidental() {
+  protected get currentAccidental(): null | Accidental {
     const selectedAccidentalIndex = this.accidentalWheel.selectedNavItemIndex
-    if (selectedAccidentalIndex !== null && selectedAccidentalIndex > 0) {
+    if (selectedAccidentalIndex != null && selectedAccidentalIndex > 0) {
       return this.accidentals[selectedAccidentalIndex]
     } else {
-      return ''
+      return null
     }
   }
 
-  private set currentAccidental(accidental: string) {
+  protected set currentAccidental(accidental: Accidental | null) {
     const accidentalIndex = this.accidentals.indexOf(accidental)
     if (accidentalIndex >= 0) {
       const fullIndex =
@@ -124,35 +146,35 @@ export class ChordSelector extends AnnotationBox {
     return this.chordTypes[this.chordTypeWheel.selectedNavItemIndex]
   }
 
-  private set currentChordType(chordType: string) {
+  private set currentChordType(chordType: ChordType) {
     const chordType_index = this.chordTypes.indexOf(chordType)
     this.chordTypeWheel.navigateWheel(chordType_index)
   }
 
-  public get currentChord() {
+  public get currentChord(): Chord {
     return {
-      note: this.currentNote,
+      root: this.currentNote,
       accidental: this.currentAccidental,
-      chordType: this.currentChordType,
+      type: this.currentChordType,
     }
   }
 
-  public set currentChord(chord_obj) {
+  public set currentChord(chord: Chord) {
     // FIXME add proper parsing and checks
-    this.currentNote = chord_obj['note']
-    if (this.currentNote !== this.slur_symbol) {
-      this.currentAccidental = chord_obj['accidental']
-      this.currentChordType = chord_obj['chordType']
+    this.currentNote = chord.root
+    if (this.currentNote !== this.slurSymbol) {
+      this.currentAccidental = chord.accidental
+      this.currentChordType = chord.type
     } else {
-      this.currentAccidental = ''
-      this.currentChordType = this.chordTypes[0] // WARNING could break if change to chordTypes list
+      this.currentAccidental = null
+      this.currentChordType = ChordType.major
     }
     this.closeSelector()
   }
 
-  private previousChord
+  private previousChord: Chord
 
-  private updateSpreader() {
+  private updateSpreader(): void {
     const currentNote = this.currentNote
     let spreaderText = currentNote + this.currentAccidental
     if (this.currentChordType !== 'M') {
@@ -164,7 +186,7 @@ export class ChordSelector extends AnnotationBox {
     this.noteWheel.refreshWheel()
   }
 
-  private hideCurrentAccidentalNavItems() {
+  private hideCurrentAccidentalNavItems(): void {
     this.accidentalWheel.navItems[
       2 * this.noteWheel.selectedNavItemIndex
     ].navItem.hide()
@@ -173,7 +195,7 @@ export class ChordSelector extends AnnotationBox {
     ].navItem.hide()
   }
 
-  private hidePreviouslySelectedAccidentalNavItems() {
+  private hidePreviouslySelectedAccidentalNavItems(): void {
     if (this.previouslySelectedNoteIndex !== null) {
       this.accidentalWheel.navItems[
         2 * this.previouslySelectedNoteIndex
@@ -184,7 +206,7 @@ export class ChordSelector extends AnnotationBox {
     }
   }
 
-  private closeNoteWheel() {
+  private closeNoteWheel(): void {
     if (this.noteWheel.currentPercent === this.noteWheel.maxPercent) {
       this.noteWheel.spreadWheel()
     }
@@ -210,7 +232,7 @@ export class ChordSelector extends AnnotationBox {
     // if (!isActive) this.removeClickListener();
   }
 
-  protected closeSelector() {
+  protected closeSelector(): void {
     this.updateSpreader()
     this.closeNoteWheelAndCleanAfterNoteAndAccidentalSelectionDone()
     this.closeChordTypeWheel()
@@ -223,8 +245,8 @@ export class ChordSelector extends AnnotationBox {
     }
   }
 
-  private outsideClickListener = (event) => {
-    const target: HTMLElement = event.target
+  private outsideClickListener = (event: MouseEvent) => {
+    const target = event.target
     if (!$(target).closest(this.container).length) {
       this.closeSelector()
     }
@@ -235,17 +257,14 @@ export class ChordSelector extends AnnotationBox {
     // out of the containing div and closes the selector in that case
     // Bind this callback when the selector is activated and unbind it when
     // it is closed
-    const self = this
-    document.addEventListener('click', self.outsideClickListener)
+    document.addEventListener('click', (e) => this.outsideClickListener(e))
   }
 
   private removeClickListener() {
-    const self = this
-    document.removeEventListener('click', self.outsideClickListener)
+    document.removeEventListener('click', (e) => this.outsideClickListener(e))
   }
 
   protected createWheelNav(): any {
-    const self = this
     const accidentalContainer = document.createElement('div')
     accidentalContainer.id = this.container.id + '-accidental'
     this.container.appendChild(accidentalContainer)
@@ -356,19 +375,20 @@ export class ChordSelector extends AnnotationBox {
       item.navItem.hide()
     }
 
+    const self = this
     for (const navItem of this.noteWheel.navItems) {
       navItem.navigateFunction = function () {
-        if (this.itemIndex === self.notes.indexOf(self.slur_symbol)) {
+        if (this.itemIndex === self.notes.indexOf(self.slurSymbol)) {
           // selected the 'chord continuation' symbol, close selector
           self.hidePreviouslySelectedAccidentalNavItems()
-          self.currentAccidental = ''
+          self.currentAccidental = null
           self.currentChordType = self.chordTypes[0] // WARNING could break if change to chordTypes list
           self.closeSelector()
           return
         }
         if (self.previouslySelectedNoteIndex == this.itemIndex) {
           // double click: select underlying note without accidentals
-          self.currentAccidental = ''
+          self.currentAccidental = null
           self.accidentalWheel.navItems[2 * this.itemIndex].navItem.hide()
           self.accidentalWheel.navItems[2 * this.itemIndex + 1].navItem.hide()
           // hide the wheel
@@ -382,7 +402,7 @@ export class ChordSelector extends AnnotationBox {
           ) {
             // deselect previously selected accidental, since it applies to
             // a note different from the currently selected one
-            self.currentAccidental = ''
+            self.currentAccidental = null
           }
           // first click on this navSlice: display accidental selectors
           self.hidePreviouslySelectedAccidentalNavItems()
@@ -422,12 +442,12 @@ export class ChordSelector extends AnnotationBox {
       }
     }
 
-    this.noteWheel.spreader.spreaderPath.click(
-      self.hideCurrentAccidentalNavItems.bind(self)
-    )
-    this.noteWheel.spreader.spreaderTitle.click(
-      self.hideCurrentAccidentalNavItems.bind(self)
-    )
+    this.noteWheel.spreader.spreaderPath.click(() => {
+      this.hideCurrentAccidentalNavItems()
+    })
+    this.noteWheel.spreader.spreaderTitle.click(() => {
+      this.hideCurrentAccidentalNavItems()
+    })
 
     this.noteWheel.spreader.spreaderPath.click(() => {
       this.container.classList.toggle('active')

@@ -12,7 +12,9 @@ type ToneInstrument = Instrument<InstrumentOptions>
 // to load the types and the implementation separately
 // this ensures that babel is correctly applied on the imported javascript
 import { Piano as TonePiano } from '@tonejs/piano'
-const Piano: typeof TonePiano = require('babel-loader!@tonejs/piano').Piano
+const Piano: typeof TonePiano = <typeof TonePiano>(
+  require('babel-loader!@tonejs/piano').Piano
+)
 
 import { SampleLibrary } from './dependencies/Tonejs-Instruments'
 import log from 'loglevel'
@@ -42,10 +44,23 @@ export function getCurrentChordsInstrument():
 }
 
 export function initializeInstruments(): void {
+  const pianoVelocities = 1
+  log.info(
+    `Loading Tone Piano with ${pianoVelocities} velocit${
+      pianoVelocities > 1 ? 'ies' : 'y'
+    }`
+  )
   piano = new Piano({
-    release: false,
-    pedal: false,
-    velocities: 5,
+    release: true,
+    pedal: true,
+    velocities: 1,
+
+    volume: {
+      pedal: -20,
+      strings: -10,
+      keybed: -20,
+      harmonics: -10,
+    },
   })
 
   const useEffects = true
@@ -59,11 +74,11 @@ export function initializeInstruments(): void {
     },
   })
 
-  const polysynth = new Tone.PolySynth(Tone.Synth)
-  const polysynth_chords = new Tone.PolySynth(Tone.Synth)
+  const polySynth = new Tone.PolySynth(Tone.Synth)
+  const polySynth_chords = new Tone.PolySynth(Tone.Synth)
 
-  ;[polysynth, polysynth_chords].forEach((polysynth) => {
-    polysynth.set({
+  ;[polySynth, polySynth_chords].forEach((polySynth) => {
+    polySynth.set({
       oscillator: {
         type: 'triangle1',
       },
@@ -76,13 +91,13 @@ export function initializeInstruments(): void {
       portamento: 0.05,
     })
   })
-  polysynth_chords.set({
+  polySynth_chords.set({
     oscillator: {
       volume: -20,
     },
   })
 
-  const steelpan = new Tone.PolySynth(Tone.Synth).set({
+  const steelPan = new Tone.PolySynth(Tone.Synth).set({
     oscillator: {
       type: 'fatsawtooth17',
       // partials: [0.2, 1, 0, 0.5, 0.1],
@@ -98,7 +113,7 @@ export function initializeInstruments(): void {
     portamento: 0.05,
   })
 
-  const softSynths: ToneInstrument[] = [polysynth, polysynth_chords, steelpan]
+  const softSynths: ToneInstrument[] = [polySynth, polySynth_chords, steelPan]
   if (useEffects) {
     reverb
       .generate()
@@ -118,7 +133,7 @@ export function initializeInstruments(): void {
 
   instrumentFactories = {
     PolySynth: () => {
-      return polysynth
+      return polySynth
     },
     Piano: () => {
       piano.disconnect()
@@ -136,8 +151,8 @@ export function initializeInstruments(): void {
     Organ: () => {
       return sampledInstruments['organ']
     },
-    Steelpan: () => {
-      return steelpan
+    SteelPan: () => {
+      return steelPan
     },
     None: () => {
       return silentInstrument
@@ -146,7 +161,7 @@ export function initializeInstruments(): void {
 
   chordsInstrumentFactories = {
     PolySynth: () => {
-      return polysynth_chords
+      return polySynth_chords
     },
     Piano: () => {
       piano.disconnect()
@@ -168,12 +183,12 @@ export function initializeInstruments(): void {
 // syntax inspired by https://dev.to/angular/managing-key-value-constants-in-typescript-221g
 // TOTO(theis, 2021/06/21): should we change this to an Enum type as advocated in that
 // post's comments (https://dev.to/michaeljota/comment/ebeo)
-const leadInstrumentNames = ['Piano', 'PolySynth', 'Steelpan'] as const
+const leadInstrumentNames = ['Piano', 'PolySynth', 'SteelPan'] as const
 type leadInstrument = typeof leadInstrumentNames[number]
 const mainInstrumentsIcons = new Map<leadInstrument, string>([
   ['Piano', '049-piano.svg'],
   ['PolySynth', '019-synthesizer.svg'],
-  ['Steelpan', '007-timpani.svg'],
+  ['SteelPan', '007-timpani.svg'],
 ])
 
 const chordsInstrumentNames = ['PolySynth', 'Piano'] as const
@@ -306,7 +321,7 @@ export function renderInstrumentSelect(containerElement: HTMLElement): void {
     instrumentOnChange,
     mainInstrumentsIcons,
     instrumentIconsBasePath,
-    ['PolySynth', 'Steelpan']
+    ['PolySynth', 'SteelPan']
   )
   instrumentSelect.interfaceElement.classList.add('playbackInstrumentSelect')
 
@@ -355,9 +370,9 @@ export function mute(mute: boolean, useChordsInstrument = false) {
     currentInstrument = silentInstrument
     currentChordsInstrument = silentInstrument
   } else {
-    instrumentSelect.value = instrumentSelect.value
+    instrumentSelect.emit(instrumentSelect.events.ValueChanged)
     if (chordsInstrumentSelect != null) {
-      chordsInstrumentSelect.value = chordsInstrumentSelect.value
+      chordsInstrumentSelect.emit(chordsInstrumentSelect.events.ValueChanged)
     }
   }
 }

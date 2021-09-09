@@ -5,6 +5,7 @@ import * as ControlLabels from './controlLabels'
 import { NumberControl } from './numberControl'
 
 import Nexus from './nexusColored'
+import type { NexusNumber, NexusSelect } from 'nexusui'
 
 // @tonejs/piano@0.2.1 is built as an es6 module, so we use the trick from
 // https://www.typescriptlang.org/docs/handbook/modules.html#optional-module-loading-and-other-advanced-loading-scenarios
@@ -110,10 +111,8 @@ export async function render(useChordsInstrument = false): Promise<void> {
   midiInContainerElement.classList.add('advanced')
   bottomControlsGridElement.appendChild(midiInContainerElement)
 
-  const midiInDeviceSelectElement: HTMLElement = document.createElement(
-    'control-item'
-  )
-  midiInDeviceSelectElement.classList.add('advanced')
+  const midiInDeviceSelectElement: HTMLElement = document.createElement('div')
+  midiInDeviceSelectElement.classList.add('advanced', 'control-item')
   midiInContainerElement.appendChild(midiInDeviceSelectElement)
   ControlLabels.createLabel(
     midiInDeviceSelectElement,
@@ -165,10 +164,10 @@ export async function render(useChordsInstrument = false): Promise<void> {
   }
 
   const midiInputListener = await getMidiInputListener()
-  midiInputListener.on('connect', updateOptions)
-  midiInputListener.on('disconnect', updateOptions)
+  midiInputListener.on('connect', () => void updateOptions())
+  midiInputListener.on('disconnect', () => void updateOptions())
 
-  async function midiInOnChange(_: any): Promise<void> {
+  async function midiInOnChange(this: NexusSelect): Promise<void> {
     if (this.value == 'Disabled') {
       midiInputListener.deviceId = null
     } else if (this.value == 'All') {
@@ -179,10 +178,10 @@ export async function render(useChordsInstrument = false): Promise<void> {
     log.info('Selected MIDI In: ' + this.value)
   }
 
-  midiInSelect.on('change', midiInOnChange.bind(midiInSelect))
+  midiInSelect.on('change', () => void midiInOnChange.bind(midiInSelect)())
   midiInSelect.value = 'Disabled'
 
-  async function midiInChannelOnchange(_: any): Promise<void> {
+  function midiInChannelOnchange(this: NexusNumber): void {
     const previousChannel = midiInputListener.channel
     midiInputListener.channel = this.value != 0 ? this.value : 'all'
     if (midiInputListener.channel != previousChannel) {

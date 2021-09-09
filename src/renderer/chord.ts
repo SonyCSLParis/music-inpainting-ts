@@ -1,15 +1,52 @@
 import * as teoria from 'teoria'
 import * as Tone from 'tone'
 
-function getMidiPitches(chord_root: string, chord_type: string): number[] {
-  const chord = teoria.chord(chord_root.concat(chord_type))
-  const midiPitches = chord.notes().map((note) => note.midi())
+export const enum Note {
+  C = 'C',
+  D = 'D',
+  E = 'E',
+  F = 'F',
+  G = 'G',
+  A = 'A',
+  B = 'B',
+}
+
+export const enum SlurSymbol {
+  slur = '-',
+}
+
+export type NoteOrSlur = Note | SlurSymbol
+
+export const enum Accidental {
+  flat = 'b',
+  sharp = '#',
+}
+
+export const enum ChordType {
+  major = 'M',
+  minor = 'm',
+  minorSeventh = 'm7',
+  majorSeventh = 'M7',
+  seventh = '7',
+}
+
+export type Chord = {
+  root: NoteOrSlur
+  accidental: null | Accidental
+  type: ChordType
+}
+
+function getMidiPitches(chord: Chord): number[] {
+  const chordRoot =
+    chord.accidental != null ? chord.root + chord.accidental : chord.root
+  const teoriaChord = teoria.chord(chordRoot + chord.type)
+  const midiPitches = teoriaChord.notes().map((note) => note.midi())
   return midiPitches
 }
 
 type NoteEvent = {
   midi: number
-  name: string
+  name: Note
   time: number
   duration: Tone.Unit.Time
   velocity: number
@@ -30,14 +67,13 @@ function makeNoteEvent(
   }
 }
 
-export function getNoteEvents(
-  chord_root: string,
-  chord_type: string,
+export function makeNoteEvents(
+  chord: Chord,
   time_ms: number,
   duration: Tone.TimeClass,
   velocity: number
 ): NoteEvent[] {
-  const midiPitches = getMidiPitches(chord_root, chord_type)
+  const midiPitches = getMidiPitches(chord)
   return midiPitches.map((midiPitch) => {
     return makeNoteEvent(midiPitch, time_ms, duration, velocity)
   })

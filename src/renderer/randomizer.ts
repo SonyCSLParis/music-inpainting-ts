@@ -1,15 +1,17 @@
 import Tone from 'tone'
 
-import * as SpectrogramPlayback from './spectrogramPlayback'
+import { PlaybackManager } from './playback'
 import { Locator } from './locator'
 
-class LowFrequencyRandomizer extends Tone.Loop {
+class LowFrequencyRandomizer<
+  PlaybackManagerT extends PlaybackManager
+> extends Tone.Loop {
   protected container: HTMLElement
-  readonly locator: Locator
+  readonly locator: Locator<PlaybackManagerT, unknown>
 
   // numCells: number = 1;
   constructor(
-    locator: Locator,
+    locator: Locator<PlaybackManagerT, unknown>,
     callback: (time: number, numCells?: number) => void,
     interval: Tone.Unit.Time = '4n'
   ) {

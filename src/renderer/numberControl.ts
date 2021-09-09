@@ -4,6 +4,7 @@ import { NexusNumber, NexusSlider } from 'nexusui'
 
 import LinkClient from './ableton_link/linkClient'
 import * as ControlLabels from './controlLabels'
+import { PlaybackManager } from './playback'
 
 // Monkey-patch Nexus.Number to remove the undocumented dependency of the rate of change
 // of the value via click-and-drag on the x position of the initial mouse click
@@ -63,7 +64,7 @@ export class NumberControl {
     return document.getElementById(this.id)
   }
 
-  render(useSimpleSlider = false, elementWidth: number): void {
+  render(useSimpleSlider = false, elementWidth: number): this {
     const containerElement = document.createElement('div')
     containerElement.id = this.id
     containerElement.classList.add('control-item')
@@ -110,6 +111,7 @@ export class NumberControl {
     }
 
     this.controller.on('change', this.onchange)
+    return this
   }
 
   get value(): number {
@@ -125,13 +127,15 @@ export class BPMControl extends NumberControl {
   protected static defaultRange: [number, number] = [30, 300]
   protected static defaultInitialValue = 100
 
+  playbackManager: PlaybackManager
+
   constructor(
     containerElement: HTMLElement,
     id: string,
     range: [number, number] = BPMControl.defaultRange,
     initialValue: number = BPMControl.defaultInitialValue,
     onchange: (newValue: number) => void = (newBPM: number): void => {
-      Tone.getTransport().bpm.value = newBPM
+      this.playbackManager.transport.bpm.value = newBPM
       LinkClient.updateLinkBPM(newBPM)
     }
   ) {
@@ -157,8 +161,8 @@ export class BPMControl extends NumberControl {
 
     // HACK perform a comparison to avoid messaging loops, since
     // the link update triggers a bpm modification message
-    if (Tone.getTransport().bpm.value !== newBPM) {
-      Tone.getTransport().bpm.value = newBPM
+    if (this.playbackManager.transport.bpm.value !== newBPM) {
+      this.playbackManager.transport.bpm.value = newBPM
       this.controller._value.update(newBPM)
       this.controller.render()
     }
