@@ -12,8 +12,17 @@ header {
 
   justify-items: center;
   align-items: center;
+
+  -webkit-app-region: drag;
+
+  * {
+    -webkit-app-region: no-drag;
+  }
 }
 
+// body {
+//   -webkit-app-region: drag;
+// }
 $logo-margin-width: min(20%, 25px);
 header {
   grid-template-rows: auto;

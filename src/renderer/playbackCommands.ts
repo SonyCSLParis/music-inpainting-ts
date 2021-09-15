@@ -75,7 +75,7 @@ export function render(
     // Remove rotating 'wait' icon
     playButtonInterface.classList.remove(spinningClass)
   }
-  // Initialize playback to stopped
+  // Initialize playback display
   setPlayingClass(playbackManager.transport.state == 'started')
 
   function playCallback(play: boolean) {

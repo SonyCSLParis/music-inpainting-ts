@@ -1,10 +1,7 @@
-import * as Tone from 'tone'
 import Nexus from './nexusColored'
-import { NexusNumber, NexusSlider } from 'nexusui'
-
-import LinkClient from './ableton_link/linkClient'
+import { NexusNumber, NexusSelect, NexusSlider } from 'nexusui'
 import * as ControlLabels from './controlLabels'
-import { PlaybackManager } from './playback'
+import { EventEmitter } from 'events'
 
 // Monkey-patch Nexus.Number to remove the undocumented dependency of the rate of change
 // of the value via click-and-drag on the x position of the initial mouse click
@@ -22,13 +19,13 @@ class UniformChangeRateNumber extends Nexus.Number {
   }
 }
 
-export class NumberControl {
+export class NumberControl extends EventEmitter {
   protected readonly parent: HTMLElement
   readonly interactionId: string
   readonly labelId: string
   readonly id: string
   readonly range: [number, number]
-  protected controller: NexusSlider | NexusNumber
+  protected controller?: NexusSlider | NexusNumber
   private readonly initialValue: number
 
   protected onchange: (newValue: number) => void
@@ -42,6 +39,7 @@ export class NumberControl {
       return
     }
   ) {
+    super()
     this._checkRange(range, initialValue)
 
     this.parent = parent
@@ -121,13 +119,19 @@ export class NumberControl {
   set value(newValue: number) {
     this.controller.value = newValue
   }
+
+  silentUpdate(value: number): void {
+    if (this.controller != null) {
+      this.controller._value.update(value)
+      this.controller.render()
+      this.emit('interface-tempo-changed-silent', value)
+    }
+  }
 }
 
 export class BPMControl extends NumberControl {
-  protected static defaultRange: [number, number] = [30, 300]
+  protected static defaultRange: [number, number] = [20, 999]
   protected static defaultInitialValue = 100
-
-  playbackManager: PlaybackManager
 
   constructor(
     containerElement: HTMLElement,
@@ -135,14 +139,18 @@ export class BPMControl extends NumberControl {
     range: [number, number] = BPMControl.defaultRange,
     initialValue: number = BPMControl.defaultInitialValue,
     onchange: (newValue: number) => void = (newBPM: number): void => {
-      this.playbackManager.transport.bpm.value = newBPM
-      LinkClient.updateLinkBPM(newBPM)
+      this.emit('interface-tempo-changed', newBPM)
     }
   ) {
     super(containerElement, id, range, initialValue, onchange)
+
+    this.on('link-tempo-changed', (newTempo: number) => {
+      console.log('link-tempo-changed')
+      this.silentUpdate(newTempo)
+    })
   }
 
-  protected _checkRange(range: [number, number]) {
+  protected _checkRange(range: [number, number]): void {
     if (range[1] < 2 * range[0]) {
       throw Error(`BPM range should be at least one tempo octave wide, ie.
             maxAcceptedBPM at least twice as big as minAcceptedBPM`)
@@ -158,14 +166,15 @@ export class BPMControl extends NumberControl {
     while (newBPM < this.range[0]) {
       newBPM = 2 * newBPM
     }
+    this.controller.value = newBPM
 
-    // HACK perform a comparison to avoid messaging loops, since
-    // the link update triggers a bpm modification message
-    if (this.playbackManager.transport.bpm.value !== newBPM) {
-      this.playbackManager.transport.bpm.value = newBPM
-      this.controller._value.update(newBPM)
-      this.controller.render()
-    }
+    // // HACK perform a comparison to avoid messaging loops, since
+    // // the link update triggers a bpm modification message
+    // if (this.playbackManager.transport.bpm.value !== newBPM) {
+    //   this.playbackManager.transport.bpm.value = newBPM
+    //   this.controller._value.update(newBPM)
+    //   this.controller.render()
+    // }
   }
 
   // must also subclass getter if subclassing setter,
@@ -176,14 +185,14 @@ export class BPMControl extends NumberControl {
   }
 }
 
-export function renderPitchRootAndOctaveControl(lockPitchClassToC = false) {
-  const constraintsGridspanElement = document.getElementById(
-    'constraints-gridspan'
-  )
+export function renderPitchRootAndOctaveControl(
+  container: HTMLElement,
+  lockPitchClassToC = false
+): { pitchClassSelect: NexusSelect; octaveControl: NumberControl } {
   const pitchSelectGridspanElement = document.createElement('div')
   pitchSelectGridspanElement.id = 'pitch-control-gridspan'
   pitchSelectGridspanElement.classList.add('gridspan')
-  constraintsGridspanElement.appendChild(pitchSelectGridspanElement)
+  container.appendChild(pitchSelectGridspanElement)
 
   const pitchSelectContainer = document.createElement('div')
   pitchSelectContainer.id = 'pitch-control-pitch-class-select'

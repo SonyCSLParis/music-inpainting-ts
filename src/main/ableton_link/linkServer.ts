@@ -6,7 +6,8 @@ import LinkSocketModule = require('./linkServer.socket-io')
 // implemented as described in
 // https://github.com/TypeStrong/ts-loader/tree/master/test/comparison-tests/conditionalRequire
 
-let Server
+// HACK(theis): clean this by creating a proper TypeScript interface and two implementations
+let Server: typeof LinkElectronModule
 
 // defined at compile-time via webpack.DefinePlugin
 declare let COMPILE_ELECTRON: boolean

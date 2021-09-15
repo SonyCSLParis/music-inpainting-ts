@@ -61,16 +61,16 @@ $chords-font-stack: 'Boogaloo', cursive;
     }
   }
 
-  &.playing {
-    background-color: #f40081;
-    transform: scaleY(1.1);
-    border: solid 0.2em;
-    border-color: blue;
-  }
-
   &.dragover {
     opacity: 0.7;
   }
+}
+
+.sheet-locator.playing .notebox.playing {
+  background-color: #f40081;
+  transform: scaleY(1.1);
+  border: solid 0.2em;
+  border-color: blue;
 }
 
 .Fermata {
