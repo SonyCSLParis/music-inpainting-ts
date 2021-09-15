@@ -1,30 +1,18 @@
-import LinkClient from './linkClient'
+import { AbletonLinkClient } from './linkClient.abstract'
 import * as ControlLabels from '../controlLabels'
 
 import Nexus from '../nexusColored'
 import { PlaybackManager } from '../playback'
-import { Locator } from '../locator'
-import log from 'loglevel'
 
-export function render(playbackManager: PlaybackManager): void {
-  const bottomControlsElementID = 'bottom-controls'
-  const bottomControlsGridElement = document.getElementById(
-    bottomControlsElementID
-  )
-  if (bottomControlsGridElement == null) {
-    log.error(`Container element ${bottomControlsElementID} not found`)
-    return
-  }
-  const abletonLinkSettingsGridspan = document.createElement('div')
-  abletonLinkSettingsGridspan.id = 'ableton-link-settings-gridspan'
-  abletonLinkSettingsGridspan.classList.add('gridspan')
-  abletonLinkSettingsGridspan.classList.add('advanced')
-  bottomControlsGridElement.appendChild(abletonLinkSettingsGridspan)
-
+export function render(
+  container: HTMLElement,
+  linkClient: AbletonLinkClient,
+  playbackManager: PlaybackManager
+): void {
   const linkEnableButtonElement = document.createElement('div')
   linkEnableButtonElement.id = 'link-enable-button'
   linkEnableButtonElement.classList.add('control-item')
-  abletonLinkSettingsGridspan.appendChild(linkEnableButtonElement)
+  container.appendChild(linkEnableButtonElement)
 
   const linkEnableButton = new Nexus.Button('#link-enable-button', {
     size: [30, 30],
@@ -33,33 +21,40 @@ export function render(playbackManager: PlaybackManager): void {
   })
   linkEnableButton.on('change', (enable: boolean) => {
     if (enable) {
-      LinkClient.enable(playbackManager)
+      linkEnableButton.turnOff(false)
     } else {
-      LinkClient.disable()
+      linkEnableButton.turnOn(false)
     }
+    void linkClient.pingServer().then(() => {
+      if (enable) {
+        void linkClient.enable().then(() => linkEnableButton.turnOn(false))
+      } else {
+        linkClient.disable()
+        linkEnableButton.turnOff(false)
+      }
+    })
   })
   ControlLabels.createLabel(
-    linkEnableButton,
+    linkEnableButton.element,
     'link-enable-button-label',
     false,
     undefined,
-    abletonLinkSettingsGridspan
+    container
   )
 
   // Add manual Link-Sync button
-  renderSyncButton(abletonLinkSettingsGridspan, playbackManager)
-
-  renderDownbeatDisplay()
+  renderSyncButton(container, playbackManager)
+  renderDownbeatDisplay(container, linkClient)
 }
 
 function renderSyncButton(
   container: HTMLElement,
   playbackManager: PlaybackManager
 ): void {
-  const linkbuttonElement = document.createElement('div')
-  linkbuttonElement.id = 'sync-button'
-  linkbuttonElement.classList.add('control-item', 'advanced')
-  container.appendChild(linkbuttonElement)
+  const linkButtonElement = document.createElement('div')
+  linkButtonElement.id = 'sync-button'
+  linkButtonElement.classList.add('control-item', 'advanced')
+  container.appendChild(linkButtonElement)
 
   const syncButton = new Nexus.Button('#sync-button', {
     size: [30, 30],
@@ -73,7 +68,7 @@ function renderSyncButton(
   })
 
   ControlLabels.createLabel(
-    syncButton,
+    syncButton.element,
     'link-force-resync-button-label',
     false,
     undefined,
@@ -81,15 +76,15 @@ function renderSyncButton(
   )
 }
 
-function renderDownbeatDisplay(): void {
-  const abletonLinkSettingsGridspan = document.getElementById(
-    'ableton-link-settings-gridspan'
-  )
+export function renderDownbeatDisplay(
+  container: HTMLElement,
+  linkClient: AbletonLinkClient
+): void {
   const linkDownbeatDisplayElement = document.createElement('div')
   linkDownbeatDisplayElement.id = 'link-downbeat-display'
   linkDownbeatDisplayElement.classList.add('control-item', 'disable-mouse')
   linkDownbeatDisplayElement.style.pointerEvents = 'none'
-  abletonLinkSettingsGridspan.appendChild(linkDownbeatDisplayElement)
+  container.appendChild(linkDownbeatDisplayElement)
 
   const linkDownbeatDisplayButton = new Nexus.Button('#link-downbeat-display', {
     size: [20, 20],
@@ -97,15 +92,15 @@ function renderDownbeatDisplay(): void {
     mode: 'button',
   })
   ControlLabels.createLabel(
-    linkDownbeatDisplayButton,
+    linkDownbeatDisplayButton.element,
     'link-downbeat-display-label',
     true,
     undefined,
-    abletonLinkSettingsGridspan
+    container
   )
 
   let linkDisplayTimeout: NodeJS.Timeout
-  LinkClient.on('downbeat', () => {
+  linkClient.on('downbeat', () => {
     linkDownbeatDisplayButton.down()
     if (linkDisplayTimeout) clearTimeout(linkDisplayTimeout)
     linkDisplayTimeout = setTimeout(() => linkDownbeatDisplayButton.up(), 100)

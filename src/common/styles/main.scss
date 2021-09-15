@@ -13,6 +13,13 @@ body {
   overflow: hidden;
 }
 
+body.splash-screen {
+  -webkit-app-region: drag;
+  #configuration-selection {
+    -webkit-app-region: no-drag;
+  }
+}
+
 // default theme, also used on the splash-screen
 @include colors.theme-colors(dark-lavender);
 

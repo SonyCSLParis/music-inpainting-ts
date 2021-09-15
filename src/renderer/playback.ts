@@ -2,7 +2,8 @@ import * as Tone from 'tone'
 import { Transport as ToneTransport } from 'tone/build/esm/core/clock/Transport'
 import log from 'loglevel'
 
-import LinkClient from './ableton_link/linkClient'
+import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
+import EventEmitter from 'events'
 
 log.setLevel(log.levels.INFO)
 
@@ -11,7 +12,7 @@ export interface MinimalPlaybackManager {
   stop(): Promise<void>
 }
 
-abstract class TonePlaybackManager {
+abstract class TonePlaybackManager extends EventEmitter {
   static readonly playbackLookahead = 0.3
 
   get transport(): ToneTransport {
@@ -63,34 +64,70 @@ abstract class TonePlaybackManager {
 }
 
 abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
+  protected linkClient?: AbletonLinkClient
+
   // Start playback immediately at the beginning of the song
+  // TODO(theis): check if really necessary
   protected startPlaybackNowFromBeginning(): void {
     this.transport.start('+0.03', '0:0:0')
   }
 
+  // TODO(theis): can this be replaced with super.start()?
+  async synchronizedStartCallback(): Promise<void> {
+    await Tone.getContext().resume()
+    this.startPlaybackNowFromBeginning()
+  }
+
   // Start playback either immediately or in sync with Link if Link is enabled
   async play() {
-    await this.resumeContext()
-    if (!LinkClient.isEnabled()) {
+    if (this.linkClient == null || !this.linkClient.isEnabled) {
       // start the normal way
-      this.safeStartPlayback()
+      await super.play()
     } else {
-      log.info('LINK: Waiting for `downbeat` message...')
+      log.debug('Ableton Link: Waiting for `downbeat` message...')
       // wait for Link-socket to give downbeat signal
-      await LinkClient.once('downbeat', () => {
-        this.startPlaybackNowFromBeginning()
+      this.linkClient.once('downbeat', () => {
+        log.debug(
+          'Ableton Link: Received `downbeat` message, starting playback'
+        )
+        void this.synchronizedStartCallback()
       })
-      log.info('LINK: Received `downbeat` message, starting playback')
     }
   }
 
-  // Set the position in the current measure to the provided phase
-  // TODO(theis): should we use the `link.quantum` value?
+  // Start playback either immediately or in sync with Link if Link is enabled
+  async stop() {
+    if (this.linkClient != null && this.linkClient.isEnabled) {
+      log.info('LINK: Cancelling previously scheduled playback start')
+      this.linkClient.removeListener(
+        'downbeat',
+        () => void this.synchronizedStartCallback()
+      )
+    }
+    await super.stop()
+  }
+
   synchronizeToLink(): void {
-    if (this.transport.state == 'started' && LinkClient.isEnabled()) {
-      const currentMeasure = this.getCurrentMeasure().toString()
-      this.transport.position =
-        currentMeasure + ':' + LinkClient.getPhaseSynchronous().toString()
+    if (
+      this.transport.state == 'started' &&
+      this.linkClient != null &&
+      this.linkClient.isEnabled
+    ) {
+      this.linkClient.sendToServer('get-phase')
+    }
+  }
+
+  registerLinkClient(linkClient: AbletonLinkClient) {
+    if (this.linkClient == null) {
+      this.linkClient = linkClient
+      this.linkClient.onServerMessage('phase', (_, phase: number) => {
+        // Set the position in the current measure to the provided phase
+        // TODO(theis): should we use the `link.quantum` value?
+        const currentMeasure = this.getCurrentMeasure().toString()
+        this.transport.position = currentMeasure + ':' + phase.toString()
+      })
+    } else {
+      log.error('Ableton Link Client already registered')
     }
   }
 
@@ -100,11 +137,11 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
     return parseInt(currentMeasure)
   }
 
-  // Quick-and-dirty automatic phase-locking to Ableton Link
+  // HACK(theis): Quick-and-dirty automatic phase-locking to Ableton Link
   protected scheduleAutomaticResync() {
     new Tone.Loop(() => {
       this.synchronizeToLink()
-    }, '3m').start('16n')
+    }, '2m').start('16n')
   }
 
   constructor() {

@@ -6,12 +6,12 @@ import path from 'path'
 import { outputFile } from 'fs-extra'
 
 import * as WindowManager from './windowManager'
-import LinkServer from './ableton_link/linkServer'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
 if (isDevelopment) {
   log.setLevel(log.levels.DEBUG)
+  log.debug('Enable DEBUG logs from main process')
 } else {
   log.setLevel(log.levels.INFO)
 }
@@ -33,8 +33,6 @@ app.on('window-all-closed', function () {
 app.on('activate', function () {
   WindowManager.createWindow()
 })
-
-ipcMain.on('disconnect', () => LinkServer.killLink())
 
 ipcMain.handle(
   'get-path',
@@ -59,4 +57,6 @@ ipcMain.on('ondragstart', (event, filePath: string, iconPath: string) => {
   })
 })
 
-LinkServer.attachListeners()
+ipcMain.on('get-window-id', (event) => {
+  event.returnValue = event.sender.id
+})

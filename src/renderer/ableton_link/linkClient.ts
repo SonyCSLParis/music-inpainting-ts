@@ -1,23 +1,21 @@
-import * as LinkClientElectron from './linkClient.electron'
-import * as LinkClientSocket from './linkClient.socket-io'
+import { LinkClientConstructor } from './linkClient.abstract'
 
-// wrapper for the different available implementations of the Link Client
-// implemented as described in
-// https://github.com/TypeStrong/ts-loader/tree/master/test/comparison-tests/conditionalRequire
-
-let Client
+let AbletonLinkClientImplementation: LinkClientConstructor
 
 // defined at compile-time via webpack.DefinePlugin
 declare const COMPILE_ELECTRON: boolean
 
-if (COMPILE_ELECTRON) {
-  const LinkElectron = <typeof LinkClientElectron>(
-    require('./linkClient.electron')
-  )
-  Client = LinkElectron
-} else {
-  const LinkSocket = <typeof LinkClientSocket>require('./linkClient.socket-io')
-  Client = LinkSocket
+export async function getAbletonLinkClientClass(): Promise<LinkClientConstructor> {
+  if (!AbletonLinkClientImplementation) {
+    if (COMPILE_ELECTRON) {
+      const LinkClientElectron = (await import('./linkClient.electron'))
+        .LinkClientElectron
+      AbletonLinkClientImplementation = LinkClientElectron
+    } else {
+      throw Error('Update implementation to class-based interface')
+      // const LinkClientSocketIO = (await import('./linkClient.socket-io')).LinkClientSocketIO;
+      // AbletonLinkClientImplementation = LinkClientSocketIO
+    }
+  }
+  return AbletonLinkClientImplementation
 }
-
-export default Client

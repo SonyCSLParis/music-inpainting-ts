@@ -75,7 +75,11 @@ function stopLinkDownbeatClock(): void {
 // IPC API for the link server
 
 // Initialize LINK server
-export function attachListeners(): void {
+export function attachListeners(link: AbletonLinkBase): void {
+  // TODO(theis): clean this up
+  // ipcMain.on(link_channel_prefix + 'init', (event, bpm, quantum) => {
+  // });
+
   ipcMain.on(link_channel_prefix + 'ping', (event) => {
     if (isLinkInitialized()) {
       event.sender.send(link_channel_prefix + 'initialized-status', true)
@@ -117,7 +121,7 @@ export function attachListeners(): void {
 
   // Accessor for retrieving the current LINK tempo
   ipcMain.on(link_channel_prefix + 'get-bpm', (event) => {
-    if (link.isEnabled()) {
+    if (link.isEnabled) {
       event.sender.send(link_channel_prefix + 'bpm', link.bpm)
     }
   })

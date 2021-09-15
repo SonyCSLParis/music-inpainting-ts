@@ -49,6 +49,8 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
         midiListener.on('keyUp', this.onkeyup.bind(this))
       }
     })
+
+    this.toggleLowLatency(true)
   }
 
   protected onkeyup(data: NoteEvent): this {

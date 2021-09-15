@@ -130,6 +130,7 @@ export abstract class Locator<
   readonly editToolSelect: CycleSelect<EditToolT>
 
   protected displayLoop: Tone.Loop = new Tone.Loop()
+  protected scrollUpdateLoop: Tone.Loop = new Tone.Loop()
 
   abstract readonly dataType: 'sheet' | 'spectrogram'
 
@@ -212,6 +213,12 @@ export abstract class Locator<
     ...args
   ) {
     this.playbackManager = playbackManager
+    this.playbackManager.transport.on('start', () => {
+      this.container.classList.add('playing')
+    })
+    this.playbackManager.transport.on('stop', () => {
+      this.container.classList.remove('playing')
+    })
     this.playbackManager.context.on('statechange', () => {
       // reschedule the display loop if the context changed,
       // this can happen when the value of context.lookAhead is changed
@@ -230,6 +237,8 @@ export abstract class Locator<
     this.scheduleDisplayLoop()
 
     this.toggleTransparentScrollbars()
+
+    this.container.addEventListener('drop', (e) => void this.dropHandler(e))
   }
 
   readonly defaultApiAddress: URL
@@ -351,7 +360,7 @@ export abstract class Locator<
   protected simpleBar: ScrollLockSimpleBar
   protected readonly nowPlayingDisplayCallbacks: (() => void)[] = [
     // scroll display to current step if necessary
-    (): void => this.scrollTo(this.playbackManager.transport.progress),
+    // (): void => this.scrollTo(this.playbackManager.transport.progress),
     (): void =>
       this.setCurrentlyPlayingPositionDisplay(
         this.playbackManager.transport.progress
@@ -404,7 +413,6 @@ export abstract class Locator<
       this.scrollableElement.scrollLeft = newScrollLeft_px
     } else {
       // synchronize scrolling with the tempo for smooth scrolling
-      log.debug('scrolling to position ', newScrollLeft_px)
       const scrollDuration_ms = this.scrollIntervalDuration_seconds * 1000
       $(this.scrollableElement).stop(true, false).animate(
         {
@@ -419,13 +427,15 @@ export abstract class Locator<
   // Duration between two scroll snap points,
   //  e.g. 1 beat for a sheet in NONOTO
   //  or 1 second for sounds in NOTONO using a 1-seconds-resolution VQ-VAE
-  abstract readonly scrollIntervalDuration: Tone.Unit.Time
-
+  abstract readonly autoScrollIntervalDuration: Tone.Unit.Time
+  abstract readonly autoScrollUpdateInterval: Tone.Unit.Time
   readonly displayUpdateRate: Tone.Unit.Time
 
   // Return the time in seconds between beats
   get scrollIntervalDuration_seconds(): number {
-    return this.playbackManager.transport.toSeconds(this.scrollIntervalDuration)
+    return this.playbackManager.transport.toSeconds(
+      this.autoScrollIntervalDuration
+    )
   }
 
   protected scrollToStep(step: number): void {
@@ -464,6 +474,21 @@ export abstract class Locator<
 
   protected scheduleDisplayLoop(): void {
     this.displayLoop.dispose()
+    this.scrollUpdateLoop.dispose()
+
+    const scrollCallback = (time: Tone.Unit.Time) => {
+      const draw = this.playbackManager.transport.context.draw
+      draw.schedule(
+        (): void => this.scrollTo(this.playbackManager.transport.progress),
+        this.playbackManager.transport.toSeconds(time) +
+          this.playbackManager.transport.context.lookAhead
+      )
+    }
+    this.scrollUpdateLoop = new Tone.Loop(
+      scrollCallback,
+      this.autoScrollUpdateInterval
+    ).start(0)
+
     const drawCallback = (time: Tone.Unit.Time) => {
       const draw = this.playbackManager.transport.context.draw
       this.nowPlayingDisplayCallbacks.forEach((callback) =>
@@ -477,6 +502,8 @@ export abstract class Locator<
       this.displayUpdateRate
     ).start(0)
   }
+
+  protected abstract dropHandler(e: DragEvent): void
 }
 
 export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
@@ -547,9 +574,9 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
     return this.sheetContainer.getElementsByTagName('svg').item(0)
   }
 
-  readonly scrollIntervalDuration = '4n'
-
-  static readonly displayUpdateRate = '4n'
+  readonly autoScrollIntervalDuration = '4n'
+  readonly autoScrollUpdateInterval = '4n'
+  static readonly displayUpdateRate = '16n'
 
   protected onClickTimestampBoxFactory(
     timeStart: Fraction,
@@ -1274,6 +1301,61 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
       })
     })
   }
+
+  protected dropHandler(e: DragEvent): void {
+    // Prevent default behavior (Prevent file from being opened)
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.dataTransfer == null) {
+      return
+    }
+
+    if (e.dataTransfer.items) {
+      // Use DataTransferItemList interface to access the file(s)
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        // If dropped items aren't files, reject them
+        if (e.dataTransfer.items[i].kind === 'file') {
+          const sheetFile = e.dataTransfer.items[i].getAsFile()
+          if (sheetFile == null) {
+            return
+          }
+          void sheetFile.text().then((xmlSheetString) => {
+            const xmldata = this.parser.parseFromString(
+              xmlSheetString,
+              'text/xml'
+            )
+            this.removeMusicXMLHeaderNodes(xmldata)
+            this.currentXML = xmldata
+
+            // save current zoom level to restore it after load
+            const zoom = this.sheet.Zoom
+            void this.sheet.load(this.currentXML).then(async () => {
+              // restore pre-load zoom level
+              this.sheet.Zoom = zoom
+              this.render()
+
+              const sequenceDuration = Tone.Time(
+                `0:${this.sequenceDuration_quarters}:0`
+              )
+              const midiConversionURL = new URL(
+                '/musicxml-to-midi',
+                this.defaultApiAddress
+              )
+              const midiBlobURL = await this.playbackManager.loadMidi(
+                midiConversionURL.href,
+                this.currentXML,
+                Tone.Time(sequenceDuration)
+              )
+              this.downloadButton.revokeBlobURL()
+              this.downloadButton.targetURL = midiBlobURL
+
+              this.enableChanges()
+            })
+          })
+        }
+      }
+    }
+  }
 }
 
 type GridPosition = {
@@ -1514,8 +1596,8 @@ export class SpectrogramLocator extends Locator<
   readonly octaveConstraintControl: NumberControl
 
   // TODO(theis, 2021/08/26): retrieve this value from the API
-  readonly scrollIntervalDuration = 0
-
+  readonly autoScrollIntervalDuration = 0
+  readonly autoScrollUpdateRate = 0.1
   static readonly displayUpdateRate = 0.1
 
   // TODO(theis, 2021/07/13): add proper typing. Create a VQVAE class?
@@ -1627,7 +1709,6 @@ export class SpectrogramLocator extends Locator<
     this.pitchClassConstraintSelect = pitchClassConstraintSelect
 
     this.registerCallback(() => void this.regenerationCallback())
-    this.container.addEventListener('drop', (e) => this.dropHandler(e))
     this.scrollableElement.addEventListener('scroll', () => {
       this.setCurrentlyPlayingPositionDisplay()
     })
@@ -1856,7 +1937,7 @@ export class SpectrogramLocator extends Locator<
     if (this.codemap_top != null) {
       return this.codemap_top[0].length
     } else {
-      return 6 // HACK(theis, 2021/07/30): default value hardcoded here
+      return 4 // HACK(theis, 2021/07/30): default value hardcoded here
     }
   }
 
@@ -2312,7 +2393,7 @@ export class SpectrogramLocator extends Locator<
     )
   }
 
-  protected dropHandler(e: DragEvent) {
+  protected dropHandler(e: DragEvent): Promise<void> {
     // Prevent default behavior (Prevent file from being opened)
     e.preventDefault()
     e.stopPropagation()
@@ -2329,8 +2410,7 @@ export class SpectrogramLocator extends Locator<
             this.midiPitchConstraint.toString() +
             '&instrument_family_str=' +
             this.instrumentConstraint
-          void this.sendAudio(file, 'analyze-audio' + generationParameters)
-          return // only send the first file
+          return this.sendAudio(file, 'analyze-audio' + generationParameters)
         }
       }
     } else {
@@ -2339,6 +2419,7 @@ export class SpectrogramLocator extends Locator<
         console.log(`... file[${i}].name = ` + e.dataTransfer.files[i].name)
       }
     }
+    return new Promise<void>((resolve) => resolve())
   }
 
   triggerInterfaceRefresh(): void {

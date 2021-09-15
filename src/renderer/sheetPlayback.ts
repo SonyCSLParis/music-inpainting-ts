@@ -21,11 +21,23 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
   constructor(bpmControl: BPMControl) {
     super()
     this.bpmControl = bpmControl
-    // FIXME(@tbazin): circular dependency PlaybackManager <-> BPMControl
-    this.bpmControl.playbackManager = this
-    this.bpmControl.value = this.transport.bpm.value
+    this.transport.bpm.value = this.bpmControl.value
+    this.registerTempoUpdateCallback()
+    this.toggleLowLatency(false)
   }
 
+  registerTempoUpdateCallback(): void {
+    this.bpmControl.on('interface-tempo-changed', (newBpm: number) => {
+      // HACK perform a comparison to avoid messaging loops, since
+      // the link update triggers a bpm modification message
+      this.transport.bpm.value = newBpm
+    })
+    this.bpmControl.on('interface-tempo-changed-silent', (newBpm: number) => {
+      // HACK perform a comparison to avoid messaging loops, since
+      // the link update triggers a bpm modification message
+      this.transport.bpm.value = newBpm
+    })
+  }
   protected getPlayNoteByMidiChannel(
     midiChannel: number,
     useChordsInstruments = false
@@ -131,7 +143,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
   }
 
   protected get playingMidiPartsIndex(): number {
-    if (this.aIsMuted) {
+    if (this.aIsMuted()) {
       return 1
     } else {
       return 0

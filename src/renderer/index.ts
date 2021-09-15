@@ -31,7 +31,8 @@ import {
   BPMControl,
   renderPitchRootAndOctaveControl,
 } from './numberControl'
-import LinkClient from './ableton_link/linkClient'
+import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
+import { getAbletonLinkClientClass } from './ableton_link/linkClient'
 import * as LinkClientCommands from './ableton_link/linkClientCommands'
 import { DownloadButton, filename as filenameType } from './downloadCommand'
 import * as MidiOut from './midiOut'
@@ -77,6 +78,7 @@ let instrumentConstraintSelect: NexusSelectWithShuffle
 let pitchClassConstraintSelect: NexusSelect
 let octaveConstraintControl: NumberControl
 let downloadButton: DownloadButton
+let linkClient: AbletonLinkClient
 
 function render(
   configuration: applicationConfiguration = defaultConfiguration
@@ -186,6 +188,7 @@ function render(
       )
       bpmControl = new BPMControl(bottomControlsGridElement, 'bpm-control')
       bpmControl.render(useSimpleSlider, 200)
+      bpmControl.value = 80
     })
   }
 
@@ -197,6 +200,8 @@ function render(
       defaultFilename = { name: 'notono', extension: '.wav' }
     } else if (configuration['osmd']) {
       defaultFilename = { name: 'nonoto', extension: '.mid' }
+    } else {
+      throw new Error('Unsupported configuration')
     }
 
     const downloadCommandsGridspan = document.createElement('div')
@@ -298,13 +303,13 @@ function render(
         instrumentConstraintSelectElement,
         'instrument-control-label',
         false,
-        null,
+        undefined,
         instrumentConstraintSelectGridspanElement
       )
       const {
         pitchClassSelect,
         octaveControl,
-      } = renderPitchRootAndOctaveControl()
+      } = renderPitchRootAndOctaveControl(constraintsGridspanElement)
       pitchClassConstraintSelect = pitchClassSelect
       octaveConstraintControl = octaveControl
     })
@@ -353,16 +358,6 @@ function render(
       locator = sheetLocator
 
       playbackManager = sheetPlaybackManager
-
-      // set the initial tempo for the app
-      // if (LinkClient.isEnabled()) {
-      // // if Link is enabled, use the Link tempo
-      //     LinkClient.setBPMtoLinkBPM_async();
-      // }
-      // else
-      {
-        bpmControl.value = 110
-      }
 
       if (configuration['use_chords_instrument']) {
         sheetPlaybackManager.scheduleChordsPlayer(
@@ -467,8 +462,11 @@ function render(
 
       playbackManager = spectrogramPlaybackManager
       locator = spectrogramLocator
+
+      spectrogramLocator.editToolSelect.emit(
+        spectrogramLocator.editToolSelect.events.ValueChanged
+      )
     }
-    playbackManager.toggleLowLatency(false)
   })
 
   $(() => {
@@ -531,10 +529,36 @@ function render(
 
   $(() => {
     const isAdvancedControl = true
-    if (configuration['osmd'] && isAdvancedControl) {
-      LinkClient.kill()
+    if (COMPILE_ELECTRON && configuration['osmd'] && isAdvancedControl) {
+      getAbletonLinkClientClass().then(
+        (LinkClient) => {
+          linkClient = new LinkClient(bpmControl)
+          playbackManager.registerLinkClient(linkClient)
+
+          // render AbletonLink control interface
+          const bottomControlsElementID = 'bottom-controls'
+          const bottomControlsGridElement = document.getElementById(
+            bottomControlsElementID
+          )
+          if (bottomControlsGridElement == null) {
+            log.error(`Container element ${bottomControlsElementID} not found`)
+            return
+          }
+          const abletonLinkSettingsGridspan = document.createElement('div')
+          abletonLinkSettingsGridspan.id = 'ableton-link-settings-gridspan'
+          abletonLinkSettingsGridspan.classList.add('gridspan')
+          abletonLinkSettingsGridspan.classList.add('advanced')
+          bottomControlsGridElement.appendChild(abletonLinkSettingsGridspan)
+
+          LinkClientCommands.render(
+            abletonLinkSettingsGridspan,
+            linkClient,
+            playbackManager
+          )
+        },
+        (err) => log.error(err)
+      )
       // Insert LINK client controls
-      LinkClientCommands.render(playbackManager)
     }
   })
 
@@ -567,6 +591,10 @@ function render(
           sheetLocator,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
+      } else {
+        // FIXME(@tbazin, 2021/10/14): else branch should not be required,
+        // alternatives should be detected automatically
+        throw new Error('Unsupported configuration')
       }
 
       helpTrip.renderIcon(document.getElementById('main-panel'))
@@ -579,6 +607,10 @@ function render(
       promise = locator.generate(inpaintingApiAddress)
     } else if (locator.dataType == 'spectrogram') {
       promise = locator.sample(inpaintingApiAddress)
+    } else {
+      // FIXME(@tbazin, 2021/10/14): else branch should not be required,
+      // alternatives should be detected automatically
+      throw new Error('Unsupported configuration')
     }
     promise.then(
       () => log.info('Retrieved new media from server'),

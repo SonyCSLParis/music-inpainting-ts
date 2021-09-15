@@ -172,9 +172,7 @@ body.notono {
       opacity: 0;
 
       &.sequencer-playing {
-        visibility: visible;
-        opacity: 0.5;
-        backdrop-filter: contrast(1.1) saturate(1.15) hue-rotate(30deg);
+        transition: all 0.2s ease-in-out;
       }
     }
   }
@@ -201,6 +199,14 @@ body.notono {
     will-change: width;
     backdrop-filter: brightness(1.3) blur(2px);
     transform: perspective(500px);
+  }
+}
+
+.spectrogram-locator.playing {
+  .sequencer-grid-overlay span.sequencer-playing {
+    visibility: visible;
+    opacity: 0.5;
+    backdrop-filter: contrast(1.1) saturate(1.15) hue-rotate(30deg);
   }
 }
 

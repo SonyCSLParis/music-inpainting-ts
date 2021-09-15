@@ -1,167 +1,144 @@
-import { ipcMain } from 'electron'
-import * as log from 'loglevel'
-const abletonlink = require('abletonlink')
+import { BrowserWindow, ipcMain } from 'electron'
+import log from 'loglevel'
+import AbletonLink from 'abletonlink'
 
-import * as WindowManager from '../windowManager'
+import default_config from '../../common/default_config.json'
+const link_channel_prefix: string = default_config['link_channel_prefix']
 
-// Code for Ableton-LINK server
+export class LinkServerElectron extends AbletonLink {
+  protected readonly window: BrowserWindow
 
-const pattern_synchronization_duration_quarters = 4
-const link_channel_prefix: string = require('../../common/default_config.json')[
-  'link_channel_prefix'
-]
-let link = undefined
-let link_enabled = false
+  static downbeatUpdateRate_ms = 16
+  constructor(
+    window: BrowserWindow,
+    bpm?: number,
+    quantum?: number,
+    enable?: boolean
+  ) {
+    super(bpm, quantum, enable)
+    this.window = window
 
-function isLinkInitialized(): boolean {
-  return link != undefined
-}
-
-function isLinkEnabled(): boolean {
-  return link_enabled
-}
-
-function setLinkEnabled(enable): void {
-  link_enabled = enable
-  WindowManager.send(link_channel_prefix + 'enabled-status', isLinkEnabled())
-}
-
-function initAbletonLinkServer(
-  bpm = 120,
-  quantum = 4,
-  enable = false
-): boolean {
-  link = new abletonlink(bpm, quantum, enable)
-  WindowManager.send(link_channel_prefix + 'initialized-status', true)
-
-  setLinkEnabled(enable)
-  // TODO(theis): how to detect errors in initialization?
-  log.info(link)
-  const success = true
-
-  link.on('tempo', (bpm) => {
-    WindowManager.send(link_channel_prefix + 'bpm', bpm)
-
-    log.info('LINK: BPM changed, now ' + bpm)
-  })
-
-  link.on('numPeers', (numPeers) => {
-    WindowManager.send(link_channel_prefix + 'numPeers', numPeers)
-
-    log.info('LINK: numPeers changed, now ' + numPeers)
-  })
-
-  return success
-}
-
-function startLinkDownbeatClock(updateRate_ms = 16) {
-  // Start a LINK-based downbeat clock using IPC messages
-  // updateRate_ms, number: interval (in ms) between updates in the clock
-  let lastBeat = 0.0
-  let lastPhase = 0.0
-  link.startUpdate(updateRate_ms, (beat, phase, bpm) => {
-    beat = 0 ^ beat
-    if (0 < beat - lastBeat) {
-      WindowManager.send(link_channel_prefix + 'beat', { beat })
-      lastBeat = beat
-    }
-    if (0 > phase - lastPhase) {
-      WindowManager.send(link_channel_prefix + 'downbeat')
-      log.debug('LINK: downbeat')
-    }
-    lastPhase = phase
-  })
-}
-
-function stopLinkDownbeatClock() {
-  // Stop the LINK-based downbeat clock
-  link.stopUpdate()
-}
-
-// IPC API for the link server
-
-// Initialize LINK server
-export function attachListeners() {
-  ipcMain.on(link_channel_prefix + 'init', (event, bpm, quantum) => {})
-
-  ipcMain.on(link_channel_prefix + 'ping', (event, _) => {
-    if (isLinkInitialized()) {
-      event.sender.send(link_channel_prefix + 'initialized-status', true)
-      event.sender.send(link_channel_prefix + 'enabled-status', isLinkEnabled())
-    } else {
-      event.sender.send(link_channel_prefix + 'initialized-status', false)
-      event.sender.send(link_channel_prefix + 'enabled-status', false)
-    }
-    log.debug('Received ping!')
-  })
-
-  // Update LINK on tempo changes coming from the client
-  ipcMain.on(link_channel_prefix + 'bpm', (event, newBPM) => {
-    // HACK perform a comparison to avoid messaging loops, since
-    // the link update triggers a BPM modification message
-    // from main to renderer
-    if (isLinkInitialized() && link.bpm !== newBPM) {
-      const link_bpm_before = link.bpm
-      link.bpm = newBPM
-
-      log.debug('LINK: Triggered LINK tempo update:')
-      log.debug(`\tBefore: ${link_bpm_before}, now: ${newBPM}`)
-    }
-  })
-
-  // Enable LINK and start a downbeat clock to synchronize Transport
-  ipcMain.on(link_channel_prefix + 'enable', (event) => {
-    if (!isLinkInitialized()) {
-      initAbletonLinkServer()
-    }
-    if (!isLinkEnabled()) {
-      link.enable() // enable backend LINK-server
-      startLinkDownbeatClock(5)
-      setLinkEnabled(true)
-      // event.sender.send(link_channel_prefix + 'enable-success', true)
-    }
-  })
-
-  // Disable LINK
-  ipcMain.on(link_channel_prefix + 'disable', (event) => {
-    if (isLinkInitialized() && isLinkEnabled()) {
-      stopLinkDownbeatClock()
-      link.disable() // disable the backend LINK-server
-      setLinkEnabled(false)
-      // event.sender.send(link_channel_prefix + 'disable-success', true)
-    }
-  })
-
-  // Accessor for retrieving the current LINK tempo
-  ipcMain.on(link_channel_prefix + 'get-bpm', (event) => {
-    if (isLinkEnabled()) {
-      event.sender.send(link_channel_prefix + 'bpm', link.bpm)
-    } else {
-    }
-  })
-
-  // Accessor for retrieving the current LINK phase
-  // the `phase` is equal to the advance in beats in the current Link block
-  // where the block has size `quantum` as defined at link initialization
-  ipcMain.on(link_channel_prefix + 'get-phase-sync', (event) => {
-    event.returnValue = link.phase
-  })
-
-  ipcMain.on(link_channel_prefix + 'kill', () => killLink())
-}
-
-function disableLink() {
-  if (isLinkInitialized()) {
-    stopLinkDownbeatClock()
-    link.disable() // disable the backend LINK-server
+    this.init()
+    this.attachListeners()
+    this.startDownbeatClock()
   }
-  setLinkEnabled(false)
-}
 
-export function killLink() {
-  // kill the LINK server
-  log.info('Killing the LINK server')
-  disableLink()
-  link = undefined
-  WindowManager.send(link_channel_prefix + 'initialized-status', false)
+  protected prefixMessage(message: string): string {
+    return link_channel_prefix + this.window.id.toString() + message
+  }
+
+  init(): void {
+    // TODO(theis): how to detect errors in initialization?
+    this.on('tempo', (bpm: number) => {
+      log.info('LINK: BPM changed, now ' + bpm.toString())
+      this.window.webContents.send(this.prefixMessage('bpm'), bpm)
+    })
+    this.on('numPeers', (numPeers: number) => {
+      log.info('LINK: numPeers changed, now ' + numPeers.toString())
+      this.window.webContents.send(this.prefixMessage('numPeers'), numPeers)
+    })
+
+    ipcMain.emit(this.prefixMessage('initialized-status'), true)
+  }
+
+  attachListeners(): void {
+    ipcMain.on(this.prefixMessage('ping'), (event) => {
+      event.reply(this.prefixMessage('pong'))
+      event.reply(this.prefixMessage('initialized-status'), true)
+      event.reply(this.prefixMessage('enabled-status'), this.linkEnable)
+      log.debug('Received ping!')
+    })
+
+    // Update LINK on tempo changes coming from the client
+    ipcMain.on(this.prefixMessage('set-bpm'), (_, newBPM: number) => {
+      // HACK perform a comparison to avoid messaging loops, since
+      // the link update triggers a BPM modification message
+      // from main to renderer
+      if (this.linkEnable && this.bpm !== newBPM) {
+        const previous_link_bpm = this.bpm
+        console.log(newBPM)
+        this.bpm = newBPM
+
+        log.debug('LINK: Triggered LINK tempo update:')
+        log.debug(`\tBefore: ${previous_link_bpm}, now: ${newBPM}`)
+      }
+    })
+
+    // Enable LINK and start a downbeat clock to synchronize Transport
+    ipcMain.on(this.prefixMessage('enable'), (event) => {
+      if (!this.linkEnable) {
+        this.enable() // enable backend LINK-server
+      }
+      event.reply(this.prefixMessage('link-enabled-success'))
+    })
+
+    // Disable LINK
+    ipcMain.on(this.prefixMessage('disable'), (event) => {
+      this.disable()
+      event.reply(this.prefixMessage('link-disabled'))
+    })
+
+    // Accessor for retrieving the current LINK tempo
+    ipcMain.on(this.prefixMessage('get-bpm'), (event) => {
+      if (this.linkEnable) {
+        event.reply(this.prefixMessage('bpm'), this.bpm)
+      }
+    })
+    ipcMain.on(this.prefixMessage('get-quantum'), (event) => {
+      if (this.linkEnable) {
+        event.reply(this.prefixMessage('quantum'), this.quantum)
+      }
+    })
+
+    ipcMain.on(this.prefixMessage('get-phase'), (event) => {
+      if (this.linkEnable) {
+        event.reply(this.prefixMessage('phase'), this.phase)
+      }
+    })
+
+    ipcMain.on(this.prefixMessage('kill'), () => this.disable())
+  }
+
+  startDownbeatClock(): void {
+    // log.warn('downbeatClock disabled')
+    // return
+    // Start a LINK-based downbeat clock using IPC messages
+    // updateRate_ms, number: interval (in ms) between updates in the clock
+    let lastBeat = 0
+    let lastPhase = 0
+    if (!this.linkEnable) {
+      log.error('Link server not enabled, no reason to start DownbeatClock')
+      return
+    }
+    this.startUpdate(
+      LinkServerElectron.downbeatUpdateRate_ms,
+      (beat, phase) => {
+        beat = 0 ^ beat
+        if (0 < beat - lastBeat) {
+          this.window.webContents.send(this.prefixMessage('beat'), { beat })
+          lastBeat = beat
+        }
+        if (0 > phase - lastPhase) {
+          this.window.webContents.send(this.prefixMessage('downbeat'))
+        }
+        lastPhase = phase
+      }
+    )
+  }
+
+  stopDownbeatClock(): void {
+    // log.warn('downbeatClock disabled')
+    // Stop the LINK-based downbeat clock
+    this.stopUpdate()
+  }
+
+  enable(): void {
+    super.enable()
+    this.startDownbeatClock()
+  }
+
+  disable(): void {
+    super.disable()
+    this.stopDownbeatClock()
+  }
 }

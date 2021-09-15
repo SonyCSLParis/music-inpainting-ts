@@ -77,6 +77,17 @@ if (ENABLE_ANONYMOUS_MODE) {
 const spectrogramOnlyMode: boolean =
   SPECTROGRAM_ONLY || globalConfiguration['spectrogram_only']
 
+if (COMPILE_ELECTRON) {
+  void import('electron').then((electron) => {
+    const windowID = <number>electron.ipcRenderer.sendSync('get-window-id')
+    electron.ipcRenderer.send(
+      globalConfiguration['link_channel_prefix'] +
+        windowID.toString() +
+        'disable'
+    )
+  })
+}
+
 export function render(
   renderPage: (configuration: applicationConfiguration) => void
 ): void {
