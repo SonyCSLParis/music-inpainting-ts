@@ -12,7 +12,7 @@ import { ChordSelector } from './chord_selector'
 import type { Chord } from './chord'
 
 import Nexus, { NexusSelectWithShuffle } from './nexusColored'
-import type { NexusSelect } from 'nexusui'
+import type { MatrixCell, NexusSelect } from 'nexusui'
 
 import { PlaybackManager } from './playback'
 import MidiSheetPlaybackManager from './sheetPlayback'
@@ -24,7 +24,6 @@ import { DownloadButton } from './downloadCommand'
 import { mapTouchEventsToMouseSimplebar } from './utils/simplebar'
 import SimpleBar from 'simplebar'
 import type { Options as SimpleBarOptions } from 'simplebar'
-import type { MatrixCell } from 'nexusui'
 
 class ScrollLockSimpleBar extends SimpleBar {
   axis: {
@@ -1658,7 +1657,7 @@ export class SpectrogramLocator extends Locator<
   protected currentConditioning_top?: ConditioningMap
   protected currentConditioning_bottom?: ConditioningMap
 
-  get interfaceElement(): HTMLDivElement {
+  get interfaceElement(): HTMLElement {
     return this.sequencer.element
   }
 
