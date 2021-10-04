@@ -509,7 +509,7 @@ function render(
     const midiOutImplementation: typeof MidiOut = require('./midiOut')
     const midiInImplementation: typeof MidiIn = require('./midiIn')
     if (configuration['insert_advanced_controls'] && configuration['osmd']) {
-      void midiOutImplementation.render(playbackManager)
+      void midiOutImplementation.render(sheetLocator.playbackManager)
     } else if (
       configuration['insert_advanced_controls'] &&
       configuration['spectrogram']
@@ -553,7 +553,7 @@ function render(
           LinkClientCommands.render(
             abletonLinkSettingsGridspan,
             linkClient,
-            playbackManager
+            sheetLocator.playbackManager
           )
         },
         (err) => log.error(err)
