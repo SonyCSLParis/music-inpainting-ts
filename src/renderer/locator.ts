@@ -1368,6 +1368,31 @@ type GridPosition = {
 // as opposed to the 'change' events which can be emitted even though the actual
 // content of the matrix does not change (e.g. when touching the same cell twice
 // in a single Touch action)
+declare interface SequencerToggle {
+  on(
+    event: 'toggle',
+    listener: (
+      cellValue: {
+        row: number
+        column: number
+        state: boolean
+      },
+      ...args: any[]
+    ) => void
+  ): this
+  on(
+    event: 'change',
+    listener: (
+      cellValue: { row: number; column: number; state: boolean },
+      ...args: any[]
+    ) => void
+  ): this
+  on(
+    event: 'step',
+    listener: (columnValues: number[], ...args: any[]) => void
+  ): this
+}
+
 class SequencerToggle extends Nexus.Sequencer {
   inRectangularSelection = false
   firstCell?: GridPosition
