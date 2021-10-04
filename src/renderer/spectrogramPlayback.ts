@@ -16,23 +16,37 @@ interface NoteEvent {
 
 export class SpectrogramPlaybackManager extends PlaybackManager {
   // initialize crossfade to play player A
-  protected masterLimiter: Tone.Limiter = new Tone.Limiter(-10).toDestination()
-  protected masterGain: Tone.Gain = new Tone.Gain(1).connect(this.masterLimiter)
-  protected crossFade: Tone.CrossFade = new Tone.CrossFade(0).connect(
+  protected readonly masterLimiter: Tone.Limiter = new Tone.Limiter(
+    -10
+  ).toDestination()
+  protected readonly masterGain: Tone.Gain = new Tone.Gain(1).connect(
+    this.masterLimiter
+  )
+  protected readonly crossFade: Tone.CrossFade = new Tone.CrossFade(0).connect(
     this.masterGain
   )
-  protected player_A: Tone.Player = new Tone.Player().connect(this.crossFade.a)
-  protected player_B: Tone.Player = new Tone.Player().connect(this.crossFade.b)
+  protected readonly player_A: Tone.Player = new Tone.Player().connect(
+    this.crossFade.a
+  )
+  protected readonly player_B: Tone.Player = new Tone.Player().connect(
+    this.crossFade.b
+  )
+  protected get players(): Tone.Player[] {
+    return [this.player_A, this.player_B]
+  }
 
-  protected buffer_A: Tone.ToneAudioBuffer = new Tone.ToneAudioBuffer()
-  protected buffer_B: Tone.ToneAudioBuffer = new Tone.ToneAudioBuffer()
-  protected sampler_A: Tone.Sampler = new Tone.Sampler({
+  protected readonly buffer_A: Tone.ToneAudioBuffer = new Tone.ToneAudioBuffer()
+  protected readonly buffer_B: Tone.ToneAudioBuffer = new Tone.ToneAudioBuffer()
+
+  protected readonly sampler_A: Tone.Sampler = new Tone.Sampler({
     C4: this.buffer_A,
   }).connect(this.crossFade.a)
-  protected sampler_B: Tone.Sampler = new Tone.Sampler({
+  protected readonly sampler_B: Tone.Sampler = new Tone.Sampler({
     C4: this.buffer_B,
   }).connect(this.crossFade.b)
-  protected samplers: Tone.Sampler[] = [this.sampler_A, this.sampler_B]
+  protected get samplers(): Tone.Sampler[] {
+    return [this.sampler_A, this.sampler_B]
+  }
 
   protected crossFadeDuration: Tone.Unit.Time = '1'
   // look-ahead duration to retrieve the state of the crossfade after potential fading operations
@@ -112,8 +126,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
 
   // initialize the Transport loop and synchronize the two players
   protected scheduleInitialPlaybackLoop(): void {
-    this.player_A.sync()
-    this.player_B.sync()
+    this.players.forEach((player) => player.sync())
     this.transport.loop = true
   }
 
