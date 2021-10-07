@@ -21,6 +21,9 @@ export function createWindow(): void {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      // prevent window from getting decreased performance when not focused,
+      // which would lead to unstable audio playback
+      backgroundThrottling: false,
     },
     frame: false,
   })

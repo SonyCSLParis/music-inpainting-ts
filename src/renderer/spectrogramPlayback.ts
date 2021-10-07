@@ -15,6 +15,9 @@ interface NoteEvent {
 }
 
 export class SpectrogramPlaybackManager extends PlaybackManager {
+  protected playbackLookahead = 0
+  protected interactiveLookahead = 0
+
   // initialize crossfade to play player A
   protected readonly masterLimiter: Tone.Limiter = new Tone.Limiter(
     -10
@@ -64,6 +67,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
       }
     })
 
+    console.log(this.interactiveLookahead)
     this.toggleLowLatency(true)
   }
 

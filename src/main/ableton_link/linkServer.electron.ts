@@ -8,7 +8,7 @@ const link_channel_prefix: string = default_config['link_channel_prefix']
 export class LinkServerElectron extends AbletonLink {
   protected readonly window: BrowserWindow
 
-  static downbeatUpdateRate_ms = 16
+  static downbeatUpdateRate_ms = 10
   constructor(
     window: BrowserWindow,
     bpm?: number,
@@ -95,6 +95,11 @@ export class LinkServerElectron extends AbletonLink {
         event.reply(this.prefixMessage('phase'), this.phase)
       }
     })
+    ipcMain.on(this.prefixMessage('get-phase-sync'), (event) => {
+      if (this.linkEnable) {
+        event.returnValue = this.phase
+      }
+    })
 
     ipcMain.on(this.prefixMessage('kill'), () => this.disable())
   }
@@ -114,12 +119,12 @@ export class LinkServerElectron extends AbletonLink {
       LinkServerElectron.downbeatUpdateRate_ms,
       (beat, phase) => {
         beat = 0 ^ beat
+        if (0 > phase - lastPhase) {
+          this.window.webContents.send(this.prefixMessage('downbeat'))
+        }
         if (0 < beat - lastBeat) {
           this.window.webContents.send(this.prefixMessage('beat'), { beat })
           lastBeat = beat
-        }
-        if (0 > phase - lastPhase) {
-          this.window.webContents.send(this.prefixMessage('downbeat'))
         }
         lastPhase = phase
       }

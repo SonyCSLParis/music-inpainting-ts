@@ -36,8 +36,16 @@ export class LinkClientSocketIO extends AbletonLinkClient {
     return this
   }
   // Schedule a LINK dependent callback once
-  removeListener(message: string, callback: SocketIOCallback): this {
+  removeServerListener(message: string, callback: SocketIOCallback): this {
     this.socket.removeListener(link_channel_prefix + message, callback)
+    return this
+  }
+  removeAllServerListeners(message: string): this {
+    throw new Error(
+      'This is wrong, should remove listeners for specific message' +
+        'but could not yet find the way to do that with SocketIO'
+    )
+    this.socket.removeAllListeners()
     return this
   }
 }

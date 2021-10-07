@@ -3,7 +3,6 @@ import { AbletonLinkClient } from './linkClient.abstract'
 
 import default_config from '../../common/default_config.json'
 import { BPMControl } from '../numberControl'
-import log from 'loglevel'
 
 const link_channel_prefix: string = default_config['link_channel_prefix']
 
@@ -27,27 +26,30 @@ export class LinkClientElectron extends AbletonLinkClient {
 
   // Schedule a LINK dependent callback
   onServerMessage(message: string, callback: IpcRendererCallback): this {
-    log.info(this.prefixMessage(message))
     ipcRenderer.on(this.prefixMessage(message), callback.bind(this))
     return this
   }
   // Schedule a LINK dependent callback once
   onServerMessageOnce(message: string, callback: IpcRendererCallback): this {
-    log.info(this.prefixMessage(message))
     ipcRenderer.once(this.prefixMessage(message), callback.bind(this))
     return this
   }
   // Send values to the Ableton Link server
-  sendToServer(message: string, ...args: any[]): this {
+  sendToServer(message: string, ...args: any[]): void {
     ipcRenderer.send(this.prefixMessage(message), ...args)
-    return this
   }
-  removeServerListener(message: string, callback: IpcRendererCallback): this {
+  sendToServerSync(message: string, ...args: any[]): any {
+    // @ts-expect-error: `any` return type cannot be avoided here
+    return ipcRenderer.sendSync(this.prefixMessage(message), ...args)
+  }
+  removeServerListener(message: string, callback: IpcRendererCallback): void {
     ipcRenderer.removeListener(this.prefixMessage(message), callback)
-    return this
   }
-  removeAllServerListeners(message: string): this {
+  removeAllServerListeners(message: string): void {
     ipcRenderer.removeAllListeners(this.prefixMessage(message))
-    return this
+  }
+
+  getPhaseAsync(): Promise<number> {
+    return <Promise<number>>ipcRenderer.invoke(this.prefixMessage('get-phase'))
   }
 }
