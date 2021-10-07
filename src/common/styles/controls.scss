@@ -26,31 +26,33 @@
       font-size: measures.$cycleSelect-size;
 }
 
-#bottom-controls [nexus-ui] {
-  * {
-    border-radius: 4px !important;
-  }
+#bottom-controls, #configuration-selection {
+  [nexus-ui] {
+    * {
+      border-radius: 5em;
+    }
 
-  width: fit-content;
-  height: fit-content;
+    width: fit-content;
+    height: fit-content;
 
-  select,
-  input {
-    text-align: center;
-    font-size: min(7vh, 7vw, 15px) !important;
-  }
-  select {
-    display: inline-flex;
-    vertical-align: middle;
-    top: 50%;
-    height: max(1em, min(40px, 8vh, 7vw)) !important;
-    min-height: max-content;
-    max-width: max-content;
-    width: 20vw !important;
-  }
-  input {
-    height: min(25px, 10vh) !important;
-    width: min(18vw, 45px) !important;
+    select,
+    input {
+      text-align: center;
+      font-size: min(7vh, 7vw, 15px) !important;
+    }
+    select {
+      display: inline-flex;
+      vertical-align: middle;
+      top: 50%;
+      height: max(1em, min(40px, 8vh, 7vw)) !important;
+      min-height: max-content;
+      max-width: max-content;
+      width: 20vw !important;
+    }
+    input {
+      height: min(25px, 10vh) !important;
+      width: min(18vw, 45px) !important;
+    }
   }
 }
 
