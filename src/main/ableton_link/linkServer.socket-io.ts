@@ -121,7 +121,7 @@ export function attachListeners(link: AbletonLinkBase): void {
 
   // Accessor for retrieving the current LINK tempo
   ipcMain.on(link_channel_prefix + 'get-bpm', (event) => {
-    if (link.isEnabled) {
+    if (link.linkEnable) {
       event.sender.send(link_channel_prefix + 'bpm', link.bpm)
     }
   })

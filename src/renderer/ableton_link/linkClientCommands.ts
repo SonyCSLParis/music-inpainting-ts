@@ -3,11 +3,13 @@ import * as ControlLabels from '../controlLabels'
 
 import Nexus from '../nexusColored'
 import { PlaybackManager } from '../playback'
+import MidiSheetPlaybackManager from '../sheetPlayback'
+import { NumberControl } from '../numberControl'
 
 export function render(
   container: HTMLElement,
   linkClient: AbletonLinkClient,
-  playbackManager: PlaybackManager
+  playbackManager: MidiSheetPlaybackManager
 ): void {
   const linkEnableButtonElement = document.createElement('div')
   linkEnableButtonElement.id = 'link-enable-button'
@@ -103,6 +105,24 @@ export function renderDownbeatDisplay(
   linkClient.on('downbeat', () => {
     linkDownbeatDisplayButton.down()
     if (linkDisplayTimeout) clearTimeout(linkDisplayTimeout)
-    linkDisplayTimeout = setTimeout(() => linkDownbeatDisplayButton.up(), 100)
+    linkDisplayTimeout = setTimeout(() => linkDownbeatDisplayButton.up(), 50)
   })
+}
+
+export function renderLatencyControl(
+  container: HTMLElement,
+  playbackManager: MidiSheetPlaybackManager
+): void {
+  const latencyControl = new NumberControl(
+    container,
+    'latency-control',
+    [0, 1500],
+    0,
+    (value) => {
+      playbackManager.transport.context.lookAhead = value / 1000
+      playbackManager.transport.context.emit('statechange')
+    },
+    0.5
+  )
+  latencyControl.render(false, 200)
 }

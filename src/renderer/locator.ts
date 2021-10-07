@@ -1621,7 +1621,7 @@ export class SpectrogramLocator extends Locator<
 
   // TODO(theis, 2021/08/26): retrieve this value from the API
   readonly autoScrollIntervalDuration = 0
-  readonly autoScrollUpdateRate = 0.1
+  readonly autoScrollUpdateInterval = 0.1
   static readonly displayUpdateRate = 0.1
 
   // TODO(theis, 2021/07/13): add proper typing. Create a VQVAE class?

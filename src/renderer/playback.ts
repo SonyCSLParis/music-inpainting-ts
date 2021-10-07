@@ -13,7 +13,8 @@ export interface MinimalPlaybackManager {
 }
 
 abstract class TonePlaybackManager extends EventEmitter {
-  static readonly playbackLookahead = 0.3
+  protected playbackLookahead = 0.3
+  protected interactiveLookahead = 0.25
 
   get transport(): ToneTransport {
     return Tone.getTransport()
@@ -52,12 +53,12 @@ abstract class TonePlaybackManager extends EventEmitter {
   toggleLowLatency(force?: boolean): void {
     if (force != undefined) {
       force
-        ? (this.transport.context.lookAhead = 0)
-        : (this.transport.context.lookAhead = PlaybackManager.playbackLookahead)
+        ? (this.transport.context.lookAhead = this.interactiveLookahead)
+        : (this.transport.context.lookAhead = this.playbackLookahead)
     } else {
-      this.transport.context.lookAhead == PlaybackManager.playbackLookahead
-        ? (this.transport.context.lookAhead = 0)
-        : (this.transport.context.lookAhead = PlaybackManager.playbackLookahead)
+      this.transport.context.lookAhead == this.playbackLookahead
+        ? (this.transport.context.lookAhead = this.interactiveLookahead)
+        : (this.transport.context.lookAhead = this.playbackLookahead)
     }
     this.context.emit('statechange')
   }
@@ -65,11 +66,12 @@ abstract class TonePlaybackManager extends EventEmitter {
 
 abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
   protected linkClient?: AbletonLinkClient
+  protected readonly automaticSynchronizationLoop: Tone.Loop
 
   // Start playback immediately at the beginning of the song
   // TODO(theis): check if really necessary
   protected startPlaybackNowFromBeginning(): void {
-    this.transport.start('+0.03', '0:0:0')
+    this.transport.start()
   }
 
   // TODO(theis): can this be replaced with super.start()?
@@ -113,19 +115,23 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
       this.linkClient != null &&
       this.linkClient.isEnabled
     ) {
-      this.linkClient.sendToServer('get-phase')
+      this.onPhaseUpdate(this.linkClient.getPhaseSync())
     }
+  }
+
+  protected onPhaseUpdate(phase: number): void {
+    // Set the position in the current measure to the provided phase
+    // TODO(theis): should we use the `link.quantum` value?
+    const currentMeasure = this.getCurrentMeasure().toString()
+    this.transport.position = currentMeasure + ':' + phase.toString()
   }
 
   registerLinkClient(linkClient: AbletonLinkClient) {
     if (this.linkClient == null) {
       this.linkClient = linkClient
-      this.linkClient.onServerMessage('phase', (_, phase: number) => {
-        // Set the position in the current measure to the provided phase
-        // TODO(theis): should we use the `link.quantum` value?
-        const currentMeasure = this.getCurrentMeasure().toString()
-        this.transport.position = currentMeasure + ':' + phase.toString()
-      })
+      this.linkClient.onServerMessage('phase', (_, phase: number) =>
+        this.onPhaseUpdate(phase)
+      )
     } else {
       log.error('Ableton Link Client already registered')
     }
@@ -138,15 +144,19 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
   }
 
   // HACK(theis): Quick-and-dirty automatic phase-locking to Ableton Link
-  protected scheduleAutomaticResync() {
-    new Tone.Loop(() => {
+  protected scheduleAutomaticResync(): Tone.Loop {
+    const startOffset = Tone.Time(0).quantize('4n', 0.9)
+    console.log(startOffset)
+    const automaticSynchronizationLoop = new Tone.Loop(() => {
       this.synchronizeToLink()
-    }, '2m').start('16n')
+    }, '2n').start(0.1)
+    automaticSynchronizationLoop.humanize = 0.02
+    return automaticSynchronizationLoop
   }
 
   constructor() {
     super()
-    this.scheduleAutomaticResync()
+    this.automaticSynchronizationLoop = this.scheduleAutomaticResync()
   }
 }
 

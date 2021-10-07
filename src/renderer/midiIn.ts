@@ -12,22 +12,23 @@ import type { NexusNumber, NexusSelect } from 'nexusui'
 // to load the types and the implementation separately
 // this ensures that babel is correctly applied on the imported javascript
 import { MidiInput as MidiInputInterface } from '@tonejs/piano'
-const MidiInput: typeof MidiInputInterface = require('babel-loader!@tonejs/piano')
-  .MidiInput
+const MidiInput: typeof MidiInputInterface = <typeof MidiInputInterface>(
+  require('babel-loader!@tonejs/piano').MidiInput
+)
 
-// @ts-expect-error
+// @ts-expect-error: this extended class makes the _addLister
 class ChannelBasedMidiInput extends MidiInput {
   channel: IMidiChannel = 'all'
 
   /**
    * Attach listeners to the device when it's connected
    */
-  _addListeners(device: Input): void {
-    // @ts-expect-error
+  private _addListeners(device: Input): void {
+    // @ts-expect-error: circumventing private modifier
     if (!MidiInput.connectedDevices.has(device.id)) {
-      // @ts-expect-error
+      // @ts-expect-error: circumventing private modifier
       MidiInput.connectedDevices.set(device.id, device)
-      // @ts-expect-error
+      // @ts-expect-error: circumventing private modifier
       this.emit('connect', this._inputToDevice(device))
 
       device.addListener('noteon', 'all', (event) => {
@@ -37,7 +38,7 @@ class ChannelBasedMidiInput extends MidiInput {
               note: `${event.note.name}${event.note.octave}`,
               midi: event.note.number,
               velocity: event.velocity,
-              // @ts-expect-error
+              // @ts-expect-error: circumventing private modifier
               device: this._inputToDevice(device),
               // @ts-expect-error
               channel: event.channel,
@@ -53,7 +54,7 @@ class ChannelBasedMidiInput extends MidiInput {
               note: `${event.note.name}${event.note.octave}`,
               midi: event.note.number,
               velocity: event.velocity,
-              // @ts-expect-error
+              // @ts-expect-error: circumventing private modifier
               device: this._inputToDevice(device),
               // @ts-expect-error
               channel: event.channel,
@@ -67,7 +68,7 @@ class ChannelBasedMidiInput extends MidiInput {
           if (this.deviceId === 'all' || this.deviceId === device.id) {
             if (event.controller.name === 'holdpedal') {
               this.emit(event.value ? 'pedalDown' : 'pedalUp', {
-                // @ts-expect-error
+                // @ts-expect-error: circumventing private modifier
                 device: this._inputToDevice(device),
                 // @ts-expect-error
                 channel: event.channel,

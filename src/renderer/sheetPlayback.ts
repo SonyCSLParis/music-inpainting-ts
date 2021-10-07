@@ -15,15 +15,44 @@ import { BPMControl } from './numberControl'
 import { SheetLocator } from './locator'
 import { ControlChange } from '@tonejs/midi/src/ControlChange'
 
+type NoteWithMIDIChannel = {
+  name: string
+  velocity: number
+  duration: number
+  midiChannel: number
+}
+
 export default class MidiSheetPlaybackManager extends PlaybackManager {
+  midiLatency = 0
   readonly bpmControl: BPMControl
 
-  constructor(bpmControl: BPMControl) {
+  // TODO(@tbazin): set-up chords instrument simply as an additional MIDI channel
+  // and treat it like the other instruments
+  readonly useChordsInstrument: boolean
+
+  _playNote: (time: Tone.Unit.Time, event: NoteWithMIDIChannel) => void
+  get playNote(): (time: Tone.Unit.Time, event: NoteWithMIDIChannel) => void {
+    return this._playNote
+  }
+  set playNote(
+    playNote: (time: Tone.Unit.Time, event: NoteWithMIDIChannel) => void
+  ) {
+    this.midiParts.forEach((midiParts) =>
+      midiParts.forEach((part) => {
+        part.callback = playNote
+      })
+    )
+    this._playNote = playNote
+  }
+
+  constructor(bpmControl: BPMControl, useChordsInstrument = false) {
     super()
     this.bpmControl = bpmControl
+    this.useChordsInstrument = useChordsInstrument
     this.transport.bpm.value = this.bpmControl.value
     this.registerTempoUpdateCallback()
     this.toggleLowLatency(false)
+    void this.refreshPlayNoteCallback()
   }
 
   registerTempoUpdateCallback(): void {
@@ -38,15 +67,10 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
       this.transport.bpm.value = newBpm
     })
   }
-  protected getPlayNoteByMidiChannel(
-    midiChannel: number,
-    useChordsInstruments = false
-  ): (
-    time: number,
-    event: { name: string; velocity: number; duration: number }
-  ) => void {
+
+  async refreshPlayNoteCallback(): Promise<void> {
     let getCurrentInstrument = Instruments.getCurrentInstrument
-    if (useChordsInstruments) {
+    if (this.useChordsInstrument) {
       getCurrentInstrument = Instruments.getCurrentChordsInstrument
     }
     const getTimingOffset = () => {
@@ -54,51 +78,40 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
       return WebMidi.time - this.transport.context.currentTime * 1000
     }
 
-    const timingOffset = getTimingOffset()
-    function playNote(
-      time: number,
-      event: { name: string; velocity: number; duration: number }
-    ) {
-      const currentInstrument = getCurrentInstrument(midiChannel)
-      if (currentInstrument != null) {
-        if ('keyUp' in currentInstrument) {
-          currentInstrument.keyDown({
-            note: event.name,
-            time: time,
-            velocity: event.velocity,
-          })
-          currentInstrument.keyUp({
-            note: event.name,
-            time: time + event.duration,
-          })
-        } else if ('triggerAttackRelease' in currentInstrument) {
-          currentInstrument.triggerAttackRelease(
-            event.name,
-            event.duration,
-            time,
-            event.velocity
-          )
-        }
-        log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event))
+    const currentMidiOutput = await MidiOut.getOutput()
+    if (currentMidiOutput) {
+      this.playNote = (time: number, event: NoteWithMIDIChannel) => {
+        currentMidiOutput.playNote(event.name, event.midiChannel, {
+          time: time * 1000 + getTimingOffset(),
+          duration: event.duration * 1000,
+        })
       }
-
-      MidiOut.getOutput().then(
-        (currentMidiOutput) => {
-          if (currentMidiOutput) {
-            currentMidiOutput.playNote(event.name, midiChannel, {
-              time: time * 1000 + timingOffset,
-              duration: event.duration * 1000,
+    } else {
+      this.playNote = (time: number, event: NoteWithMIDIChannel) => {
+        const currentInstrument = getCurrentInstrument(event.midiChannel)
+        if (currentInstrument != null) {
+          if ('keyUp' in currentInstrument) {
+            currentInstrument.keyDown({
+              note: event.name,
+              time: time,
+              velocity: event.velocity,
             })
+            currentInstrument.keyUp({
+              note: event.name,
+              time: time + event.duration,
+            })
+          } else if ('triggerAttackRelease' in currentInstrument) {
+            currentInstrument.triggerAttackRelease(
+              event.name,
+              event.duration,
+              time,
+              event.velocity
+            )
           }
-        },
-        (reason) => {
-          log.error('Failed to retrieve current Midi Output with error: ')
-          log.error(reason)
+          log.trace(`Play note event @ time ${time}: ` + JSON.stringify(event))
         }
-      )
+      }
     }
-
-    return playNote
   }
 
   triggerPedalCallback: (time: Tone.Unit.Time, event: ControlChange) => void = (
@@ -127,11 +140,11 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     return currentStep
   }
 
-  protected midiParts_A = new Map<number, Tone.Part<MidiNote>>()
-  protected midiParts_B = new Map<number, Tone.Part<MidiNote>>()
+  protected midiParts_A = new Map<number, Tone.Part<NoteWithMIDIChannel>>()
+  protected midiParts_B = new Map<number, Tone.Part<NoteWithMIDIChannel>>()
   protected controlChanges_A = new Map<number, Tone.Part<ControlChange>>()
   protected controlChanges_B = new Map<number, Tone.Part<ControlChange>>()
-  protected get midiParts(): Map<number, Tone.Part<MidiNote>>[] {
+  protected get midiParts(): Map<number, Tone.Part<NoteWithMIDIChannel>>[] {
     return [this.midiParts_A, this.midiParts_B]
   }
   protected get controlChanges(): Map<number, Tone.Part<ControlChange>>[] {
@@ -154,11 +167,11 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     return 1 - this.playingMidiPartsIndex
   }
 
-  protected getPlayingMidiParts(): Map<number, Tone.Part<MidiNote>> {
+  protected getPlayingMidiParts(): Map<number, Tone.Part<NoteWithMIDIChannel>> {
     return this.midiParts[this.playingMidiPartsIndex]
   }
 
-  protected getNextMidiParts(): Map<number, Tone.Part<MidiNote>> {
+  protected getNextMidiParts(): Map<number, Tone.Part<NoteWithMIDIChannel>> {
     return this.midiParts[this.nextMidiPartsIndex]
   }
 
@@ -176,45 +189,52 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     const next = this.getNextMidiParts()
     const nextControlChanges = this.getNextControlChanges()
 
+    next.forEach((part) => {
+      part.mute = false
+    })
     if (playing != next) {
       playing.forEach((part) => {
         part.mute = true
       })
     }
-    next.forEach((part) => {
-      part.mute = false
+    nextControlChanges.forEach((controlChanges) => {
+      controlChanges.mute = false
     })
     if (playingControlChanges != nextControlChanges) {
       playingControlChanges.forEach((controlChanges) => {
         controlChanges.mute = true
       })
     }
-    nextControlChanges.forEach((controlChanges) => {
-      controlChanges.mute = false
-    })
   }
 
   scheduleTrackToInstrument(
     sequenceDuration_toneTime: Tone.TimeClass,
     midiTrack: Track,
-    midiChannel = 1
+    midiChannel = 1,
+    nextParts: Map<number, Tone.Part<NoteWithMIDIChannel>>,
+    nextControlChanges: Map<number, Tone.Part<ControlChange>>
   ): void {
     const notes: MidiNote[] = midiTrack.notes
-    const playNote_callback = this.getPlayNoteByMidiChannel(midiChannel)
+    const notesWithChannel = notes.map((note) => {
+      const noteJson = note.toJSON()
+      return { ...noteJson, midiChannel: midiChannel }
+    })
 
-    let part = this.getNextMidiParts().get(midiChannel)
+    let part = nextParts.get(midiChannel)
     if (part == undefined) {
       log.debug('Creating new part')
-      part = new Tone.Part<MidiNote>(playNote_callback, notes)
+      part = new Tone.Part<NoteWithMIDIChannel>((time, note) => {
+        this.playNote(time, note)
+      }, notesWithChannel)
       part.mute = true
       part.start(0) // schedule events on the Tone timeline
       part.loop = true
       part.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
-      this.getNextMidiParts().set(midiChannel, part)
+      nextParts.set(midiChannel, part)
     } else {
       part.mute = true
       part.clear()
-      notes.forEach((noteEvent) => {
+      notesWithChannel.forEach((noteEvent) => {
         part.add(noteEvent)
       })
       part.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
@@ -223,7 +243,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     // schedule the pedal
     const pedalControlChanges = midiTrack.controlChanges[64]
     if (pedalControlChanges != undefined) {
-      let controlChangesPart = this.getNextControlChanges().get(midiChannel)
+      let controlChangesPart = nextControlChanges.get(midiChannel)
       if (controlChangesPart == undefined) {
         controlChangesPart = new Tone.Part<ControlChange>(
           this.triggerPedalCallback,
@@ -233,7 +253,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
         controlChangesPart.start(0)
         controlChangesPart.loop = true
         controlChangesPart.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
-        this.getNextControlChanges().set(midiChannel, controlChangesPart)
+        nextControlChanges.set(midiChannel, controlChangesPart)
       } else {
         controlChangesPart.mute = true
         controlChangesPart.clear()
@@ -288,7 +308,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     $(document).ajaxError((error) => console.log(error))
 
     const midiBlobURL = this.midiRequestWithData(serverURL, payload, 'POST')
-      .then(([midi, blobURL]) => {
+      .then(async ([midi, blobURL]) => {
         if (!this.transport.loop) {
           this.transport.loop = true
           this.transport.loopStart = 0
@@ -312,15 +332,20 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
         this.transport.timeSignature =
           midi.header.timeSignatures[0].timeSignature
 
-        midi.tracks.forEach((track, index) => {
+        const nextParts = this.getNextMidiParts()
+        const nextControlChanges = this.getNextControlChanges()
+        const schedulingPromises = midi.tracks.map((track, index) => {
           // midiChannels start at 1
           const midiChannel = index + 1
-          this.scheduleTrackToInstrument(
+          return this.scheduleTrackToInstrument(
             sequenceDuration_toneTime,
             track,
-            midiChannel
+            midiChannel,
+            nextParts,
+            nextControlChanges
           )
         })
+        await Promise.all(schedulingPromises)
 
         // change Transport BPM back to the displayed value
         // FIXME(theis): if this.bpmControl.value is a floor'ed value, this is wrong
@@ -339,23 +364,18 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
 
   scheduleChordsPlayer(midiChannel: number, locator: SheetLocator): void {
     // schedule callback to play the chords contained in the OSMD
-    const useChordsInstruments = true
-
     const playChord = (time: number) => {
       const currentStep = this.quartersProgress()
       if (currentStep % 2 == 0) {
         const chord =
           locator.chordSelectors[Math.floor(currentStep / 2)].currentChord
         const events = Chord.makeNoteEvents(chord, time, Tone.Time('2n'), 0.5)
-        const playNote = this.getPlayNoteByMidiChannel(
-          midiChannel,
-          useChordsInstruments
-        )
         events.forEach((event) =>
-          playNote(time, {
+          this.playNote(time, {
             name: event.name,
             duration: this.transport.toSeconds(event.duration),
             velocity: event.velocity,
+            midiChannel: midiChannel,
           })
         )
       }

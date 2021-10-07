@@ -6,16 +6,21 @@ import * as Instruments from './instruments'
 import * as ControlLabels from './controlLabels'
 
 import Nexus from './nexusColored'
-import { PlaybackManager } from './playback'
+import MidiSheetPlaybackManager from './sheetPlayback'
 
 let globalMidiOutputListener: MidiOutput = null
 
 export async function getMidiOutputListener(): Promise<MidiOutput> {
+  if (globalMidiOutputListener != null) {
+    return globalMidiOutputListener
+  }
   await MidiOutput.enabled()
   return globalMidiOutputListener
 }
 
-export async function render(playbackManager: PlaybackManager): Promise<void> {
+export async function render(
+  playbackManager: MidiSheetPlaybackManager
+): Promise<void> {
   const bottomControlsGridElement = document.getElementById('bottom-controls')
 
   const midiOutContainerElement: HTMLElement = document.createElement('div')
@@ -105,6 +110,7 @@ export async function render(playbackManager: PlaybackManager): Promise<void> {
       playbackManager.toggleLowLatency(true)
       Instruments.mute(true)
     }
+    void playbackManager.refreshPlayNoteCallback()
     if (midiOutputListener.deviceId != previousOutput) {
       log.info('Selected MIDI Out: ' + this.value)
     }
