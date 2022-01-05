@@ -1,4 +1,4 @@
-import * as teoria from 'teoria'
+import * as Tonal from '@tonaljs/tonal'
 import * as Tone from 'tone'
 
 export const enum Note {
@@ -39,14 +39,14 @@ export type Chord = {
 function getMidiPitches(chord: Chord): number[] {
   const chordRoot =
     chord.accidental != null ? chord.root + chord.accidental : chord.root
-  const teoriaChord = teoria.chord(chordRoot + chord.type)
-  const midiPitches = teoriaChord.notes().map((note) => note.midi())
+  const tonalChord = Tonal.Chord.getChord(chordRoot + chord.type)
+  const midiPitches = tonalChord.notes.map((note) => Tonal.Note.midi(note))
   return midiPitches
 }
 
 type NoteEvent = {
   midi: number
-  name: Note
+  name: string
   time: number
   duration: Tone.Unit.Time
   velocity: number
@@ -60,7 +60,7 @@ function makeNoteEvent(
 ): NoteEvent {
   return {
     midi: midi,
-    name: teoria.note.fromMIDI(midi).scientific(),
+    name: Tonal.Midi.midiToNoteName(midi),
     time: time_ms,
     duration: duration.toSeconds(),
     velocity: velocity,
