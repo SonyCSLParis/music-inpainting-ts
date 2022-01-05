@@ -88,6 +88,7 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.3",
+    "@tonaljs/tonal": "^4.6.5",
     "@tonejs/midi": "^2.0.27",
     "@tonejs/piano": "^0.2.1",
     "abletonlink": "^0.1.1",
@@ -113,7 +114,6 @@
     "socket.io": "^3.1.1",
     "socket.io-client": "^3.1.1",
     "source-map-support": "^0.5.6",
-    "teoria": "^2.5.0",
     "tone": "^14.7.77",
     "webmidi": "^2.5.2",
     "webpack-sources": "^2.2.0",
