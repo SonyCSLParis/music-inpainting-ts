@@ -1,5 +1,4 @@
-// webpack configuration for web, NOTONO-only interface
-// TODO(theis): disable inclusion of sound samples for this mode
+// webpack configuration for web, NOTONO-only interface without logos and identification
 
 const webpack = require('webpack')
 const path = require('path')
@@ -19,7 +18,6 @@ const merged_defines = mergeWithCustomize({
 
   plugins: [
     new webpack.DefinePlugin({
-      SPECTROGRAM_ONLY: true,
       ENABLE_ANONYMOUS_MODE: true,
     }),
   ],

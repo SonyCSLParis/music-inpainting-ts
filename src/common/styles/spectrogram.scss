@@ -20,7 +20,7 @@ $spectrogram-height-no-scroll: 90%;
 }
 
 #spectrogram-container {
-  height: 100%;
+  height: 97%;
   width: 100%;
   margin-left: 0vw;
 
@@ -67,9 +67,6 @@ $spectrogram-height-no-scroll: 90%;
   }
 }
 
-.spectrogram-locator svg {
-  cursor: crosshair !important;
-}
 .spectrogram-locator .eraser svg {
   cursor: url('../images/eraser-solid.png') 0 18, crosshair !important;
 }
@@ -108,7 +105,7 @@ body.notono {
 .spectrogram-locator-image-container {
   position: absolute;
   width: 100vw;
-  top: 5vh;
+  top: 5%;
   pointer-events: none;
 
   picture {
@@ -146,7 +143,7 @@ body.notono {
   position: absolute;
   margin-left: measures.$spectrogram-margin-width;
   width: measures.$spectrogram-width !important;
-  top: 5vh;
+  top: 5%;
   z-index: 0;
 
   .sequencer-grid-overlay {
@@ -178,7 +175,7 @@ body.notono {
   }
 
   svg rect:hover {
-    fill: white;
+    fill: color.change(white, $alpha: 0.7);
   }
 
   * {

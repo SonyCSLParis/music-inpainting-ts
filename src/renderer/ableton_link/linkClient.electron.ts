@@ -38,10 +38,6 @@ export class LinkClientElectron extends AbletonLinkClient {
   sendToServer(message: string, ...args: any[]): void {
     ipcRenderer.send(this.prefixMessage(message), ...args)
   }
-  sendToServerSync(message: string, ...args: any[]): any {
-    // @ts-expect-error: `any` return type cannot be avoided here
-    return ipcRenderer.sendSync(this.prefixMessage(message), ...args)
-  }
   removeServerListener(message: string, callback: IpcRendererCallback): void {
     ipcRenderer.removeListener(this.prefixMessage(message), callback)
   }

@@ -93,6 +93,7 @@ export class NumberControl extends EventEmitter {
       })
       this.controller.element.style.width =
         Math.round(elementWidth).toString() + 'px'
+      this.controller.element.style.padding = '0'
     } else {
       const bpmSliderElement = document.createElement('div')
       bpmSliderElement.id = this.id
@@ -167,18 +168,10 @@ export class BPMControl extends NumberControl {
       newBPM = 2 * newBPM
     }
     this.controller.value = newBPM
-
-    // // HACK perform a comparison to avoid messaging loops, since
-    // // the link update triggers a bpm modification message
-    // if (this.playbackManager.transport.bpm.value !== newBPM) {
-    //   this.playbackManager.transport.bpm.value = newBPM
-    //   this.controller._value.update(newBPM)
-    //   this.controller.render()
-    // }
   }
 
+  // see https://stackoverflow.com/a/28951055:
   // must also subclass getter if subclassing setter,
-  // see https://stackoverflow.com/a/28951055
   // otherwise return value is `undefined`
   get value(): number {
     return super.value
@@ -189,15 +182,23 @@ export function renderPitchRootAndOctaveControl(
   container: HTMLElement,
   lockPitchClassToC = false
 ): { pitchClassSelect: NexusSelect; octaveControl: NumberControl } {
-  const pitchSelectGridspanElement = document.createElement('div')
-  pitchSelectGridspanElement.id = 'pitch-control-gridspan'
-  pitchSelectGridspanElement.classList.add('gridspan')
-  container.appendChild(pitchSelectGridspanElement)
+  const pitchSelectContainerElement = document.createElement('div')
+  pitchSelectContainerElement.id = 'pitch-control-container'
+  pitchSelectContainerElement.classList.add('gridspan')
+  container.appendChild(pitchSelectContainerElement)
+
+  ControlLabels.createLabel(
+    pitchSelectContainerElement,
+    'pitch-control-label',
+    false,
+    undefined,
+    container
+  )
 
   const pitchSelectContainer = document.createElement('div')
   pitchSelectContainer.id = 'pitch-control-pitch-class-select'
   pitchSelectContainer.classList.add('control-item')
-  pitchSelectGridspanElement.appendChild(pitchSelectContainer)
+  pitchSelectContainerElement.appendChild(pitchSelectContainer)
   const notes = [
     'C',
     'C♯',
@@ -223,19 +224,19 @@ export function renderPitchRootAndOctaveControl(
   pitchSelectContainer.style.height = ''
   if (lockPitchClassToC) {
     // TODO(theis, 2021/07/27): check this setup
-    ;(<HTMLElement>pitchClassSelect.element).style.display = 'none'
+    pitchClassSelect.element.style.display = 'none'
   } else {
     ControlLabels.createLabel(
       pitchSelectContainer,
       'pitch-control-pitch-class-select-label',
       false,
       undefined,
-      pitchSelectGridspanElement
+      pitchSelectContainerElement
     )
   }
 
   const octaveControl = new NumberControl(
-    pitchSelectGridspanElement,
+    pitchSelectContainerElement,
     'pitch-control-octave-control',
     [2, 7],
     5

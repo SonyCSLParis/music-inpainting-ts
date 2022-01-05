@@ -1,5 +1,5 @@
 // Module to create native browser windows
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
 import { LinkServerElectron } from './ableton_link/linkServer.electron'
 
@@ -12,12 +12,23 @@ const openWindows = new Map<number, BrowserWindow>()
 
 import defaultConfiguration from '../common/default_config.json'
 import customConfiguration from '../../config.json'
+import log from 'loglevel'
 const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
+
+// FIXME(@tbazin, 2021/10/22): bug when trying to import this module with Webpack 4
+// import { } from '../common/styles/mixins/_colors.module.scss'
+
+// FIXME(@tbazin, 2021/10/28): avoid using a global like this
+const TITLE_BAR_STYLE = 'hiddenInset'
 
 export function createWindow(): void {
   // Create the browser window
   const window = new BrowserWindow({
     title: globalConfiguration['app_name'],
+    minWidth: 450,
+    minHeight: 450,
+    // FIXME(@tbazin, 2021/10/22): hardcoded value
+    backgroundColor: '#575358',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -25,7 +36,7 @@ export function createWindow(): void {
       // which would lead to unstable audio playback
       backgroundThrottling: false,
     },
-    frame: false,
+    titleBarStyle: TITLE_BAR_STYLE,
   })
   const linkServer = new LinkServerElectron(window, 120, 4, false)
 
@@ -80,3 +91,32 @@ export function send(channel: string, ...args: unknown[]): void {
 export function broadcast(channel: string, ...args: unknown[]): void {
   openWindows.forEach((window) => window.webContents.send(channel, ...args))
 }
+
+ipcMain.on('window-toggle-maximize', (event) => {
+  const id = event.sender.id
+  const targetWindow = openWindows.get(id)
+  if (targetWindow) {
+    log.debug(`Window: ${id}: toggling window maximization state`)
+    targetWindow.isMaximized()
+      ? targetWindow.unmaximize()
+      : targetWindow.maximize()
+  }
+})
+
+ipcMain.on('set-background-color', (event, backgroundColor: string) => {
+  log.debug(`Requested setting background color to ${backgroundColor}`)
+  const id = event.sender.id
+  const targetWindow = openWindows.get(id)
+  if (targetWindow) {
+    targetWindow.setBackgroundColor(backgroundColor)
+    log.debug(`Window: ${id}: set background color to ${backgroundColor}`)
+  }
+})
+
+ipcMain.on('get-titleBarStyle', (event) => {
+  const id = event.sender.id
+  const targetWindow = openWindows.get(id)
+  if (targetWindow) {
+    event.returnValue = TITLE_BAR_STYLE
+  }
+})

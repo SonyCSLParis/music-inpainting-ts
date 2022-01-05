@@ -83,14 +83,6 @@ export function render(
     void playbackCallback(play)
   }
 
-  function pressPlay() {
-    playCallback(true)
-  }
-
-  function pressStop() {
-    playCallback(false)
-  }
-
   function togglePlayback() {
     playCallback(playbackManager.transport.state != 'started')
   }
@@ -114,14 +106,6 @@ export function render(
         // disable scrolling on Spacebar press
         event.preventDefault()
         void togglePlayback()
-        break
-      case 'p':
-        event.preventDefault()
-        void pressPlay()
-        break
-      case 's':
-        event.preventDefault()
-        void pressStop()
         break
     }
   })

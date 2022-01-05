@@ -1,4 +1,6 @@
 import * as Tone from 'tone'
+import FocusedAudioKeys from './audiokeys/audiokeys'
+import { Midi } from '@tonaljs/tonal'
 
 import { PlaybackManager } from './playback'
 
@@ -7,6 +9,8 @@ import Nexus from './nexusColored'
 import { getMidiInputListener } from './midiIn'
 import { IMidiChannel } from 'webmidi'
 import * as ControlLabels from './controlLabels'
+
+import log from 'loglevel'
 
 interface NoteEvent {
   note: string
@@ -38,8 +42,12 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     return [this.player_A, this.player_B]
   }
 
-  protected readonly buffer_A: Tone.ToneAudioBuffer = new Tone.ToneAudioBuffer()
-  protected readonly buffer_B: Tone.ToneAudioBuffer = new Tone.ToneAudioBuffer()
+  protected readonly buffer_A: Tone.ToneAudioBuffer = Tone.ToneAudioBuffer.fromArray(
+    new Float32Array([0])
+  )
+  protected readonly buffer_B: Tone.ToneAudioBuffer = Tone.ToneAudioBuffer.fromArray(
+    new Float32Array([0])
+  )
 
   protected readonly sampler_A: Tone.Sampler = new Tone.Sampler({
     C4: this.buffer_A,
@@ -55,19 +63,48 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
   // look-ahead duration to retrieve the state of the crossfade after potential fading operations
   protected crossFadeOffset: Tone.Unit.Time = '+1.1'
 
+  protected readonly desktopKeyboard = new FocusedAudioKeys({
+    polyphony: Infinity,
+    rows: 2,
+    rootNote: 60,
+  })
+
   constructor() {
     super()
 
     this.scheduleInitialPlaybackLoop()
+    try {
+      void getMidiInputListener().then((midiListener) => {
+        if (midiListener !== null) {
+          midiListener.on('keyDown', (note: NoteEvent) => {
+            this.onkeydown(note)
+          })
+          midiListener.on('keyUp', (note: NoteEvent) => {
+            this.onkeyup(note)
+          })
+        }
+      })
+    } catch (e) {
+      log.info('Could not initialize MIDI-Input listener due to: ', e)
+    }
 
-    void getMidiInputListener().then((midiListener) => {
-      if (midiListener !== null) {
-        midiListener.on('keyDown', this.onkeydown.bind(this))
-        midiListener.on('keyUp', this.onkeyup.bind(this))
+    this.desktopKeyboard.down((keyboardNote: AudioKeysNoteData) => {
+      const note = {
+        velocity: keyboardNote.velocity / 127,
+        midi: keyboardNote.note,
+        note: Midi.midiToNoteName(keyboardNote.note),
       }
+      this.onkeydown(note)
+    })
+    this.desktopKeyboard.up((keyboardNote: AudioKeysNoteData) => {
+      const note = {
+        velocity: keyboardNote.velocity / 127,
+        midi: keyboardNote.note,
+        note: Midi.midiToNoteName(keyboardNote.note),
+      }
+      this.onkeyup(note)
     })
 
-    console.log(this.interactiveLookahead)
     this.toggleLowLatency(true)
   }
 
@@ -266,7 +303,9 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
     return this.currentPlayerIsA() ? this.voices_A : this.voices_B
   }
 
-  protected getSamplersByMidiChannel(channel: IMidiChannel): Tone.Sampler[] {
+  protected getSamplersByMidiChannel(
+    channel: IMidiChannel = 1
+  ): Tone.Sampler[] {
     if (channel === 'all') {
       return this.currentVoices
     } else if (Array.isArray(channel)) {

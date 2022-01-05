@@ -17,6 +17,13 @@
 
 .sheet-locator {
   width: 100%;
+  .simplebar-wrapper {
+    height: 100%;
+
+    .simplebar-content-wrapper {
+      height: 100%;
+    }
+  }
 }
 
 .sheet-locator-overlays {

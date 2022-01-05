@@ -19,7 +19,7 @@ let merged_defines = mergeWithCustomize({
 
   plugins: [
     new webpack.DefinePlugin({
-      SPECTROGRAM_ONLY: true,
+      AVAILABLE_APPLICATION_MODES: ['spectrogram'],
       DEFAULT_INPAINTING_API_ADDRESS: '"https://notono.api.cslmusic.team"',
     }),
   ],
@@ -31,7 +31,7 @@ module.exports = merge(merged_defines, {
       meta: {
         // Fixes 300ms delay on touch + reduce size on mobile for better display
         viewport:
-          'width=device-width, initial-scale=0.5, maximum-scale=1.0, user-scalable=no, target-densityDpi=medium-dpi',
+          'width=device-width, initial-scale=0.5, maximum-scale=0.5, user-scalable=no, target-densityDpi=medium-dpi',
       },
       title: 'NOTONO',
       favicon: 'src/common/images/favicon.ico',

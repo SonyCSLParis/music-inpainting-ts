@@ -98,6 +98,8 @@ export class DownloadButton {
 
     if (COMPILE_ELECTRON) {
       // add support for native Drag and Drop
+      // FIXME(@tbazin, 2021/11/10): Fix DownloadButton drag-out for MIDI
+
       const ipcRenderer = require('electron').ipcRenderer
 
       const saveBlob = (

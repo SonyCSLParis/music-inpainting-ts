@@ -17,17 +17,11 @@ export abstract class AbletonLinkClient extends EventEmitter {
     callback: (event: any, ...args: any[]) => any
   ): void
   abstract sendToServer(message: string, ...args: any[]): void
-  abstract sendToServerSync(message: string, ...args: any[]): any
   abstract removeServerListener(
     message: string,
     callback: (event: any, ...args: any[]) => any
   ): void
   abstract removeAllServerListeners(message: string): void
-
-  getPhaseSync(): number {
-    return <number>this.sendToServerSync('get-phase-sync')
-  }
-
   protected enabled = false
   protected _initialized = false
   get initialized(): boolean {
@@ -105,6 +99,10 @@ export abstract class AbletonLinkClient extends EventEmitter {
   emitSynchronizationMessage(): void {
     this.emit('enabled')
     this.setBPMtoLinkBPM_async()
+  }
+
+  requestPhaseAsync(): void {
+    this.sendToServer('get-phase')
   }
 
   enableServer(): Promise<void> {

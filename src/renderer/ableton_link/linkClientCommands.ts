@@ -2,19 +2,33 @@ import { AbletonLinkClient } from './linkClient.abstract'
 import * as ControlLabels from '../controlLabels'
 
 import Nexus from '../nexusColored'
-import { PlaybackManager } from '../playback'
 import MidiSheetPlaybackManager from '../sheetPlayback'
-import { NumberControl } from '../numberControl'
 
 export function render(
   container: HTMLElement,
   linkClient: AbletonLinkClient,
   playbackManager: MidiSheetPlaybackManager
 ): void {
+  const linkClientSetupContainerElement: HTMLElement = document.createElement(
+    'div'
+  )
+  linkClientSetupContainerElement.id = 'ableton-link-client-setup-container'
+  linkClientSetupContainerElement.classList.add('gridspan')
+  linkClientSetupContainerElement.classList.add('advanced')
+  container.appendChild(linkClientSetupContainerElement)
+
+  ControlLabels.createLabel(
+    linkClientSetupContainerElement,
+    'ableton-link-client-setup-container-label',
+    true,
+    undefined,
+    container
+  )
+
   const linkEnableButtonElement = document.createElement('div')
   linkEnableButtonElement.id = 'link-enable-button'
   linkEnableButtonElement.classList.add('control-item')
-  container.appendChild(linkEnableButtonElement)
+  linkClientSetupContainerElement.appendChild(linkEnableButtonElement)
 
   const linkEnableButton = new Nexus.Button('#link-enable-button', {
     size: [30, 30],
@@ -38,44 +52,13 @@ export function render(
   })
   ControlLabels.createLabel(
     linkEnableButton.element,
-    'link-enable-button-label',
+    'ableton-link-client-enable-button-label',
     false,
     undefined,
-    container
+    linkClientSetupContainerElement
   )
 
-  // Add manual Link-Sync button
-  renderSyncButton(container, playbackManager)
-  renderDownbeatDisplay(container, linkClient)
-}
-
-function renderSyncButton(
-  container: HTMLElement,
-  playbackManager: PlaybackManager
-): void {
-  const linkButtonElement = document.createElement('div')
-  linkButtonElement.id = 'sync-button'
-  linkButtonElement.classList.add('control-item', 'advanced')
-  container.appendChild(linkButtonElement)
-
-  const syncButton = new Nexus.Button('#sync-button', {
-    size: [30, 30],
-    state: false,
-    mode: 'impulse',
-  })
-  syncButton.on('change', (enable: boolean) => {
-    if (enable) {
-      playbackManager.synchronizeToLink()
-    }
-  })
-
-  ControlLabels.createLabel(
-    syncButton.element,
-    'link-force-resync-button-label',
-    false,
-    undefined,
-    container
-  )
+  renderDownbeatDisplay(linkClientSetupContainerElement, linkClient)
 }
 
 export function renderDownbeatDisplay(
@@ -95,7 +78,7 @@ export function renderDownbeatDisplay(
   })
   ControlLabels.createLabel(
     linkDownbeatDisplayButton.element,
-    'link-downbeat-display-label',
+    'ableton-link-client-downbeat-display-label',
     true,
     undefined,
     container
@@ -107,22 +90,4 @@ export function renderDownbeatDisplay(
     if (linkDisplayTimeout) clearTimeout(linkDisplayTimeout)
     linkDisplayTimeout = setTimeout(() => linkDownbeatDisplayButton.up(), 50)
   })
-}
-
-export function renderLatencyControl(
-  container: HTMLElement,
-  playbackManager: MidiSheetPlaybackManager
-): void {
-  const latencyControl = new NumberControl(
-    container,
-    'latency-control',
-    [0, 1500],
-    0,
-    (value) => {
-      playbackManager.transport.context.lookAhead = value / 1000
-      playbackManager.transport.context.emit('statechange')
-    },
-    0.5
-  )
-  latencyControl.render(false, 200)
 }
