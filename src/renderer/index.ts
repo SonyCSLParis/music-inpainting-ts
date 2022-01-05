@@ -36,7 +36,7 @@ import { getAbletonLinkClientClass } from './ableton_link/linkClient'
 import * as LinkClientCommands from './ableton_link/linkClientCommands'
 import { DownloadButton, filename as filenameType } from './downloadCommand'
 
-import { myTrip, NonotoTrip, NotonoTrip } from './helpTour'
+import { MyShepherdTour, NonotoTour, NotonoTour } from './helpTour'
 
 import { createLFOControls } from './lfo'
 import { CycleSelect } from './cycleSelect'
@@ -630,17 +630,17 @@ function render(
 
   $(() => {
     if (configuration['insert_help']) {
-      let helpTrip: myTrip
+      let helpTour: MyShepherdTour
       if (configuration['spectrogram']) {
         // initialize help menu
-        helpTrip = new NotonoTrip(
+        helpTour = new NotonoTour(
           [configuration['main_language']],
           locator,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
       } else if (configuration['osmd']) {
         // initialize help menu
-        helpTrip = new NonotoTrip(
+        helpTour = new NonotoTour(
           [configuration['main_language']],
           sheetLocator,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
@@ -651,7 +651,7 @@ function render(
         throw new Error('Unsupported configuration')
       }
 
-      helpTrip.renderIcon(document.getElementById('main-panel'))
+      helpTour.renderIcon(document.getElementById('main-panel'))
     }
   })
 
