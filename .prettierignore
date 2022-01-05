@@ -99,5 +99,5 @@ config.json
 
 *.py
 *.html
-utils/
-static/
+./utils/
+./static/

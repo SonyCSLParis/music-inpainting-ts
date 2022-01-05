@@ -11,10 +11,10 @@ import MidiSheetPlaybackManager from './sheetPlayback'
 let globalMidiOutputListener: MidiOutput = null
 
 export async function getMidiOutputListener(): Promise<MidiOutput> {
-  if (globalMidiOutputListener != null) {
-    return globalMidiOutputListener
+  if (globalMidiOutputListener == null) {
+    await MidiOutput.enabled()
+    globalMidiOutputListener = new MidiOutput('all')
   }
-  await MidiOutput.enabled()
   return globalMidiOutputListener
 }
 
@@ -23,36 +23,51 @@ export async function render(
 ): Promise<void> {
   const bottomControlsGridElement = document.getElementById('bottom-controls')
 
-  const midiOutContainerElement: HTMLElement = document.createElement('div')
-  midiOutContainerElement.id = 'midi-output-setup-gridspan'
-  midiOutContainerElement.classList.add('gridspan')
-  midiOutContainerElement.classList.add('advanced')
-  bottomControlsGridElement.appendChild(midiOutContainerElement)
+  const midiOutputSetupGridspanElement: HTMLElement = document.createElement(
+    'div'
+  )
+  midiOutputSetupGridspanElement.id = 'midi-output-setup-gridspan'
+  midiOutputSetupGridspanElement.classList.add('gridspan')
+  midiOutputSetupGridspanElement.classList.add('advanced')
+  bottomControlsGridElement.appendChild(midiOutputSetupGridspanElement)
 
-  if (globalMidiOutputListener === null) {
-    try {
-      globalMidiOutputListener = new MidiOutput(null)
-      await MidiOutput.enabled()
-    } catch (error) {
-      // no Web MIDI API support in the browser
-      log.error('Failed in rendering Midi-Out controls with error: ', error)
-      midiOutContainerElement.classList.add('disabled-gridspan')
-      midiOutContainerElement.innerHTML =
-        'No Web MIDI API support<br>Try using Chromium'
-      return
-    }
+  try {
+    await getMidiOutputListener()
+  } catch (error) {
+    // no Web MIDI API support in the browser
+    log.info('Failed in rendering Midi-Out controls with message: ', error)
+    midiOutputSetupGridspanElement.classList.add('disabled-gridspan')
+    midiOutputSetupGridspanElement.innerHTML =
+      'No Web MIDI API support<br>Try using Google Chrome'
+    return
   }
 
-  const midiOutSelectElement = document.createElement('div')
-  midiOutSelectElement.classList.add('control-item', 'advanced')
-  midiOutContainerElement.appendChild(midiOutSelectElement)
+  const midiOutputSetupContainerElement: HTMLElement = document.createElement(
+    'div'
+  )
+  midiOutputSetupContainerElement.id = 'midi-output-setup-container'
+  midiOutputSetupContainerElement.classList.add('gridspan')
+  midiOutputSetupContainerElement.classList.add('advanced')
+  midiOutputSetupGridspanElement.appendChild(midiOutputSetupContainerElement)
 
   ControlLabels.createLabel(
-    midiOutSelectElement,
-    'select-midi-output-device-label',
+    midiOutputSetupContainerElement,
+    'midi-output-setup-container-label',
     true,
     undefined,
-    midiOutContainerElement
+    midiOutputSetupGridspanElement
+  )
+
+  const midiOutputDeviceSelectElement = document.createElement('div')
+  midiOutputDeviceSelectElement.classList.add('control-item', 'advanced')
+  midiOutputSetupContainerElement.appendChild(midiOutputDeviceSelectElement)
+
+  ControlLabels.createLabel(
+    midiOutputDeviceSelectElement,
+    'midi-output-device-select-label',
+    true,
+    undefined,
+    midiOutputSetupContainerElement
   )
 
   const disabledOutputId = 'Disabled'
@@ -60,18 +75,13 @@ export async function render(
   async function makeOptions(): Promise<string[]> {
     const devices = await MidiOutput.getDevices()
     const devicesNames = devices.map((data) => data.name)
-    return [disabledOutputId, 'All'].concat(devicesNames)
+    return [disabledOutputId].concat(devicesNames)
   }
 
-  const midiOutSelect = new Nexus.Select(midiOutSelectElement, {
+  const midiOutSelect = new Nexus.Select(midiOutputDeviceSelectElement, {
     size: [150, 50],
     options: await makeOptions(),
   })
-
-  async function getDeviceId(name: string): Promise<string> {
-    const devices = await MidiOutput.getDevices()
-    return devices.find((data) => data.name == name).id
-  }
 
   async function updateOptions(): Promise<void> {
     const currentOutput = midiOutSelect.value
@@ -92,32 +102,45 @@ export async function render(
   }
 
   const midiOutputListener = await getMidiOutputListener()
+
   midiOutputListener.on('connect', () => void updateOptions())
   midiOutputListener.on('disconnect', () => void updateOptions())
 
   async function midiOutOnChange(this: typeof midiOutSelect): Promise<void> {
     const previousOutput = midiOutputListener.deviceId
-    if (this.value == disabledOutputId) {
-      midiOutputListener.deviceId = null
-      playbackManager.toggleLowLatency(false)
-      Instruments.mute(false)
-    } else {
-      if (this.value == 'All') {
-        midiOutputListener.deviceId = 'all'
-      } else {
-        midiOutputListener.deviceId = await getDeviceId(this.value)
-      }
-      playbackManager.toggleLowLatency(true)
-      Instruments.mute(true)
-    }
-    void playbackManager.refreshPlayNoteCallback()
+
+    await midiOutputListener.setDevice(this.value.toLowerCase())
     if (midiOutputListener.deviceId != previousOutput) {
       log.info('Selected MIDI Out: ' + this.value)
     }
+    playbackManager.toggleLowLatency(midiOutputListener.isActive)
+    Instruments.mute(midiOutputListener.isActive)
+
+    midiOutputSetupGridspanElement.classList.toggle(
+      'midi-enabled',
+      midiOutputListener.isActive
+    )
+    await playbackManager.refreshPlayNoteCallback()
   }
 
   midiOutSelect.on('change', () => void midiOutOnChange.bind(midiOutSelect)())
   midiOutSelect.value = (await makeOptions())[0]
+
+  const midiOutDisplayButtonContainer = document.createElement('div')
+  midiOutDisplayButtonContainer.classList.add('control-item', 'disable-mouse')
+  midiOutputSetupContainerElement.appendChild(midiOutDisplayButtonContainer)
+  const midiOutDisplayButton = new Nexus.Button(midiOutDisplayButtonContainer, {
+    size: [15, 15],
+    state: false,
+    mode: 'impulse',
+  })
+
+  type midiKeyAndPedalEvents = 'keyDown' | 'keyUp' | 'pedalDown' | 'pedalUp'
+  Array<midiKeyAndPedalEvents>('keyDown').forEach((event) => {
+    midiOutputListener.midiInputListener.on(event, () => {
+      midiOutDisplayButton.click()
+    })
+  })
 }
 
 export async function getOutput(): Promise<false | Output> {

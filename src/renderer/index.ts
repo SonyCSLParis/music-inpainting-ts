@@ -35,8 +35,6 @@ import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
 import { getAbletonLinkClientClass } from './ableton_link/linkClient'
 import * as LinkClientCommands from './ableton_link/linkClientCommands'
 import { DownloadButton, filename as filenameType } from './downloadCommand'
-import * as MidiOut from './midiOut'
-import * as MidiIn from './midiIn'
 
 import { myTrip, NonotoTrip, NotonoTrip } from './helpTour'
 
@@ -45,7 +43,6 @@ import { CycleSelect } from './cycleSelect'
 import { getPathToStaticFile } from './staticPath'
 import * as ControlLabels from './controlLabels'
 import * as GranularitySelect from './granularitySelect'
-import { createWavInput } from './file_upload'
 import * as SplashScreen from './startup'
 
 // WARNING: importing style sheets, order matters!
@@ -67,6 +64,7 @@ declare let COMPILE_ELECTRON: boolean
 
 import defaultConfiguration from '../common/default_config.json'
 import { applicationConfiguration } from './startup'
+import { setBackgroundColorElectron, getTitleBarDisplay } from './utils/display'
 
 // TODO(@tbazin, 2021/08/05): clean-up this usage of unknown
 let locator: Locator<PlaybackManager, unknown>
@@ -83,22 +81,43 @@ let linkClient: AbletonLinkClient
 function render(
   configuration: applicationConfiguration = defaultConfiguration
 ): void {
-  // disableChanges()
-  document.body.classList.add('running')
+  if (document.getElementById('header')) {
+    // do nothing if the app has already been rendered
+    return
+  }
+
+  document.body.classList.add('running', 'advanced-controls-disabled')
+
+  if (COMPILE_ELECTRON) {
+    document.body.classList.add('electron')
+    getTitleBarDisplay()
+      .then((titleBarDisplay) => {
+        if (titleBarDisplay == 'hiddenInset') {
+          document.body.classList.add('electron-hiddenInset-window-controls')
+        }
+      })
+      .catch((e) => {
+        log.error(e)
+      })
+  }
 
   if (configuration['osmd']) {
     document.body.classList.add('nonoto')
+    document.body.setAttribute('theme', 'millenial-pink')
+    document.body.getAttribute('theme')
+    void setBackgroundColorElectron(
+      colors.millenial_pink_panes_background_color
+    )
     setNexusColors(
       colors.millenial_pink_active_control,
       colors.millenial_pink_idle_control
     )
   } else if (configuration['spectrogram']) {
     document.body.classList.add('notono')
-  }
-
-  if (document.getElementById('header')) {
-    // do nothing if the app has already been rendered
-    return
+    document.body.setAttribute('theme', 'lavender-dark')
+    void setBackgroundColorElectron(
+      colors.lavender_dark_mode_panes_background_color
+    )
   }
 
   // set to true to display the help tour after two minutes of inactivity on the
@@ -145,7 +164,7 @@ function render(
     Header.render(headerGridElement, configuration)
     const appTitleElement = document.getElementById('app-title')
     appTitleElement.addEventListener('click', () => {
-      sampleNewData(inpaintingApiAddress)
+      void sampleNewData(inpaintingApiAddress)
     })
   })
 
@@ -156,7 +175,7 @@ function render(
     bottomControlsExpandTabElement.classList.add('expand-tab')
     bottomControlsGridElement.appendChild(bottomControlsExpandTabElement)
     bottomControlsExpandTabElement.addEventListener('click', function () {
-      document.body.classList.toggle('advanced-controls')
+      document.body.classList.toggle('advanced-controls-disabled')
       locator.refresh()
     })
 
@@ -167,11 +186,24 @@ function render(
 
     if (configuration['spectrogram']) {
       // create element for highlighting control grid spans in help
-      const constraintsSpanElement = document.createElement('div')
-      constraintsSpanElement.id = 'constraints-gridspan'
-      constraintsSpanElement.classList.add('gridspan')
-      constraintsSpanElement.classList.add('multi-column-gridspan')
-      bottomControlsGridElement.appendChild(constraintsSpanElement)
+      const constraintsGridspanElement = document.createElement('div')
+      constraintsGridspanElement.id = 'constraints-gridspan'
+      constraintsGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(constraintsGridspanElement)
+
+      const constraintsContainerElement = document.createElement('div')
+      constraintsContainerElement.id = 'constraints-container'
+      constraintsContainerElement.classList.add('gridspan')
+      // constraintsContainerElement.classList.add('multi-column-gridspan')
+      constraintsGridspanElement.appendChild(constraintsContainerElement)
+
+      ControlLabels.createLabel(
+        constraintsContainerElement,
+        'constraints-gridspan-label',
+        false,
+        undefined,
+        constraintsGridspanElement
+      )
 
       const editToolsGridspanElement = document.createElement('div')
       editToolsGridspanElement.id = 'edit-tools-gridspan'
@@ -186,7 +218,12 @@ function render(
       const bottomControlsGridElement = document.getElementById(
         'bottom-controls'
       )
-      bpmControl = new BPMControl(bottomControlsGridElement, 'bpm-control')
+      const bpmControlGridspanElement = document.createElement('div')
+      bpmControlGridspanElement.id = 'bpm-control-gridspan'
+      bpmControlGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(bpmControlGridspanElement)
+
+      bpmControl = new BPMControl(bpmControlGridspanElement, 'bpm-control')
       bpmControl.render(useSimpleSlider, 200)
       bpmControl.value = 80
     })
@@ -199,6 +236,7 @@ function render(
     if (configuration['spectrogram']) {
       defaultFilename = { name: 'notono', extension: '.wav' }
     } else if (configuration['osmd']) {
+      log.warn('Fix DownloadButton drag-out for MIDI')
       defaultFilename = { name: 'nonoto', extension: '.mid' }
     } else {
       throw new Error('Unsupported configuration')
@@ -209,6 +247,7 @@ function render(
     downloadCommandsGridspan.classList.add('gridspan')
     downloadCommandsGridspan.classList.toggle('advanced', isAdvancedControl)
     bottomControlsGridElement.appendChild(downloadCommandsGridspan)
+
     downloadButton = new DownloadButton(
       downloadCommandsGridspan,
       defaultFilename,
@@ -256,25 +295,13 @@ function render(
 
   if (configuration['spectrogram']) {
     $(() => {
-      const constraintsGridspanElement = document.getElementById(
-        'constraints-gridspan'
-      )
-
-      const instrumentConstraintSelectGridspanElement: HTMLElement = document.createElement(
-        'div'
-      )
-      instrumentConstraintSelectGridspanElement.id =
-        'instrument-select-gridspan'
-      instrumentConstraintSelectGridspanElement.classList.add('gridspan')
-      constraintsGridspanElement.appendChild(
-        instrumentConstraintSelectGridspanElement
+      const constraintsContainerElement = document.getElementById(
+        'constraints-container'
       )
       const instrumentConstraintSelectElement = document.createElement('div')
       instrumentConstraintSelectElement.id = 'instrument-control'
       instrumentConstraintSelectElement.classList.add('control-item')
-      instrumentConstraintSelectGridspanElement.appendChild(
-        instrumentConstraintSelectElement
-      )
+      constraintsContainerElement.appendChild(instrumentConstraintSelectElement)
       // TODO(theis, 2021_04_20): retrieve instrument options from Inpainting API
       const instrumentConstraintSelectOptions = [
         'bass',
@@ -304,12 +331,12 @@ function render(
         'instrument-control-label',
         false,
         undefined,
-        instrumentConstraintSelectGridspanElement
+        constraintsContainerElement
       )
       const {
         pitchClassSelect,
         octaveControl,
-      } = renderPitchRootAndOctaveControl(constraintsGridspanElement)
+      } = renderPitchRootAndOctaveControl(constraintsContainerElement)
       pitchClassConstraintSelect = pitchClassSelect
       octaveConstraintControl = octaveControl
     })
@@ -322,8 +349,13 @@ function render(
     const spinnerElement = insertLoadingSpinner(mainPanel)
 
     if (configuration['osmd']) {
+      const granularityControlsGridspanElement = document.createElement('div')
+      granularityControlsGridspanElement.id = 'granularity-controls-gridspan'
+      granularityControlsGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(granularityControlsGridspanElement)
+
       const granularitySelect = GranularitySelect.renderGranularitySelect(
-        bottomControlsGridElement,
+        granularityControlsGridspanElement,
         granularities_quarters
       )
 
@@ -397,13 +429,19 @@ function render(
 
       const iconsBasePath = getPathToStaticFile('icons')
 
+      const editToolsGridspanElement = document.getElementById(
+        'edit-tools-gridspan'
+      )
       const editToolSelectContainerElement = document.createElement('div')
       editToolSelectContainerElement.id = 'edit-tool-select-container'
       editToolSelectContainerElement.classList.add('control-item')
-      bottomControlsGridElement.appendChild(editToolSelectContainerElement)
+      editToolsGridspanElement.appendChild(editToolSelectContainerElement)
       ControlLabels.createLabel(
         editToolSelectContainerElement,
-        'edit-tool-select-label'
+        'edit-tool-select-label',
+        false,
+        undefined,
+        editToolsGridspanElement
       )
 
       const vqvaeLayerOnChange = function (
@@ -447,17 +485,37 @@ function render(
       )
 
       const isAdvancedControl = true
-      const volumeControlsGridElement = document.createElement('div')
-      volumeControlsGridElement.id = 'volume-controls-gridspan'
-      volumeControlsGridElement.classList.add('gridspan')
-      volumeControlsGridElement.classList.toggle('advanced', isAdvancedControl)
-      bottomControlsGridElement.appendChild(volumeControlsGridElement)
+      const volumeControlsGridspanElement = document.createElement('div')
+      volumeControlsGridspanElement.id = 'mixing-controls-gridspan'
+      volumeControlsGridspanElement.classList.add('gridspan')
+      volumeControlsGridspanElement.classList.toggle(
+        'advanced',
+        isAdvancedControl
+      )
+      bottomControlsGridElement.appendChild(volumeControlsGridspanElement)
+
+      const volumeControlsContainerElement = document.createElement('div')
+      volumeControlsContainerElement.id = 'volume-controls-container'
+      volumeControlsContainerElement.classList.add('gridspan')
+      volumeControlsContainerElement.classList.toggle(
+        'advanced',
+        isAdvancedControl
+      )
+      volumeControlsGridspanElement.appendChild(volumeControlsContainerElement)
+
+      ControlLabels.createLabel(
+        volumeControlsContainerElement,
+        'mixing-controls-label',
+        true,
+        undefined,
+        volumeControlsGridspanElement
+      )
 
       spectrogramLocator.playbackManager.renderFadeInControl(
-        volumeControlsGridElement
+        volumeControlsContainerElement
       )
       spectrogramLocator.playbackManager.renderGainControl(
-        volumeControlsGridElement
+        volumeControlsContainerElement
       )
 
       playbackManager = spectrogramPlaybackManager
@@ -481,14 +539,22 @@ function render(
       const bottomControlsGridElement = document.getElementById(
         'bottom-controls'
       )
+      const instrumentsControlGridspanElement = document.createElement('div')
+      instrumentsControlGridspanElement.id = 'instruments-control-gridspan'
+      instrumentsControlGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(instrumentsControlGridspanElement)
+
       const instrumentsGridElement = document.createElement('div')
       instrumentsGridElement.id = 'instruments-grid'
       instrumentsGridElement.classList.add('grid-auto-column')
-      bottomControlsGridElement.appendChild(instrumentsGridElement)
+      instrumentsControlGridspanElement.appendChild(instrumentsGridElement)
 
       ControlLabels.createLabel(
         instrumentsGridElement,
-        'instruments-grid-label'
+        'instruments-grid-label',
+        false,
+        undefined,
+        instrumentsControlGridspanElement
       )
 
       Instruments.initializeInstruments()
@@ -504,46 +570,19 @@ function render(
   }
 
   $(() => {
-    // HACK(theis): delayed import necessary to avoid
-    // failure on startup if the browser does not support the Web MIDI API
-    const midiOutImplementation: typeof MidiOut = require('./midiOut')
-    const midiInImplementation: typeof MidiIn = require('./midiIn')
-    if (configuration['insert_advanced_controls'] && configuration['osmd']) {
-      void midiOutImplementation.render(sheetLocator.playbackManager)
-    } else if (
-      configuration['insert_advanced_controls'] &&
-      configuration['spectrogram']
-    ) {
-      void midiInImplementation.render()
-    }
-  })
+    // Insert LINK client controls
+    const useAdvancedControls = true
 
-  // $(() => {
-  //   const insertWavInput: boolean = configuration['insert_wav_input']
-  //   if (insertWavInput) {
-  //     createWavInput(
-  //       (data: Blob) => void locator.analyze(data, inpaintingApiAddress)
-  //     )
-  //   }
-  // })
-
-  $(() => {
-    const isAdvancedControl = true
-    if (COMPILE_ELECTRON && configuration['osmd'] && isAdvancedControl) {
+    if (COMPILE_ELECTRON && configuration['osmd'] && useAdvancedControls) {
       getAbletonLinkClientClass().then(
         (LinkClient) => {
           linkClient = new LinkClient(bpmControl)
           playbackManager.registerLinkClient(linkClient)
 
           // render AbletonLink control interface
-          const bottomControlsElementID = 'bottom-controls'
           const bottomControlsGridElement = document.getElementById(
-            bottomControlsElementID
+            'bottom-controls'
           )
-          if (bottomControlsGridElement == null) {
-            log.error(`Container element ${bottomControlsElementID} not found`)
-            return
-          }
           const abletonLinkSettingsGridspan = document.createElement('div')
           abletonLinkSettingsGridspan.id = 'ableton-link-settings-gridspan'
           abletonLinkSettingsGridspan.classList.add('gridspan')
@@ -558,7 +597,22 @@ function render(
         },
         (err) => log.error(err)
       )
-      // Insert LINK client controls
+    }
+  })
+
+  $(() => {
+    if (configuration['insert_advanced_controls'] && configuration['osmd']) {
+      void import('./midiOut').then((midiOutModule) => {
+        void midiOutModule.render(sheetLocator.playbackManager)
+      })
+    } else if (
+      configuration['insert_advanced_controls'] &&
+      configuration['spectrogram']
+    ) {
+      void import('./midiIn').then((midiInModule) => {
+        log.debug('Rendering Midi Input controls')
+        void midiInModule.render()
+      })
     }
   })
 
@@ -601,25 +655,27 @@ function render(
     }
   })
 
-  function sampleNewData(inpaintingApiAddress: URL) {
+  async function sampleNewData(inpaintingApiAddress: URL): Promise<void> {
     let promise: Promise<Locator<PlaybackManager, unknown>>
     if (locator.dataType == 'sheet') {
       promise = locator.generate(inpaintingApiAddress)
     } else if (locator.dataType == 'spectrogram') {
       promise = locator.sample(inpaintingApiAddress)
     } else {
-      // FIXME(@tbazin, 2021/10/14): else branch should not be required,
+      // FIXME(@tbazin, 2021/09/14): else branch should not be required,
       // alternatives should be detected automatically
       throw new Error('Unsupported configuration')
     }
-    promise.then(
+    return promise.then(
       () => log.info('Retrieved new media from server'),
       () => log.error('Could not retrieve initial media')
     )
   }
 
   $(() => {
-    sampleNewData(inpaintingApiAddress)
+    void sampleNewData(inpaintingApiAddress).then(() => {
+      locator.emit('ready')
+    })
   })
 }
 

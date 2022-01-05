@@ -1,7 +1,7 @@
 @use "mixins/measures";
 @use "mixins/colors.module";
 
-header {
+#header {
   display: grid;
   width: 100%;
   min-height: measures.$header-height;
@@ -20,11 +20,13 @@ header {
   }
 }
 
-// body {
-//   -webkit-app-region: drag;
-// }
+body.electron-hiddenInset-window-controls #header {
+  // small padding for Electron frame-less window-controls on MacOS
+  padding-top: 10px;
+}
+
 $logo-margin-width: min(20%, 25px);
-header {
+#header {
   grid-template-rows: auto;
   grid-template-columns: repeat(3, 1fr);
 }
@@ -71,7 +73,7 @@ body.busy #app-title {
 }
 
 body.anonymous-mode {
-  header {
+  #header {
     grid-template-rows: auto !important;
     grid-template-columns: repeat(3, 1fr);
   }
@@ -105,8 +107,8 @@ $logo-width-full: min(30vw, 16vh, 120px);
   }
 }
 
-header picture,
-header img {
+#header picture,
+#header img {
   height: auto;
   align-content: center;
   align-items: center;

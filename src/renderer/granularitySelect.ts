@@ -50,7 +50,10 @@ export function renderGranularitySelect(
 
   ControlLabels.createLabel(
     granularitySelectContainerElement,
-    'granularity-select-label'
+    'granularity-select-label',
+    false,
+    undefined,
+    containerElement
   )
 
   function granularityOnChange(this: CycleSelect<string>) {

@@ -1,11 +1,12 @@
 const { merge } = require('webpack-merge')
-const common = require('./webpack.common.cjs')
+const makeCommonConfiguration = require('./webpack.common.cjs')
 const ESLintPlugin = require('eslint-webpack-plugin')
 
 module.exports = function (config) {
+  const commonConfiguration = makeCommonConfiguration({})
   return merge(
     config,
-    merge(common, {
+    merge(commonConfiguration, {
       target: 'electron-main',
 
       plugins: [

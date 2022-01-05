@@ -11,7 +11,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production'
 
 if (isDevelopment) {
   log.setLevel(log.levels.DEBUG)
-  log.debug('Enable DEBUG logs from main process')
+  log.debug('Enabled DEBUG logs from main process')
 } else {
   log.setLevel(log.levels.INFO)
 }

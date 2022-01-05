@@ -6,19 +6,29 @@ import * as Tone from 'tone'
 import Nexus from './nexusColored'
 import { NexusTextButton } from 'nexusui'
 
+import localizations from '../common/localization.json'
+
 import '../common/styles/startupSplash.scss'
 
+// TODO(@tbazin, 2021/11/04): merge all symbolic modes
+// and auto-detect sheet layout in app
 enum ApplicationMode {
   Chorale = 'chorale',
   Leadsheet = 'leadsheet',
   Folk = 'folk',
   Spectrogram = 'spectrogram',
 }
+const allApplicationModes = [
+  ApplicationMode.Chorale,
+  ApplicationMode.Leadsheet,
+  ApplicationMode.Folk,
+  ApplicationMode.Spectrogram,
+]
 
 // defined at compile-time via webpack.DefinePlugin
 declare let COMPILE_ELECTRON: boolean
 declare const DEFAULT_INPAINTING_API_ADDRESS: string
-declare const SPECTROGRAM_ONLY: boolean
+declare const AVAILABLE_APPLICATION_MODES: ApplicationMode[]
 declare const ENABLE_ANONYMOUS_MODE: boolean
 const isDevelopment: boolean = process.env.NODE_ENV !== 'production'
 
@@ -74,11 +84,16 @@ if (ENABLE_ANONYMOUS_MODE) {
   document.body.classList.add('anonymous-mode')
 }
 
-const spectrogramOnlyMode: boolean =
-  SPECTROGRAM_ONLY || globalConfiguration['spectrogram_only']
+const availableApplicationModes = AVAILABLE_APPLICATION_MODES
+console.log(availableApplicationModes)
 
+// TODO(@tbazin, 2021/10/15): move this to index.ts
+// TODO(@tbazin, 2021/10/15): remove 'link_channel_prefix' from the editable configuration,
+// just store it in LinkClient / LinkServer (but this would involve duplicate definitions...)
+// or in a global read-only configuration file in common?
 if (COMPILE_ELECTRON) {
   void import('electron').then((electron) => {
+    // disable the potentially enabled Link Client on page reloads
     const windowID = <number>electron.ipcRenderer.sendSync('get-window-id')
     electron.ipcRenderer.send(
       globalConfiguration['link_channel_prefix'] +
@@ -99,13 +114,17 @@ export function render(
   document.body.appendChild(configurationWindow)
 
   if (!globalConfiguration['disable_inpainting_api_parameters_input']) {
-    const serverConfigElement = document.createElement('div')
-    serverConfigElement.id = 'server-configuration'
-    configurationWindow.appendChild(serverConfigElement)
+    const serverConfigurationContainerElement = document.createElement('div')
+    serverConfigurationContainerElement.id = 'server-configuration-container'
+    configurationWindow.appendChild(serverConfigurationContainerElement)
+
+    const serverConfigurationElement = document.createElement('div')
+    serverConfigurationElement.id = 'server-configuration'
+    serverConfigurationContainerElement.appendChild(serverConfigurationElement)
 
     const serverAddressContainer = document.createElement('div')
     serverAddressContainer.id = 'server-address-container'
-    serverConfigElement.appendChild(serverAddressContainer)
+    serverConfigurationElement.appendChild(serverAddressContainer)
 
     const serverAddressInput = document.createElement('input')
     serverAddressInput.type = 'url'
@@ -119,110 +138,86 @@ export function render(
     })
   }
 
-  if (!spectrogramOnlyMode) {
-    const modeConfigElement = document.createElement('div')
-    modeConfigElement.id = 'mode-configuration'
-    configurationWindow.appendChild(modeConfigElement)
+  const modeConfigurationContainerElement = document.createElement('div')
+  modeConfigurationContainerElement.id = 'mode-configuration-container'
+  configurationWindow.appendChild(modeConfigurationContainerElement)
+  const modeConfigurationGridElement = document.createElement('div')
+  modeConfigurationGridElement.id = 'mode-configuration'
+  modeConfigurationContainerElement.appendChild(modeConfigurationGridElement)
 
-    const applicationModeSelectElement = document.createElement('select')
-    applicationModeSelectElement.style.visibility = 'hidden'
-    applicationModeSelectElement.id = 'application-mode-select'
-    configurationWindow.appendChild(applicationModeSelectElement)
+  const applicationModeSelectElement = document.createElement('select')
+  applicationModeSelectElement.style.visibility = 'hidden'
+  applicationModeSelectElement.id = 'application-mode-select'
+  modeConfigurationContainerElement.appendChild(applicationModeSelectElement)
 
-    const applicationModes: ApplicationMode[] = [
-      ApplicationMode.Chorale,
-      ApplicationMode.Leadsheet,
-      ApplicationMode.Folk,
-      ApplicationMode.Spectrogram,
-    ]
-    // create HTMLOptionElements for all available mode options
-    for (
-      let applicationModeIndex = 0, numModes = applicationModes.length;
-      applicationModeIndex < numModes;
-      applicationModeIndex++
-    ) {
-      const applicationMode = applicationModes[applicationModeIndex]
-      const applicationModeOptionElement = document.createElement('option')
-      applicationModeOptionElement.value = applicationMode
-      applicationModeSelectElement.appendChild(applicationModeOptionElement)
-    }
+  // TODO(@tbazin, 2021/11/04): should we validate the provided available
+  // application modes?
+  const applicationModes: ApplicationMode[] = allApplicationModes.filter(
+    (mode) => availableApplicationModes.includes(mode)
+  )
 
-    const applicationModeButtons = new Map<ApplicationMode, NexusTextButton>()
-
-    const applicationModeButtonsLabel: Record<ApplicationMode, string> = {
-      chorale: 'Chorales',
-      leadsheet: 'Leadsheets',
-      folk: 'Folk songs',
-      spectrogram: 'Spectrogram',
-    }
-
-    const createApplicationModeButton = (
-      applicationMode: ApplicationMode
-    ): void => {
-      const buttonElement: HTMLElement = document.createElement('div')
-      const buttonId = applicationMode + '-configuration-button'
-      buttonElement.id = buttonId
-      buttonElement.classList.add('control-item')
-      modeConfigElement.appendChild(buttonElement)
-
-      const buttonLabel = applicationModeButtonsLabel[applicationMode]
-      const button = new Nexus.TextButton(buttonId, {
-        size: [150, 50],
-        state: true,
-        text: buttonLabel,
-        alternateText: buttonLabel,
-      })
-      applicationModeButtons.set(applicationMode, button)
-    }
-    applicationModes.forEach(createApplicationModeButton)
-
-    const selectMode = (applicationMode: ApplicationMode) => {
-      const emitting = false
-      applicationModeButtons.forEach((button: NexusTextButton) => {
-        button.turnOff(emitting)
-      })
-      applicationModeButtons.get(applicationMode).turnOn(emitting)
-      applicationModeSelectElement.value = applicationMode
-    }
-
-    applicationModeButtons.forEach(
-      (button: NexusTextButton, applicationMode: ApplicationMode) => {
-        button.on('change', () => {
-          selectMode(applicationMode)
-        })
-      }
-    )
-
-    selectMode(applicationModes[0])
+  // create HTMLOptionElements for all available mode options
+  for (
+    let applicationModeIndex = 0, numModes = applicationModes.length;
+    applicationModeIndex < numModes;
+    applicationModeIndex++
+  ) {
+    const applicationMode = applicationModes[applicationModeIndex]
+    const applicationModeOptionElement = document.createElement('option')
+    applicationModeOptionElement.value = applicationMode
+    applicationModeSelectElement.appendChild(applicationModeOptionElement)
   }
 
-  if (COMPILE_ELECTRON && false) {
-    // open native file system 'open-file' dialog
+  const applicationModeButtons = new Map<ApplicationMode, NexusTextButton>()
 
-    const customButtonElement = document.createElement('div')
-    customButtonElement.id = 'custom-configuration-button'
-    customButtonElement.classList.add('control-item')
-    configurationWindow.appendChild(customButtonElement)
+  const applicationModeButtonsLabel: Record<ApplicationMode, string> = {
+    chorale: 'DeepBach',
+    leadsheet: 'Leadsheets',
+    folk: 'Folk songs',
+    spectrogram: 'Spectrogram',
+  }
 
-    // create HTML element to upload configuration file
-    const customConfigurationInput: HTMLInputElement = document.createElement(
-      'input'
-    )
-    customConfigurationInput.type = 'file'
-    customConfigurationInput.id = 'configuration-input'
-    customConfigurationInput.accept = 'application/json'
-    configurationWindow.appendChild(customConfigurationInput)
+  const createApplicationModeButton = (
+    applicationMode: ApplicationMode
+  ): void => {
+    const buttonElement: HTMLElement = document.createElement('div')
+    const buttonId = applicationMode + '-configuration-button'
+    buttonElement.id = buttonId
+    buttonElement.classList.add('control-item')
+    modeConfigurationGridElement.appendChild(buttonElement)
 
-    const custombutton = new Nexus.TextButton('#custom-configuration-button', {
+    const buttonLabel = applicationModeButtonsLabel[applicationMode]
+    const button = new Nexus.TextButton(buttonId, {
       size: [150, 50],
-      state: false,
-      text: 'Custom (load json) (check GitHub repository for example JSON)',
-      alternateText: false,
+      state: true,
+      text: buttonLabel,
+      alternateText: buttonLabel,
     })
+    applicationModeButtons.set(applicationMode, button)
+  }
+  applicationModes.forEach(createApplicationModeButton)
 
-    custombutton.on('change', () => {
-      customConfigurationInput.click()
+  const selectMode = (applicationMode: ApplicationMode) => {
+    const emitting = false
+    applicationModeButtons.forEach((button: NexusTextButton) => {
+      button.turnOff(emitting)
     })
+    applicationModeButtons.get(applicationMode).turnOn(emitting)
+    applicationModeSelectElement.value = applicationMode
+  }
+
+  applicationModeButtons.forEach(
+    (button: NexusTextButton, applicationMode: ApplicationMode) => {
+      button.on('change', () => {
+        selectMode(applicationMode)
+      })
+    }
+  )
+
+  selectMode(applicationModes[0])
+
+  if (availableApplicationModes.length == 1) {
+    applicationModeSelectElement.style.display = 'none'
   }
 
   if (globalConfiguration['insert_recaptcha']) {
@@ -230,18 +225,22 @@ export function render(
   } else {
     renderStartButton(renderPage)
   }
+
+  if (!COMPILE_ELECTRON) {
+    // insert disclaimer
+    const disclaimerElement = document.createElement('div')
+    disclaimerElement.id = 'splash-screen-disclaimer'
+    configurationWindow.appendChild(disclaimerElement)
+    disclaimerElement.innerHTML =
+      localizations['splash-screen-disclaimer']['en']
+  }
 }
 
 function getCurrentConfiguration(): applicationConfiguration {
   const applicationModeSelectElement = <HTMLSelectElement>(
     document.getElementById('application-mode-select')
   )
-  let applicationMode: ApplicationMode
-  if (!spectrogramOnlyMode) {
-    applicationMode = applicationModeSelectElement.value as ApplicationMode
-  } else {
-    applicationMode = ApplicationMode.Spectrogram
-  }
+  const applicationMode = applicationModeSelectElement.value as ApplicationMode
   let configuration: applicationConfiguration
   switch (applicationMode) {
     case 'chorale':
@@ -303,13 +302,7 @@ function checkServerAddress(configuration?: applicationConfiguration): boolean {
 
   if (serverAddressInput !== null) {
     // apply visual feedback
-    if (!isValid) {
-      serverAddressInput.style.borderColor = 'red'
-      serverAddressInput.style.color = 'red'
-    } else {
-      serverAddressInput.style.borderColor = 'initial'
-      serverAddressInput.style.color = 'initial'
-    }
+    serverAddressInput.classList.toggle('wrong-input-setting', !isValid)
   }
 
   return isValid

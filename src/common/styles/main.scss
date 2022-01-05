@@ -9,6 +9,8 @@
 html,
 body {
   height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
   margin: 0;
   overflow: hidden;
 }
@@ -20,19 +22,24 @@ body.splash-screen {
   }
 }
 
+input {
+  border: none;
+  outline: none
+}
+
 // default theme, also used on the splash-screen
-@include colors.theme-colors(dark-lavender);
+@include colors.theme-colors(lavender-dark);
 
 body.running {
-  &.nonoto {
+  &[theme=millenial-pink] {
     @include colors.theme-colors(millenial-pink);
   }
-  &.notono {
+  &[theme=lavender-dark] {
+    @include colors.theme-colors(lavender-dark);
     &, &.dark {
-      @include colors.theme-colors(dark-lavender);
     }
-    &.light {
-      @include colors.theme-colors(lavender);
+    &[theme=lavender-light] {
+      @include colors.theme-colors(lavender-light);
     }
   }
 }
@@ -135,22 +142,23 @@ img {
   grid-template-columns: auto;
   height: 100%;
   grid-template-areas:
-    'header'
-    'main'
-    'footer';
+  'header'
+  'main'
+  'footer';
 
   @media screen and (max-height: 300px) {
     grid-template-areas:
-      'main'
-      'footer';
+    'main'
+    'footer';
+    grid-template-rows: 1fr auto;
 
-    header {
+    #header {
       display: none;
     }
   }
 }
 
-#app > header {
+#app > #header {
   grid-area: header;
 }
 
@@ -159,11 +167,11 @@ img {
   overflow: hidden; // ensures the main panel does not push the footer down
 }
 
-#app > footer {
+#app > #bottom-controls {
   grid-area: footer;
 }
 
-header, #main-panel, footer {
+#header, #main-panel, #bottom-controls {
   width: 100vw;
 }
 
@@ -180,30 +188,49 @@ header, #main-panel, footer {
   opacity: 0;
   pointer-events: none;
 
-  transition: all 0.1s;
+  transition: all 0.25s;
 }
 
 $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
+$inverse-trapezoid-perspective-transform: perspective(10px) rotateX(-8deg);
 
 #bottom-controls {
+  display: grid;
+  transform-style: preserve-3D;
+  padding-top: calc(#{measures.$expand-tab-height} / 4);
+  padding-bottom: 1vh;
+  grid-template-columns: repeat(4, 25%);
+  align-items: center;
+  justify-items: center;
+  z-index: 0;
+
+  opacity: 1;
+
+  box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
+
+  text-align: center;
+
   .expand-tab {
     position: absolute;
     cursor: pointer;
-    width: 15%;
+    width: 40%;
     height: measures.$expand-tab-height;
     top: calc(0px - #{measures.$expand-tab-height});
     overflow: hidden;
 
     &::before {
       position: absolute;
-      content: '⬆';
+      top: 0;
+      height: 100%;
+      content: '⬇';
+      transform: $inverse-trapezoid-perspective-transform;
     }
 
-    font-size: large;
+    font-size: 70%;
     display: flex;
     align-content: center;
     justify-content: center;
-    transition-property: top, height;
+    transition-property: top, height, font-size;
     transition-duration: 0.1s;
     animation-timing-function: ease-in;
     left: 50%;
@@ -219,48 +246,15 @@ $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
 
     @media (hover: hover) {
       // enable show on hover if device supports hovering;
-      height: calc(#{measures.$expand-tab-height} / 2);
-      top: calc(0px - #{measures.$expand-tab-height} / 2);
+      height: calc(3 * #{measures.$expand-tab-height} / 4);
+      top: calc(0px - 3*#{measures.$expand-tab-height} / 4);
     }
 
     &:hover {
+      font-size: 100%;
       height: measures.$expand-tab-height;
       top: calc(0px - #{measures.$expand-tab-height});
     }
-  }
-
-  display: grid;
-  transform-style: preserve-3D;
-  margin-top: calc(#{measures.$expand-tab-height} / 2);
-  padding-top: calc(#{measures.$expand-tab-height} / 4);
-  grid-template-columns: repeat(4, 25%);
-  grid-template-rows: 2.5fr 1fr 0 0 1vh;
-  @media screen and (max-width: 270px) {
-    grid-template-rows: 2.5fr 0 1vh;
-  }
-  align-items: center;
-  justify-items: center;
-  z-index: 0;
-
-  opacity: 1;
-
-  box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
-
-  text-align: center;
-}
-
-.control-label {
-  @media screen and (max-width: 270px) {
-    display: none;
-  }
-}
-
-.advanced {
-  &,
-  & .control-item,
-  & .control-label {
-    visibility: collapse;
-    opacity: 0;
   }
 }
 
@@ -277,26 +271,27 @@ body.help-tour-on {
   }
 }
 
-body.advanced-controls {
+body.advanced-controls-disabled {
   #bottom-controls {
-    grid-template-rows: 2.5fr 1fr 2.5fr 1fr 1vh;
-
     .expand-tab {
       &::before {
-        position: absolute;
-        content: '⬇';
+        content: '⬆';
       }
     }
   }
 
   .advanced {
-    visibility: visible;
-    opacity: 1;
+    &,
     .control-item,
     .control-label {
-      visibility: visible;
-      opacity: 1;
+      display: none !important;
     }
+  }
+}
+
+@media screen and (max-width: 270px) {
+  .control-label {
+    display: none !important;
   }
 }
 

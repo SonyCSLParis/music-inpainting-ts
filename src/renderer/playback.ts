@@ -13,8 +13,8 @@ export interface MinimalPlaybackManager {
 }
 
 abstract class TonePlaybackManager extends EventEmitter {
-  protected playbackLookahead = 0.3
-  protected interactiveLookahead = 0.25
+  protected playbackLookahead = 0.1
+  protected interactiveLookahead = 0.1
 
   get transport(): ToneTransport {
     return Tone.getTransport()
@@ -30,9 +30,9 @@ abstract class TonePlaybackManager extends EventEmitter {
 
   readonly safeStartDuration: Tone.Unit.Time = '+0.2'
 
-  // adds a small delay to ensure playback as recommended in the Tone.js docs
+  // adds a small delay to ensure stable playback as recommended in the Tone.js docs
   protected safeStartPlayback(): void {
-    this.transport.start(this.safeStartDuration)
+    this.transport.start(this.safeStartDuration, -this.context.lookAhead)
   }
 
   async play() {
@@ -86,12 +86,8 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
       // start the normal way
       await super.play()
     } else {
-      log.debug('Ableton Link: Waiting for `downbeat` message...')
       // wait for Link-socket to give downbeat signal
       this.linkClient.once('downbeat', () => {
-        log.debug(
-          'Ableton Link: Received `downbeat` message, starting playback'
-        )
         void this.synchronizedStartCallback()
       })
     }
@@ -109,21 +105,20 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
     await super.stop()
   }
 
-  synchronizeToLink(): void {
+  protected requestLinkPhaseUpdate(): void {
     if (
       this.transport.state == 'started' &&
       this.linkClient != null &&
       this.linkClient.isEnabled
     ) {
-      this.onPhaseUpdate(this.linkClient.getPhaseSync())
+      this.linkClient.requestPhaseAsync()
     }
   }
 
   protected onPhaseUpdate(phase: number): void {
     // Set the position in the current measure to the provided phase
     // TODO(theis): should we use the `link.quantum` value?
-    const currentMeasure = this.getCurrentMeasure().toString()
-    this.transport.position = currentMeasure + ':' + phase.toString()
+    this.transport.position = this.getCurrentMeasure() + ':' + phase.toString()
   }
 
   registerLinkClient(linkClient: AbletonLinkClient) {
@@ -138,9 +133,9 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
   }
 
   // Helper function to access the current measure in the Transport
-  protected getCurrentMeasure(): number {
-    const currentMeasure = this.transport.position.toString().split('')[0]
-    return parseInt(currentMeasure)
+  protected getCurrentMeasure(): string {
+    const currentMeasure = this.transport.position.toString().split(':')[0]
+    return currentMeasure
   }
 
   // HACK(theis): Quick-and-dirty automatic phase-locking to Ableton Link
@@ -148,7 +143,7 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
     const startOffset = Tone.Time(0).quantize('4n', 0.9)
     console.log(startOffset)
     const automaticSynchronizationLoop = new Tone.Loop(() => {
-      this.synchronizeToLink()
+      this.requestLinkPhaseUpdate()
     }, '2n').start(0.1)
     automaticSynchronizationLoop.humanize = 0.02
     return automaticSynchronizationLoop

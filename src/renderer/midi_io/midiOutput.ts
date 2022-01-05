@@ -1,4 +1,5 @@
 // adapted from Yotam Mann's midiInput.ts in @tonejs/piano
+import { ChannelBasedMidiInput, getMidiInputListener } from '../midiIn'
 
 import { EventEmitter } from 'events'
 import WebMidi, { Output } from 'webmidi'
@@ -8,18 +9,72 @@ export class MidiOutput extends EventEmitter {
    * The device ID string. If set to 'all', will broadcast
    * to all MIDI outputs. Otherwise will filter a specific midi device
    */
-  deviceId: string | 'all'
+  private _deviceId: string | 'all' | null
+
+  get deviceId(): string | 'all' | null {
+    return this._deviceId
+  }
+
+  set deviceId(deviceId: string | 'all' | null) {
+    this._deviceId = deviceId
+    void MidiOutput.getDeviceName(this.deviceId).then((deviceName) =>
+      this.midiInputListener.setDevice(deviceName)
+    )
+  }
+
+  static async getDeviceId(name: string): Promise<string | null> {
+    const devices = await MidiOutput.getDevices()
+    const maybeDevice = devices.find(
+      (data) => data.name.toLowerCase() == name.toLowerCase()
+    )
+    if (maybeDevice == null) {
+      return null
+    } else {
+      return maybeDevice.id
+    }
+  }
+
+  static async getDeviceName(id: string): Promise<string | null> {
+    const devices = await MidiOutput.getDevices()
+    const maybeDevice = devices.find((data) => data.id == id)
+    if (maybeDevice == null) {
+      return null
+    } else {
+      return maybeDevice.name
+    }
+  }
+
+  get isActive(): boolean {
+    return this.deviceId != null
+  }
+
+  async setDevice(name: string | 'all' | 'disabled'): Promise<void> {
+    name = name.toLowerCase()
+    if (name == 'disabled') {
+      this.deviceId = null
+    } else {
+      if (name == 'all') {
+        this.deviceId = 'all'
+      } else {
+        this.deviceId = await MidiOutput.getDeviceId(name)
+      }
+    }
+  }
 
   constructor(deviceId: string | 'all' = 'all') {
     super()
 
-    this.deviceId = deviceId
+    void getMidiInputListener().then((midiInputListener) => {
+      this._midiInputListener = midiInputListener
+    })
+
+    this._deviceId = deviceId
 
     /**
      * Automatically attaches the event listeners when a device is connect
      * and removes listeners when a device is disconnected
      */
-    MidiOutput.enabled().then(() => {
+    void MidiOutput.enabled().then(() => {
       WebMidi.addListener('connected', (event) => {
         if (event.port.type === 'output') {
           this._connectToDevice(event.port)
@@ -98,15 +153,22 @@ export class MidiOutput extends EventEmitter {
 
   // STATIC
 
-  private static connectedDevices: Map<string, Output> = new Map()
+  private static connectedDevices: Map<string, Output> = new Map<
+    string,
+    Output
+  >()
 
-  private static _isEnabled = false
+  private static _isEnabled = WebMidi.enabled
 
   /**
    * Resolves when the MIDI Output is enabled and ready to use
    */
   static async enabled(): Promise<void> {
     if (!MidiOutput._isEnabled) {
+      if (WebMidi.enabled) {
+        MidiOutput._isEnabled = true
+        return
+      }
       await new Promise<void>((done, error) => {
         WebMidi.enable((e) => {
           if (e) {
@@ -126,5 +188,14 @@ export class MidiOutput extends EventEmitter {
   static async getDevices(): Promise<DeviceData[]> {
     await MidiOutput.enabled()
     return WebMidi.outputs
+  }
+
+  // a midiInputListener that is bound to listen to the device used for output
+  // used for tracking generated MIDI events through a feedback loop
+  // can be used for visual feedback
+  protected _midiInputListener: ChannelBasedMidiInput
+
+  get midiInputListener(): ChannelBasedMidiInput {
+    return this._midiInputListener
   }
 }

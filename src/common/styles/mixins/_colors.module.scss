@@ -8,8 +8,8 @@ $millenial-pink-active-control: #4392f1;
 
 $lavender-body-background: #c8dadf;
 $lavender-panes-background: #beb9d4;
-$dark-lavender-body-background: rgb(48, 8, 61);
-$dark-lavender-panes-background: rgb(57, 53, 58);
+$lavender-dark-body-background: rgb(48, 8, 61);
+$lavender-dark-panes-background: rgb(57, 53, 58);
 $lavender-idle-control: #58a4b0;
 $lavender-active-control: #a3bcf9;
 
@@ -30,18 +30,26 @@ $panes-background: #beb9d4;
     controls-box-shadow-color($control-color, $box-shadow-lightness-direction));
 }
 
-@mixin theme-colors($theme: lavender) {
-  $body: $lavender-body-background;
-  $panes: $lavender-panes-background;
-  $idle-control: $lavender-idle-control;
-  $active-control: $lavender-active-control;
-  $overlay-lightness-factor: -1;
-  $text: black;
+@mixin theme-colors($theme: lavender-dark) {
+  $body: $lavender-dark-body-background !default;
+  $panes: $lavender-dark-panes-background !default;
+  $idle-control: $lavender-idle-control !default;
+  $active-control: $lavender-active-control !default;
+  $overlay-lightness-factor: 1 !default;
+  $text: lightgray !default;
 
-  @if $theme == lavender {
-  } @else if $theme == dark-lavender {
-    $body: $dark-lavender-body-background;
-    $panes: $dark-lavender-panes-background;
+  @if $theme == lavender-light {
+    $body: $lavender-body-background;
+    $panes: $lavender-panes-background;
+    $idle-control: $lavender-idle-control;
+    $active-control: $lavender-active-control;
+    $overlay-lightness-factor: -1;
+    $text: black;
+  } @else if $theme == lavender-dark {
+    $body: $lavender-dark-body-background;
+    $panes: $lavender-dark-panes-background;
+    $idle-control: $lavender-idle-control;
+    $active-control: $lavender-active-control;
     $overlay-lightness-factor: 1;
     $text: lightgray;
   } @else if $theme == millenial-pink {
@@ -51,6 +59,7 @@ $panes-background: #beb9d4;
     $active-control: $millenial-pink-active-control;
     $idle-control: $millenial-pink-idle-control;
     $overlay-lightness-factor: 1;
+    $text: black;
   } @else {
     @error "Unknown theme #{$theme}.";
   }
@@ -68,9 +77,27 @@ $panes-background: #beb9d4;
     color: $text;
   }
 
-  .trip-navigation * {
-    color: $text !important;
+  .shepherd-content * {
+    color: $text;
   }
+
+  .shepherd-content {
+    // border: thin solid gray;
+  }
+  .shepherd-header, .shepherd-text, .shepherd-footer {
+    background-color: $panes;
+  }
+  .shepherd-button {
+    &.shepherd-button-secondary {
+      background-color: color.invert($panes);
+    }
+    background-color: $active-control;
+    color: color.invert($text);
+    &:hover {
+      color: $text;
+    }
+  }
+
   #loading-spinner {
     color: lightgray;
   }
@@ -83,14 +110,19 @@ $panes-background: #beb9d4;
     background-color: color.scale($panes,
       $lightness: $overlay-lightness-factor * 15%);
     border: solid thin $panes-border;
+
+    input {
+      background-color: color.scale($panes,
+          $lightness: $overlay-lightness-factor * 93%)
+    }
   }
 
-  #main-panel, > * {
+  #main-panel {
     background-color: $body;
   }
 
-  header,
-  footer {
+  #header,
+  #bottom-controls {
     background-color: $panes;
     border-color: $panes-border;
     border-width: thin;
@@ -100,19 +132,15 @@ $panes-background: #beb9d4;
         $lightness: $overlay-lightness-factor * 10%);
     }
   }
-  header {
+  #header {
     border-bottom-style: solid;
   }
-  footer {
+  #bottom-controls {
     border-top-style: solid;
   }
 
   #app-title:hover {
     background-color: lighten($panes, 15%);
-  }
-
-  .trip-block {
-    background-color: darken($panes, 50%) !important;
   }
 
   $simplebar-track-color: null;
@@ -272,7 +300,7 @@ $panes-background: #beb9d4;
     }
     div span {
       z-index: 100;
-      opacity: 0.3;
+      opacity: 0.6;
     }
   }
 
@@ -316,4 +344,7 @@ $panes-background: #beb9d4;
   millenial_pink_active_control: $millenial_pink_active_control;
   idle_control: $lavender_idle_control;
   active_control: $lavender_active_control;
+  millenial_pink_panes_background_color: $millenial-pink-panes-background;
+  lavender_light_mode_panes_background_color: $lavender-panes-background;
+  lavender_dark_mode_panes_background_color: $lavender-dark-panes-background;
 }

@@ -32,6 +32,7 @@ export function mapTouchEventsToMouseSimplebar(): void {
 
   const addEventListenerOptions: AddEventListenerOptions = {
     capture: true,
+    passive: false,
   }
   target.addEventListener(
     'touchstart',

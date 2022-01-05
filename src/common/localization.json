@@ -1,8 +1,16 @@
 {
+  "splash-screen-disclaimer": {
+    "en": "Works best under recent versions of Google Chrome."
+  },
+
   "control-labels": {
     "bpm-control-label": {
       "de": "Tempo",
       "en": "Tempo"
+    },
+
+    "pitch-control-label": {
+      "en": "Pitch"
     },
 
     "pitch-control-octave-control-label": {
@@ -26,9 +34,13 @@
       "en": "Granularity"
     },
 
+    "constraints-gridspan-label": {
+      "en": "Constraints"
+    },
+
     "instruments-grid-label": {
-      "de": "Instrument",
-      "en": "Instrument"
+      "de": "Instrumente",
+      "en": "Instruments"
     },
 
     "play-button-label": {
@@ -48,6 +60,10 @@
       "en": "Save/Drag"
     },
 
+    "mixing-controls-label": {
+      "en": "Mixing"
+    },
+
     "fade-in-control-label": {
       "en": "Declick"
     },
@@ -56,26 +72,38 @@
       "en": "Gain"
     },
 
-    "select-midi-output-device-label": {
-      "en": "MIDI Out Device"
+    "midi-output-setup-container-label": {
+      "en": "MIDI Out"
     },
 
-    "select-midi-input-device-label": {
-      "en": "MIDI Device"
-    },
-    "select-midi-input-channel-label": {
-      "en": "MIDI Channel"
+    "midi-output-device-select-label": {
+      "en": "Device"
     },
 
-    "link-enable-button-label": {
-      "en": "LINK"
+    "midi-input-setup-container-label": {
+      "en": "MIDI In"
     },
 
-    "link-force-resync-button-label": {
+    "midi-input-device-select-container-label": {
+      "en": "Device"
+    },
+    "midi-input-channel-input-container-label": {
+      "en": "Channel"
+    },
+
+    "ableton-link-client-setup-container-label": {
+      "en": "Ableton Link"
+    },
+
+    "ableton-link-client-enable-button-label": {
+      "en": "Enable"
+    },
+
+    "ableton-link-client-force-resync-button-label": {
       "en": "Resync"
     },
 
-    "link-downbeat-display-label": {
+    "ableton-link-client-downbeat-display-label": {
       "en": "Downbeat"
     }
   },
@@ -85,6 +113,9 @@
       "play_button": {
         "en": "Press here to start and stop playback.<br><br>Alternatively, on desktop, you can just press SPACE!"
       },
+      "title_regenerate": {
+        "en": "Click on the title here to sample a brand new starting proposition, useful if you're feeling stuck at some point!"
+      },
       "attributions": {
         "en": "Icons made by Freepik <a>https://www.flaticon.com/authors/freepik</a> from <a>www.flaticon.com</a>."
       }
@@ -92,13 +123,18 @@
 
     "nonoto": {
       "note_box": {
+        "en": "Touch the <b>blue boxes</b> to trigger a <b>regeneration</b> of the underlying portion of the score.<br>You can also scroll on these boxes to vary the granularity.",
+        "de": "Tippen Sie auf die <b>blauen Kästen</b> des Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen."
+      },
+
+      "granularity": {
         "en": "Touch the <b>blue boxes</b> to trigger a <b>regeneration</b> of the underlying portion of the score.",
         "de": "Tippen Sie auf die <b>blauen Kästen</b> des Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen."
       },
 
       "fermata_box": {
         "de": "Tippen Sie auf die <b>gestrichelten Kästchen</b>, um eine <b>Fermata</b> zu setzen. Damit kann die Struktur des Chorales kontrolliert werden.",
-        "en": "Touch the <b>dotted boxes</b> to position an intermediate <b>fermata</b>. It allows to structure the chorale."
+        "en": "Touch the <b>dotted boxes</b> to position an intermediate <b>fermata</b>. On your following regeneration operations, these will guide the model by requesting it to add an intermediate conclusion here, allowing you to structure your generations."
       }
     },
 

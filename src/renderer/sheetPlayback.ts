@@ -1,7 +1,6 @@
 import { PlaybackManager } from './playback'
 
 import * as Tone from 'tone'
-import { Piano as PianoType } from '@tonejs/piano'
 import * as log from 'loglevel'
 import { Midi, Track } from '@tonejs/midi'
 import { Note as MidiNote } from '@tonejs/midi/src/Note'
@@ -25,6 +24,7 @@ type NoteWithMIDIChannel = {
 export default class MidiSheetPlaybackManager extends PlaybackManager {
   midiLatency = 0
   readonly bpmControl: BPMControl
+  protected supportsMidi = false
 
   // TODO(@tbazin): set-up chords instrument simply as an additional MIDI channel
   // and treat it like the other instruments
@@ -53,6 +53,25 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     this.registerTempoUpdateCallback()
     this.toggleLowLatency(false)
     void this.refreshPlayNoteCallback()
+
+    this.checkMidiSupport()
+      .then((supportsMidi) => {
+        this.supportsMidi = supportsMidi
+      })
+      .catch(() => {
+        this.supportsMidi = false
+      })
+  }
+
+  protected async checkMidiSupport(): Promise<boolean> {
+    if (window.navigator.requestMIDIAccess != undefined) {
+      return window.navigator
+        .requestMIDIAccess()
+        .then(() => true)
+        .catch(() => false)
+    } else {
+      return false
+    }
   }
 
   registerTempoUpdateCallback(): void {
@@ -73,20 +92,26 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     if (this.useChordsInstrument) {
       getCurrentInstrument = Instruments.getCurrentChordsInstrument
     }
-    const getTimingOffset = () => {
-      // https://github.com/Tonejs/Tone.js/issues/805#issuecomment-748172477
-      return WebMidi.time - this.transport.context.currentTime * 1000
-    }
 
-    const currentMidiOutput = await MidiOut.getOutput()
-    if (currentMidiOutput) {
-      this.playNote = (time: number, event: NoteWithMIDIChannel) => {
-        currentMidiOutput.playNote(event.name, event.midiChannel, {
-          time: time * 1000 + getTimingOffset(),
-          duration: event.duration * 1000,
-        })
+    let usesMidiOutput = false
+    if (this.supportsMidi) {
+      const getTimingOffset = () => {
+        // https://github.com/Tonejs/Tone.js/issues/805#issuecomment-748172477
+        return WebMidi.time - this.transport.now() * 1000
       }
-    } else {
+      const currentMidiOutput = await MidiOut.getOutput()
+      if (currentMidiOutput) {
+        this.playNote = (time: number, event: NoteWithMIDIChannel) => {
+          const absoluteTime = time * 1000 + getTimingOffset()
+          currentMidiOutput.playNote(event.name, event.midiChannel, {
+            time: absoluteTime,
+            duration: event.duration * 1000,
+          })
+        }
+        usesMidiOutput = true
+      }
+    }
+    if (!usesMidiOutput) {
       this.playNote = (time: number, event: NoteWithMIDIChannel) => {
         const currentInstrument = getCurrentInstrument(event.midiChannel)
         if (currentInstrument != null) {
@@ -184,6 +209,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
   }
 
   protected switchTracks(): void {
+    // TODO(@tbazin, 2021/11/12): add crossfade to avoid stuttering on switching
     const playing = this.getPlayingMidiParts()
     const playingControlChanges = this.getPlayingControlChanges()
     const next = this.getNextMidiParts()
@@ -208,7 +234,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
   }
 
   scheduleTrackToInstrument(
-    sequenceDuration_toneTime: Tone.TimeClass,
+    sequenceDuration_barsBeatsSixteenth: string,
     midiTrack: Track,
     midiChannel = 1,
     nextParts: Map<number, Tone.Part<NoteWithMIDIChannel>>,
@@ -217,8 +243,24 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     const notes: MidiNote[] = midiTrack.notes
     const notesWithChannel = notes.map((note) => {
       const noteJson = note.toJSON()
-      return { ...noteJson, midiChannel: midiChannel }
+      return {
+        ...noteJson,
+        midiChannel: midiChannel,
+        time: noteJson.time,
+        duration: noteJson.duration - 0.01,
+      }
     })
+
+    const copySkippedNotesToPartEnd = (
+      part: Tone.Part,
+      notes: { time: number }[]
+    ) => {
+      notes.forEach((note) => {
+        if (note.time < this.transport.context.lookAhead) {
+          part.add(8 + note.time, note)
+        }
+      })
+    }
 
     let part = nextParts.get(midiChannel)
     if (part == undefined) {
@@ -226,10 +268,14 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
       part = new Tone.Part<NoteWithMIDIChannel>((time, note) => {
         this.playNote(time, note)
       }, notesWithChannel)
+      copySkippedNotesToPartEnd(part, notesWithChannel)
       part.mute = true
-      part.start(0) // schedule events on the Tone timeline
+      // @HACK(@tbazin): offsetting the lookAhead to ensure perfect synchronization when
+      // using Ableton Link, the downside is that it skips the first few notes,
+      // one possible solution would be to copy them back at the part's end
+      part.start(0, +this.transport.context.lookAhead) // schedule events on the Tone timeline
       part.loop = true
-      part.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
+      part.loopEnd = sequenceDuration_barsBeatsSixteenth
       nextParts.set(midiChannel, part)
     } else {
       part.mute = true
@@ -237,7 +283,8 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
       notesWithChannel.forEach((noteEvent) => {
         part.add(noteEvent)
       })
-      part.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
+      copySkippedNotesToPartEnd(part, notesWithChannel)
+      part.loopEnd = sequenceDuration_barsBeatsSixteenth
     }
 
     // schedule the pedal
@@ -249,10 +296,11 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
           this.triggerPedalCallback,
           pedalControlChanges
         )
+        copySkippedNotesToPartEnd(controlChangesPart, pedalControlChanges)
         controlChangesPart.mute = true
         controlChangesPart.start(0)
         controlChangesPart.loop = true
-        controlChangesPart.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
+        controlChangesPart.loopEnd = sequenceDuration_barsBeatsSixteenth
         nextControlChanges.set(midiChannel, controlChangesPart)
       } else {
         controlChangesPart.mute = true
@@ -260,7 +308,8 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
         pedalControlChanges.forEach((controlChange: ControlChange) => {
           controlChangesPart.add(controlChange)
         })
-        controlChangesPart.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
+        copySkippedNotesToPartEnd(controlChangesPart, pedalControlChanges)
+        controlChangesPart.loopEnd = sequenceDuration_barsBeatsSixteenth
       }
     }
   }
@@ -300,7 +349,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
   async loadMidi(
     serverURL: string,
     musicXML: XMLDocument,
-    sequenceDuration_toneTime: Tone.TimeClass
+    sequenceDuration_barsBeatsSixteenth: string
   ): Promise<string> {
     const serializer = new XMLSerializer()
     const payload = serializer.serializeToString(musicXML)
@@ -313,7 +362,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
           this.transport.loop = true
           this.transport.loopStart = 0
         }
-        this.transport.loopEnd = sequenceDuration_toneTime.toBarsBeatsSixteenths()
+        this.transport.loopEnd = sequenceDuration_barsBeatsSixteenth
 
         // assumes constant BPM or defaults to 120BPM if no tempo information available
         const BPM =
@@ -337,8 +386,8 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
         const schedulingPromises = midi.tracks.map((track, index) => {
           // midiChannels start at 1
           const midiChannel = index + 1
-          return this.scheduleTrackToInstrument(
-            sequenceDuration_toneTime,
+          this.scheduleTrackToInstrument(
+            sequenceDuration_barsBeatsSixteenth,
             track,
             midiChannel,
             nextParts,

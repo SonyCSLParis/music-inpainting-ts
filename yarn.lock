@@ -905,6 +905,11 @@
     mkdirp "^1.0.4"
     rimraf "^3.0.2"
 
+"@popperjs/core@^2.9.2":
+  version "2.10.2"
+  resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.10.2.tgz#0798c03351f0dea1a5a4cabddf26a55a7cbee590"
+  integrity sha512-IXf3XA7+XyN7CP9gGh/XB0UxVMlvARGEgGXLubFICsUMGz6Q+DU+i4gGlpOxTjKvXjkJDJC8YdqdKkDj9qZHEQ==
+
 "@sindresorhus/is@^0.14.0":
   version "0.14.0"
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-0.14.0.tgz#9fb3a3cf3132328151f353de4632e01e52102bea"
@@ -916,6 +921,188 @@
   integrity sha512-XIB2XbzHTN6ieIjfIMV9hlVcfPU26s2vafYWQcZHWXHOxiaRZYEDKEwdl129Zyg50+foYV2jCgtrqSA6qNuNSA==
   dependencies:
     defer-to-connect "^1.0.1"
+
+"@tonaljs/abc-notation@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/abc-notation/-/abc-notation-4.6.5.tgz#61aaf5eb49ff076ff60872be9e16c92b8c364437"
+  integrity sha512-1S0Jnx0NfDLgyhkQOMEHqOacELL6RUdPcWWUP+nAnsOsb9owvB9RKYLSzp5odd16FVUR7U8c/JLc2yxIRvSeJw==
+  dependencies:
+    "@tonaljs/core" "^4.6.5"
+
+"@tonaljs/array@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/array/-/array-4.6.5.tgz#242f05d98acf758fc27c5a254323d431351606b0"
+  integrity sha512-7A3DbBQ+qIQ134FqE518b4tJ8V2a15Sn303JjHzgnqZqKrNh/s3wqwkL60F7LKcd09tcp+vIKQP/MYt4xMcRAA==
+  dependencies:
+    "@tonaljs/core" "^4.6.5"
+
+"@tonaljs/chord-detect@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/chord-detect/-/chord-detect-4.6.5.tgz#83c40143f98f245198e88dcffa05b56525c0a1d1"
+  integrity sha512-4xu53UP4kNTfdTNpAAVijhXcQ+ypJqmeMnsST08ZXSjoYfJUhmf5rWDWfz36KOTtNdCA6AbYgdtTYV/Xw0nd/w==
+  dependencies:
+    "@tonaljs/chord-type" "^4.6.5"
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/pcset" "^4.6.5"
+
+"@tonaljs/chord-type@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/chord-type/-/chord-type-4.6.5.tgz#11078f16561a50d59d673119eabe31a5c85c6ad9"
+  integrity sha512-Ol4DDopqpZCF9odosO2i8I+plud3Ul7VWJGNvL+PPCf4Qnwuz87q3aJQDLNoRUz4VyW0u66mq3LyVh6A8kb6Ug==
+  dependencies:
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/pcset" "^4.6.5"
+
+"@tonaljs/chord@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/chord/-/chord-4.6.5.tgz#37ae1a7a2b5cbd0931c80f2ccf3e305a0fa7336a"
+  integrity sha512-Pjdel4aDVv4kcx9PW6Qozt5BB9nAt13AOExfzKztpgPmlBSy0SKHse7Jp1cA4MGAuLHU8dzVssTFYpCskEFw3w==
+  dependencies:
+    "@tonaljs/chord-detect" "^4.6.5"
+    "@tonaljs/chord-type" "^4.6.5"
+    "@tonaljs/collection" "^4.6.2"
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/pcset" "^4.6.5"
+    "@tonaljs/scale-type" "^4.6.5"
+
+"@tonaljs/collection@^4.6.2":
+  version "4.6.2"
+  resolved "https://registry.yarnpkg.com/@tonaljs/collection/-/collection-4.6.2.tgz#ba055fd0731c3d95ca5737d4e0a37288ee22ce73"
+  integrity sha512-bfPCotLJNB/tG1NrdbsQPLDKZB5jlMs7uPQ6RYKiNkaena3345ZKkbCGl5pj6YTXeDm/oblXiSbFAn7SlLRZdQ==
+
+"@tonaljs/core@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/core/-/core-4.6.5.tgz#c00a301dfd939b3c75c71049c2091998d7e31aff"
+  integrity sha512-t7Vx0+L3j/ubQj2AhI1H45D/K745np4DwJjJjXNi5FlGD+TL2wyw50dCwkHKGHsrLDqup1qqP6yN7LBpC6UwNg==
+
+"@tonaljs/duration-value@^4.6.2":
+  version "4.6.2"
+  resolved "https://registry.yarnpkg.com/@tonaljs/duration-value/-/duration-value-4.6.2.tgz#f7d9b7c10cd035007dace88e04cd731915217083"
+  integrity sha512-zrXT0L/qsDQ6251Mlqz54vcUbYUB9xb6uJhlxUzc6VauXOt8UOfrdTULubRTXTaBwWt1h8J5n9pXTQmNGzNI9A==
+
+"@tonaljs/interval@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/interval/-/interval-4.6.5.tgz#67f3d12f7123b1c3014e2c06935623cb64fcf730"
+  integrity sha512-7EDWhqZ7Nnh9oD4ahRYJHLc799ACGxYL4hDHwMKD16B2MgXqPvDeDvwQ31qUuO0ruGz8tMb3FDlgg0Hplowcbw==
+  dependencies:
+    "@tonaljs/core" "^4.6.5"
+
+"@tonaljs/key@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/key/-/key-4.6.5.tgz#6f7984c335d87feeb4aacc864a70aaa61c34f6ed"
+  integrity sha512-ZdZWb5IStx6CLRmdEjawR66CqNpoW3EVUua2nVZBMdgnNebWxt4nvgH/ZNvGlCQGFZkUZzRhCfTwqsS6e3OmSA==
+  dependencies:
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/note" "^4.6.5"
+    "@tonaljs/roman-numeral" "^4.6.5"
+
+"@tonaljs/midi@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/midi/-/midi-4.6.5.tgz#e3737db18b38911ad33fea03445e2979a5f2228c"
+  integrity sha512-fJEZtNvV3M6yW1w+Tep60Rbv5PvuKszQcQzaJS1Loq5mHOKAzdmRfuJSpEpZBiaKEZ1WAMh1QKXYyOd+imyGQg==
+  dependencies:
+    "@tonaljs/core" "^4.6.5"
+
+"@tonaljs/mode@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/mode/-/mode-4.6.5.tgz#b6a520095ae4f63f42d0b89cdf5903733882e36b"
+  integrity sha512-54iaON1rJ6q8fV5iuei8RGDxYhKBGGxZz3rjAxGSqdTUwBRVOdPqtzOkofThf9gRGYOMhzPp1BMbxbV+UCAPsA==
+  dependencies:
+    "@tonaljs/collection" "^4.6.2"
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/interval" "^4.6.5"
+    "@tonaljs/pcset" "^4.6.5"
+    "@tonaljs/scale-type" "^4.6.5"
+
+"@tonaljs/note@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/note/-/note-4.6.5.tgz#0fcfa9cb9086d422d05f871e02c446d48d317ba9"
+  integrity sha512-Y0/eTzcReXzfcSLLG4k/dLLayqbvh/XYIkybG/QMDyR0BREuJq0Sw+NavbzhTtO0dadIQb/qfe0GFq4k2xS+NQ==
+  dependencies:
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/midi" "^4.6.5"
+
+"@tonaljs/pcset@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/pcset/-/pcset-4.6.5.tgz#3e2e29fdd9b19a3a6efd58a5827bec182be82887"
+  integrity sha512-oWAKflP3cREnUfScqsBzg2LLKNevxSnpDtrq8CPtwOAsrAa8PjQG07NQfhqIiFMjPUdgkDiER3qVA1n8dDwAJA==
+  dependencies:
+    "@tonaljs/collection" "^4.6.2"
+    "@tonaljs/core" "^4.6.5"
+
+"@tonaljs/progression@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/progression/-/progression-4.6.5.tgz#16709d49c3c062a134e09878ef3b6dfdacc8e40d"
+  integrity sha512-ijYEgMFQG4izHYUw5cRtBRNBuoYzmpGvb/tRiykhJNI6XIjekZEMiMsOMfb1u5q+EGvnVNXRmrluMRDIz2rmRw==
+  dependencies:
+    "@tonaljs/chord" "^4.6.5"
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/roman-numeral" "^4.6.5"
+
+"@tonaljs/range@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/range/-/range-4.6.5.tgz#41d1950e7f9dd02101c842dd2bb46ab453026453"
+  integrity sha512-99cOvVJ3l4X0UJuTSa6qE87JriREnnWIsi3xo1/n7RoqFxnfi8YPh4SfJJyysvHcT18X4EfcTNde9ancMBVu6A==
+  dependencies:
+    "@tonaljs/collection" "^4.6.2"
+    "@tonaljs/midi" "^4.6.5"
+
+"@tonaljs/roman-numeral@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/roman-numeral/-/roman-numeral-4.6.5.tgz#e5ba93c2982c2bb2f3eb03006474a6b944b0891b"
+  integrity sha512-bWYQNZWKmYDDcmbQQNwcWAHfTWanpzmvI0wplrMnGd4x0op5etwUEv+Yzjg0B1ef+E+zcU02Sl0WwRJhaDK3hg==
+  dependencies:
+    "@tonaljs/core" "^4.6.5"
+
+"@tonaljs/scale-type@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/scale-type/-/scale-type-4.6.5.tgz#710930e13e57cbe2490e0aaab92952d8d2db00f1"
+  integrity sha512-rwcDOYf2UifjLJhmuQ8f8bJSeOCMDQJ1lB7lzlqdFxes03OeQhdOEfrT0nPtW8BhBEvq4GMM2NA6CLxX8MTwOQ==
+  dependencies:
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/pcset" "^4.6.5"
+
+"@tonaljs/scale@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/scale/-/scale-4.6.5.tgz#5ebda7117eddd96f7826b6103212677aae9ae092"
+  integrity sha512-isYDamelOBtcd5bEnJ8QV0Js7jKRwZ0FlFVE/+bUN3wsyo9u6KLL5gMyfH9RKdx74m8lE13JXYTXgKqe+AOa4A==
+  dependencies:
+    "@tonaljs/chord-type" "^4.6.5"
+    "@tonaljs/collection" "^4.6.2"
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/note" "^4.6.5"
+    "@tonaljs/pcset" "^4.6.5"
+    "@tonaljs/scale-type" "^4.6.5"
+
+"@tonaljs/time-signature@^4.6.2":
+  version "4.6.2"
+  resolved "https://registry.yarnpkg.com/@tonaljs/time-signature/-/time-signature-4.6.2.tgz#be0808363c61863a9b844c35c121952f49987eef"
+  integrity sha512-OlZY4gdLd21WpMeAI1nS9E9zWcYU6oAzh6ptAUndqmVnFIrIWIWKCkWapdFx8dWdqrX8jqya3m4T33wmeo7w5Q==
+
+"@tonaljs/tonal@^4.6.5":
+  version "4.6.5"
+  resolved "https://registry.yarnpkg.com/@tonaljs/tonal/-/tonal-4.6.5.tgz#d254a8eb27e2da88fe3c0b79ca523195bd0716d3"
+  integrity sha512-lmsWinI9dy7nQyzCEgDVeVAwJtsk4ey05cJZd6oa4QVuSFD+CR8ebaEiwT4/Na+W0kHrKicT3h0uYc2PJIvx5Q==
+  dependencies:
+    "@tonaljs/abc-notation" "^4.6.5"
+    "@tonaljs/array" "^4.6.5"
+    "@tonaljs/chord" "^4.6.5"
+    "@tonaljs/chord-type" "^4.6.5"
+    "@tonaljs/collection" "^4.6.2"
+    "@tonaljs/core" "^4.6.5"
+    "@tonaljs/duration-value" "^4.6.2"
+    "@tonaljs/interval" "^4.6.5"
+    "@tonaljs/key" "^4.6.5"
+    "@tonaljs/midi" "^4.6.5"
+    "@tonaljs/mode" "^4.6.5"
+    "@tonaljs/note" "^4.6.5"
+    "@tonaljs/pcset" "^4.6.5"
+    "@tonaljs/progression" "^4.6.5"
+    "@tonaljs/range" "^4.6.5"
+    "@tonaljs/roman-numeral" "^4.6.5"
+    "@tonaljs/scale" "^4.6.5"
+    "@tonaljs/scale-type" "^4.6.5"
+    "@tonaljs/time-signature" "^4.6.2"
 
 "@tonejs/midi@^2.0.27":
   version "2.0.27"
@@ -1093,6 +1280,11 @@
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@types/vexflow/-/vexflow-3.0.0.tgz#f13ce2a6c8721c22c6ea109e7f4b9ad9776065b9"
   integrity sha512-53QdJHpx5zf+lHW0vXfgugPTK7PSMlUl/jKl2fHmagmLQyUHl+59tSPGO1NjYN2+QKkPtwCc7KMI/YLzzuHrmA==
+
+"@types/webmidi@^2.0.6":
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/@types/webmidi/-/webmidi-2.0.6.tgz#c9b1428bbc5d5f49cc6201eae0dc5e2b3fd23e0e"
+  integrity sha512-sfS0A5IryqmBrUpcGPipEPeFdpqmZzP6b6lZFxHKgz5n2Vhzh4yJ5P2TvoDUhDjqJyv0Y25ng0Qodgo2Vu08ug==
 
 "@types/webpack-env@^1.15.1":
   version "1.16.0"
@@ -1378,11 +1570,6 @@ accepts@~1.3.4, accepts@~1.3.5, accepts@~1.3.7:
   dependencies:
     mime-types "~2.1.24"
     negotiator "0.6.2"
-
-accidental-value@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/accidental-value/-/accidental-value-1.0.0.tgz#9d08753a8ce5f8a7e0b491579ef5c1e01889e80f"
-  integrity sha1-nQh1Oozl+KfgtJFXnvXB4BiJ6A8=
 
 acorn-dynamic-import@^2.0.0:
   version "2.0.2"
@@ -1761,6 +1948,11 @@ atob@^2.1.2:
   version "2.1.2"
   resolved "https://registry.yarnpkg.com/atob/-/atob-2.1.2.tgz#6d9517eb9e030d2436666651e86bd9f6f13533c9"
   integrity sha512-Wm6ukoaOGJi/73p/cl2GvLjTI5JM1k/O14isD73YML8StrH/7/lRFgmg8nICZgD3bZZvjwCGxtMOD3wWNAu8cg==
+
+audiokeys@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/audiokeys/-/audiokeys-0.1.1.tgz#49baf9e99bdef464ad5192f47ea332609ed3eb27"
+  integrity sha512-6DRwo3gaeeX2OtotgCBRSSnPkEBog66dwoOplOnWlIZovD7G3ZaJxNDQhrJ37BfntyFWo/IdDVaY7ZOCxFEOpA==
 
 automation-events@^3.0.4:
   version "3.0.5"
@@ -2924,11 +3116,6 @@ d@1, d@^1.0.1:
     es5-ext "^0.10.50"
     type "^1.0.1"
 
-daccord@^1.0.1:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/daccord/-/daccord-1.1.0.tgz#36f0f39ab1f575f7709dd97d36ffe6d88b78d1b4"
-  integrity sha1-NvDzmrH1dfdwndl9Nv/m2It40bQ=
-
 dashdash@^1.12.0:
   version "1.14.1"
   resolved "https://registry.yarnpkg.com/dashdash/-/dashdash-1.14.1.tgz#853cfa0f7cbe2fed5de20326b8dd581035f6e2f0"
@@ -3016,6 +3203,11 @@ deep-is@^0.1.3:
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/deep-is/-/deep-is-0.1.3.tgz#b369d6fb5dbc13eecf524f91b070feedc357cf34"
   integrity sha1-s2nW+128E+7PUk+RsHD+7cNXzzQ=
+
+deepmerge@^4.2.2:
+  version "4.2.2"
+  resolved "https://registry.yarnpkg.com/deepmerge/-/deepmerge-4.2.2.tgz#44d2ea3679b8f4d4ffba33f03d865fc1e7bf4955"
+  integrity sha512-FJ3UgI4gIl+PHZm53knsuSFpE+nESMr7M4v9QcgB7S63Kj/6WqMiFQJpBBYz1Pt+66bZpP3Q7Lye0Oo9MPKEdg==
 
 default-gateway@^4.2.0:
   version "4.2.0"
@@ -4779,14 +4971,6 @@ he@^1.1.1, he@^1.2.0:
   resolved "https://registry.yarnpkg.com/he/-/he-1.2.0.tgz#84ae65fa7eafb165fddb61566ae14baf05664f0f"
   integrity sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==
 
-helmholtz@^2.0.1:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/helmholtz/-/helmholtz-2.0.2.tgz#54630621bd87575b0c2bd9147087a79a8fe30811"
-  integrity sha1-VGMGIb2HV1sMK9kUcIenmo/jCBE=
-  dependencies:
-    accidental-value "^1.0.0"
-    notecoord "^1.0.1"
-
 hmac-drbg@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/hmac-drbg/-/hmac-drbg-1.0.1.tgz#d2745701025a6c775a6c545793ed502fc0c649a1"
@@ -5123,11 +5307,6 @@ interpret@^1.0.0, interpret@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/interpret/-/interpret-1.4.0.tgz#665ab8bc4da27a774a40584e812e3e0fa45b1a1e"
   integrity sha512-agE4QfB2Lkp9uICn7BAqoscw4SZP9kTE2hxiFI3jBPmXJfdqiahTbUuKGsMoN2GtqL9AxhYioAcVvgsb1HvRbA==
-
-interval-coords@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/interval-coords/-/interval-coords-1.1.1.tgz#4a83a402146d95a4db062c129b79cb34a7ecddc9"
-  integrity sha1-SoOkAhRtlaTbBiwSm3nLNKfs3ck=
 
 invert-kv@^1.0.0:
   version "1.0.0"
@@ -6392,11 +6571,6 @@ normalize-url@^4.1.0:
   resolved "https://registry.yarnpkg.com/normalize-url/-/normalize-url-4.5.0.tgz#453354087e6ca96957bd8f5baf753f5982142129"
   integrity sha512-2s47yzUxdexf1OhyRi4Em83iQk0aPvwTddtFz4hnSSw9dCEsLEGf6SwIO8ss/19S9iBb5sJaOuTvTGDeZI00BQ==
 
-notecoord@^1.0.1:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/notecoord/-/notecoord-1.1.0.tgz#89c42ab7bb5796a29f3c7fade9825c509d8f1ed1"
-  integrity sha1-icQqt7tXlqKfPH+t6YJcUJ2PHtE=
-
 npm-conf@^1.1.3:
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/npm-conf/-/npm-conf-1.1.3.tgz#256cc47bd0e218c259c4e9550bf413bc2192aff9"
@@ -6893,11 +7067,6 @@ pinkie@^2.0.0:
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/pinkie/-/pinkie-2.0.4.tgz#72556b80cfa0d48a974e80e77248e80ed4f7f870"
   integrity sha1-clVrgM+g1IqXToDnckjoDtT3+HA=
-
-pitch-fq@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/pitch-fq/-/pitch-fq-1.0.0.tgz#651b3e8852f65b9555f3a28f7ae96f11e3533416"
-  integrity sha1-ZRs+iFL2W5VV86KPeulvEeNTNBY=
 
 pkg-dir@^2.0.0:
   version "2.0.0"
@@ -7705,14 +7874,6 @@ schema-utils@^3.0.0:
     ajv "^6.12.5"
     ajv-keywords "^3.5.2"
 
-scientific-notation@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/scientific-notation/-/scientific-notation-1.0.2.tgz#ccea3954fe2a979d3641c963acd99e5733639182"
-  integrity sha1-zOo5VP4ql502QcljrNmeVzNjkYI=
-  dependencies:
-    accidental-value "^1.0.0"
-    notecoord "^1.0.1"
-
 screenfull@^5.0.2:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/screenfull/-/screenfull-5.1.0.tgz#85c13c70f4ead4c1b8a935c70010dfdcd2c0e5c8"
@@ -7906,6 +8067,15 @@ shebang-regex@^3.0.0:
   resolved "https://registry.yarnpkg.com/shebang-regex/-/shebang-regex-3.0.0.tgz#ae16f1644d873ecad843b0307b143362d4c42172"
   integrity sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==
 
+shepherd.js@^8.3.1:
+  version "8.3.1"
+  resolved "https://registry.yarnpkg.com/shepherd.js/-/shepherd.js-8.3.1.tgz#131eeefc5eb2bc44c9e23d0da139db46b2b55339"
+  integrity sha512-IhxZNhnK2m/pNTXudNfYrcwvcZNWkeYngQbQee8nC3xJ2GjeIatGqivhdZAMZ+LeogZvKMakB931d/V534uhrw==
+  dependencies:
+    "@popperjs/core" "^2.9.2"
+    deepmerge "^4.2.2"
+    smoothscroll-polyfill "^0.4.4"
+
 side-channel@^1.0.3:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/side-channel/-/side-channel-1.0.4.tgz#efce5c8fdc104ee751b25c58d4290011fa5ea2cf"
@@ -7945,6 +8115,11 @@ slice-ansi@^4.0.0:
     ansi-styles "^4.0.0"
     astral-regex "^2.0.0"
     is-fullwidth-code-point "^3.0.0"
+
+smoothscroll-polyfill@^0.4.4:
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/smoothscroll-polyfill/-/smoothscroll-polyfill-0.4.4.tgz#3a259131dc6930e6ca80003e1cb03b603b69abf8"
+  integrity sha512-TK5ZA9U5RqCwMpfoMq/l1mrH0JAR7y7KRvOBx0n2869aLxch+gT9GhN3yUfjiw+d/DiF1mKo14+hd62JyMmoBg==
 
 snapdragon-node@^2.0.1:
   version "2.1.1"
@@ -8472,17 +8647,6 @@ temp-file@^3.3.7:
   dependencies:
     async-exit-hook "^2.0.1"
     fs-extra "^8.1.0"
-
-teoria@^2.5.0:
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/teoria/-/teoria-2.5.0.tgz#015e245d3094a60e84b2ee5ea9d58d795bf78ed5"
-  integrity sha512-LdnDG2PKkYAdBWGBgqZS3POuwq3Kzwj4PBR4PzEsEQ8T/tGqwEoa++SLDxSx7mvsfYA2VirfJWSXhMcpuhquaQ==
-  dependencies:
-    daccord "^1.0.1"
-    helmholtz "^2.0.1"
-    interval-coords "^1.1.1"
-    pitch-fq "^1.0.0"
-    scientific-notation "^1.0.2"
 
 term-size@^2.1.0:
   version "2.2.1"

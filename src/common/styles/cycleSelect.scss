@@ -3,6 +3,7 @@
 // Styling for the icon-based select element
 
 .cycleSelect {
+  cursor: pointer;
   position: relative;
   width: measures.$cycleSelect-size;
   height: measures.$cycleSelect-size;

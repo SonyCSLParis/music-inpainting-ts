@@ -4,14 +4,16 @@ import { getPathToStaticFile } from './staticPath'
 
 import '../common/styles/main.scss'
 import '../common/styles/header.scss'
+import {
+  setBackgroundColorElectron,
+  toggleMaximizeWindowElectron,
+} from './utils/display'
+import colors from '../common/styles/mixins/_colors.module.scss'
 
 declare let COMPILE_ELECTRON: boolean
 
-if (COMPILE_ELECTRON) {
-  // inner declaration required to have this block properly
-  // erased on non-Electron compilation
-  // eslint-disable-next-line no-inner-declarations
-  async function setupSystemIntegrationForLinksOpening() {
+async function setupSystemIntegrationForLinksOpening() {
+  if (COMPILE_ELECTRON) {
     const shell = (await import('electron')).shell
 
     //open links externally by default
@@ -24,13 +26,17 @@ if (COMPILE_ELECTRON) {
       }
     )
   }
-  void setupSystemIntegrationForLinksOpening()
 }
+void setupSystemIntegrationForLinksOpening()
 
 export function render(
   containerElement: HTMLElement,
   configuration: Record<string, unknown>
 ): void {
+  containerElement.addEventListener('dblclick', () => {
+    void toggleMaximizeWindowElectron()
+  })
+
   if (configuration['display_sony_logo']) {
     const cslLogoLinkElement = document.createElement('a')
     cslLogoLinkElement.id = 'csl-logo'
@@ -102,7 +108,19 @@ export function render(
 
     ircamLogoContainerElement.style.cursor = 'pointer'
     ircamLogoContainerElement.addEventListener('click', () => {
-      document.body.classList.toggle('light')
+      const displayTheme = document.body.getAttribute('theme')
+      if (displayTheme == 'lavender-light') {
+        document.body.setAttribute('theme', 'lavender-dark')
+        void setBackgroundColorElectron(
+          colors.lavender_dark_mode_panes_background_color
+        )
+      }
+      if (displayTheme == 'lavender-dark') {
+        document.body.setAttribute('theme', 'lavender-light')
+        void setBackgroundColorElectron(
+          colors.lavender_light_mode_panes_background_color
+        )
+      }
     })
   }
 }
