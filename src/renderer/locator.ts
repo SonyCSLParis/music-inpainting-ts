@@ -2191,18 +2191,24 @@ export class SpectrogramLocator extends Locator<
   protected async getAudio(
     inpaintingApiUrl: URL,
     top?: Codemap,
-    bottom?: Codemap
+    bottom?: Codemap,
+    generationCommand = '/get-audio',
+    httpMethod: 'POST' | 'GET' = 'POST'
   ): Promise<Blob> {
-    const payload_object = {
-      top_code: top != null ? top : this.codemap_top,
-      bottom_code: bottom != null ? bottom : this.codemap_bottom,
+    let requestData = ''
+    if (httpMethod == 'POST') {
+      const payload_object = {
+        top_code: top != null ? top : this.codemap_top,
+        bottom_code: bottom != null ? bottom : this.codemap_bottom,
+      }
+      requestData = JSON.stringify(payload_object)
     }
 
-    const generationCommand = '/get-audio'
     const generationUrl = new URL(generationCommand, inpaintingApiUrl)
-    return $.post({
+    return $.ajax({
       url: generationUrl.href,
-      data: JSON.stringify(payload_object),
+      method: httpMethod,
+      data: requestData,
       xhrFields: {
         responseType: 'blob',
       },
@@ -2431,36 +2437,56 @@ export class SpectrogramLocator extends Locator<
     return this
   }
 
-  sample(
+  // sample(
+  //   inpaintingApiUrl = this.defaultApiAddress,
+  //   timeout = 10000
+  // ): Promise<this> {
+  //   return super.sample(inpaintingApiUrl, timeout).then(
+  //     () => {
+  //       this.enableChanges()
+  //       mapTouchEventsToMouseSimplebar()
+  //       return this
+  //     },
+  //     (rejectionReason) => {
+  //       // FIXME(theis, 2021_04_21): sampling can fail in the current setting if either:
+  //       // - the Inpainting API is not reachable, in which case it might fail instantly,
+  //       //   and would lead to a very high number of requests in a very short time,
+  //       // - the sampling procedure didn't manage to find a suitable sample in the database
+  //       //   in a reasonable time
+  //       // We should distinguish those two cases and only re-run a sampling if the API is
+  //       // accessible
+  //       console.log(rejectionReason)
+  //       if (rejectionReason.statusText == 'timeout') {
+  //         log.error(
+  //           'Failed to sample appropriate sound in required time, retrying with new parameters'
+  //         )
+  //         this.instrumentConstraintSelect.shuffle()
+  //         return this.sample(inpaintingApiUrl, timeout)
+  //       } else {
+  //         throw rejectionReason
+  //       }
+  //     }
+  //   )
+  // }
+
+  // TODO(@tbazin, 2022/01/06): clean this up
+  async sample(
     inpaintingApiUrl = this.defaultApiAddress,
     timeout = 10000
   ): Promise<this> {
-    return super.sample(inpaintingApiUrl, timeout).then(
-      () => {
-        this.enableChanges()
-        mapTouchEventsToMouseSimplebar()
-        return this
-      },
-      (rejectionReason) => {
-        // FIXME(theis, 2021_04_21): sampling can fail in the current setting if either:
-        // - the Inpainting API is not reachable, in which case it might fail instantly,
-        //   and would lead to a very high number of requests in a very short time,
-        // - the sampling procedure didn't manage to find a suitable sample in the database
-        //   in a reasonable time
-        // We should distinguish those two cases and only re-run a sampling if the API is
-        // accessible
-        console.log(rejectionReason)
-        if (rejectionReason.statusText == 'timeout') {
-          log.error(
-            'Failed to sample appropriate sound in required time, retrying with new parameters'
-          )
-          this.instrumentConstraintSelect.shuffle()
-          return this.sample(inpaintingApiUrl, timeout)
-        } else {
-          throw rejectionReason
-        }
-      }
+    const audioBlob = await this.getAudio(
+      inpaintingApiUrl,
+      null,
+      null,
+      'sample-from-dataset-audio' + this.restParameters,
+      'GET'
     )
+    await this.sendAudio(
+      audioBlob,
+      'analyze-audio' + this.restParameters,
+      inpaintingApiUrl
+    )
+    return this
   }
 
   protected dropHandler(e: DragEvent): Promise<void> {
