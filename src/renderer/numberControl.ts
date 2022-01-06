@@ -239,7 +239,7 @@ export function renderPitchRootAndOctaveControl(
     pitchSelectContainerElement,
     'pitch-control-octave-control',
     [2, 7],
-    5
+    4
   )
   const useSimpleSlider = false
   const elementWidth_px = 40
