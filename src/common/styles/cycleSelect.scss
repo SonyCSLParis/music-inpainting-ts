@@ -1,62 +1,77 @@
+@use "mixins/measures";
+@use "mixins/colors.module";
 // Styling for the icon-based select element
 
-.CycleSelect-container {
-    &.CycleSelect-disabled {
-        cursor: not-allowed!important;
+.cycleSelect {
+  cursor: pointer;
+  position: relative;
+  width: measures.$cycleSelect-size;
+  height: measures.$cycleSelect-size;
+  border-radius: 100%;
+  border-style: solid;
+  border-width: clamp(2px, min(0.3vw, 0.2vh), 3.5px);
+  box-sizing: border-box;
 
-        color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
 
-        &:after{
-            content: "";
-            position: absolute;
-            bottom: 2px;
-            left: 2px;
-            border-top-width: thick;
-            border-top-style: solid;
-            width: 62px;
-            transform: rotate(-45deg);
-            transform-origin: 0% 0%;
-        }
+  select {
+    display: none;
+  }
 
-        & > .CycleSelect-inner-container {
-            pointer-events: none!important;
-        }
+  &.pulsing {
+    transform: scale(1);
+    animation: 0.6s pulse ease-in-out 2 alternate;
+  }
 
-        & img {
-            filter: grayscale(100%) contrast(60%);
-        }
+  &.cycleSelect-disabled {
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+
+    color: rgba(0, 0, 0, 0.8);
+    // display cross-out line
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 6px;
+      left: 5px;
+      border-top-width: thick;
+      border-top-style: solid;
+      width: 100%;
+      transform: rotate(-45deg);
+      transform-origin: 0% 0%;
     }
-}
 
-.CycleSelect-container {
-    display: grid,
-}
-
-.CycleSelect-inner-container {
-    display: flex,
-}
-
-.CycleSelect-container, .CycleSelect-inner-container {
-    position: relative;
-    justify-content: center;
-
-    cursor: pointer;
-}
-
-.CycleSelect-inner-container {
-    width: 100%;
-    height: 100%;
-}
-
-.CycleSelect-container img {
-    position: absolute;
-    align-self: center;
-    width: 70%;
-    padding-bottom: 2px;
-
-    visibility: hidden;
-
-    &.CycleSelect-visible {
-        visibility: visible;
+    & img {
+      filter: grayscale(100%) contrast(60%);
     }
+  }
+}
+
+.cycleSelect  img {
+  position: absolute;
+  align-self: center;
+
+  width: 70%;
+
+  visibility: hidden;
+  display: none;
+
+  &.cycleSelect-currentValue {
+    display: initial;
+    visibility: visible;
+  }
+}
+
+
+@keyframes pulse {
+	0% {
+		transform: scale(1);
+		box-shadow: 0 0 0 0;
+	}
+
+	100% {
+		transform: scale(1.5);
+		box-shadow: 0 0 0 0 6px rgba(0, 0, 0, 0);
+	}
 }

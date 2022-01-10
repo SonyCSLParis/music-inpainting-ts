@@ -1,301 +1,355 @@
-$interface-font-stack: 'Fira-Sans', 'Ubuntu-Regular', sans-serif;
-$interface-font-weight: bold;
+// TODO(theis, 2020/12/10): check/clean-up usage of .advanced class
+// children nodes should inherit the appropriate behaviour from their container
+// and note require setting the class on all nodes
 
-$header-height: 120px;
-$bottom-controls-height: 150px;
-$advanced-controls-height: 40px;
+@use "mixins/colors.module";
+@use "mixins/measures";
+@use "mixins/fonts";
 
-$CycleSelect-size: 54px;
-
-/*Font Awesome Fonts*/
-@font-face {
-    font-family: 'FontAwesome';
-    src: url('../../../node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf') format('truetype');
+html,
+body {
+  height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  margin: 0;
+  overflow: hidden;
 }
 
-@font-face {
-    font-family: 'Ubuntu-Condensed';
-    src: url('../fonts/Ubuntu_Condensed/UbuntuCondensed-Regular.ttf') format('truetype');
+body.splash-screen {
+  -webkit-app-region: drag;
+  #configuration-selection {
+    -webkit-app-region: no-drag;
+  }
 }
 
-@font-face {
-    font-family: 'Ubuntu-Regular';
-    src: url('../fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
+input {
+  border: none;
+  outline: none
 }
 
-@font-face {
-    font-family: 'Fira-Sans';
-    src: url('../fonts/Fira_Sans/FiraSans-Regular.ttf') format('truetype');
-}
+// default theme, also used on the splash-screen
+@include colors.theme-colors(lavender-dark);
 
-@font-face {
-    font-family: 'Julius';
-    src: url('../fonts/Julius_Sans_One/JuliusSansOne-Regular.ttf') format('truetype');
-}
-
-html, body {
-    height: 100%;
-    margin: 0;
+body.running {
+  &[theme=millenial-pink] {
+    @include colors.theme-colors(millenial-pink);
+  }
+  &[theme=lavender-dark] {
+    @include colors.theme-colors(lavender-dark);
+    &, &.dark {
+    }
+    &[theme=lavender-light] {
+      @include colors.theme-colors(lavender-light);
+    }
+  }
 }
 
 body {
-    background-color: #fff7f8;  // millenial pink
-    font-family: $interface-font-stack;
-    /* box-shadow: 19px 6px 20px 0px black; */
+  font-family: fonts.$interface-font-stack;
 
-    // disable blue box over objects on touch
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
-    -webkit-tap-highlight-color: transparent;
+  // disable blue box over objects on touch
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  -webkit-tap-highlight-color: transparent;
 
-    user-select: none;
+  user-select: none;
+  z-index: 0;
+
+  &.busy {
+    cursor: wait !important;
+
+    & #loading-spinner {
+      opacity: 1;
+    }
+  }
 }
 
-div[nexus-ui] select, div[nexus-ui] input {
-    font-family: $interface-font-stack !important;
-    font-weight: $interface-font-weight !important;
+body.notono {
+  .simplebar-track.simplebar-vertical {
+    display: none;
+  }
 }
 
-header {
+.simplebar-track {
+  font-size: x-large;
+  display: flex;
+  justify-content: center;
+
+  &::before {
+    font-family: "FontAwesome";
     position: absolute;
-    width: 100%;
-    height: $header-height;
-    top: 0;
-    left: 0;
-
-    background-color: rgb(255, 236, 249);
-    opacity: 1;
-    /* z-index: 100; */
-    box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.21);
-    font-size: 25px;
-    // font-family: monospace;
-
-    align-self: center;
-    justify-self: center;
-    margin: auto;
-}
-
-@media screen and (min-width: 500px) {
-    header {
-        display: inline-grid;
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    .header-item-left {
-        width: 160px;
-        margin-left: 25px;
-    }
-}
-
-@media screen and (max-width: 500px) {
-    header {
-        display: inline-grid;
-    }
-
-    .header-item-left {
-        width: 80%;
-        justify-self: center;
-        max-width: 160px;
-    }
-
-    #help-icon {
-        // Hide text content, display only icon
-        // via [https://stackoverflow.com/a/471538]
-        text-indent: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        // HACK Manual offset to center in header
-        top: -38px;
-        width: 45px;
-    }
-}
-
-.header-item-left {
     display: flex;
+    align-items: center;
+    justify-content: center;
     align-self: center;
-
-    & img {
-        width: 100%;
-        shape-rendering: auto;
-    }
-}
-
-#app-title {
-    pointer-events: none;  // disable text-selection
-
-    justify-self: inherit;
-    align-self: inherit;
-    display: flex;
-
-    font-size: 2.3em;
-    font-family: 'Julius' !important;
-}
-
-#help-icon {
-    position: relative;
-    justify-self: right;
-    align-self: inherit;
-    margin-right: 25px;
+    content: "\F3c1";
+    border-radius: 100%;
+    pointer-events: auto;
     cursor: pointer;
-    font-size: x-large;
+  }
+  &.scroll-lock::before {
+    color: firebrick;
+    content: "\F023";
+  }
 
-    &:before {
-        content: "\F05A";
-        left: -30px;
-        top: 0;
-        font-family: 'FontAwesome';
-        position: absolute;
+  &.simplebar-horizontal::before {
+    height: 1.6em;
+    width: fit-content;
+    left: calc(-1.8em - 1.5vw);
+
+    padding-right: 0.3em;
+    padding-left: 0.3em;
+  }
+
+  &.simplebar-vertical::before {
+    width: 1.6em;
+    height: fit-content;
+    top: calc(-1.6em - 1.5vh);
+
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+    margin-bottom: 2em;
+  }
+}
+
+
+body.notono, body.nonoto {
+  .simplebar-track.simplebar-vertical::before {
+    display: none;
+  }
+}
+
+
+img {
+  -webkit-user-drag: none;
+}
+
+[nexus-ui] select *,
+[nexus-ui] input * {
+  font-family: fonts.$interface-font-stack !important;
+}
+
+[nexus-ui] * {
+  font-weight: fonts.$interface-font-weight !important;
+}
+
+[nexus-ui] input {
+  font-weight: 700 !important;
+}
+
+#app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto;
+  height: 100%;
+  grid-template-areas:
+  'header'
+  'main'
+  'footer';
+
+  @media screen and (max-height: 300px) {
+    grid-template-areas:
+    'main'
+    'footer';
+    grid-template-rows: 1fr auto;
+
+    #header {
+      display: none;
     }
+  }
 }
 
-.header-item-right {
-
-    margin-right:25px;
+#app > #header {
+  grid-area: header;
 }
 
-#osmd-container-container-container {
-    height: calc(100% - #{$header-height} - #{$bottom-controls-height});
-    top: $header-height;
+#app > #main-panel {
+  grid-area: main;
+  overflow: hidden; // ensures the main panel does not push the footer down
 }
 
-#osmd-loading-spinner {
-    position: absolute;
-    top: calc((100% - #{$header-height} - #{$bottom-controls-height})/2 + #{$header-height});
-    left: 50%;
-    margin-left: -32px;
-    margin-top: -32px;
+#app > #bottom-controls {
+  grid-area: footer;
 }
+
+#header, #main-panel, #bottom-controls {
+  width: 100vw;
+}
+
+#main-panel {
+  position: relative !important;
+  z-index: 0;
+  display: flex;
+}
+
+#loading-spinner {
+  position: absolute;
+  align-self: center;
+  display: block;
+  opacity: 0;
+  pointer-events: none;
+
+  transition: all 0.25s;
+}
+
+$trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
+$inverse-trapezoid-perspective-transform: perspective(10px) rotateX(-8deg);
 
 #bottom-controls {
+  display: grid;
+  transform-style: preserve-3D;
+  padding-top: calc(#{measures.$expand-tab-height} / 4);
+  padding-bottom: 1vh;
+  grid-template-columns: repeat(4, 25%);
+  align-items: center;
+  justify-items: center;
+  z-index: 0;
+
+  opacity: 1;
+
+  box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
+
+  text-align: center;
+
+  .expand-tab {
     position: absolute;
-    display: inline-grid;
-    width: 100%;
-    height: $bottom-controls-height;
-    grid-template-columns: repeat(4, 25%);
-    grid-template-rows: 90px auto;
-    align-items: center;
-    justify-items: center;
+    cursor: pointer;
+    width: 40%;
+    height: measures.$expand-tab-height;
+    top: calc(0px - #{measures.$expand-tab-height});
+    overflow: hidden;
 
-    bottom: 0;
-    left: 0;
-    opacity: 1;
-    /* z-index: 100; */
-    background-color: rgb(255, 236, 249);
-
-    box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
-
-    text-align: center;
-}
-
-body.advanced-controls #bottom-controls {
-    height: calc(#{$bottom-controls-height} + #{$advanced-controls-height});
-    grid-template-columns: repeat(4, 25%);
-    grid-template-rows: 80px 50px 60px;
-
-}
-
-body.advanced-controls #osmd-container-container-container {
-    height: calc(100% - #{$header-height} - #{$bottom-controls-height} - #{$advanced-controls-height});
-}
-
-control-item {
-}
-
-.two-columns {
-    align-items: center;
-    justify-items: center;
-    display: grid;
-    grid-template-columns: 50%;
-    width: 100%;
-
-    & .left-column {
-        grid-column: 1;
+    &::before {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      content: '⬇';
+      transform: $inverse-trapezoid-perspective-transform;
     }
 
-    & .right-column {
-        grid-column: 2;
+    font-size: 70%;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    transition-property: top, height, font-size;
+    transition-duration: 0.1s;
+    animation-timing-function: ease-in;
+    left: 50%;
+    z-index: -1;
+    border-radius: 5px 5px 0 0;
+
+    // translateZ is used to ensure the content is behind the parent container
+    // this is required since the parent container creates a stacking context
+    // furthermore the Z-axis translation should happen before the trapezoid transform,
+    // otherwise it messes up the perspective
+    transform: translateZ(-1000px) translate(-50%, 0)
+      $trapezoid-perspective-transform;
+
+    @media (hover: hover) {
+      // enable show on hover if device supports hovering;
+      height: calc(3 * #{measures.$expand-tab-height} / 4);
+      top: calc(0px - 3*#{measures.$expand-tab-height} / 4);
     }
+
+    &:hover {
+      font-size: 100%;
+      height: measures.$expand-tab-height;
+      top: calc(0px - #{measures.$expand-tab-height});
+    }
+  }
+}
+
+body:not(.help-tour-on) .trip-block {
+  // ensures the trip-block takes up no space in the layout
+  display: none !important;
+}
+
+body.help-tour-on {
+  .expand-tab {
+    // disable advanced controls expansion tab when browsing the help menu,
+    // we automatically expand all controls to show the help
+    visibility: hidden;
+  }
+}
+
+body.advanced-controls-disabled {
+  #bottom-controls {
+    .expand-tab {
+      &::before {
+        content: '⬆';
+      }
+    }
+  }
+
+  .advanced {
+    &,
+    .control-item,
+    .control-label {
+      display: none !important;
+    }
+  }
+}
+
+@media screen and (max-width: 270px) {
+  .control-label {
+    display: none !important;
+  }
+}
+
+select {
+  font-family: inherit;
+  font-weight: bold;
+  font-size: large !important;
+  text-transform: capitalize;
+  text-align-last: center; // see https://stackoverflow.com/a/34532555
+}
+
+.grid-auto-column {
+  align-items: center;
+  justify-items: center;
+  display: grid;
+  width: 100%;
+  grid-auto-flow: column;
+  row-gap: 5%;
 }
 
 .disabled {
-    color: lightgray;
-    cursor: not-allowed;
+  color: lightgray;
+  cursor: not-allowed;
 
-    & * {
-        pointer-events: none!important;
-    }
+  & * {
+    pointer-events: none !important;
+  }
 }
 
 #lfo-controls {
-    display: grid;
-    width: 40%;
-    // height: 100px;
-    grid-template-columns: repeat(3, 1fr);
-    text-align: center;
-    // font-weight: $interface-font-weight !important;
-    // grid-template-rows: 100px;
+  display: grid;
+  width: 40%;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
 }
-
-.CycleSelect-container {
-    color: lightpink;
-
-    width: $CycleSelect-size;
-    height: $CycleSelect-size;
-    border-radius: 64px;
-    border-style: solid;
-    border-width: thick;
-
-    align-self: center;
-    justify-self: center;
-}
-
-.CycleSelect-inner-container {
-    width: inherit !important;
-    height: inherit !important;
-
-    // HACK: invisble border to allow clicking on the border of the selector
-    border-radius: 64px;
-    border-style: solid;
-    border-width: thick;
-    border-color: inherit;  // fallback if no opacity support
-    border-color: rgba(0, 0, 0, 0);
-
-    top: -5px;
-}
-
-//
-// #play-button {
-//     grid-column: 1 / 2
-// }
-//
-// #stop-button {
-//     grid-column: 2 / 3
-// }
-//
-// #select-granularity {
-//     grid-column: 3 / span 1
-// }
 
 #granularity-select-container--whole-note {
-    width: 45%;
+  width: 45%;
 }
 
-.header {
-    padding: 1em;
-    position: absolute;
-    left: 50%;
-    // margin-right: -50%;
-    // transform: translate(-50%)
+#edit-tool-select-container--top,
+#edit-tool-select-container--bottom {
+  width: 60%;
 }
 
 .center {
-    margin: auto
+  margin: auto;
 }
 
 #bpm-control {
-    & svg rect {
-        transform: scaleY(0.6);
-        y: 25;
-        rx: 5;
-        ry: 10;
-    }
+  & svg rect {
+    transform: scaleY(0.6);
+    y: 25;
+    rx: 5;
+    ry: 10;
+  }
+}
+
+.disable-mouse {
+  pointer-events: none;
 }

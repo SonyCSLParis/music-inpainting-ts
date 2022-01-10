@@ -1,0 +1,350 @@
+@use './measures';
+@use 'sass:color';
+
+$millenial-pink-body-background: #fff7f8;
+$millenial-pink-panes-background: #ffecf9;
+$millenial-pink-idle-control: color.scale(lightpink, $lightness: 20%);
+$millenial-pink-active-control: #4392f1;
+
+$lavender-body-background: #c8dadf;
+$lavender-panes-background: #beb9d4;
+$lavender-dark-body-background: rgb(48, 8, 61);
+$lavender-dark-panes-background: rgb(57, 53, 58);
+$lavender-idle-control: #58a4b0;
+$lavender-active-control: #a3bcf9;
+
+$body-background: #c8dadf;
+$panes-background: #beb9d4;
+
+
+@function controls-box-shadow-color($control-color,
+  $box-shadow-lightness-direction) {
+    @return color.scale(
+      $control-color,
+      $lightness: $box-shadow-lightness-direction * 10%,
+      $alpha: -20%);
+}
+
+@function main-filter($control-color, $box-shadow-lightness-direction){
+  @return drop-shadow(0px 0px 1.3px
+    controls-box-shadow-color($control-color, $box-shadow-lightness-direction));
+}
+
+@mixin theme-colors($theme: lavender-dark) {
+  $body: $lavender-dark-body-background !default;
+  $panes: $lavender-dark-panes-background !default;
+  $idle-control: $lavender-idle-control !default;
+  $active-control: $lavender-active-control !default;
+  $overlay-lightness-factor: 1 !default;
+  $text: lightgray !default;
+
+  @if $theme == lavender-light {
+    $body: $lavender-body-background;
+    $panes: $lavender-panes-background;
+    $idle-control: $lavender-idle-control;
+    $active-control: $lavender-active-control;
+    $overlay-lightness-factor: -1;
+    $text: black;
+  } @else if $theme == lavender-dark {
+    $body: $lavender-dark-body-background;
+    $panes: $lavender-dark-panes-background;
+    $idle-control: $lavender-idle-control;
+    $active-control: $lavender-active-control;
+    $overlay-lightness-factor: 1;
+    $text: lightgray;
+  } @else if $theme == millenial-pink {
+    // TODO(theis): replace with list variables
+    $body: $millenial-pink-body-background;
+    $panes: $millenial-pink-panes-background;
+    $active-control: $millenial-pink-active-control;
+    $idle-control: $millenial-pink-idle-control;
+    $overlay-lightness-factor: 1;
+    $text: black;
+  } @else {
+    @error "Unknown theme #{$theme}.";
+  }
+
+  $panes-border: color.scale($panes,
+    $lightness: $overlay-lightness-factor * 20%
+  );
+
+  // default color, used on the splash screen
+  body {
+    background-color: $panes;
+  }
+
+  body, #app {
+    color: $text;
+  }
+
+  .shepherd-content * {
+    color: $text;
+  }
+
+  .shepherd-content {
+    // border: thin solid gray;
+  }
+  .shepherd-header, .shepherd-text, .shepherd-footer {
+    background-color: $panes;
+  }
+  .shepherd-button {
+    &.shepherd-button-secondary {
+      background-color: color.invert($panes);
+    }
+    background-color: $active-control;
+    color: color.invert($text);
+    &:hover {
+      color: $text;
+    }
+  }
+
+  #loading-spinner {
+    color: lightgray;
+  }
+
+  .logo {
+    background-color: lightgray;
+  }
+
+  #configuration-selection {
+    background-color: color.scale($panes,
+      $lightness: $overlay-lightness-factor * 15%);
+    border: solid thin $panes-border;
+
+    input {
+      background-color: color.scale($panes,
+          $lightness: $overlay-lightness-factor * 93%)
+    }
+  }
+
+  #main-panel {
+    background-color: $body;
+  }
+
+  #header,
+  #bottom-controls {
+    background-color: $panes;
+    border-color: $panes-border;
+    border-width: thin;
+
+    .expand-tab {
+      background-color: color.scale($panes,
+        $lightness: $overlay-lightness-factor * 10%);
+    }
+  }
+  #header {
+    border-bottom-style: solid;
+  }
+  #bottom-controls {
+    border-top-style: solid;
+  }
+
+  #app-title:hover {
+    background-color: lighten($panes, 15%);
+  }
+
+  $simplebar-track-color: null;
+  $simplebar-scrollbar-color: null;
+  @if $theme == millenial-pink {
+    $simplebar-track-color: $panes;
+    $simplebar-scrollbar-color: $active-control;
+  } @else {
+    $simplebar-track-color: color.scale(
+      $panes,
+      $lightness: 20% * $overlay-lightness-factor
+    );
+    $simplebar-scrollbar-color: color.scale(
+      $panes,
+      $lightness: -25% * $overlay-lightness-factor
+    );
+  }
+
+  $simplebar-track-color-transparent: color.scale(
+    $simplebar-track-color,
+    $alpha: -30%
+  );
+  $simplebar-scrollbar-color-transparent: color.scale(
+    $simplebar-scrollbar-color,
+    $alpha: -10%
+  );
+
+  .simplebar-track {
+    &, &::before {
+      background-color: $simplebar-track-color;
+    }
+    &::before {
+      color: $simplebar-scrollbar-color
+    }
+
+    box-shadow: inset 0px 3px 20px 0.5px
+        color.scale(
+          $simplebar-track-color,
+          $lightness: 30% * $overlay-lightness-factor,
+          $alpha: -30%
+        ),
+      0 0 10px 0.2px
+        color.scale(
+          $simplebar-scrollbar-color,
+          $lightness: 50% * $overlay-lightness-factor,
+          $alpha: -70%
+        );
+  }
+
+  .transparent-scrollbar .simplebar-track {
+    &, &::before {
+      background-color: $simplebar-track-color-transparent;
+    }
+    &::before {
+      color: $simplebar-scrollbar-color-transparent
+    }
+  }
+
+  .Fermata {
+    background-color: color.scale($body, $alpha: -50%);
+  }
+
+  .simplebar-scrollbar {
+    box-shadow: 0 0 2px 1px color.scale($simplebar-scrollbar-color,
+      $lightness: $overlay-lightness-factor * 10%);
+    border: solid thin color.scale($simplebar-scrollbar-color,
+      $lightness: $overlay-lightness-factor * 25%);
+    background-color: $simplebar-scrollbar-color;
+
+    @media (hover: hover) {
+      // no hover effects on touch screens since the effect remains active
+      // until the user effectively touches another zone on the viewport
+      &:hover {
+        background-color: color.scale(
+          $simplebar-scrollbar-color,
+          $lightness: 5%
+        );
+      }
+    }
+  }
+
+  .transparent-scrollbar .simplebar-scrollbar {
+    background-color: $simplebar-scrollbar-color-transparent;
+    @media (hover: hover) {
+      // no hover effects on touch screens since the effect remains active
+      // until the user effectively touches another zone on the viewport
+      &:hover {
+        background-color: color.scale(
+          $simplebar-scrollbar-color-transparent,
+          $lightness: 5%
+        );
+      }
+    }
+  }
+
+  .control-item * {
+    color: $idle-control;
+  }
+  .control-item.active * {
+    color: $active-control;
+  }
+  .control-item option {
+    color: black;
+  }
+
+  .cycleSelect {
+    color: $idle-control;
+    background-color: $panes;
+  }
+
+  .glow-shadow {
+    background: none;
+    &::after {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      box-shadow: 0 0 20px 3px color.scale($panes,
+        $lightness: 50% * $overlay-lightness-factor,
+        $alpha: 50%);
+      opacity: 0.75;
+
+
+      background: none;
+    }
+  }
+
+  @keyframes opacity-on-off {
+    0% {
+      opacity: 0.5;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  .spectrogram-locator-interface-container {
+    &::before {
+      left: calc(0vw - #{measures.$spectrogram-margin-width});
+      background: radial-gradient(
+        ellipse farthest-corner at right,
+        transparent 0vw,
+        $body measures.$spectrogram-margin-width
+      );
+    }
+
+    &:after {
+      right: calc(0vw - #{measures.$spectrogram-margin-width});
+      background: radial-gradient(
+        ellipse farthest-corner at left,
+        transparent 0vw,
+        $body measures.$spectrogram-margin-width
+      );
+    }
+    div span {
+      z-index: 100;
+      opacity: 0.6;
+    }
+  }
+
+  .control-item {
+    filter: main-filter($idle-control, $overlay-lightness-factor);
+
+    &:hover {
+      filter: brightness(1.03)
+        main-filter($idle-control, $overlay-lightness-factor);
+    }
+  }
+  .control-item.active {
+    filter: main-filter($active-control, $overlay-lightness-factor);
+
+    &:hover {
+      filter: brightness(1.03)
+        main-filter($active-control, $overlay-lightness-factor);
+    }
+  }
+
+  $main-zoom-background-color: lightgray;
+  .zoom-control {
+    background-color: color.scale(
+      $main-zoom-background-color,
+      $lightness: $overlay-lightness-factor * 10%
+    );
+
+    * {
+      background-color: color.scale(
+        $main-zoom-background-color,
+        $lightness: -$overlay-lightness-factor * 10%
+      );
+    }
+  }
+}
+
+:export {
+  lavender_idle_control: $lavender_idle_control;
+  lavender_active_control: $lavender_active_control;
+  millenial_pink_idle_control: $millenial_pink_idle_control;
+  millenial_pink_active_control: $millenial_pink_active_control;
+  idle_control: $lavender_idle_control;
+  active_control: $lavender_active_control;
+  millenial_pink_panes_background_color: $millenial-pink-panes-background;
+  lavender_light_mode_panes_background_color: $lavender-panes-background;
+  lavender_dark_mode_panes_background_color: $lavender-dark-panes-background;
+}

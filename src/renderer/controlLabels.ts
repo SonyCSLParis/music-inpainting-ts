@@ -1,18 +1,48 @@
-let configuration = require('../common/config.json');
-let localizations = require('../common/localization.json');
+import * as configuration from '../common/default_config.json'
+import * as localizations from '../common/localization.json'
 
-export function createLabel(controlElem: HTMLElement, id: string) {
-    let labelElem: HTMLElement = document.createElement('control-item');
-    labelElem.id = id;
-    let controlLabel: string = `<b>${
-        localizations['control-labels'][id][configuration["main_language"]]}</b>`;
-    const secondary_language = configuration["secondary_language"];
-    if (secondary_language && !(secondary_language === "")) {
-        controlLabel.concat(`<br><i>${localizations['control-labels'][id][secondary_language]}</i>`)
+export function createLabel(
+  controlElement: HTMLElement,
+  id: string, // TOTO(theis, 2021/08/02): remove this, unnecessary to set an ID
+  isAdvancedControl = false, // FIXME(theis, 2021/08/02): redundant, could be infered from associated controlElement
+  localizationId?: string,
+  containerElement?: HTMLElement
+): void {
+  const labelElement: HTMLElement = document.createElement('div')
+  labelElement.classList.add('control-label')
+  labelElement.id = id
+  if (localizationId == undefined) {
+    localizationId = id
+  }
+  const controlLabel = `${
+    localizations['control-labels'][localizationId][
+      configuration['main_language']
+    ]
+  }`
+  const secondary_language = configuration['secondary_language']
+  if (secondary_language && !(secondary_language === '')) {
+    controlLabel.concat(
+      `<br><i>${localizations['control-labels'][localizationId][secondary_language]}</i>`
+    )
+  }
+  labelElement.innerHTML = controlLabel
+  labelElement.classList.toggle(
+    'advanced',
+    controlElement.classList.contains('advanced') || isAdvancedControl
+  )
+
+  if (containerElement == undefined) {
+    const defaultContainerId = 'bottom-controls'
+    const maybeBottomControlsElement = document.getElementById(
+      defaultContainerId
+    )
+    if (maybeBottomControlsElement == null) {
+      throw new EvalError(
+        `No container element provided and the of ${defaultContainerId} does not exist on the DOM`
+      )
     }
-    labelElem.innerHTML = controlLabel;
-
-    let bottomControlsElem: HTMLElement = document.getElementById(
-        'bottom-controls');
-    bottomControlsElem.appendChild(labelElem);
+    const bottomControlsElement = maybeBottomControlsElement
+    containerElement = bottomControlsElement
+  }
+  containerElement.appendChild(labelElement)
 }

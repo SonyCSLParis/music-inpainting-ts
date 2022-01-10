@@ -1,0 +1,51 @@
+.simplebar-track {
+  &.simplebar-vertical {
+    height: 30%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(10%, 4vh);
+    right: 5%;
+
+    .simplebar-scrollbar {
+      width: 110% !important;
+      left: -10% !important;
+    }
+  }
+
+  &.simplebar-horizontal {
+    margin-left: 15%;
+    margin-right: 15%;
+    @media screen and (max-width: 400px) {
+      margin-left: calc(15% + 1em);
+      margin-right: calc(15% + 1em);
+    }
+    height: min(10%, 4vh);
+    bottom: 10%;
+
+    .simplebar-scrollbar {
+      height: 110% !important;
+      top: -5% !important;
+    }
+  }
+
+  &.simplebar-horizontal, &.simplebar-vertical {
+    position: absolute;
+    border-radius: 20px;
+
+    // prevent visual glitches when updating the sheet where the scrollbar
+    // goes beyond the available area
+    overflow: visible
+  }
+}
+
+.simplebar-scrollbar {
+  pointer-events: auto;
+  position: absolute;
+  cursor: pointer;
+  border-radius: 20px;
+  padding: 0px 1% 0px 1%;
+
+  &::before {
+    background: none;
+  }
+}

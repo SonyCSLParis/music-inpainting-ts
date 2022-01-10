@@ -1,510 +1,707 @@
-// import * as nipplejs from "nipplejs";
-import { eOSMD, renderZoomControls } from './locator';
-import { Fraction } from 'opensheetmusicdisplay';
-import * as $ from "jquery";
-import * as WebMidi from 'webmidi';
-import * as MidiConvert from "midiconvert";
-import * as Tone from 'tone';
-import * as log from 'loglevel';
-import * as path from 'path';
-let Nexus = require('./nexusColored');
-import * as url from 'url';
+import $ from 'jquery'
+import Tone from 'tone'
 
-import * as Header from './header';
-import * as PlaybackCommands from './playbackCommands';
-import * as Playback from './playback';
-import * as Instruments from './instruments';
-import * as BPM from './bpm';
-import LinkClient from './linkClient';
-import * as LinkClientCommands from './linkClientCommands';
-import * as MidiOut from './midiOut';
-import * as HelpTour from './helpTour';
-import { createLFOControls } from './lfo';
-import { CycleSelect } from './cycleSelect';
-import { static_correct} from './staticPath';
-import * as ControlLabels from './controlLabels';
-import * as GranularitySelect from './granularitySelect';
-import { createWavInput } from './file_upload';
-import * as SplashScreen from './startup';
+import log from 'loglevel'
+log.setLevel(log.levels.INFO)
 
-import 'simplebar';
-import 'simplebar/packages/simplebar/src/simplebar.css';
+import {
+  SheetLocator,
+  SpectrogramLocator,
+  VqvaeLayer,
+  NotonoTool,
+  LayerAndTool,
+  Locator,
+} from './locator'
+import { NexusSelect } from 'nexusui'
+import {
+  NexusSelectWithShuffle,
+  setColors as setNexusColors,
+} from './nexusColored'
 
-import '../common/styles/osmd.scss';
-import '../common/styles/main.scss';
-import '../common/styles/controls.scss';
-import '../common/styles/disableMouse.scss';
+import * as Header from './header'
 
-// defined at compile-time via webpack.DefinePlugin
-declare var COMPILE_ELECTRON: boolean;
+import * as PlaybackCommands from './playbackCommands'
+import { PlaybackManager } from './playback'
+import MidiSheetPlaybackManager from './sheetPlayback'
+import { MultiChannelSpectrogramPlaybackManager as SpectrogramPlaybackManager } from './spectrogramPlayback'
 
-declare var ohSnap: any;
+import * as Instruments from './instruments'
+import {
+  NumberControl,
+  BPMControl,
+  renderPitchRootAndOctaveControl,
+} from './numberControl'
+import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
+import { getAbletonLinkClientClass } from './ableton_link/linkClient'
+import * as LinkClientCommands from './ableton_link/linkClientCommands'
+import { DownloadButton, filename as filenameType } from './downloadCommand'
 
-let defaultConfiguration = require('../common/config.json');
+import { MyShepherdTour, NonotoTour, NotonoTour } from './helpTour'
 
-function render(configuration=defaultConfiguration) {
-    const granularities_quarters: string[] = (
-        (<string[]>configuration['granularities_quarters']).sort(
-            (a, b) => {return parseInt(a) - parseInt(b)}));
+import { createLFOControls } from './lfo'
+import { CycleSelect } from './cycleSelect'
+import { getPathToStaticFile } from './staticPath'
+import * as ControlLabels from './controlLabels'
+import * as GranularitySelect from './granularitySelect'
+import * as SplashScreen from './startup'
 
-    let COMPILE_MUSEUM_VERSION: boolean = true;
+// WARNING: importing style sheets, order matters!
+import 'simplebar'
+import 'simplebar/src/simplebar.css'
 
-    if ( COMPILE_MUSEUM_VERSION ) {
-        require('../common/styles/museum.scss');
+import colors from '../common/styles/mixins/_colors.module.scss'
 
-        if (COMPILE_ELECTRON) {
-            var webFrame = require('electron').webFrame;
-            webFrame.setVisualZoomLevelLimits(1, 1);
-            webFrame.setLayoutZoomLevelLimits(0, 0);
+import '../common/styles/main.scss'
+import '../common/styles/simplebar.scss'
+import '../common/styles/controls.scss'
+import '../common/styles/overlays.scss'
+
+import '../common/styles/osmd.scss'
+import '../common/styles/spectrogram.scss'
+import '../common/styles/disableMouse.scss'
+
+declare let COMPILE_ELECTRON: boolean
+
+import defaultConfiguration from '../common/default_config.json'
+import { applicationConfiguration } from './startup'
+import { setBackgroundColorElectron, getTitleBarDisplay } from './utils/display'
+
+// TODO(@tbazin, 2021/08/05): clean-up this usage of unknown
+let locator: Locator<PlaybackManager, unknown>
+let playbackManager: PlaybackManager
+let sheetPlaybackManager: MidiSheetPlaybackManager
+let spectrogramPlaybackManager: SpectrogramPlaybackManager
+let bpmControl: BPMControl
+let instrumentConstraintSelect: NexusSelectWithShuffle
+let pitchClassConstraintSelect: NexusSelect
+let octaveConstraintControl: NumberControl
+let downloadButton: DownloadButton
+let linkClient: AbletonLinkClient
+
+function render(
+  configuration: applicationConfiguration = defaultConfiguration
+): void {
+  if (document.getElementById('header')) {
+    // do nothing if the app has already been rendered
+    return
+  }
+
+  document.body.classList.add('running', 'advanced-controls-disabled')
+
+  if (COMPILE_ELECTRON) {
+    document.body.classList.add('electron')
+    getTitleBarDisplay()
+      .then((titleBarDisplay) => {
+        if (titleBarDisplay == 'hiddenInset') {
+          document.body.classList.add('electron-hiddenInset-window-controls')
         }
+      })
+      .catch((e) => {
+        log.error(e)
+      })
+  }
+
+  if (configuration['osmd']) {
+    document.body.classList.add('nonoto')
+    document.body.setAttribute('theme', 'millenial-pink')
+    document.body.getAttribute('theme')
+    void setBackgroundColorElectron(
+      colors.millenial_pink_panes_background_color
+    )
+    setNexusColors(
+      colors.millenial_pink_active_control,
+      colors.millenial_pink_idle_control
+    )
+  } else if (configuration['spectrogram']) {
+    document.body.classList.add('notono')
+    document.body.setAttribute('theme', 'lavender-dark')
+    void setBackgroundColorElectron(
+      colors.lavender_dark_mode_panes_background_color
+    )
+  }
+
+  // set to true to display the help tour after two minutes of inactivity on the
+  // interface
+  const REGISTER_IDLE_STATE_DETECTOR: boolean =
+    configuration['display_help_on_idle']
+
+  // set to true to completely hide the mouse pointer on the interface
+  // for touchscreens
+  const DISABLE_MOUSE: boolean = configuration['disable_mouse']
+  $(() => {
+    if (DISABLE_MOUSE) {
+      document.body.classList.add('disable-mouse')
+    }
+  })
+
+  const granularities_quarters: number[] = configuration[
+    'granularities_quarters'
+  ].sort()
+
+  $(() => {
+    let applicationElement = document.getElementById('app')
+    if (applicationElement == null) {
+      applicationElement = document.createElement('div')
+      applicationElement.id = 'app'
+      document.body.appendChild(applicationElement)
     }
 
-    // set to true to display the help tour after two minutes of inactivity on the
-    // interface
-    let REGISTER_IDLE_STATE_DETECTOR: boolean = configuration["display_help_on_idle"];
+    const headerGridElement = document.createElement('header')
+    headerGridElement.id = 'header'
+    applicationElement.appendChild(headerGridElement)
 
-    // set to true to completely hide the mouse pointer on the interface
-    // for touchscreens
-    let DISABLE_MOUSE: boolean = configuration['disable_mouse'];
-    $(() => {
-        if ( DISABLE_MOUSE ) {
-            document.body.classList.add('disable-mouse');
-        }
-    });
+    const mainPanel = document.createElement('div')
+    mainPanel.id = 'main-panel'
+    applicationElement.appendChild(mainPanel)
 
+    const bottomControlsGridElement = document.createElement('footer')
+    bottomControlsGridElement.id = 'bottom-controls'
+    applicationElement.appendChild(bottomControlsGridElement)
+  })
 
-    let useAdvancedControls: boolean = configuration['insert_advanced_controls'];
-    $(() => {
-        if (useAdvancedControls) {
-            document.body.classList.add('advanced-controls');
-        }
-    });
+  $(() => {
+    const headerGridElement = document.getElementById('header')
+    Header.render(headerGridElement, configuration)
+    const appTitleElement = document.getElementById('app-title')
+    appTitleElement.addEventListener('click', () => {
+      void sampleNewData(inpaintingApiAddress)
+    })
+  })
 
-    // Tone.context.latencyHint = 'playback';
-
-    $(() => {
-        let headerGridElem: HTMLElement = document.createElement('header');
-        document.body.appendChild(headerGridElem);
-        Header.render(headerGridElem);
+  $(() => {
+    const bottomControlsGridElement = document.getElementById('bottom-controls')
+    const bottomControlsExpandTabElement = document.createElement('div')
+    bottomControlsExpandTabElement.id = 'bottom-controls-expand'
+    bottomControlsExpandTabElement.classList.add('expand-tab')
+    bottomControlsGridElement.appendChild(bottomControlsExpandTabElement)
+    bottomControlsExpandTabElement.addEventListener('click', function () {
+      document.body.classList.toggle('advanced-controls-disabled')
+      locator.refresh()
     })
 
-    let bottomControlsGridElem: HTMLDivElement;
+    const playbackCommandsGridspan = document.createElement('div')
+    playbackCommandsGridspan.id = 'playback-commands-gridspan'
+    playbackCommandsGridspan.classList.add('gridspan')
+    bottomControlsGridElement.appendChild(playbackCommandsGridspan)
 
-    $(() => {
-        bottomControlsGridElem = document.createElement('div');
-        bottomControlsGridElem.id = 'bottom-controls';
-        document.body.appendChild(bottomControlsGridElem);
-    });
+    if (configuration['spectrogram']) {
+      // create element for highlighting control grid spans in help
+      const constraintsGridspanElement = document.createElement('div')
+      constraintsGridspanElement.id = 'constraints-gridspan'
+      constraintsGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(constraintsGridspanElement)
 
-    $(() => {
-        let playbuttonContainerElem: HTMLElement = document.createElement('control-item');
-        playbuttonContainerElem.id = 'play-button';
+      const constraintsContainerElement = document.createElement('div')
+      constraintsContainerElement.id = 'constraints-container'
+      constraintsContainerElement.classList.add('gridspan')
+      // constraintsContainerElement.classList.add('multi-column-gridspan')
+      constraintsGridspanElement.appendChild(constraintsContainerElement)
 
-        bottomControlsGridElem.appendChild(playbuttonContainerElem);
+      ControlLabels.createLabel(
+        constraintsContainerElement,
+        'constraints-gridspan-label',
+        false,
+        undefined,
+        constraintsGridspanElement
+      )
 
-        ControlLabels.createLabel(playbuttonContainerElem, 'play-button-label');
-
-        PlaybackCommands.render(playbuttonContainerElem);
-    });
-
-
-    $(() => {
-        GranularitySelect.renderGranularitySelect(bottomControlsGridElem,
-            granularities_quarters);
-    });
-
-
-    $(() => {
-        let insertLFO: boolean = configuration["insert_variations_lfo"];
-        if (insertLFO) {
-            createLFOControls();
-        }
-    });
-
-
-    let serverPort: number = configuration['server_port'];
-    let serverIp: string;
-    let useLocalServer: boolean = configuration["use_local_server"];
-    if (useLocalServer) {
-        serverIp = 'localhost';
+      const editToolsGridspanElement = document.createElement('div')
+      editToolsGridspanElement.id = 'edit-tools-gridspan'
+      editToolsGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(editToolsGridspanElement)
     }
-    else {
-        serverIp = configuration['server_ip'];
-    }
-    let serverUrl = `http://${serverIp}:${serverPort}/`;
+  })
 
-
-    function insertLoadingSpinner(container: HTMLElement): HTMLElement {
-        let spinnerElem: HTMLElement = document.createElement('i');
-        container.appendChild(spinnerElem);
-        spinnerElem.classList.add('fas');
-        spinnerElem.classList.add('fa-4x');
-        spinnerElem.style.color = 'black';
-        spinnerElem.classList.add('fa-spin');
-        spinnerElem.classList.add('fa-cog');
-        spinnerElem.id = 'osmd-loading-spinner';
-
-        return spinnerElem
-    }
-
-    let osmd: eOSMD;
-
-    let allowOnlyOneFermata: boolean = configuration['allow_only_one_fermata'];
-    /*
-     * Create a container element for OpenSheetMusicDisplay...
-     */
-    let osmdContainer: HTMLElement;
+  if (configuration['osmd']) {
     $(() => {
-        let osmdContainerContainerContainer = <HTMLElement>document.createElement("div");
-        osmdContainerContainerContainer.id = 'osmd-container-container-container';
-        osmdContainerContainerContainer.classList.add('loading');
-        osmdContainerContainerContainer.setAttribute('data-simplebar', "");
-        osmdContainerContainerContainer.setAttribute('data-simplebar-auto-hide', "false");
-        document.body.appendChild(osmdContainerContainerContainer);
+      const useSimpleSlider = !configuration['insert_advanced_controls']
+      const bottomControlsGridElement = document.getElementById(
+        'bottom-controls'
+      )
+      const bpmControlGridspanElement = document.createElement('div')
+      bpmControlGridspanElement.id = 'bpm-control-gridspan'
+      bpmControlGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(bpmControlGridspanElement)
 
-        let spinnerElem = insertLoadingSpinner(osmdContainerContainerContainer);
-
-        let osmdContainerContainer = <HTMLElement>document.createElement("div");
-        osmdContainerContainer.id = 'osmd-container-container';
-        osmdContainerContainerContainer.appendChild(osmdContainerContainer);
-        osmdContainer = <HTMLElement>document.createElement("div");
-        osmdContainer.id = 'osmd-container';
-        /*
-        * ... and attach it to our HTML document's body. The document itself is a HTML5
-        * stub created by Webpack, so you won't find any actual .html sources.
-        */
-        osmdContainerContainer.appendChild(osmdContainer);
-
-
-        /*
-        * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
-        * the container we've created in the steps before. The second parameter tells OSMD
-        * not to redraw on resize.
-        */
-
-        function copyTimecontainerContent(origin: HTMLElement, target: HTMLElement) {
-            // retrieve quarter-note positions for origin and target
-            function getContainedQuarters(timecontainer: HTMLElement): number[] {
-                return timecontainer.getAttribute('containedQuarterNotes')
-                    .split(', ')
-                    .map((x) => parseInt(x, 10))
-            }
-            const originContainedQuarters: number[] = getContainedQuarters(origin);
-            const targetContainedQuarters: number[] = getContainedQuarters(target);
-
-            const originStart_quarter: number = originContainedQuarters[0];
-            const targetStart_quarter: number = targetContainedQuarters[0];
-            const originEnd_quarter: number = originContainedQuarters.pop();
-            const targetEnd_quarter: number = targetContainedQuarters.pop();
-
-            const generationCommand: string = ('/copy' +
-                `?origin_start_quarter=${originStart_quarter}` +
-                `&origin_end_quarter=${originEnd_quarter}` +
-                `&target_start_quarter=${targetStart_quarter}` +
-                `&target_end_quarter=${targetEnd_quarter}`);
-            loadMusicXMLandMidi(serverUrl, generationCommand);
-        }
-
-        let autoResize: boolean = true;
-        osmd = new eOSMD(osmdContainer,
-            {autoResize: autoResize,
-             drawingParameters: "compact",
-             drawPartNames: false
-            },
-            granularities_quarters.map((num) => {return parseInt(num, 10);}),
-            configuration['annotation_types'],
-            allowOnlyOneFermata,
-            copyTimecontainerContent);
-        Playback.initialize();
-        Playback.scheduleAutomaticResync();
-
-        if (configuration['use_chords_instrument']) {
-            Playback.scheduleChordsPlayer(osmd,
-                configuration['chords_midi_channel']);
-        }
-
-        // requesting the initial sheet, so can't send any sheet along
-        const sendSheetWithRequest = false;
-        loadMusicXMLandMidi(serverUrl, 'generate', sendSheetWithRequest).then(
-            () => {
-                spinnerElem.style.visibility = 'hidden';
-                osmdContainerContainerContainer.classList.remove('loading');
-                if ( REGISTER_IDLE_STATE_DETECTOR ) {
-                    HelpTour.registerIdleStateDetector();
-                }
-            });
+      bpmControl = new BPMControl(bpmControlGridspanElement, 'bpm-control')
+      bpmControl.render(useSimpleSlider, 200)
+      bpmControl.value = 80
     })
+  }
 
-    // var options = {
-    //     zone: osmd.renderingBackend.getInnerElement(),
-    //     color: "blue"
-    // };
-    // var manager = nipplejs.create(options);
-    // var joystick_data: {};
-    // var last_click = [];
-    //
-    // manager.on('start', function(event: Event, joystick) {
-    //     disableChanges();
-    // })
-    //
-    // manager.on('end', function(event: Event, joystick) {
-    //     // console.log(joystick_data);
-    //     // console.log(osmd.boundingBoxes);
-    //     let clickedDiv = event.target; // FIXME
-    //     // console.log(clickedDiv);
-    //     let measureIndex = findMeasureIndex(last_click);
-    //     // console.log(measureIndex);
-    //
-    //     let argsGenerationUrl = ("one-measure-change" +
-    //         ('?measureIndex=' + measureIndex)
-    //     );
-    //     let argsMidiUrl = "get-midi";
-    //
-    //     //    url += '?choraleIndex=' + choraleIndex;
-    //     loadMusicXMLandMidi(url.resolve(serverUrl, argsGenerationUrl),
-    //         url.resolve(serverUrl, argsMidiUrl));
-    //     enableChanges();
-    // }, true);
-    //
-    // manager.on('move', function(evt, joystick) {
-    //     joystick_data = joystick;
-    //     last_click = joystick.position;
-    // }, true);
-
-
-    function removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void{
-        // Strip MusicXML document of title/composer tags
-        let titleNode = xmlDocument.getElementsByTagName('work-title')[0];
-        let movementTitleNode = xmlDocument.getElementsByTagName('movement-title')[0];
-        let composerNode = xmlDocument.getElementsByTagName('creator')[0];
-
-        titleNode.textContent = movementTitleNode.textContent = composerNode.textContent = "";
+  $(() => {
+    const isAdvancedControl = true
+    const bottomControlsGridElement = document.getElementById('bottom-controls')
+    let defaultFilename: filenameType
+    if (configuration['spectrogram']) {
+      defaultFilename = { name: 'notono', extension: '.wav' }
+    } else if (configuration['osmd']) {
+      log.warn('Fix DownloadButton drag-out for MIDI')
+      defaultFilename = { name: 'nonoto', extension: '.mid' }
+    } else {
+      throw new Error('Unsupported configuration')
     }
 
-    function getFermatas(): number[] {
-        const activeFermataElems = $('.Fermata.active')
-        let containedQuarterNotesList = [];
-        for (let activeFemataElem of activeFermataElems) {
-            containedQuarterNotesList.push(parseInt(
-                activeFemataElem.parentElement.getAttribute('containedQuarterNotes')));
+    const downloadCommandsGridspan = document.createElement('div')
+    downloadCommandsGridspan.id = 'download-button-gridspan'
+    downloadCommandsGridspan.classList.add('gridspan')
+    downloadCommandsGridspan.classList.toggle('advanced', isAdvancedControl)
+    bottomControlsGridElement.appendChild(downloadCommandsGridspan)
+
+    downloadButton = new DownloadButton(
+      downloadCommandsGridspan,
+      defaultFilename,
+      isAdvancedControl
+    )
+
+    if (COMPILE_ELECTRON) {
+      ControlLabels.createLabel(
+        bottomControlsGridElement,
+        'download-button-label',
+        isAdvancedControl,
+        'download-button-label-with-native-drag',
+        downloadButton.container
+      )
+    } else {
+      ControlLabels.createLabel(
+        bottomControlsGridElement,
+        'download-button-label',
+        isAdvancedControl,
+        undefined,
+        downloadButton.container
+      )
+    }
+  })
+
+  $(() => {
+    const insertLFO: boolean = configuration['insert_variations_lfo']
+    if (insertLFO) {
+      createLFOControls()
+    }
+  })
+
+  const inpaintingApiAddress: URL = new URL(
+    configuration['inpainting_api_address']
+  )
+
+  function insertLoadingSpinner(container: HTMLElement): HTMLElement {
+    const spinnerElement: HTMLElement = document.createElement('i')
+    spinnerElement.classList.add('fas', 'fa-7x', 'fa-spin', 'fa-cog')
+    spinnerElement.id = 'loading-spinner'
+    container.appendChild(spinnerElement)
+
+    return spinnerElement
+  }
+
+  if (configuration['spectrogram']) {
+    $(() => {
+      const constraintsContainerElement = document.getElementById(
+        'constraints-container'
+      )
+      const instrumentConstraintSelectElement = document.createElement('div')
+      instrumentConstraintSelectElement.id = 'instrument-control'
+      instrumentConstraintSelectElement.classList.add('control-item')
+      constraintsContainerElement.appendChild(instrumentConstraintSelectElement)
+      // TODO(theis, 2021_04_20): retrieve instrument options from Inpainting API
+      const instrumentConstraintSelectOptions = [
+        'bass',
+        'brass',
+        'flute',
+        'guitar',
+        'keyboard',
+        'mallet',
+        'organ',
+        'reed',
+        'string',
+        'synth_lead',
+        'vocal',
+      ]
+      instrumentConstraintSelect = new NexusSelectWithShuffle(
+        '#instrument-control',
+        {
+          size: [120, 50],
+          options: instrumentConstraintSelectOptions,
         }
-        return containedQuarterNotesList;
-    }
+      )
+      // set the initial instrument constraint randomly
+      instrumentConstraintSelect.shuffle()
 
-    function getChordLabels(): object[] {
-        // return a stringified JSON object describing the current chords
-        let chordLabels = [];
-        for (let chordSelector of osmd.chordSelectors) {
-            chordLabels.push(chordSelector.currentChord);
-        };
-        return chordLabels;
-    };
+      ControlLabels.createLabel(
+        instrumentConstraintSelectElement,
+        'instrument-control-label',
+        false,
+        undefined,
+        constraintsContainerElement
+      )
+      const {
+        pitchClassSelect,
+        octaveControl,
+      } = renderPitchRootAndOctaveControl(constraintsContainerElement)
+      pitchClassConstraintSelect = pitchClassSelect
+      octaveConstraintControl = octaveControl
+    })
+  }
 
-    function getMetadata() {
-        return {
-            fermatas: getFermatas(),
-            chordLabels: getChordLabels()
-        }
-    }
+  let sheetLocator: SheetLocator
+  $(() => {
+    const mainPanel = document.getElementById('main-panel')
+    const bottomControlsGridElement = document.getElementById('bottom-controls')
+    const spinnerElement = insertLoadingSpinner(mainPanel)
 
+    if (configuration['osmd']) {
+      const granularityControlsGridspanElement = document.createElement('div')
+      granularityControlsGridspanElement.id = 'granularity-controls-gridspan'
+      granularityControlsGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(granularityControlsGridspanElement)
 
-    function onClickTimestampBoxFactory(timeStart: Fraction, timeEnd: Fraction) {
-        // FIXME(theis) hardcoded 4/4 time-signature
-        const [timeRangeStart_quarter, timeRangeEnd_quarter] = ([timeStart, timeEnd].map(
-            timeFrac => Math.round(4 * timeFrac.RealValue)))
+      const granularitySelect = GranularitySelect.renderGranularitySelect(
+        granularityControlsGridspanElement,
+        granularities_quarters
+      )
 
-        const argsGenerationUrl = ("timerange-change" +
-            `?time_range_start_quarter=${timeRangeStart_quarter}` +
-            `&time_range_end_quarter=${timeRangeEnd_quarter}`
-        );
+      const allowOnlyOneFermata: boolean =
+        configuration['allow_only_one_fermata']
+      const sheetContainer = document.createElement('div')
+      sheetContainer.id = 'sheet-container'
+      mainPanel.appendChild(sheetContainer)
+      /*
+       * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
+       * the container we've created in the steps before. The second parameter tells OSMD
+       * not to redraw on resize.
+       */
 
-        return (function (this, _) {
-            loadMusicXMLandMidi(serverUrl, argsGenerationUrl);
-        ;})
-    }
+      const autoResize = false
+      // TODO(theis): check proper way of enforcing subtype
+      sheetPlaybackManager = new MidiSheetPlaybackManager(bpmControl)
+      sheetLocator = new SheetLocator(
+        sheetPlaybackManager,
+        sheetContainer,
+        granularitySelect,
+        downloadButton,
+        inpaintingApiAddress,
+        {
+          autoResize: autoResize,
+          drawingParameters: 'compacttight',
+          drawPartNames: false,
+        },
+        configuration['annotation_types'],
+        allowOnlyOneFermata
+      )
+      locator = sheetLocator
 
+      playbackManager = sheetPlaybackManager
 
-    function toggleBusyClass(toggleBusy: boolean): void {
-        let noteboxes = $('.notebox')
-        if (toggleBusy) {
-            noteboxes.addClass('busy');
-            noteboxes.removeClass('available');
-        }
-        else {
-            noteboxes.removeClass('busy');
-            noteboxes.addClass('available');
-        }
-    }
-
-
-    function blockall(e) {
-        // block propagation of events in bubbling/capturing
-        e.stopPropagation();
-        e.preventDefault();
-    }
-
-
-    function disableChanges(): void {
-        toggleBusyClass(true);
-        $('.timecontainer').addClass('busy');
-        $('.timecontainer').each(function() {
-            this.addEventListener("click", blockall, true);}
+      if (configuration['use_chords_instrument']) {
+        sheetPlaybackManager.scheduleChordsPlayer(
+          configuration['chords_midi_channel'],
+          sheetLocator
         )
-    }
+      }
+    } else if (configuration['spectrogram']) {
+      // create and render editToolSelect element
+      const vqvaeLayerIcons: Map<LayerAndTool, string> = new Map([
+        [
+          { layer: VqvaeLayer.Top, tool: NotonoTool.Inpaint },
+          'paint-roller.svg',
+        ],
+        [
+          { layer: VqvaeLayer.Bottom, tool: NotonoTool.Inpaint },
+          'paint-brush-small.svg',
+        ],
+        [
+          { layer: VqvaeLayer.Top, tool: NotonoTool.InpaintRandom },
+          'paint-roller-random.svg',
+        ],
+        [
+          { layer: VqvaeLayer.Bottom, tool: NotonoTool.Inpaint },
+          'paint-brush-small-random.svg',
+        ],
+        [{ layer: VqvaeLayer.Top, tool: NotonoTool.Eraser }, 'edit-tools.svg'],
+      ])
 
+      const vqvaeLayerDimensions: Map<
+        VqvaeLayer,
+        [number, number, Tone.Unit.Seconds]
+      > = new Map([
+        [VqvaeLayer.Top, [32, 4, 1]],
+        [VqvaeLayer.Bottom, [64, 8, 0.5]],
+      ])
 
-    function enableChanges(): void {
-        $('.timecontainer').each(function() {
-            this.removeEventListener("click", blockall, true);}
+      const iconsBasePath = getPathToStaticFile('icons')
+
+      const editToolsGridspanElement = document.getElementById(
+        'edit-tools-gridspan'
+      )
+      const editToolSelectContainerElement = document.createElement('div')
+      editToolSelectContainerElement.id = 'edit-tool-select-container'
+      editToolSelectContainerElement.classList.add('control-item')
+      editToolsGridspanElement.appendChild(editToolSelectContainerElement)
+      ControlLabels.createLabel(
+        editToolSelectContainerElement,
+        'edit-tool-select-label',
+        false,
+        undefined,
+        editToolsGridspanElement
+      )
+
+      const vqvaeLayerOnChange = function (
+        this: CycleSelect<LayerAndTool>
+      ): void {
+        const numColumnsTop = vqvaeLayerDimensions.get(VqvaeLayer.Top)[1]
+        const [
+          newNumRows,
+          newNumColumns,
+          columnDuration,
+        ] = vqvaeLayerDimensions.get(this.value.layer)
+        spectrogramLocator.columnDuration = columnDuration
+        locator.render(newNumRows, newNumColumns, numColumnsTop)
+        locator.interfaceContainer.classList.toggle(
+          'eraser',
+          this.value.tool == NotonoTool.Eraser
         )
-        $('.timecontainer').removeClass('busy');
-        toggleBusyClass(false);
+      }
+
+      const editToolSelect = new CycleSelect(
+        editToolSelectContainerElement,
+        vqvaeLayerOnChange,
+        vqvaeLayerIcons,
+        iconsBasePath
+      )
+
+      const spectrogramContainerElement = document.createElement('div')
+      spectrogramContainerElement.id = 'spectrogram-container'
+      mainPanel.appendChild(spectrogramContainerElement)
+
+      spectrogramPlaybackManager = new SpectrogramPlaybackManager()
+      const spectrogramLocator = new SpectrogramLocator(
+        spectrogramPlaybackManager,
+        spectrogramContainerElement,
+        inpaintingApiAddress,
+        editToolSelect,
+        downloadButton,
+        instrumentConstraintSelect,
+        octaveConstraintControl,
+        pitchClassConstraintSelect
+      )
+
+      const isAdvancedControl = true
+      const volumeControlsGridspanElement = document.createElement('div')
+      volumeControlsGridspanElement.id = 'mixing-controls-gridspan'
+      volumeControlsGridspanElement.classList.add('gridspan')
+      volumeControlsGridspanElement.classList.toggle(
+        'advanced',
+        isAdvancedControl
+      )
+      bottomControlsGridElement.appendChild(volumeControlsGridspanElement)
+
+      const volumeControlsContainerElement = document.createElement('div')
+      volumeControlsContainerElement.id = 'volume-controls-container'
+      volumeControlsContainerElement.classList.add('gridspan')
+      volumeControlsContainerElement.classList.toggle(
+        'advanced',
+        isAdvancedControl
+      )
+      volumeControlsGridspanElement.appendChild(volumeControlsContainerElement)
+
+      ControlLabels.createLabel(
+        volumeControlsContainerElement,
+        'mixing-controls-label',
+        true,
+        undefined,
+        volumeControlsGridspanElement
+      )
+
+      spectrogramLocator.playbackManager.renderFadeInControl(
+        volumeControlsContainerElement
+      )
+      spectrogramLocator.playbackManager.renderGainControl(
+        volumeControlsContainerElement
+      )
+
+      playbackManager = spectrogramPlaybackManager
+      locator = spectrogramLocator
+
+      spectrogramLocator.editToolSelect.emit(
+        spectrogramLocator.editToolSelect.events.ValueChanged
+      )
     }
+  })
 
-    // TODO don't create globals like this
-    const serializer = new XMLSerializer();
-    const parser = new DOMParser();
-    let currentXML: XMLDocument;
+  $(() => {
+    const playbackCommandsGridspan = document.getElementById(
+      'playback-commands-gridspan'
+    )
+    PlaybackCommands.render(playbackCommandsGridspan, playbackManager)
+  })
 
-    /**
-     * Load a MusicXml file via xhttp request, and display its contents.
-     */
-    function loadMusicXMLandMidi(serverURL: string, generationCommand: string,
-        sendSheetWithRequest: boolean = true) {
-        return new Promise((resolve, _) => {
-            disableChanges();
-
-            let payload_object = getMetadata();
-
-            log.trace('Metadata:');
-            log.trace(JSON.stringify(getMetadata()));
-
-            if (sendSheetWithRequest) {
-                payload_object['sheet'] = serializer.serializeToString(currentXML);
-            }
-
-            // register minimal error handler
-            $(document).ajaxError((error) => console.log(error));
-
-            $.post({
-                url: url.resolve(serverURL, generationCommand),
-                data: JSON.stringify(payload_object),
-                contentType: 'application/json',
-                dataType: 'json',
-                success: (jsonResponse: {}) => {
-                    // update metadata
-                    // TODO: must check if json HAS the given metadata key first!
-                    // const new_fermatas = jsonResponse["fermatas"];
-                    if (!generationCommand.includes('generate')) {
-                        // TODO updateFermatas(newFermatas);
-                    }
-
-                    // load the received MusicXML
-                    const xml_sheet_string = jsonResponse["sheet"];
-                    let xmldata = parser.parseFromString(xml_sheet_string,
-                        "text/xml");
-                    removeMusicXMLHeaderNodes(xmldata);
-                    currentXML = xmldata;
-
-                    // save current zoom level to restore it after load
-                    const zoom = osmd.zoom;
-                    osmd.load(currentXML).then(
-                        () => {
-                            // restore pre-load zoom level
-                            osmd.zoom = zoom;
-                            osmd.render(onClickTimestampBoxFactory);
-                            enableChanges();
-                            resolve();
-
-                            let sequenceDuration: Tone.Time = Tone.Time(
-                                `0:${osmd.sequenceDuration_quarters}:0`)
-                            Playback.loadMidi(url.resolve(serverURL, '/musicxml-to-midi'),
-                                currentXML,
-                                sequenceDuration
-                            );
-                        },
-                        (err) => {log.error(err); enableChanges()}
-                    );
-                }
-            }).done(() => {
-            })
-
-        })
-    };
-
+  if (configuration['osmd']) {
     $(() => {
-        const instrumentsGridElem = document.createElement('div');
-        instrumentsGridElem.id = 'instruments-grid';
-        instrumentsGridElem.classList.add('two-columns');
-        bottomControlsGridElem.appendChild(instrumentsGridElem);
+      const bottomControlsGridElement = document.getElementById(
+        'bottom-controls'
+      )
+      const instrumentsControlGridspanElement = document.createElement('div')
+      instrumentsControlGridspanElement.id = 'instruments-control-gridspan'
+      instrumentsControlGridspanElement.classList.add('gridspan')
+      bottomControlsGridElement.appendChild(instrumentsControlGridspanElement)
 
-        ControlLabels.createLabel(instrumentsGridElem, 'instruments-grid-label');
+      const instrumentsGridElement = document.createElement('div')
+      instrumentsGridElement.id = 'instruments-grid'
+      instrumentsGridElement.classList.add('grid-auto-column')
+      instrumentsControlGridspanElement.appendChild(instrumentsGridElement)
 
-        Instruments.renderInstrumentSelect(instrumentsGridElem);
-        if ( configuration['use_chords_instrument'] ) {
-            Instruments.renderChordInstrumentSelect(instrumentsGridElem);
-        }
-        Instruments.renderDownloadButton(instrumentsGridElem,
-            configuration['use_chords_instrument']);
-        }
-    );
+      ControlLabels.createLabel(
+        instrumentsGridElement,
+        'instruments-grid-label',
+        false,
+        undefined,
+        instrumentsControlGridspanElement
+      )
 
-    $(() => {
-        let useSimpleSlider: boolean = !useAdvancedControls;
-        BPM.render(useSimpleSlider);
-        // set the initial tempo for the app
-        // if (LinkClient.isEnabled()) {
-        // // if Link is enabled, use the Link tempo
-        //     LinkClient.setBPMtoLinkBPM_async();
-        // }
-        // else
-        { BPM.setBPM(110); }
-    });
+      Instruments.initializeInstruments()
+      Instruments.renderInstrumentSelect(instrumentsGridElement)
+      if (configuration['use_chords_instrument']) {
+        Instruments.renderChordsInstrumentSelect(instrumentsGridElement)
+      }
+      Instruments.renderDownloadButton(
+        instrumentsGridElement,
+        configuration['use_chords_instrument']
+      )
+    })
+  }
 
-    $(() => {
-        let insertWavInput: boolean = configuration['insert_wav_input'];
-        if (insertWavInput) {
-            createWavInput(() => loadMusicXMLandMidi(serverUrl, 'get-musicxml'))
-    }});
+  $(() => {
+    // Insert LINK client controls
+    const useAdvancedControls = true
 
+    if (COMPILE_ELECTRON && configuration['osmd'] && useAdvancedControls) {
+      getAbletonLinkClientClass().then(
+        (LinkClient) => {
+          linkClient = new LinkClient(bpmControl)
+          playbackManager.registerLinkClient(linkClient)
 
-    $(() => {
-        LinkClient.kill();
-        if (useAdvancedControls) {
-            // Insert LINK client controls
-            LinkClientCommands.render();
-            LinkClientCommands.renderDownbeatDisplay();
-        }}
-    );
+          // render AbletonLink control interface
+          const bottomControlsGridElement = document.getElementById(
+            'bottom-controls'
+          )
+          const abletonLinkSettingsGridspan = document.createElement('div')
+          abletonLinkSettingsGridspan.id = 'ableton-link-settings-gridspan'
+          abletonLinkSettingsGridspan.classList.add('gridspan')
+          abletonLinkSettingsGridspan.classList.add('advanced')
+          bottomControlsGridElement.appendChild(abletonLinkSettingsGridspan)
 
-    $(() => {
-        if (useAdvancedControls) {
-            // Add MIDI-out selector
-            MidiOut.render(configuration["use_chords_instrument"]);
-
-            // Add manual Link-Sync button
-            PlaybackCommands.renderSyncButton();
-        }}
-    );
-
-    $(() => {
-        // Insert zoom controls
-        const zoomControlsGridElem = document.createElement('div');
-        zoomControlsGridElem.id = 'osmd-zoom-controls';
-        // zoomControlsGridElem.classList.add('two-columns');
-        const osmdContainerContainerContainer = document.getElementById(
-            "osmd-container-container-container");
-        osmdContainerContainerContainer.appendChild(zoomControlsGridElem);
-        renderZoomControls(zoomControlsGridElem, osmd);
+          LinkClientCommands.render(
+            abletonLinkSettingsGridspan,
+            linkClient,
+            sheetLocator.playbackManager
+          )
+        },
+        (err) => log.error(err)
+      )
     }
-    );
+  })
 
+  $(() => {
+    if (configuration['insert_advanced_controls'] && configuration['osmd']) {
+      void import('./midiOut').then((midiOutModule) => {
+        void midiOutModule.render(sheetLocator.playbackManager)
+      })
+    } else if (
+      configuration['insert_advanced_controls'] &&
+      configuration['spectrogram']
+    ) {
+      void import('./midiIn').then((midiInModule) => {
+        log.debug('Rendering Midi Input controls')
+        void midiInModule.render()
+      })
+    }
+  })
+
+  if (configuration['osmd']) {
+    $(() => {
+      // Insert zoom controls
+      const zoomControlsGridElement = document.createElement('div')
+      zoomControlsGridElement.classList.add('zoom-control', 'control-item')
+      // zoomControlsGridElement.classList.add('two-columns');
+      const mainPanel = document.getElementById('main-panel')
+      mainPanel.appendChild(zoomControlsGridElement)
+      sheetLocator.renderZoomControls(zoomControlsGridElement)
+    })
+  }
+
+  $(() => {
+    if (configuration['insert_help']) {
+      let helpTour: MyShepherdTour
+      if (configuration['spectrogram']) {
+        // initialize help menu
+        helpTour = new NotonoTour(
+          [configuration['main_language']],
+          locator,
+          REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
+        )
+      } else if (configuration['osmd']) {
+        // initialize help menu
+        helpTour = new NonotoTour(
+          [configuration['main_language']],
+          sheetLocator,
+          REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
+        )
+      } else {
+        // FIXME(@tbazin, 2021/10/14): else branch should not be required,
+        // alternatives should be detected automatically
+        throw new Error('Unsupported configuration')
+      }
+
+      helpTour.renderIcon(document.getElementById('main-panel'))
+    }
+  })
+
+  async function sampleNewData(inpaintingApiAddress: URL): Promise<void> {
+    let promise: Promise<Locator<PlaybackManager, unknown>>
+    if (locator.dataType == 'sheet') {
+      promise = locator.generate(inpaintingApiAddress)
+    } else if (locator.dataType == 'spectrogram') {
+      promise = locator.sample(inpaintingApiAddress)
+    } else {
+      // FIXME(@tbazin, 2021/09/14): else branch should not be required,
+      // alternatives should be detected automatically
+      throw new Error('Unsupported configuration')
+    }
+    return promise.then(
+      () => log.info('Retrieved new media from server'),
+      () => log.error('Could not retrieve initial media')
+    )
+  }
+
+  $(() => {
+    void sampleNewData(inpaintingApiAddress).then(() => {
+      locator.emit('ready')
+    })
+  })
 }
 
+$(() => {
+  // register minimal error handler
+  $(document).ajaxError((error) => console.log(error))
+
+  SplashScreen.render(render)
+})
 
 $(() => {
-    SplashScreen.render(render);
-});
-
-
-if (module.hot) { }
+  // disable drop events on whole window
+  window.addEventListener(
+    'dragover',
+    function (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    },
+    false
+  )
+  window.addEventListener(
+    'drop',
+    function (e) {
+      e.preventDefault()
+      e.stopPropagation()
+    },
+    false
+  )
+})
