@@ -1,0 +1,139 @@
+@use "mixins/measures";
+@use "mixins/colors.module";
+
+#header {
+  display: grid;
+  width: 100%;
+  min-height: measures.$header-height;
+
+  opacity: 1;
+  box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.21);
+  font-size: 25px;
+
+  justify-items: center;
+  align-items: center;
+
+  -webkit-app-region: drag;
+
+  * {
+    -webkit-app-region: no-drag;
+  }
+}
+
+body.electron-hiddenInset-window-controls #header {
+  // small padding for Electron frame-less window-controls on MacOS
+  padding-top: 10px;
+}
+
+$logo-margin-width: min(20%, 25px);
+#header {
+  grid-template-rows: auto;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.header-item-left {
+  grid-row: 1;
+  grid-column: 1;
+  margin-left: $logo-margin-width;
+  justify-self: left;
+}
+
+.header-item-right {
+  grid-row: 1;
+  grid-column: 3;
+  margin-right: $logo-margin-width;
+  justify-self: right;
+}
+
+#app-title {
+  grid-row: 1;
+  grid-column: 2;
+
+  border-width: medium;
+  border-radius: 15px;
+  height: 75%;
+  padding: 0% 8%;
+
+  user-select: none;
+  white-space: nowrap;
+
+  display: flex;
+  align-items: center;
+
+  font-size: min(10vw, 12vh, 2.3em);
+  font-family: 'Julius' !important;
+
+  // visual cue for resampling-on-click functionality
+  cursor: pointer;
+}
+
+body.busy #app-title {
+  pointer-events: none;
+  cursor: default;
+}
+
+body.anonymous-mode {
+  #header {
+    grid-template-rows: auto !important;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  #app-title {
+    grid-row: 1;
+    grid-column: 2;
+    font-size: min(5vh, 10vw) !important;
+  }
+}
+
+.header-item-left {
+  filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+.header-item-right {
+  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+$logo-width-small: max(15px, min(10vw, 6vh, 40px));
+$logo-width-full: min(30vw, 16vh, 120px);
+
+.header-item-left,
+.header-item-right {
+  display: flex;
+  align-self: center;
+
+  & img {
+    width: 100%;
+    shape-rendering: auto;
+  }
+}
+
+#header picture,
+#header img {
+  height: auto;
+  align-content: center;
+  align-items: center;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.logo {
+  height: 100%;
+
+  width: $logo-width-small;
+  max-width: 60px;
+
+  border-radius: 30px;
+
+  padding-left: min(15%);
+  padding-right: min(15%);
+  padding-bottom: min(15%, 0.8vh);
+  padding-top: min(15%, 0.8vh);
+
+  @media screen and (min-width: 700px) and (min-height: 500px) {
+    transition: width 0.3s ease;
+    width: $logo-width-full;
+    max-width: unset;
+    padding-left: min(7%);
+    padding-right: min(7%);
+  }
+}

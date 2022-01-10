@@ -1,0 +1,10 @@
+{
+  "engines": {
+    "node": "^15"
+  },
+  "type": "module",
+  "files": [
+    "../common/default_config.json",
+    "../../config.json"
+  ]
+}
