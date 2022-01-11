@@ -1,7 +1,7 @@
 import $ from 'jquery'
 import log from 'loglevel'
 import createActivityDetector from 'activity-detector'
-import { SpectrogramLocator, Locator, SheetLocator } from './locator'
+import { SpectrogramInpainter, Inpainter, SheetInpainter } from './inpainter'
 
 import 'shepherd.js/dist/css/shepherd.css'
 import '../common/styles/helpTour.scss'
@@ -14,7 +14,7 @@ const helpContents = localizations['help']
 
 export abstract class MyShepherdTour extends Shepherd.Tour {
   protected languages: string[]
-  readonly locator: Locator<PlaybackManager, unknown>
+  readonly inpainter: Inpainter<PlaybackManager, unknown>
   protected tripDelay_ms = 10000
   readonly inactivityDetectorDelay?: number
 
@@ -48,7 +48,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
 
   constructor(
     languages: string[],
-    locator: Locator<PlaybackManager, unknown>,
+    inpainter: Inpainter<PlaybackManager, unknown>,
     inactivityDetectorDelay?: number,
     options?: Shepherd.Tour.TourOptions
   ) {
@@ -59,7 +59,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
     })
 
     this.languages = languages
-    this.locator = locator
+    this.inpainter = inpainter
     if (inactivityDetectorDelay != undefined) {
       this.inactivityDetectorDelay = inactivityDetectorDelay
     }
@@ -75,7 +75,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
     this.on('cancel', () => this.cleanup())
     this.on('complete', () => this.cleanup())
 
-    this.locator.once('ready', () =>
+    this.inpainter.once('ready', () =>
       this.addSteps(
         this.makeStepsOptions().map(
           (stepOptions) => new Shepherd.Step(this, stepOptions)
@@ -89,7 +89,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
   protected onStart(): void {
     document.body.classList.add('help-tour-on')
     document.body.classList.remove('advanced-controls-disabled')
-    this.locator.refresh()
+    this.inpainter.refresh()
     this.initHideOnClickOutside()
   }
 
@@ -100,8 +100,8 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
     document.body.classList.toggle('advanced-controls-disabled')
     document.body.classList.toggle('advanced-controls-disabled')
     // this is needed in conjunction with position: sticky for the .trip-block
-    // in order to restore the locator's full size if the viewport was resized during the trip
-    this.locator.refresh()
+    // in order to restore the inpainter's full size if the viewport was resized during the trip
+    this.inpainter.refresh()
   }
 
   protected makeHTMLContent(contents: Record<string, string>) {
@@ -207,7 +207,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
 }
 
 export class NonotoTour extends MyShepherdTour {
-  locator: SheetLocator
+  inpainter: SheetInpainter
 
   makeStepsOptions(): Shepherd.Step.StepOptions[] {
     return [
@@ -230,7 +230,7 @@ export class NonotoTour extends MyShepherdTour {
         scrollTo: true,
         when: {
           show: () => {
-            this.locator.toggleScrollLock('x', true)
+            this.inpainter.toggleScrollLock('x', true)
           },
         },
       },
@@ -248,7 +248,7 @@ export class NonotoTour extends MyShepherdTour {
         scrollTo: true,
         when: {
           show: () => {
-            this.locator.toggleScrollLock('x', true)
+            this.inpainter.toggleScrollLock('x', true)
           },
         },
       },
@@ -257,7 +257,7 @@ export class NonotoTour extends MyShepherdTour {
 }
 
 export class NotonoTour extends MyShepherdTour {
-  readonly locator: SpectrogramLocator
+  readonly inpainter: SpectrogramInpainter
 
   makeStepsOptions(): Shepherd.Step.StepOptions[] {
     return [
@@ -269,7 +269,7 @@ export class NotonoTour extends MyShepherdTour {
       {
         title: 'Spectrogram',
         attachTo: {
-          element: this.locator.shadowContainer,
+          element: this.inpainter.shadowContainer,
           on: 'bottom',
         },
         text: this.makeHTMLContent(
@@ -277,22 +277,22 @@ export class NotonoTour extends MyShepherdTour {
         ),
         when: {
           show: () => {
-            this.locator.interfaceElement.classList.add('shepherd-hidden')
+            this.inpainter.interfaceElement.classList.add('shepherd-hidden')
           },
           hide: () => {
-            this.locator.interfaceElement.classList.remove('shepherd-hidden')
+            this.inpainter.interfaceElement.classList.remove('shepherd-hidden')
           },
         },
         modalOverlayOpeningPadding: 10,
       },
       {
         title: 'Spectrogram transformations',
-        attachTo: { element: this.locator.shadowContainer, on: 'bottom' },
+        attachTo: { element: this.inpainter.shadowContainer, on: 'bottom' },
         text: this.makeHTMLContent(
           helpContents['notono']['spectrogram_interaction']
         ),
         when: {
-          show: () => this.locator.callToAction(),
+          show: () => this.inpainter.callToAction(),
         },
         modalOverlayOpeningPadding: 10,
       },
@@ -337,6 +337,6 @@ export class NotonoTour extends MyShepherdTour {
   protected cleanup(): void {
     super.cleanup()
 
-    this.locator.interfaceElement.classList.remove('trip-hidden')
+    this.inpainter.interfaceElement.classList.remove('trip-hidden')
   }
 }

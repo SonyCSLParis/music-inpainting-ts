@@ -11,7 +11,7 @@ import * as Instruments from './instruments'
 import * as MidiOut from './midiOut'
 import * as Chord from './chord'
 import { BPMControl } from './numberControl'
-import { SheetLocator } from './locator'
+import { SheetInpainter } from './inpainter'
 import { ControlChange } from '@tonejs/midi/src/ControlChange'
 
 type NoteWithMIDIChannel = {
@@ -411,13 +411,13 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     return midiBlobURL
   }
 
-  scheduleChordsPlayer(midiChannel: number, locator: SheetLocator): void {
+  scheduleChordsPlayer(midiChannel: number, inpainter: SheetInpainter): void {
     // schedule callback to play the chords contained in the OSMD
     const playChord = (time: number) => {
       const currentStep = this.quartersProgress()
       if (currentStep % 2 == 0) {
         const chord =
-          locator.chordSelectors[Math.floor(currentStep / 2)].currentChord
+          inpainter.chordSelectors[Math.floor(currentStep / 2)].currentChord
         const events = Chord.makeNoteEvents(chord, time, Tone.Time('2n'), 0.5)
         events.forEach((event) =>
           this.playNote(time, {

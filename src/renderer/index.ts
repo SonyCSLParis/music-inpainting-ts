@@ -5,13 +5,13 @@ import log from 'loglevel'
 log.setLevel(log.levels.INFO)
 
 import {
-  SheetLocator,
-  SpectrogramLocator,
+  SheetInpainter,
+  SpectrogramInpainter,
   VqvaeLayer,
   NotonoTool,
   LayerAndTool,
-  Locator,
-} from './locator'
+  Inpainter,
+} from './inpainter'
 import { NexusSelect } from 'nexusui'
 import {
   NexusSelectWithShuffle,
@@ -67,7 +67,7 @@ import { applicationConfiguration } from './startup'
 import { setBackgroundColorElectron, getTitleBarDisplay } from './utils/display'
 
 // TODO(@tbazin, 2021/08/05): clean-up this usage of unknown
-let locator: Locator<PlaybackManager, unknown>
+let inpainter: Inpainter<PlaybackManager, unknown>
 let playbackManager: PlaybackManager
 let sheetPlaybackManager: MidiSheetPlaybackManager
 let spectrogramPlaybackManager: SpectrogramPlaybackManager
@@ -164,7 +164,9 @@ function render(
     Header.render(headerGridElement, configuration)
     const appTitleElement = document.getElementById('app-title')
     appTitleElement.addEventListener('click', () => {
-      void sampleNewData(inpaintingApiAddress)
+      if (!inpainter.disabled) {
+        void sampleNewData(inpaintingApiAddress)
+      }
     })
   })
 
@@ -176,7 +178,7 @@ function render(
     bottomControlsGridElement.appendChild(bottomControlsExpandTabElement)
     bottomControlsExpandTabElement.addEventListener('click', function () {
       document.body.classList.toggle('advanced-controls-disabled')
-      locator.refresh()
+      inpainter.refresh()
     })
 
     const playbackCommandsGridspan = document.createElement('div')
@@ -284,15 +286,6 @@ function render(
     configuration['inpainting_api_address']
   )
 
-  function insertLoadingSpinner(container: HTMLElement): HTMLElement {
-    const spinnerElement: HTMLElement = document.createElement('i')
-    spinnerElement.classList.add('fas', 'fa-7x', 'fa-spin', 'fa-cog')
-    spinnerElement.id = 'loading-spinner'
-    container.appendChild(spinnerElement)
-
-    return spinnerElement
-  }
-
   if (configuration['spectrogram']) {
     $(() => {
       const constraintsContainerElement = document.getElementById(
@@ -342,11 +335,10 @@ function render(
     })
   }
 
-  let sheetLocator: SheetLocator
+  let sheetInpainter: SheetInpainter
   $(() => {
     const mainPanel = document.getElementById('main-panel')
     const bottomControlsGridElement = document.getElementById('bottom-controls')
-    const spinnerElement = insertLoadingSpinner(mainPanel)
 
     if (configuration['osmd']) {
       const granularityControlsGridspanElement = document.createElement('div')
@@ -373,7 +365,7 @@ function render(
       const autoResize = false
       // TODO(theis): check proper way of enforcing subtype
       sheetPlaybackManager = new MidiSheetPlaybackManager(bpmControl)
-      sheetLocator = new SheetLocator(
+      sheetInpainter = new SheetInpainter(
         sheetPlaybackManager,
         sheetContainer,
         granularitySelect,
@@ -387,14 +379,14 @@ function render(
         configuration['annotation_types'],
         allowOnlyOneFermata
       )
-      locator = sheetLocator
+      inpainter = sheetInpainter
 
       playbackManager = sheetPlaybackManager
 
       if (configuration['use_chords_instrument']) {
         sheetPlaybackManager.scheduleChordsPlayer(
           configuration['chords_midi_channel'],
-          sheetLocator
+          sheetInpainter
         )
       }
     } else if (configuration['spectrogram']) {
@@ -453,9 +445,9 @@ function render(
           newNumColumns,
           columnDuration,
         ] = vqvaeLayerDimensions.get(this.value.layer)
-        spectrogramLocator.columnDuration = columnDuration
-        locator.render(newNumRows, newNumColumns, numColumnsTop)
-        locator.interfaceContainer.classList.toggle(
+        spectrogramInpainter.columnDuration = columnDuration
+        inpainter.render(newNumRows, newNumColumns, numColumnsTop)
+        inpainter.interfaceContainer.classList.toggle(
           'eraser',
           this.value.tool == NotonoTool.Eraser
         )
@@ -473,7 +465,7 @@ function render(
       mainPanel.appendChild(spectrogramContainerElement)
 
       spectrogramPlaybackManager = new SpectrogramPlaybackManager()
-      const spectrogramLocator = new SpectrogramLocator(
+      const spectrogramInpainter = new SpectrogramInpainter(
         spectrogramPlaybackManager,
         spectrogramContainerElement,
         inpaintingApiAddress,
@@ -511,18 +503,18 @@ function render(
         volumeControlsGridspanElement
       )
 
-      spectrogramLocator.playbackManager.renderFadeInControl(
+      spectrogramInpainter.playbackManager.renderFadeInControl(
         volumeControlsContainerElement
       )
-      spectrogramLocator.playbackManager.renderGainControl(
+      spectrogramInpainter.playbackManager.renderGainControl(
         volumeControlsContainerElement
       )
 
       playbackManager = spectrogramPlaybackManager
-      locator = spectrogramLocator
+      inpainter = spectrogramInpainter
 
-      spectrogramLocator.editToolSelect.emit(
-        spectrogramLocator.editToolSelect.events.ValueChanged
+      spectrogramInpainter.editToolSelect.emit(
+        spectrogramInpainter.editToolSelect.events.ValueChanged
       )
     }
   })
@@ -592,7 +584,7 @@ function render(
           LinkClientCommands.render(
             abletonLinkSettingsGridspan,
             linkClient,
-            sheetLocator.playbackManager
+            sheetInpainter.playbackManager
           )
         },
         (err) => log.error(err)
@@ -603,7 +595,7 @@ function render(
   $(() => {
     if (configuration['insert_advanced_controls'] && configuration['osmd']) {
       void import('./midiOut').then((midiOutModule) => {
-        void midiOutModule.render(sheetLocator.playbackManager)
+        void midiOutModule.render(sheetInpainter.playbackManager)
       })
     } else if (
       configuration['insert_advanced_controls'] &&
@@ -624,7 +616,7 @@ function render(
       // zoomControlsGridElement.classList.add('two-columns');
       const mainPanel = document.getElementById('main-panel')
       mainPanel.appendChild(zoomControlsGridElement)
-      sheetLocator.renderZoomControls(zoomControlsGridElement)
+      sheetInpainter.renderZoomControls(zoomControlsGridElement)
     })
   }
 
@@ -635,14 +627,14 @@ function render(
         // initialize help menu
         helpTour = new NotonoTour(
           [configuration['main_language']],
-          locator,
+          inpainter,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
       } else if (configuration['osmd']) {
         // initialize help menu
         helpTour = new NonotoTour(
           [configuration['main_language']],
-          sheetLocator,
+          sheetInpainter,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
       } else {
@@ -656,11 +648,11 @@ function render(
   })
 
   async function sampleNewData(inpaintingApiAddress: URL): Promise<void> {
-    let promise: Promise<Locator<PlaybackManager, unknown>>
-    if (locator.dataType == 'sheet') {
-      promise = locator.generate(inpaintingApiAddress)
-    } else if (locator.dataType == 'spectrogram') {
-      promise = locator.sample(inpaintingApiAddress)
+    let promise: Promise<Inpainter<PlaybackManager, unknown>>
+    if (inpainter.dataType == 'sheet') {
+      promise = inpainter.generate(inpaintingApiAddress)
+    } else if (inpainter.dataType == 'spectrogram') {
+      promise = inpainter.sampleFromDataset(inpaintingApiAddress)
     } else {
       // FIXME(@tbazin, 2021/09/14): else branch should not be required,
       // alternatives should be detected automatically
@@ -674,7 +666,7 @@ function render(
 
   $(() => {
     void sampleNewData(inpaintingApiAddress).then(() => {
-      locator.emit('ready')
+      inpainter.emit('ready')
     })
   })
 }

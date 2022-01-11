@@ -7,19 +7,21 @@ $spectrogram-background-color: #744a86;
 $spectrogram-height: 80%;
 $spectrogram-height-no-scroll: 90%;
 
-.spectrogram-locator-image-container,
-.spectrogram-locator-interface-container {
-  height: $spectrogram-height;
+.spectrogram-inpainter {
+  .spectrogram-inpainter-image-container,
+  .inpainter-interface-container {
+    height: $spectrogram-height;
+  }
 }
 
-.spectrogram-locator.no-scroll {
-  & .spectrogram-locator-image-container,
-  & .spectrogram-locator-interface-container {
+.spectrogram-inpainter.no-scroll {
+  .spectrogram-inpainter-image-container,
+  .inpainter-interface-container {
     height: $spectrogram-height-no-scroll;
   }
 }
 
-#spectrogram-container {
+.spectrogram-inpainter {
   height: 97%;
   width: 100%;
   margin-left: 0vw;
@@ -29,7 +31,7 @@ $spectrogram-height-no-scroll: 90%;
   position: absolute;
   z-index: -1;
 
-  &.busy .spectrogram-locator-interface-container {
+  &.busy .inpainter-interface-container {
     cursor: wait !important;
     * {
       pointer-events: none !important;
@@ -55,7 +57,7 @@ $spectrogram-height-no-scroll: 90%;
     visibility: hidden;
   }
 
-  .spectrogram-locator-snap-points {
+  .spectrogram-inpainter-snap-points {
     // ensures snap points are within the visible spectrogram image canvas
     // this is required so that they are taken into account
     position: absolute;
@@ -67,7 +69,7 @@ $spectrogram-height-no-scroll: 90%;
   }
 }
 
-.spectrogram-locator .eraser svg {
+.spectrogram-inpainter .eraser svg {
   cursor: url('../images/eraser-solid.png') 0 18, crosshair !important;
 }
 
@@ -102,7 +104,7 @@ body.notono {
   }
 }
 
-.spectrogram-locator-image-container {
+.spectrogram-inpainter-image-container {
   position: absolute;
   width: 100vw;
   top: 5%;
@@ -128,8 +130,7 @@ body.notono {
   }
 }
 
-
-.spectrogram-locator-shadow-container {
+.spectrogram-inpainter-shadow-container {
   position: absolute;
   top: 0;
   width: 100%;
@@ -138,7 +139,7 @@ body.notono {
   pointer-events: none;
 }
 
-.spectrogram-locator-interface-container {
+.spectrogram-inpainter .inpainter-interface-container {
   transition: none;
   position: absolute;
   margin-left: measures.$spectrogram-margin-width;
@@ -158,7 +159,7 @@ body.notono {
       background: radial-gradient(
         color.change(white, $alpha: 0),
         color.change(white, $alpha: 0.2) 80%,
-        color.change(white, $alpha: 0.4),
+        color.change(white, $alpha: 0.4)
       );
       border: 1em solid rgba(255, 255, 255, 0.3);
       transform: scale3d(1.1, 1.05, 1);
@@ -199,7 +200,7 @@ body.notono {
   }
 }
 
-.spectrogram-locator.playing {
+.spectrogram-inpainter.playing {
   .sequencer-grid-overlay span.sequencer-playing {
     visibility: visible;
     opacity: 0.5;

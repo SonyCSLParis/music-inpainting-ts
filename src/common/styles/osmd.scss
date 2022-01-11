@@ -15,7 +15,7 @@
   }
 }
 
-.sheet-locator {
+.sheet-inpainter {
   width: 100%;
   .simplebar-wrapper {
     height: 100%;
@@ -24,16 +24,16 @@
       height: 100%;
     }
   }
+
+  .inpainter-interface-container {
+    width: max-content;
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
-.sheet-locator-overlays {
-  width: max-content;
-  position: relative;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.sheet-locator-sheet {
+.sheet-inpainter-sheet {
   pointer-events: none;
   margin-left: auto;
   margin-right: auto;
@@ -84,10 +84,12 @@
   $small-padding-length: clamp(0.13em, 3vw, 0.3em);
   .zoom-out {
     border-radius: 100% 0 0 100%;
-    padding: $padding-length $small-padding-length $small-padding-length $padding-length;
+    padding: $padding-length $small-padding-length $small-padding-length
+      $padding-length;
   }
   .zoom-in {
     border-radius: 0 100% 100% 0;
-    padding: $padding-length $padding-length $small-padding-length $small-padding-length;
+    padding: $padding-length $padding-length $small-padding-length
+      $small-padding-length;
   }
 }

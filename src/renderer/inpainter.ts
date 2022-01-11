@@ -103,7 +103,7 @@ const enum apiCommand {
   Generate = 'generate',
 }
 
-export abstract class Locator<
+export abstract class Inpainter<
   PlaybackManagerT extends PlaybackManager,
   EditToolT
 > extends EventEmitter {
@@ -111,7 +111,7 @@ export abstract class Locator<
   readonly downloadButton: DownloadButton
 
   readonly container: HTMLElement
-  abstract readonly interfaceContainer: HTMLElement
+  readonly interfaceContainer: HTMLElement
 
   // enable this if the scrollbars can be displayed over the content
   // to ensure visibility of the underlying content
@@ -141,7 +141,7 @@ export abstract class Locator<
   // re-render with current parameters
   // also ensures the help-tour is not taken into account for the layout
   public refresh(): void {
-    // HACK(theis)
+    // HACK(theis): breaks encapsulation
     const isInHelpTour: boolean = document.body.classList.contains(
       'help-tour-on'
     )
@@ -203,6 +203,22 @@ export abstract class Locator<
 
   abstract get numInteractiveElements(): number
 
+  protected _disabled = false
+  get disabled(): boolean {
+    return this._disabled
+  }
+  set disabled(state: boolean) {
+    this._disabled = state
+    this.toggleBusyClass(this.disabled)
+  }
+
+  protected disableChanges(): void {
+    this.disabled = true
+  }
+  protected enableChanges(): void {
+    this.disabled = false
+  }
+
   constructor(
     playbackManager: PlaybackManagerT,
     container: HTMLElement,
@@ -214,6 +230,39 @@ export abstract class Locator<
     ...args
   ) {
     super()
+    this.container = container
+    this.container.classList.add('inpainter')
+    this.container.classList.add('initializing')
+
+    this.interfaceContainer = document.createElement('div')
+    this.interfaceContainer.classList.add('inpainter-interface-container')
+    this.container.appendChild(this.interfaceContainer)
+
+    this.editToolSelect = editToolSelect
+    this.downloadButton = downloadButton
+    this.defaultApiAddress = defaultApiAddress
+
+    this.registerRefreshOnResizeListener()
+
+    this.displayUpdateRate = displayUpdateRate
+    this.scheduleDisplayLoop()
+
+    this.toggleTransparentScrollbars()
+
+    this.container.addEventListener('drop', (e) => {
+      e.preventDefault()
+      this.container.classList.remove('in-dragdrop-operation')
+      void this.dropHandler(e)
+    })
+    this.container.addEventListener('dragenter', (e) => {
+      e.preventDefault()
+      this.container.classList.add('in-dragdrop-operation')
+    })
+    this.container.addEventListener('dragleave', (e) => {
+      e.preventDefault()
+      this.container.classList.remove('in-dragdrop-operation')
+    })
+
     this.playbackManager = playbackManager
     this.playbackManager.transport.on('start', () => {
       this.container.classList.add('playing')
@@ -228,28 +277,17 @@ export abstract class Locator<
       // and low-latency MIDI-based playback
       this.scheduleDisplayLoop()
     })
-    this.container = container
-    // initialize locator with disabled changes
-    this.container.classList.add('busy')
 
-    this.editToolSelect = editToolSelect
-    this.downloadButton = downloadButton
-    this.defaultApiAddress = defaultApiAddress
-
-    this.registerRefreshOnResizeListener()
-
-    this.displayUpdateRate = displayUpdateRate
-    this.scheduleDisplayLoop()
-
-    this.toggleTransparentScrollbars()
-
-    this.container.addEventListener('drop', (e) => void this.dropHandler(e))
+    this.once('ready', () => {
+      this.disabled = false
+      this.container.classList.remove('initializing')
+    })
   }
 
   readonly defaultApiAddress: URL
 
-  protected abstract _apiRequest(
-    httpMethod: 'GET' | 'POST',
+  protected abstract apiRequest(
+    httpMethod,
     command: apiCommand,
     restParameters: string,
     apiAddress: URL,
@@ -258,26 +296,48 @@ export abstract class Locator<
     timeout?: number
   ): Promise<this>
 
+  // triggers API request only if the interface is not disabled
+  protected async apiRequestHelper(
+    httpMethod: 'GET' | 'POST',
+    command: apiCommand,
+    restParameters: string,
+    apiAddress: URL,
+    sendCodesWithRequest: boolean,
+    data?,
+    timeout?: number
+  ): Promise<this> {
+    if (this.disabled) {
+      return this
+    }
+    await this.apiRequest(
+      httpMethod,
+      command,
+      restParameters,
+      apiAddress,
+      sendCodesWithRequest,
+      data,
+      timeout
+    )
+    return this.refreshNowPlayingDisplay()
+  }
+
   // retrieve new data without conditioning
   async generate(apiAddress: URL = this.defaultApiAddress): Promise<this> {
-    return this._apiRequest(
+    return this.apiRequestHelper(
       'GET',
       apiCommand.Generate,
       this.restParameters,
       apiAddress,
       false
-    ).then((locator) => {
-      locator.refreshNowPlayingDisplay()
-      return locator
-    })
+    )
   }
 
   // sample new codes from a remote dataset
-  async sample(
+  async sampleFromDataset(
     apiAddress: URL = this.defaultApiAddress,
     timeout?: number
   ): Promise<this> {
-    return this._apiRequest(
+    return this.apiRequestHelper(
       'GET',
       apiCommand.Sample,
       this.restParameters,
@@ -285,25 +345,19 @@ export abstract class Locator<
       false,
       null,
       timeout
-    ).then((locator) => {
-      locator.refreshNowPlayingDisplay()
-      return locator
-    })
+    )
   }
 
   // perform an inpainting operation on the current data
   async inpaint(mask, apiAddress: URL = this.defaultApiAddress): Promise<this> {
-    return this._apiRequest(
+    return this.apiRequestHelper(
       'POST',
       apiCommand.Inpaint,
       this.restParameters,
       apiAddress,
       true,
       mask
-    ).then((locator) => {
-      locator.refreshNowPlayingDisplay()
-      return locator
-    })
+    )
   }
 
   protected abstract get restParameters(): string
@@ -315,40 +369,24 @@ export abstract class Locator<
     data: Blob,
     apiAddress: URL = this.defaultApiAddress
   ): Promise<this> {
-    return this._apiRequest(
+    return this.apiRequestHelper(
       'POST',
       apiCommand.Analyze,
       this.restParameters,
       apiAddress,
       false,
       data
-    ).then((locator) => {
-      locator.refreshNowPlayingDisplay()
-      return locator
-    })
+    )
   }
 
   protected toggleBusyClass(state: boolean): void {
-    // TODO(theis, 2021_04_22): clean this up!
-    // FIXME(theis, 2021/08/02): avoid applying classes to 'body', breaks encapsulation
-    $('body').toggleClass('busy', state)
-    $('.notebox').toggleClass('busy', state)
-    $('.spectrogram-locator').toggleClass('busy', state)
-    this.interfaceContainer.classList.toggle('busy', state)
+    this.container.classList.toggle('busy', state)
   }
 
   protected static blockEventCallback: (e: Event) => void = (e: Event) => {
     // block propagation of events in bubbling/capturing
     e.stopPropagation()
     e.preventDefault()
-  }
-
-  protected disableChanges(): void {
-    this.toggleBusyClass(true)
-  }
-
-  protected enableChanges(): void {
-    this.toggleBusyClass(false)
   }
 
   protected registerRefreshOnResizeListener(): void {
@@ -377,8 +415,9 @@ export abstract class Locator<
     },
   ]
 
-  refreshNowPlayingDisplay(): void {
+  refreshNowPlayingDisplay(): this {
     this.nowPlayingDisplayCallbacks.forEach((callback) => callback())
+    return this
   }
 
   protected shortScroll: JQuery.Duration = 50
@@ -519,7 +558,10 @@ export abstract class Locator<
   }
 }
 
-export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
+export class SheetInpainterBase extends Inpainter<
+  MidiSheetPlaybackManager,
+  number
+> {
   readonly dataType = 'sheet'
 
   protected readonly serializer = new XMLSerializer()
@@ -542,19 +584,13 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
       granularitiesSelect,
       downloadButton,
       defaultApiAddress,
-      SheetLocator.displayUpdateRate
+      SheetInpainterBase.displayUpdateRate
     )
-    /*
-     * Create a container element for OpenSheetMusicDisplay...
-     */
-    this.container.classList.add('sheet-locator')
-
-    this.interfaceContainer = document.createElement('div')
-    this.interfaceContainer.classList.add('sheet-locator-overlays')
-    this.container.appendChild(this.interfaceContainer)
+    this.container.classList.add('sheet-inpainter')
+    this.interfaceContainer.classList.add('sheet-inpainter-overlays')
 
     this.sheetContainer = document.createElement('div')
-    this.sheetContainer.classList.add('sheet-locator-sheet')
+    this.sheetContainer.classList.add('sheet-inpainter-sheet')
     this.interfaceContainer.appendChild(this.sheetContainer)
 
     // initialize OSMD renderer
@@ -576,7 +612,6 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
   }
   protected resizeTimeoutDuration = 50
 
-  readonly interfaceContainer: HTMLElement
   readonly sheetContainer: HTMLElement
   readonly useTransparentScrollbars = true
 
@@ -608,7 +643,7 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
       `&time_range_end_quarter=${timeRangeEnd_quarter}`
 
     return () => {
-      // TODO(theis, 2021-08-10): use locator.inpaint method
+      // TODO(theis, 2021-08-10): use inpainter.inpaint method
       void this.loadMusicXMLandMidi(
         'POST',
         this.defaultApiAddress,
@@ -845,7 +880,7 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
       commonDiv.id = commonDivId
       commonDiv.classList.add(
         'timeContainer',
-        SheetLocator.makeGranularityCSSClass(duration_quarters)
+        SheetInpainterBase.makeGranularityCSSClass(duration_quarters)
       )
 
       div.id = divId
@@ -1058,7 +1093,7 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
           }
           const width = xEndBox - xBeginBox
 
-          const timeContainerID = SheetLocator.makeGranularityID(
+          const timeContainerID = SheetInpainterBase.makeGranularityID(
             boxDuration_quarters,
             measureIndex,
             boxIndex
@@ -1224,7 +1259,7 @@ export class SheetLocator extends Locator<MidiSheetPlaybackManager, number> {
     return ''
   }
 
-  protected _apiRequest(
+  protected async apiRequest(
     httpMethod: 'GET' | 'POST',
     command: apiCommand,
     restParameters: string,
@@ -1627,7 +1662,7 @@ export const enum NotonoTool {
 
 export type LayerAndTool = { layer: VqvaeLayer; tool: NotonoTool }
 
-export class SpectrogramLocator extends Locator<
+class SpectrogramInpainterBase extends Inpainter<
   SpectrogramPlaybackManager,
   LayerAndTool
 > {
@@ -1649,7 +1684,6 @@ export class SpectrogramLocator extends Locator<
   readonly imageContainer: HTMLElement
   readonly imageElement: HTMLImageElement
   readonly shadowContainer: HTMLElement
-  readonly interfaceContainer: HTMLElement
   readonly snapPoints: HTMLDivElement
   readonly addColumnIconsContainer: HTMLDivElement
   protected sequencer: SequencerToggle
@@ -1657,7 +1691,7 @@ export class SpectrogramLocator extends Locator<
 
   readonly instrumentConstraintSelect: NexusSelectWithShuffle
   readonly pitchClassConstraintSelect?: NexusSelect
-  readonly octaveConstraintControl: NumberControl
+  readonly octaveConstraintControl: NexusSelect
 
   // TODO(theis, 2021/08/26): retrieve this value from the API
   readonly autoScrollIntervalDuration = 0
@@ -1708,7 +1742,7 @@ export class SpectrogramLocator extends Locator<
     vqvaeLayerSelect: CycleSelect<LayerAndTool>,
     downloadButton: DownloadButton,
     instrumentConstraintSelect: NexusSelectWithShuffle,
-    octaveConstraintControl: NumberControl,
+    octaveConstraintControl: NexusSelect,
     pitchClassConstraintSelect?: NexusSelect,
     options: Record<string, unknown> = {}
   ) {
@@ -1718,43 +1752,37 @@ export class SpectrogramLocator extends Locator<
       vqvaeLayerSelect,
       downloadButton,
       inpaintingApiAddress,
-      SpectrogramLocator.displayUpdateRate
+      SpectrogramInpainter.displayUpdateRate
     )
-
-    this.container.classList.add('spectrogram-locator')
+    this.container.classList.add('spectrogram-inpainter')
 
     this.imageContainer = document.createElement('div')
-    this.imageContainer.classList.add('spectrogram-locator-image-container')
-    this.container.appendChild(this.imageContainer)
+    this.imageContainer.classList.add('spectrogram-inpainter-image-container')
+    this.container.insertBefore(this.imageContainer, this.interfaceContainer)
 
     const spectrogramPictureElement = document.createElement('picture')
     this.imageContainer.appendChild(spectrogramPictureElement)
+
     this.imageElement = document.createElement('img')
     spectrogramPictureElement.appendChild(this.imageElement)
 
     this.snapPoints = document.createElement('div')
-    this.snapPoints.classList.add('spectrogram-locator-snap-points')
+    this.snapPoints.classList.add('spectrogram-inpainter-snap-points')
     spectrogramPictureElement.appendChild(this.snapPoints)
 
     this.scrollbar = new ScrollLockSimpleBar(this.imageContainer, {
       clickOnTrack: false,
     })
 
-    // necessary to handle 'busy' state cursor change and pointer events disabling
-    this.interfaceContainer = document.createElement('div')
-    this.interfaceContainer.classList.add(
-      'spectrogram-locator-interface-container'
-    )
-    this.container.appendChild(this.interfaceContainer)
-
     this.shadowContainer = document.createElement('div')
-    this.shadowContainer.classList.add('spectrogram-locator-shadow-container')
+    this.shadowContainer.classList.add('spectrogram-inpainter-shadow-container')
     this.shadowContainer.classList.add('glow-shadow')
     this.interfaceContainer.appendChild(this.shadowContainer)
 
     const initialWidth = this.interfaceContainer.clientWidth
     const initialHeight = this.interfaceContainer.clientHeight
     this.drawTimestampBoxes(32, 4, 4, initialWidth, initialHeight)
+    this.refresh()
 
     this.instrumentConstraintSelect = instrumentConstraintSelect
     this.octaveConstraintControl = octaveConstraintControl
@@ -1769,7 +1797,7 @@ export class SpectrogramLocator extends Locator<
     })
   }
 
-  protected _apiRequest(
+  protected async apiRequest(
     httpMethod: 'GET' | 'POST',
     command: apiCommand,
     restParameters: string,
@@ -1793,7 +1821,7 @@ export class SpectrogramLocator extends Locator<
     if (this.pitchClassConstraintSelect != undefined) {
       pitchClass = this.pitchClassConstraintSelect.selectedIndex
     }
-    return pitchClass + 12 * this.octaveConstraintControl.value
+    return pitchClass + 12 * parseInt(this.octaveConstraintControl.value)
   }
 
   public get instrumentConstraint(): string {
@@ -1827,16 +1855,16 @@ export class SpectrogramLocator extends Locator<
     }
 
     const sendCodesWithRequest = true
-    return this._apiRequest(
+    return this.apiRequestHelper(
       'POST',
       this.generationCommand,
       this.restParameters,
       this.defaultApiAddress,
       sendCodesWithRequest,
       this.mask
-    ).then((locator) => {
+    ).then((inpainter) => {
       this.refreshNowPlayingDisplay()
-      return locator
+      return inpainter
     })
   }
 
@@ -1892,8 +1920,10 @@ export class SpectrogramLocator extends Locator<
     }
 
     this.interfaceContainer.addEventListener('pointerdown', () => {
-      this.scrollbar.toggleScrollLock('x', true)
-      registerReleaseCallback()
+      if (!this.disabled) {
+        this.scrollbar.toggleScrollLock('x', true)
+        registerReleaseCallback()
+      }
     })
   }
 
@@ -2188,35 +2218,19 @@ export class SpectrogramLocator extends Locator<
     this.setPlayingColumn(currentlyPlayingColumn)
   }
 
-  protected async getAudio(
-    inpaintingApiUrl: URL,
-    top?: Codemap,
-    bottom?: Codemap,
-    generationCommand = '/get-audio',
-    httpMethod: 'POST' | 'GET' = 'POST'
+  protected async getAudioSampleFromDataset(
+    inpaintingApiUrl: URL
   ): Promise<Blob> {
-    let requestData = ''
-    if (httpMethod == 'POST') {
-      const payload_object = {
-        top_code: top != null ? top : this.codemap_top,
-        bottom_code: bottom != null ? bottom : this.codemap_bottom,
-      }
-      requestData = JSON.stringify(payload_object)
-    }
-
-    const generationUrl = new URL(generationCommand, inpaintingApiUrl)
-    return $.ajax({
-      url: generationUrl.href,
-      method: httpMethod,
-      data: requestData,
-      xhrFields: {
-        responseType: 'blob',
-      },
-      contentType: 'application/json',
-    })
+    const generationUrl = new URL(
+      'sample-from-dataset-audio' + this.restParameters,
+      inpaintingApiUrl
+    )
+    return fetch(generationUrl.href, {
+      method: 'GET',
+    }).then((response) => response.blob())
   }
 
-  protected async getSpectrogramImage(
+  protected async getAudio(
     inpaintingApiUrl: URL,
     top?: Codemap,
     bottom?: Codemap
@@ -2225,17 +2239,37 @@ export class SpectrogramLocator extends Locator<
       top_code: top != null ? top : this.codemap_top,
       bottom_code: bottom != null ? bottom : this.codemap_bottom,
     }
+    const requestData = JSON.stringify(payload_object)
+
+    const generationUrl = new URL('get-audio', inpaintingApiUrl)
+    return fetch(generationUrl.href, {
+      method: 'POST',
+      body: requestData,
+      headers: {
+        ContentType: 'application/json',
+      },
+    }).then((response) => response.blob())
+  }
+
+  protected async getSpectrogramImage(
+    inpaintingApiUrl: URL,
+    top?: Codemap,
+    bottom?: Codemap
+  ): Promise<Blob> {
+    const payload = {
+      top_code: top != null ? top : this.codemap_top,
+      bottom_code: bottom != null ? bottom : this.codemap_bottom,
+    }
 
     const generationCommand = '/get-spectrogram-image'
     const generationUrl = new URL(generationCommand, inpaintingApiUrl)
-    return $.post({
-      url: generationUrl.href,
-      data: JSON.stringify(payload_object),
-      xhrFields: {
-        responseType: 'blob',
+    return fetch(generationUrl.href, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {
+        ContentType: 'application/json',
       },
-      contentType: 'application/json',
-    })
+    }).then((response) => response.blob())
   }
 
   protected async updateAudio(audioBlob: Blob): Promise<void> {
@@ -2299,13 +2333,13 @@ export class SpectrogramLocator extends Locator<
 
     const generationUrl = new URL(generationCommand, inpaintingApiUrl)
     try {
-      const jsonResponse = await $.post({
-        url: generationUrl.href,
-        data: form,
-        contentType: false,
-        dataType: 'json',
-        processData: false,
-      })
+      const jsonResponse = await fetch(generationUrl.href, {
+        method: 'POST',
+        body: form,
+        headers: {
+          ContentType: 'multipart/form-data',
+        },
+      }).then((response) => response.json())
 
       newCodes_top = jsonResponse['top_code']
       newCodes_bottom = jsonResponse['bottom_code']
@@ -2340,6 +2374,7 @@ export class SpectrogramLocator extends Locator<
     this.currentConditioning_top = newConditioning_top
     this.currentConditioning_bottom = newConditioning_bottom
 
+    this.refresh()
     this.clear()
     this.enableChanges()
   }
@@ -2470,17 +2505,13 @@ export class SpectrogramLocator extends Locator<
   // }
 
   // TODO(@tbazin, 2022/01/06): clean this up
-  async sample(
+  async sampleFromDataset(
     inpaintingApiUrl = this.defaultApiAddress,
     timeout = 10000
   ): Promise<this> {
-    const audioBlob = await this.getAudio(
-      inpaintingApiUrl,
-      null,
-      null,
-      'sample-from-dataset-audio' + this.restParameters,
-      'GET'
-    )
+    this.disableChanges()
+
+    const audioBlob = await this.getAudioSampleFromDataset(inpaintingApiUrl)
     await this.sendAudio(
       audioBlob,
       'analyze-audio' + this.restParameters,
@@ -2489,7 +2520,7 @@ export class SpectrogramLocator extends Locator<
     return this
   }
 
-  protected dropHandler(e: DragEvent): Promise<void> {
+  protected async dropHandler(e: DragEvent): Promise<void> {
     // Prevent default behavior (Prevent file from being opened)
     e.preventDefault()
     e.stopPropagation()
@@ -2501,12 +2532,12 @@ export class SpectrogramLocator extends Locator<
         if (e.dataTransfer.items[i].kind === 'file') {
           const file = e.dataTransfer.items[i].getAsFile()
           console.log(`... file[${i}].name = ` + file.name)
-          const generationParameters =
-            '?pitch=' +
-            this.midiPitchConstraint.toString() +
-            '&instrument_family_str=' +
-            this.instrumentConstraint
-          return this.sendAudio(file, 'analyze-audio' + generationParameters)
+          // const generationParameters =
+          //   '?pitch=' +
+          //   this.midiPitchConstraint.toString() +
+          //   '&instrument_family_str=' +
+          //   this.instrumentConstraint
+          return this.sendAudio(file, 'analyze-audio' + this.restParameters)
         }
       }
     } else {
@@ -2519,7 +2550,7 @@ export class SpectrogramLocator extends Locator<
   }
 }
 
-// TODO(@tbazin, 2021/08/05): move this inside SheetLocator
+// TODO(@tbazin, 2021/08/05): move this inside SheetInpainter
 // Drag and Drop
 // Allow drag and drop of one timeContainer's content onto another
 function ondragstartTimecontainer_handler(event: DragEvent) {
@@ -2565,3 +2596,50 @@ function makeOndropTimecontainer_handler(
     }
   }
 }
+
+// Mixins
+
+type GConstructor<T> = new (...args: any[]) => T
+type InterfaceConstructor = GConstructor<{
+  readonly container: HTMLElement
+}>
+// inserts a loading spinner visible when the app is disabled
+function LoadingDisplay<TBase extends InterfaceConstructor>(
+  Base: TBase,
+  displayClasses = ['fas', 'fa-7x', 'fa-spin', 'fa-cog']
+) {
+  return class LoadingDisplay extends Base {
+    readonly spinnerContainer: HTMLElement
+    readonly spinner: HTMLElement
+
+    static readonly displayClasses = displayClasses
+    static readonly containerCssClass = 'loading-spinner-container'
+    static readonly cssClass = 'loading-spinner'
+
+    constructor(...args: any[]) {
+      super(...args)
+      this.spinnerContainer = document.createElement('div')
+      this.spinnerContainer.classList.add(
+        LoadingDisplay.containerCssClass,
+        'fas',
+        'fa-7x',
+        'fa-cog',
+        'centeredXY'
+      )
+      this.container.appendChild(this.spinnerContainer)
+      this.spinner = document.createElement('div')
+      this.spinner.classList.add(
+        LoadingDisplay.cssClass,
+        'fas',
+        'fa-cog',
+        'fa-spin'
+      )
+      this.spinnerContainer.appendChild(this.spinner)
+    }
+  }
+}
+
+export class SpectrogramInpainter extends LoadingDisplay(
+  SpectrogramInpainterBase
+) {}
+export class SheetInpainter extends LoadingDisplay(SheetInpainterBase) {}

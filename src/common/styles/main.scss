@@ -5,6 +5,7 @@
 @use "mixins/colors.module";
 @use "mixins/measures";
 @use "mixins/fonts";
+@use 'sass:color';
 
 html,
 body {
@@ -24,21 +25,19 @@ body.splash-screen {
 
 input {
   border: none;
-  outline: none
+  outline: none;
 }
 
 // default theme, also used on the splash-screen
 @include colors.theme-colors(lavender-dark);
 
 body.running {
-  &[theme=millenial-pink] {
+  &[theme='millenial-pink'] {
     @include colors.theme-colors(millenial-pink);
   }
-  &[theme=lavender-dark] {
+  &[theme='lavender-dark'] {
     @include colors.theme-colors(lavender-dark);
-    &, &.dark {
-    }
-    &[theme=lavender-light] {
+    &[theme='lavender-light'] {
       @include colors.theme-colors(lavender-light);
     }
   }
@@ -53,13 +52,19 @@ body {
 
   user-select: none;
   z-index: 0;
+}
 
-  &.busy {
-    cursor: wait !important;
+.inpainter.busy {
+  cursor: wait !important;
+  > :not(.loading-spinner-container) {
+    opacity: 0.6;
+    filter: blur(2.5px);
+  }
+}
 
-    & #loading-spinner {
-      opacity: 1;
-    }
+.inpainter.initializing {
+  > :not(.loading-spinner-container) {
+    visibility: hidden;
   }
 }
 
@@ -75,20 +80,20 @@ body.notono {
   justify-content: center;
 
   &::before {
-    font-family: "FontAwesome";
+    font-family: 'FontAwesome';
     position: absolute;
     display: flex;
     align-items: center;
     justify-content: center;
     align-self: center;
-    content: "\F3c1";
+    content: '\F3c1';
     border-radius: 100%;
     pointer-events: auto;
     cursor: pointer;
   }
   &.scroll-lock::before {
     color: firebrick;
-    content: "\F023";
+    content: '\F023';
   }
 
   &.simplebar-horizontal::before {
@@ -111,13 +116,23 @@ body.notono {
   }
 }
 
+.loading-spinner-container {
+  // TODO(@tbazin): remove usage of pointer-events
+  pointer-events: none;
+}
 
-body.notono, body.nonoto {
+.inpainter.in-dragdrop-operation::after {
+  width: 100%;
+  height: 100%;
+  background-color: color.scale(black, $alpha: -30%);
+}
+
+body.notono,
+body.nonoto {
   .simplebar-track.simplebar-vertical::before {
     display: none;
   }
 }
-
 
 img {
   -webkit-user-drag: none;
@@ -142,14 +157,14 @@ img {
   grid-template-columns: auto;
   height: 100%;
   grid-template-areas:
-  'header'
-  'main'
-  'footer';
+    'header'
+    'main'
+    'footer';
 
   @media screen and (max-height: 300px) {
     grid-template-areas:
-    'main'
-    'footer';
+      'main'
+      'footer';
     grid-template-rows: 1fr auto;
 
     #header {
@@ -171,7 +186,9 @@ img {
   grid-area: footer;
 }
 
-#header, #main-panel, #bottom-controls {
+#header,
+#main-panel,
+#bottom-controls {
   width: 100vw;
 }
 
@@ -181,14 +198,24 @@ img {
   display: flex;
 }
 
-#loading-spinner {
+.loading-spinner-container {
+  &::before {
+    visibility: hidden;
+  }
+}
+.loading-spinner {
   position: absolute;
-  align-self: center;
+  top: 0;
+  left: 0;
   display: block;
   opacity: 0;
   pointer-events: none;
 
   transition: all 0.25s;
+  filter: drop-shadow(0px 0px 3px black);
+}
+.busy .loading-spinner {
+  opacity: 1;
 }
 
 $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
@@ -247,7 +274,7 @@ $inverse-trapezoid-perspective-transform: perspective(10px) rotateX(-8deg);
     @media (hover: hover) {
       // enable show on hover if device supports hovering;
       height: calc(3 * #{measures.$expand-tab-height} / 4);
-      top: calc(0px - 3*#{measures.$expand-tab-height} / 4);
+      top: calc(0px - 3 *#{measures.$expand-tab-height} / 4);
     }
 
     &:hover {

@@ -1,7 +1,7 @@
 import { getPathToStaticFile } from './staticPath'
 import * as ControlLabels from './controlLabels'
 import { CycleSelect } from './cycleSelect'
-import { SheetLocator } from './locator'
+import { SheetInpainter } from './inpainter'
 
 const availableGranularityIcons = new Map([
   [1, 'quarter-note.svg'],
@@ -58,7 +58,7 @@ export function renderGranularitySelect(
 
   function granularityOnChange(this: CycleSelect<string>) {
     const duration_quarters: number = parseInt(this.value)
-    const durationCSSClass: string = SheetLocator.makeGranularityCSSClass(
+    const durationCSSClass: string = SheetInpainter.makeGranularityCSSClass(
       duration_quarters
     )
     $('.notebox').removeClass('active')
