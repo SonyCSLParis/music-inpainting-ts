@@ -21,7 +21,10 @@ export default class FocusedAudioKeys extends AudioKeys {
   protected _bind(): void {
     if (typeof window !== 'undefined' && window.document) {
       window.document.addEventListener('keydown', (e: KeyboardEvent) => {
-        if (this.isInFocus) {
+        if (
+          this.isInFocus &&
+          !(e.ctrlKey || e.altKey || e.shiftKey || e.metaKey)
+        ) {
           this._addKey(e)
         }
       })
