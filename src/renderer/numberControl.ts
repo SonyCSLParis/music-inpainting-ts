@@ -181,7 +181,7 @@ export class BPMControl extends NumberControl {
 export function renderPitchRootAndOctaveControl(
   container: HTMLElement,
   lockPitchClassToC = false
-): { pitchClassSelect: NexusSelect; octaveControl: NumberControl } {
+): { pitchClassSelect: NexusSelect; octaveControl: NexusSelect } {
   const pitchSelectContainerElement = document.createElement('div')
   pitchSelectContainerElement.id = 'pitch-control-container'
   pitchSelectContainerElement.classList.add('gridspan')
@@ -213,13 +213,10 @@ export function renderPitchRootAndOctaveControl(
     'B♭',
     'B',
   ]
-  const pitchClassSelect = new Nexus.Select(
-    '#pitch-control-pitch-class-select',
-    {
-      size: [20, 30],
-      options: lockPitchClassToC ? ['C'] : notes,
-    }
-  )
+  const pitchClassSelect = new Nexus.Select(pitchSelectContainer, {
+    size: [20, 30],
+    options: lockPitchClassToC ? ['C'] : notes,
+  })
   pitchSelectContainer.style.width = ''
   pitchSelectContainer.style.height = ''
   if (lockPitchClassToC) {
@@ -235,15 +232,21 @@ export function renderPitchRootAndOctaveControl(
     )
   }
 
-  const octaveControl = new NumberControl(
-    pitchSelectContainerElement,
-    'pitch-control-octave-control',
-    [2, 7],
-    4
+  const octaveSelectContainer = document.createElement('div')
+  octaveSelectContainer.id = 'pitch-control-octave-select'
+  octaveSelectContainer.classList.add('control-item')
+  pitchSelectContainerElement.appendChild(octaveSelectContainer)
+  const octaveControl = new Nexus.Select(octaveSelectContainer, {
+    size: [20, 30],
+    options: ['2', '3', '4', '5', '6', '7'],
+  })
+  ControlLabels.createLabel(
+    octaveSelectContainer,
+    'pitch-control-octave-select-label',
+    false,
+    undefined,
+    pitchSelectContainerElement
   )
-  const useSimpleSlider = false
-  const elementWidth_px = 40
-  octaveControl.render(useSimpleSlider, elementWidth_px)
 
   return { pitchClassSelect, octaveControl }
 }

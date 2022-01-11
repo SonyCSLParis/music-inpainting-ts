@@ -26,11 +26,7 @@ import MidiSheetPlaybackManager from './sheetPlayback'
 import { MultiChannelSpectrogramPlaybackManager as SpectrogramPlaybackManager } from './spectrogramPlayback'
 
 import * as Instruments from './instruments'
-import {
-  NumberControl,
-  BPMControl,
-  renderPitchRootAndOctaveControl,
-} from './numberControl'
+import { BPMControl, renderPitchRootAndOctaveControl } from './numberControl'
 import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
 import { getAbletonLinkClientClass } from './ableton_link/linkClient'
 import * as LinkClientCommands from './ableton_link/linkClientCommands'
@@ -74,7 +70,7 @@ let spectrogramPlaybackManager: SpectrogramPlaybackManager
 let bpmControl: BPMControl
 let instrumentConstraintSelect: NexusSelectWithShuffle
 let pitchClassConstraintSelect: NexusSelect
-let octaveConstraintControl: NumberControl
+let octaveConstraintControl: NexusSelect
 let downloadButton: DownloadButton
 let linkClient: AbletonLinkClient
 
