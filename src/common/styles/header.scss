@@ -67,11 +67,6 @@ $logo-margin-width: min(20%, 25px);
   cursor: pointer;
 }
 
-body.busy #app-title {
-  pointer-events: none;
-  cursor: default;
-}
-
 body.anonymous-mode {
   #header {
     grid-template-rows: auto !important;

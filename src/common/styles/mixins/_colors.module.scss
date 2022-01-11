@@ -16,18 +16,22 @@ $lavender-active-control: #a3bcf9;
 $body-background: #c8dadf;
 $panes-background: #beb9d4;
 
-
-@function controls-box-shadow-color($control-color,
-  $box-shadow-lightness-direction) {
-    @return color.scale(
-      $control-color,
-      $lightness: $box-shadow-lightness-direction * 10%,
-      $alpha: -20%);
+@function controls-box-shadow-color(
+  $control-color,
+  $box-shadow-lightness-direction
+) {
+  @return color.scale(
+    $control-color,
+    $lightness: $box-shadow-lightness-direction * 10%,
+    $alpha: -20%
+  );
 }
 
-@function main-filter($control-color, $box-shadow-lightness-direction){
-  @return drop-shadow(0px 0px 1.3px
-    controls-box-shadow-color($control-color, $box-shadow-lightness-direction));
+@function main-filter($control-color, $box-shadow-lightness-direction) {
+  @return drop-shadow(
+    0px 0px 1.3px
+      controls-box-shadow-color($control-color, $box-shadow-lightness-direction)
+  );
 }
 
 @mixin theme-colors($theme: lavender-dark) {
@@ -64,7 +68,8 @@ $panes-background: #beb9d4;
     @error "Unknown theme #{$theme}.";
   }
 
-  $panes-border: color.scale($panes,
+  $panes-border: color.scale(
+    $panes,
     $lightness: $overlay-lightness-factor * 20%
   );
 
@@ -73,7 +78,8 @@ $panes-background: #beb9d4;
     background-color: $panes;
   }
 
-  body, #app {
+  body,
+  #app {
     color: $text;
   }
 
@@ -84,7 +90,9 @@ $panes-background: #beb9d4;
   .shepherd-content {
     // border: thin solid gray;
   }
-  .shepherd-header, .shepherd-text, .shepherd-footer {
+  .shepherd-header,
+  .shepherd-text,
+  .shepherd-footer {
     background-color: $panes;
   }
   .shepherd-button {
@@ -98,8 +106,8 @@ $panes-background: #beb9d4;
     }
   }
 
-  #loading-spinner {
-    color: lightgray;
+  .loading-spinner {
+    color: $text;
   }
 
   .logo {
@@ -107,13 +115,17 @@ $panes-background: #beb9d4;
   }
 
   #configuration-selection {
-    background-color: color.scale($panes,
-      $lightness: $overlay-lightness-factor * 15%);
+    background-color: color.scale(
+      $panes,
+      $lightness: $overlay-lightness-factor * 15%
+    );
     border: solid thin $panes-border;
 
     input {
-      background-color: color.scale($panes,
-          $lightness: $overlay-lightness-factor * 93%)
+      background-color: color.scale(
+        $panes,
+        $lightness: $overlay-lightness-factor * 93%
+      );
     }
   }
 
@@ -128,8 +140,10 @@ $panes-background: #beb9d4;
     border-width: thin;
 
     .expand-tab {
-      background-color: color.scale($panes,
-        $lightness: $overlay-lightness-factor * 10%);
+      background-color: color.scale(
+        $panes,
+        $lightness: $overlay-lightness-factor * 10%
+      );
     }
   }
   #header {
@@ -169,11 +183,12 @@ $panes-background: #beb9d4;
   );
 
   .simplebar-track {
-    &, &::before {
+    &,
+    &::before {
       background-color: $simplebar-track-color;
     }
     &::before {
-      color: $simplebar-scrollbar-color
+      color: $simplebar-scrollbar-color;
     }
 
     box-shadow: inset 0px 3px 20px 0.5px
@@ -191,11 +206,12 @@ $panes-background: #beb9d4;
   }
 
   .transparent-scrollbar .simplebar-track {
-    &, &::before {
+    &,
+    &::before {
       background-color: $simplebar-track-color-transparent;
     }
     &::before {
-      color: $simplebar-scrollbar-color-transparent
+      color: $simplebar-scrollbar-color-transparent;
     }
   }
 
@@ -204,10 +220,16 @@ $panes-background: #beb9d4;
   }
 
   .simplebar-scrollbar {
-    box-shadow: 0 0 2px 1px color.scale($simplebar-scrollbar-color,
-      $lightness: $overlay-lightness-factor * 10%);
-    border: solid thin color.scale($simplebar-scrollbar-color,
-      $lightness: $overlay-lightness-factor * 25%);
+    box-shadow: 0 0 2px 1px
+      color.scale(
+        $simplebar-scrollbar-color,
+        $lightness: $overlay-lightness-factor * 10%
+      );
+    border: solid thin
+      color.scale(
+        $simplebar-scrollbar-color,
+        $lightness: $overlay-lightness-factor * 25%
+      );
     background-color: $simplebar-scrollbar-color;
 
     @media (hover: hover) {
@@ -254,18 +276,20 @@ $panes-background: #beb9d4;
   .glow-shadow {
     background: none;
     &::after {
-      content: "";
+      content: '';
       position: absolute;
       z-index: -1;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      box-shadow: 0 0 20px 3px color.scale($panes,
-        $lightness: 50% * $overlay-lightness-factor,
-        $alpha: 50%);
+      box-shadow: 0 0 20px 3px
+        color.scale(
+          $panes,
+          $lightness: 50% * $overlay-lightness-factor,
+          $alpha: 50%
+        );
       opacity: 0.75;
-
 
       background: none;
     }
@@ -280,7 +304,7 @@ $panes-background: #beb9d4;
     }
   }
 
-  .spectrogram-locator-interface-container {
+  .spectrogram-inpainter .inpainter-interface-container {
     &::before {
       left: calc(0vw - #{measures.$spectrogram-margin-width});
       background: radial-gradient(

@@ -4,18 +4,6 @@ $chords-font-stack: 'Boogaloo', cursive;
   position: absolute;
   pointer-events: auto;
 
-  &.busy {
-    &:hover {
-      cursor: wait !important;
-    }
-  }
-
-  &.busy * {
-    &:hover {
-      cursor: wait !important;
-    }
-  }
-
   &.dragover {
     background-color: purple;
   }
@@ -49,12 +37,6 @@ $chords-font-stack: 'Boogaloo', cursive;
     opacity: 0.3;
     pointer-events: auto;
 
-    &.busy {
-      background-color: grey;
-      opacity: 0.2;
-      pointer-events: none;
-    }
-
     &:hover {
       cursor: pointer;
       opacity: 0.5;
@@ -66,7 +48,22 @@ $chords-font-stack: 'Boogaloo', cursive;
   }
 }
 
-.sheet-locator.playing .notebox.playing {
+.inpainter.busy {
+  .timeContainer {
+    &:hover,
+    *:hover {
+      cursor: wait !important;
+    }
+  }
+
+  .notebox.active {
+    background-color: grey;
+    opacity: 0.2;
+    pointer-events: none;
+  }
+}
+
+.sheet-inpainter.playing .notebox.playing {
   background-color: #f40081;
   transform: scaleY(1.1);
   border: solid 0.2em;
