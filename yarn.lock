@@ -4852,11 +4852,6 @@ graceful-fs@^4.1.15:
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.2.6.tgz#ff040b2b0853b23c3d31027523706f1885d76bee"
   integrity sha512-nTnJ528pbqxYanhpDYsi4Rd8MAeaBA67+RZ10CM1m3bTAVFEDcd5AuA4a6W5YkGZ1iNXHzZz8T6TBKLeBuNriQ==
 
-grunt-text-replace@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/grunt-text-replace/-/grunt-text-replace-0.4.0.tgz#db9d9ce59e2fe49da277e9dbc195c3e11cfb16c2"
-  integrity sha1-252c5Z4v5J2id+nbwZXD4Rz7FsI=
-
 handle-thing@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/handle-thing/-/handle-thing-2.0.1.tgz#857f79ce359580c340d43081cc648970d0bb234e"
@@ -5721,11 +5716,6 @@ jquery@>=1.7.0, jquery@^3.5.1:
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.5.1.tgz#d7b4d08e1bfdb86ad2f1a3d039ea17304717abb5"
   integrity sha512-XwIBPqcMn57FxfT+Go5pzySnm4KWkT1Tv7gjrpT1srtf8Weynl6R273VJ5GjkRb51IzMp5nbaPjJXMWeju2MKg==
 
-jquery@^2.1.4:
-  version "2.2.4"
-  resolved "https://registry.yarnpkg.com/jquery/-/jquery-2.2.4.tgz#2c89d6889b5eac522a7eea32c14521559c6cbf02"
-  integrity sha1-LInWiJterFIqfuoywUUhVZxsvwI=
-
 js-tokens@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
@@ -6442,11 +6432,6 @@ nice-try@^1.0.4:
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
-
-nipplejs@^0.8.5:
-  version "0.8.7"
-  resolved "https://registry.yarnpkg.com/nipplejs/-/nipplejs-0.8.7.tgz#da14db793bbe22f9ccb98aad7dbea2d0abf7cdb6"
-  integrity sha512-B3uSKnWIGWHfrd6oDpLW1xiYleY8+ACVIlLNZeVChBBGDeDiKm4YjetVxlP3O2FvS3Fqf24E/9FrjM3Thc6WDg==
 
 no-case@^3.0.4:
   version "3.0.4"
@@ -8783,14 +8768,6 @@ tough-cookie@~2.5.0:
   dependencies:
     psl "^1.1.28"
     punycode "^2.1.1"
-
-trip.js@^3.3.3:
-  version "3.3.5"
-  resolved "https://registry.yarnpkg.com/trip.js/-/trip.js-3.3.5.tgz#9516246b1d388dbd35e71254abd521f053a06cb0"
-  integrity sha512-3o91sVVs1s6RMEQKrHvqzMYQxfcZq6dDRfUKVulOtg9tGVcvc9+HfFreGeMlI2XcySTqtjJo4NfqCjEX73PSwA==
-  dependencies:
-    grunt-text-replace "^0.4.0"
-    jquery "^2.1.4"
 
 truncate-utf8-bytes@^1.0.0:
   version "1.0.2"
