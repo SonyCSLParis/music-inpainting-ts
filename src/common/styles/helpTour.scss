@@ -1,0 +1,72 @@
+@use "mixins/colors.module";
+
+#help-icon {
+  top: 1.5vh;
+  right: 10px;
+  position: absolute;
+  justify-self: right;
+  align-self: inherit;
+  cursor: pointer;
+  font-size: 2.1em;
+  opacity: 0.4;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &::before {
+    content: '\F05A';
+    font-family: 'FontAwesome';
+  }
+}
+
+.shepherd-progress-steps {
+  border-top-width: 0px;
+  border-color: gray !important;
+
+  @media screen and (max-width: 500px), screen and (max-height: 300px) {
+    display: none !important;
+  }
+}
+
+.shepherd-text {
+  // padding-top: 0.75rem;
+  // font-size: max(0.7em, min(2.5vw, 3vh, 1em));
+  // border-bottom: thin solid gray;
+}
+
+.shepherd-header {
+  h3 {
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  // font-size: max(1em, min(3vw, 4vh, 1.3em));
+  border-bottom: thin solid gray;
+  // padding-bottom: 0.5rem;
+}
+
+.shepherd-target {
+  border-radius: 15px;
+}
+
+.shepherd-hidden {
+  opacity: 50% !important;
+}
+
+.shepherd-close {
+  font-size: large !important;
+}
+
+.shepherd-footer {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  width: 100%;
+}
+
+.shepherd-button {
+  // increase size of navigation buttons
+  font-size: x-large;
+  width: auto;
+}

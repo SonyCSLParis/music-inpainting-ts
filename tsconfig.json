@@ -2,18 +2,19 @@
   "extends": "./node_modules/electron-webpack/tsconfig-base.json",
 
   "compilerOptions": {
-      "target": "es6",
-      "module": "commonjs",
-      "lib": ["dom", "es7"],
-      "pretty": true,
-      "noImplicitAny": false,
-      "removeComments": true,
-      "declaration": true,
-      "sourceMap": true
+    "pretty": true,
+    "target": "ES2018",
+    "lib": ["dom", "es7"],
+    "removeComments": true,
+    "declaration": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "strict": false, // HACK(theis): should be true!
+    "strictBindCallApply": true, // HACK
+    "noUnusedLocals": false, // HACK(theis): should be true!
+    "noImplicitAny": false, // HACK(theis): should be true!
   },
   "allowSyntheticDefaultImports": true,
-  "awesomeTypescriptLoaderOptions": {},
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

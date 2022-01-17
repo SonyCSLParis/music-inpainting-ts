@@ -1,85 +1,93 @@
-#osmd-container-container-container {
-    pointer-events: auto;
+#main-panel {
+  pointer-events: auto;
 
-    width: 100%;
-    position: absolute;
+  position: absolute;
 
-    justify-content: center;
-    align-content: center;
+  justify-content: center;
+  align-content: center;
 
-    &.loading {
-        & .simplebar-track {
-            // hide scrollbars when osmd is loading
-            opacity: 0;
-            pointer-events: none;
-        }
+  &.loading {
+    & .simplebar-track {
+      // hide scrollbars when osmd is loading
+      opacity: 0;
+      pointer-events: none;
     }
+  }
 }
 
-#osmd-container {
-    pointer-events: none;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 180px;
+.sheet-locator {
+  width: 100%;
+  .simplebar-wrapper {
+    height: 100%;
 
-    width: 10000000px;  // HACK infinite width
+    .simplebar-content-wrapper {
+      height: 100%;
+    }
+  }
 }
 
-.simplebar-track {
-    &.vertical {
-        pointer-events: none;
-        visibility: hidden !important;
-    }
-
-    &.horizontal {
-        border-radius: 20px;
-        // border-color: black;
-        // border-style: solid;
-        margin-left: 10%;
-        margin-right: 10%;
-        // width: 100%;
-        height: 30px;
-        bottom: 60px;
-        background-color: #ffc7cf;  // lighter pink // lightpink;
-
-        // prevent visual glitches when updating the sheet where the scrollbar
-        // goes beyond the available area
-        overflow: hidden;
-    }
+.sheet-locator-overlays {
+  width: max-content;
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.simplebar-scrollbar {
-    pointer-events: auto;
-    background-color: #009ceb;  // light blue
-    height: 100% !important;
-    border-radius: 20px;
-    top: 0 !important;
+.sheet-locator-sheet {
+  pointer-events: none;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 15vh;
 
-    &.vertical {
-        pointer-events: none;
+  width: 10000000px; // HACK infinite width
+}
+
+.zoom-control {
+  position: absolute;
+  left: 10px;
+  top: 1.5vh;
+  width: fit-content;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  justify-items: center;
+  padding: 0.05em;
+  border-radius: 40px;
+  column-gap: 0.1em;
+
+  filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.1));
+
+  div {
+    width: fit-content;
+    padding: clamp(0.2em, 4vw, 0.5em);
+    cursor: pointer;
+
+    text-align: center;
+    align-self: center;
+
+    i {
+      opacity: 0.8;
+      font-size: clamp(1em, min(15vw, 15vh), 1.6em);
     }
-
-    &:before {
-        background: none;
-    }
-
     &:hover {
-        cursor: pointer;
-        background-color: #1fb4ff; // lighter blue // #ffc7cf;  // lighter pink
-    }
-}
-
-#osmd-zoom-controls {
-    position: absolute;
-    right: 1em;
-    top: 1em;
-    opacity: 0.7;
-
-    & .zoom-out {
-        padding-right: 0.5em;
-    }
-
-    &:hover {
+      & {
+        opacity: 0.7;
+      }
+      & i {
         opacity: 1;
+      }
     }
+  }
+
+  // different padding lengths necessary for centering the icons in the rounded container
+  $padding-length: clamp(0.2em, 4vw, 0.5em);
+  $small-padding-length: clamp(0.13em, 3vw, 0.3em);
+  .zoom-out {
+    border-radius: 100% 0 0 100%;
+    padding: $padding-length $small-padding-length $small-padding-length $padding-length;
+  }
+  .zoom-in {
+    border-radius: 0 100% 100% 0;
+    padding: $padding-length $padding-length $small-padding-length $small-padding-length;
+  }
 }

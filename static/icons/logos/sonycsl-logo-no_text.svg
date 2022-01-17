@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg:svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:version="1.0 (4035a4f, 2020-05-01)"
+   height="184"
+   width="276"
+   sodipodi:docname="sonycsl-logo-no_text.svg"
+   xml:space="preserve"
+   viewBox="0 0 275.99999 184.00001"
+   y="0px"
+   x="0px"
+   id="レイヤー_1"
+   version="1.1"><svg:metadata
+   id="metadata896"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></svg:metadata><svg:defs
+   id="defs894" /><sodipodi:namedview
+   inkscape:current-layer="レイヤー_1"
+   inkscape:window-maximized="1"
+   inkscape:window-y="23"
+   inkscape:window-x="0"
+   inkscape:cy="102.2"
+   inkscape:cx="617.65"
+   inkscape:zoom="0.72371084"
+   showgrid="false"
+   id="namedview892"
+   inkscape:window-height="1035"
+   inkscape:window-width="1920"
+   inkscape:pageshadow="2"
+   inkscape:pageopacity="0"
+   guidetolerance="10"
+   gridtolerance="10"
+   objecttolerance="10"
+   borderopacity="1"
+   bordercolor="#666666"
+   pagecolor="#ffffff" />
+<svg:style
+   id="style833"
+   type="text/css">
+	.st0{fill:#003366;}
+	.st1{fill:#A8A8A8;}
+	.st2{fill:#DE007F;}
+	.st3{fill:#A60075;}
+	.st4{fill:#292A80;}
+	.st5{fill:#009AE3;}
+	.st6{fill:#9BC5E7;}
+	.st7{fill:#00679F;}
+</svg:style>
+
+<svg:g
+   id="g889">
+	<svg:g
+   id="g867">
+		<svg:path
+   id="path863"
+   d="m 0,92 c 0,50.8 41.2,92 92,92 V 92 Z"
+   class="st0" />
+		<svg:path
+   id="path865"
+   d="M 92,0 C 41.2,0 0,41.2 0,92 h 92 z"
+   class="st1" />
+	</svg:g>
+	<svg:polygon
+   id="polygon869"
+   points="92,92 184,184 92,184 "
+   class="st2" />
+	<svg:polygon
+   id="polygon871"
+   points="184,184 92,92 184,92 "
+   class="st3" />
+	<svg:polygon
+   id="polygon873"
+   points="184,0 276,92 184,92 "
+   class="st4" />
+	<svg:polygon
+   id="polygon875"
+   points="276,92 184,0 276,0 "
+   class="st2" />
+	<svg:polygon
+   id="polygon877"
+   points="92,0 184,0 138,46 "
+   class="st5" />
+	<svg:polygon
+   id="polygon879"
+   points="184,92 92,92 138,46 "
+   class="st6" />
+	<svg:polygon
+   id="polygon881"
+   points="184,0 184,92 138,46 "
+   class="st7" />
+	<svg:polygon
+   id="polygon883"
+   points="184,92 276,92 230,138 "
+   class="st7" />
+	<svg:polygon
+   id="polygon885"
+   points="276,92 276,184 230,138 "
+   class="st5" />
+	<svg:polygon
+   id="polygon887"
+   points="184,184 184,92 230,138 "
+   class="st6" />
+</svg:g>
+<head /></svg:svg>

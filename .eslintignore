@@ -1,0 +1,14 @@
+# taken from https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/README.md
+
+src/common/
+src/renderer/dependencies/
+src/renderer/*.d.ts
+src/main/*.d.ts
+
+# don't ever lint node_modules
+node_modules
+# don't lint build output
+dist
+web
+# don't lint nyc coverage output
+coverage

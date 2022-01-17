@@ -1,0 +1,232 @@
+@use './mixins/measures';
+@use './mixins/colors.module';
+@use 'sass:color';
+
+$spectrogram-background-color: #744a86;
+
+$spectrogram-height: 80%;
+$spectrogram-height-no-scroll: 90%;
+
+.spectrogram-locator-image-container,
+.spectrogram-locator-interface-container {
+  height: $spectrogram-height;
+}
+
+.spectrogram-locator.no-scroll {
+  & .spectrogram-locator-image-container,
+  & .spectrogram-locator-interface-container {
+    height: $spectrogram-height-no-scroll;
+  }
+}
+
+#spectrogram-container {
+  height: 97%;
+  width: 100%;
+  margin-left: 0vw;
+
+  top: 0;
+  bottom: 0;
+  position: absolute;
+  z-index: -1;
+
+  &.busy .spectrogram-locator-interface-container {
+    cursor: wait !important;
+    * {
+      pointer-events: none !important;
+    }
+
+    span svg * {
+      fill: rgba(0, 0, 0, 0.699);
+    }
+
+    * {
+      background: none;
+    }
+  }
+
+  background: transparent;
+  [nexus-ui] {
+    position: absolute;
+    left: 0;
+  }
+
+  &.no-scroll .simplebar-track.simplebar-horizontal {
+    display: none;
+    visibility: hidden;
+  }
+
+  .spectrogram-locator-snap-points {
+    // ensures snap points are within the visible spectrogram image canvas
+    // this is required so that they are taken into account
+    position: absolute;
+    top: 0;
+    margin-left: -5vw;
+    display: flex;
+    height: 1px;
+    visibility: hidden;
+  }
+}
+
+.spectrogram-locator .eraser svg {
+  cursor: url('../images/eraser-solid.png') 0 18, crosshair !important;
+}
+
+.simplebar-scroll-content {
+  pointer-events: none;
+}
+
+.simplebar-track.simplebar-horizontal {
+  position: absolute;
+  bottom: 10%;
+}
+
+body.nonoto {
+  .simplebar-track.simplebar-horizontal {
+    bottom: 10%;
+  }
+}
+body.notono {
+  .simplebar-track.simplebar-horizontal {
+    bottom: -10%;
+  }
+}
+
+.simplebar-content-wrapper {
+  scroll-snap-type: x mandatory;
+
+  snap {
+    scroll-snap-align: start;
+    display: inline-flex;
+    flex: 1;
+    visibility: hidden;
+  }
+}
+
+.spectrogram-locator-image-container {
+  position: absolute;
+  width: 100vw;
+  top: 5%;
+  pointer-events: none;
+
+  picture {
+    position: relative;
+    left: 5vw;
+    filter: brightness(1.15) contrast(1.3) blur(2px);
+
+    img {
+      background-color: $spectrogram-background-color;
+      margin-right: 5vw;
+      top: 0;
+    }
+
+    > * {
+      top: 0;
+      position: relative;
+      pointer-events: none;
+      z-index: -1000;
+    }
+  }
+}
+
+
+.spectrogram-locator-shadow-container {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.spectrogram-locator-interface-container {
+  transition: none;
+  position: absolute;
+  margin-left: measures.$spectrogram-margin-width;
+  width: measures.$spectrogram-width !important;
+  top: 5%;
+  z-index: 0;
+
+  .sequencer-grid-overlay {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    pointer-events: none;
+    visibility: hidden;
+
+    span {
+      box-sizing: border-box;
+      background: radial-gradient(
+        color.change(white, $alpha: 0),
+        color.change(white, $alpha: 0.2) 80%,
+        color.change(white, $alpha: 0.4),
+      );
+      border: 1em solid rgba(255, 255, 255, 0.3);
+      transform: scale3d(1.1, 1.05, 1);
+      border-radius: 3em;
+      height: 100%;
+      flex-direction: column;
+      flex: 1;
+      opacity: 0;
+
+      &.sequencer-playing {
+        transition: all 0.2s ease-in-out;
+      }
+    }
+  }
+
+  svg rect:hover {
+    fill: color.change(white, $alpha: 0.7);
+  }
+
+  * {
+    transition-property: color, background-color;
+    transition-duration: 0.04s;
+    transition-timing-function: ease-in-out;
+  }
+
+  &::before,
+  &:after {
+    z-index: 0;
+    content: '';
+    position: absolute;
+    width: measures.$spectrogram-margin-width;
+    top: 0;
+    height: 100%;
+    background-size: cover;
+    will-change: width;
+    backdrop-filter: brightness(1.3) blur(2px);
+    transform: perspective(500px);
+  }
+}
+
+.spectrogram-locator.playing {
+  .sequencer-grid-overlay span.sequencer-playing {
+    visibility: visible;
+    opacity: 0.5;
+    backdrop-filter: contrast(1.1) saturate(1.15) hue-rotate(30deg);
+  }
+}
+
+.highlight {
+  animation: 500ms ease-in-out 100ms 2 alternate none highlight;
+}
+
+@keyframes highlight {
+  to {
+    opacity: 0.4;
+    background-color: white;
+  }
+}
+
+.simplebar-content {
+  height: 100%;
+}
+
+// HACK: compensate for scrollbar in Firefox
+@-moz-document url-prefix() {
+  .ff {
+    .simplebar-content {
+      margin-top: 4.5px;
+    }
+  }
+}

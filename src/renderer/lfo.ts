@@ -1,58 +1,52 @@
 // Code for the melodic LFO function
 // Create LFO controls and map them to trigger periodic regenerations server-side
 
-import * as Nexus from 'nexusui'
+import Nexus from './nexusColored'
 
 export function createLFOControls(): void {
-    let LFOControlsGridElem: HTMLDivElement = document.createElement('div')
-    LFOControlsGridElem.id = 'lfo-controls'
-    document.body.appendChild(LFOControlsGridElem);
+  const LFOControlsGridElement = document.createElement('div')
+  LFOControlsGridElement.id = 'lfo-controls'
+  document.body.appendChild(LFOControlsGridElement)
 
-    let LFOToggleElem: HTMLElement = document.createElement('div');
-    LFOToggleElem.id = 'LFO-toggle'
-    LFOControlsGridElem.appendChild(LFOToggleElem);
+  const LFOToggleElement = document.createElement('div')
+  LFOControlsGridElement.appendChild(LFOToggleElement)
 
-    let LFORateElem: HTMLElement = document.createElement('div');
-    LFORateElem.id = 'LFO-rate'
-    LFOControlsGridElem.appendChild(LFORateElem);
+  const lfoToggle = new Nexus.Toggle(LFOToggleElement, {
+    size: [40, 20],
+    state: false,
+  })
+  let useLFO = false
+  lfoToggle.on('change', (toggleOn: boolean) => {
+    useLFO = toggleOn
+  })
 
-    let LFOValueElem: HTMLElement = document.createElement('div');
-    LFOValueElem.id = 'LFO-value'
-    LFOControlsGridElem.appendChild(LFOValueElem);
+  LFOToggleElement.style.setProperty('width', '100%')
+  LFOToggleElement.style.setProperty('padding-top', '30px')
 
+  const LFONameElement = document.createElement('div')
+  LFONameElement.textContent = 'Improvizer'
+  LFOToggleElement.appendChild(LFONameElement)
+  LFONameElement.style.setProperty('padding-top', '25px')
 
-    let lfoToggle = new Nexus.Toggle('#LFO-toggle',{
-        'size': [40,20],
-        'state': false
-    })
-    let useLFO: boolean = false;
-    lfoToggle.on('change', (toggleOn) => {
-        useLFO = toggleOn;
-    });
+  const LFORateElement = document.createElement('div')
+  LFOControlsGridElement.appendChild(LFORateElement)
+  const lfoRateDial = new Nexus.Dial(LFORateElement, {
+    interaction: 'vertical',
+  })
+  const LFORateNameElement = document.createElement('div')
+  LFORateNameElement.textContent = 'Rate'
+  LFORateElement.appendChild(LFORateNameElement)
 
-    LFOToggleElem.style.setProperty('width', '100%');
-    LFOToggleElem.style.setProperty('padding-top', '30px');
-
-    let LFONameElem = document.createElement('div')
-    LFONameElem.textContent = 'Improvizer'
-    LFOToggleElem.appendChild(LFONameElem)
-    LFONameElem.style.setProperty('padding-top', '25px');
-
-    let lfoRateDial = new Nexus.Dial('#LFO-rate', {
-        'interaction': 'vertical'
-    })
-    let LFORateNameElem = document.createElement('div')
-    LFORateNameElem.textContent = 'Rate'
-    LFORateElem.appendChild(LFORateNameElem)
-
-    let lfoValueDial = new Nexus.Dial('#LFO-value', {
-        'interaction': 'vertical'
-    })
-    let LFOValueNameElem = document.createElement('div')
-    LFOValueNameElem.textContent = 'Value'
-    LFOValueElem.appendChild(LFOValueNameElem)
+  const LFOValueElement = document.createElement('div')
+  LFOControlsGridElement.appendChild(LFOValueElement)
+  const lfoValueDial = new Nexus.Dial(LFOValueElement, {
+    interaction: 'vertical',
+  })
+  const LFOValueNameElement = document.createElement('div')
+  LFOValueNameElement.textContent = 'Value'
+  LFOValueElement.appendChild(LFOValueNameElement)
 }
 
 function triggerRegeneration(): void {
-    throw Error("Not implemented")
+  throw Error('Not implemented')
 }
