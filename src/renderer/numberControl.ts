@@ -240,6 +240,7 @@ export function renderPitchRootAndOctaveControl(
     size: [20, 30],
     options: ['2', '3', '4', '5', '6', '7'],
   })
+  octaveControl.value = '4'
   ControlLabels.createLabel(
     octaveSelectContainer,
     'pitch-control-octave-select-label',
