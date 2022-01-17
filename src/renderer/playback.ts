@@ -140,8 +140,6 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
 
   // HACK(theis): Quick-and-dirty automatic phase-locking to Ableton Link
   protected scheduleAutomaticResync(): Tone.Loop {
-    const startOffset = Tone.Time(0).quantize('4n', 0.9)
-    console.log(startOffset)
     const automaticSynchronizationLoop = new Tone.Loop(() => {
       this.requestLinkPhaseUpdate()
     }, '2n').start(0.1)
