@@ -1,4 +1,12 @@
-import AudioKeys from 'audiokeys'
+import { AudioKeys } from 'audiokeys'
+
+// expose protected methods
+declare module 'audiokeys' {
+  interface AudioKeys {
+    _addKey: (e: KeyboardEvent) => void
+    _removeKey: (e: KeyboardEvent) => void
+  }
+}
 
 // only triggers note on events if the this.focusElement is the document's activeElement
 // avoids triggering notes when interacting with the setups
