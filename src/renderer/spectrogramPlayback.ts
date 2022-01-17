@@ -242,9 +242,10 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
       state: false,
     })
     const fadeIn_duration_s = 0.01
-    fadeInControl.on('change', (useFadeIn: boolean) => {
-      this.setFadeIn(useFadeIn ? fadeIn_duration_s : 0)
+    fadeInControl.on('change', (enable: boolean) => {
+      this.setFadeIn(enable ? fadeIn_duration_s : 0)
     })
+    fadeInControl.state = true
 
     const localizationId = 'fade-in-control-label'
     ControlLabels.createLabel(
