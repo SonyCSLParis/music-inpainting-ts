@@ -1,267 +1,378 @@
-import * as Tone from "tone";
-import {Piano} from 'tone-piano';
+// FIXME(theis, 2021/05/25): import Tone.Instrument type def and fix typings
+import * as Tone from 'tone'
+// import { PolySynth, PolySynthOptions, SynthOptions } from 'tone'
+import {
+  Instrument,
+  InstrumentOptions,
+} from 'tone/build/esm/instrument/Instrument' //  instrument/Instrument'
+type ToneInstrument = Instrument<InstrumentOptions>
+
+// @tonejs/piano@0.2.1 is built as an es6 module, so we use the trick from
+// https://www.typescriptlang.org/docs/handbook/modules.html#optional-module-loading-and-other-advanced-loading-scenarios
+// to load the types and the implementation separately
+// this ensures that babel is correctly applied on the imported javascript
+import { Piano as TonePiano } from '@tonejs/piano'
+const Piano: typeof TonePiano = <typeof TonePiano>(
+  require('babel-loader!@tonejs/piano').Piano
+)
+
 import { SampleLibrary } from './dependencies/Tonejs-Instruments'
-import * as log from 'loglevel'
-import * as path from 'path'
+import log from 'loglevel'
 
-let Nexus = require('./nexusColored')
+import { CycleSelect } from './cycleSelect'
 
-import { CycleSelect } from './cycleSelect';
+import { getPathToStaticFile } from './staticPath'
 
-import { static_correct } from './staticPath'
+let piano: TonePiano
+let sampledInstruments: Record<string, Tone.Sampler> // declare variable but do not load samples yet
+let currentInstrument: ToneInstrument | TonePiano
+let instrumentFactories: Record<string, () => ToneInstrument | TonePiano>
+let silentInstrument: ToneInstrument
+export function getCurrentInstrument(
+  midiChannel = 0
+): ToneInstrument | TonePiano {
+  return currentInstrument
+}
 
-// add Piano methods to Tone.Insutrument objects for duck typing
-Tone.Instrument.prototype.keyDown = function() {return this};
-Tone.Instrument.prototype.keyUp = function() {return this};
-Tone.Instrument.prototype.pedalDown = function() {return this};
-Tone.Instrument.prototype.pedalUp = function() {return this};
+let chordsInstrumentFactories: Record<string, () => ToneInstrument | TonePiano>
+let currentChordsInstrument: ToneInstrument | TonePiano | null = null
+export function getCurrentChordsInstrument():
+  | ToneInstrument
+  | TonePiano
+  | null {
+  return currentChordsInstrument
+}
 
+export function initializeInstruments(): void {
+  const pianoVelocities = 1
+  log.info(
+    `Loading Tone Piano with ${pianoVelocities} velocit${
+      pianoVelocities > 1 ? 'ies' : 'y'
+    }`
+  )
+  piano = new Piano({
+    release: true,
+    pedal: true,
+    velocities: 1,
 
-let silentInstrument = new Tone.Instrument()
+    volume: {
+      pedal: -20,
+      strings: -10,
+      keybed: -20,
+      harmonics: -10,
+    },
+  })
 
-// add dummy Instrument methods for simple duck typing
-Piano.prototype.triggerAttackRelease = function() {return this};
-Piano.prototype.triggerRelease = function() {return this};
+  const useEffects = true
 
-let piano = new Piano([21, 108], 1);
-piano.setVolume('release', -25);
-piano.setVolume('pedal', -15);
+  const chorus = new Tone.Chorus(5, 2, 0.5).toDestination()
+  const reverb = new Tone.Reverb().connect(chorus)
 
-
-const useEffects: boolean = false;
-
-let chorus = new Tone.Chorus(2, 1.5, 0.5).toMaster();
-let reverb = new Tone.Reverb(1.5).connect(chorus);
-// let reverb = new Tone.Volume(0).toMaster();
-
-const synthOptions: object =  {
+  silentInstrument = new Tone.Synth().set({
     oscillator: {
-        type: 'triangle'  // default: 'triangle'
+      mute: true,
+    },
+  })
+
+  const polySynth = new Tone.PolySynth(Tone.Synth)
+  const polySynth_chords = new Tone.PolySynth(Tone.Synth)
+
+  ;[polySynth, polySynth_chords].forEach((polySynth) => {
+    polySynth.set({
+      oscillator: {
+        type: 'triangle1',
+      },
+      envelope: {
+        attack: 0.05, // default: 0.005
+        decay: 0.1, // default: 0.1
+        sustain: 0.3, //default: 0.3
+        release: 1.7, // default: 1},
+      },
+      portamento: 0.05,
+    })
+  })
+  polySynth_chords.set({
+    oscillator: {
+      volume: -20,
+    },
+  })
+
+  const steelPan = new Tone.PolySynth(Tone.Synth).set({
+    oscillator: {
+      type: 'fatsawtooth17',
+      // partials: [0.2, 1, 0, 0.5, 0.1],
+      spread: 40,
+      count: 3,
     },
     envelope: {
-        attack: 0.01,  // default: 0.005
-        decay: 0.1,  // default: 0.1
-        sustain: 0.3,  //default: 0.3
-        release: 1.7  // default: 1
-    }
-};
+      attack: 0.001,
+      decay: 1,
+      sustain: 0,
+      release: 0.5,
+    },
+    portamento: 0.05,
+  })
 
-let polysynth = new Tone.PolySynth(4, Tone.Synth, synthOptions);
-// polysynth.stealVoices = false;
-
-let polysynth_chords = new Tone.PolySynth(4, Tone.Synth, synthOptions);
-polysynth_chords.set("volume", -8);
-
-let steelpan = new Tone.PolySynth(6).set({
-    "oscillator": {
-        "type": "fatcustom",
-        "partials" : [0.2, 1, 0, 0.5, 0.1],
-        "spread" : 40,
-        "count" : 3},
-    "envelope": {
-        "attack": 0.001,
-        "decay": 1.6,
-        "sustain": 0,
-        "release": 1.6}
-    }
-);
-
-const softSynths: Tone.Instrument[] = [polysynth, polysynth_chords, steelpan];
-if (useEffects) {
-    reverb.generate();
-    softSynths.forEach(instrument => {
-        instrument.connect(reverb)
-    });
-}
-else {
-    softSynths.forEach(instrument => {
-        instrument.toMaster()
-    });
-}
-
-let instrumentFactories = {
-    'PolySynth': () => {return polysynth},
-    'Piano': () => {
-        piano.disconnect(0); piano.toMaster(); return piano},
-    'Piano (w/ reverb)':
-        () => {piano.disconnect(0); piano.connect(reverb); return piano},
-    'Xylophone': () => {return sampledInstruments['xylophone']},
-    'Organ': () => {return sampledInstruments['organ']},
-    'Steelpan': () => {return steelpan},
-    'None': () => {return silentInstrument}
-};
-
-let current_instrument = polysynth;
-let instrumentOnChange: {handleEvent: (e: Event) => void} = {
-    handleEvent: function(this, e: Event) {
-        current_instrument = instrumentFactories[this.value]();}
-};
-
-export function getCurrentInstrument() {
-    return current_instrument;
-}
-
-let chordInstrumentSelectElem: HTMLDivElement;
-let chordInstrumentFactories;
-let chordInstrumentSelect;
-let current_chords_instrument;
-
-
-export function getCurrentChordsInstrument() {
-    return current_chords_instrument;
-}
-
-
-let sampledInstruments;  // declare variables but do not load samples yet
-let instrumentSelect;
-declare var COMPILE_ELECTRON: boolean;
-export function renderDownloadButton(containerElement: HTMLElement,
-    useChordsInstruments: boolean): void {
-    // Manual samples loading button, to reduce network usage by only loading them
-    // when requested
-    let loadSamplesButtonElem: HTMLDivElement = document.createElement('div');
-    loadSamplesButtonElem.id = 'load-samples-button';
-    loadSamplesButtonElem.classList.add('right-column');
-    containerElement.appendChild(loadSamplesButtonElem);
-
-    let loadSamplesButton = new Nexus.TextButton('#load-samples-button',{
-        'size': [100,50],
-        'state': false,
-        'text': 'Load samples',
-        'alternateText': 'Samples loading'
-    });
-
-    $(() => {
-        // HACK manually increase fontSize in download samples button
-        let textContentDivElem = <HTMLDivElement>loadSamplesButtonElem.children[0].children[0];
-        textContentDivElem.style.padding = "18px 0px";
-        textContentDivElem.style.fontSize = "12px";
+  const softSynths: ToneInstrument[] = [polySynth, polySynth_chords, steelPan]
+  if (useEffects) {
+    reverb
+      .generate()
+      .then(() => {
+        softSynths.forEach((instrument) => {
+          instrument.connect(reverb)
+        })
+      })
+      .catch((reason) => {
+        throw new EvalError(reason)
+      })
+  } else {
+    softSynths.forEach((instrument) => {
+      instrument.toDestination()
     })
+  }
 
+  instrumentFactories = {
+    PolySynth: () => {
+      return polySynth
+    },
+    Piano: () => {
+      piano.disconnect()
+      piano.toDestination()
+      return piano
+    },
+    'Piano (w/ reverb)': () => {
+      piano.disconnect()
+      piano.connect(reverb)
+      return piano
+    },
+    Xylophone: () => {
+      return sampledInstruments['xylophone']
+    },
+    Organ: () => {
+      return sampledInstruments['organ']
+    },
+    SteelPan: () => {
+      return steelPan
+    },
+    None: () => {
+      return silentInstrument
+    },
+  }
 
-    const sampled_instruments_names = ['organ', 'harmonium', 'xylophone'];
+  chordsInstrumentFactories = {
+    PolySynth: () => {
+      return polySynth_chords
+    },
+    Piano: () => {
+      piano.disconnect()
+      piano.toDestination()
+      return piano
+    },
+    Organ: () => {
+      return sampledInstruments['organ']
+    },
+    Harmonium: () => {
+      return sampledInstruments['harmonium']
+    },
+    None: () => {
+      return silentInstrument
+    },
+  }
+}
 
-    loadSamplesButton.on('change', () => {
-        log.info('Start downloading audio samples');
-        // must disable pointer events on *child* node to also use cursor property
-        (loadSamplesButtonElem.firstElementChild as HTMLElement).style.pointerEvents = 'none';
-        loadSamplesButtonElem.style.cursor = 'wait';
+// syntax inspired by https://dev.to/angular/managing-key-value-constants-in-typescript-221g
+// TOTO(theis, 2021/06/21): should we change this to an Enum type as advocated in that
+// post's comments (https://dev.to/michaeljota/comment/ebeo)
+const leadInstrumentNames = ['Piano', 'PolySynth', 'SteelPan'] as const
+type leadInstrument = typeof leadInstrumentNames[number]
+const mainInstrumentsIcons = new Map<leadInstrument, string>([
+  ['Piano', '049-piano.svg'],
+  ['PolySynth', '019-synthesizer.svg'],
+  ['SteelPan', '007-timpani.svg'],
+])
 
-        let loadPromises: Promise<any>[] = []
-        let sampleLibraryLoadPromise = new Promise((resolve, reject) => {
-            sampledInstruments = SampleLibrary.load({
-                        instruments: sampled_instruments_names,
-                        baseUrl: path.join(static_correct,
-                            'tonejs-instruments/samples/')
-                    });
-            Object.keys(sampledInstruments).forEach(function(instrument_name) {
-                sampledInstruments[instrument_name].release = 1.8;
-                sampledInstruments[instrument_name].toMaster();
-            });
-            resolve(sampledInstruments);
-        });
-        loadPromises.push(sampleLibraryLoadPromise);
+const chordsInstrumentNames = ['PolySynth', 'Piano'] as const
+type chordsInstrument = typeof chordsInstrumentNames[number]
+const chordsInstrumentsIcons = new Map<chordsInstrument, string>([
+  ['PolySynth', '019-synthesizer.svg'],
+  ['Piano', '049-piano.svg'],
+])
 
-        let pianoLoadPromise: Promise<boolean> = piano.load(
-            path.join(static_correct,
-                'Salamander/')
-        );
-        loadPromises.push(pianoLoadPromise);
+let instrumentSelect: CycleSelect<leadInstrument>
+let chordsInstrumentSelect: CycleSelect<chordsInstrument> | null = null
+declare let COMPILE_ELECTRON: boolean
+export function renderDownloadButton(
+  containerElement: HTMLElement,
+  useChordsInstruments: boolean
+): void {
+  // Manual samples loading button, to reduce network usage by only loading them
+  // when requested
+  const loadSamplesButtonContainer = document.createElement('div')
+  loadSamplesButtonContainer.id = 'load-samples-button'
+  loadSamplesButtonContainer.classList.add(
+    'control-item',
+    'instrument-samples-download'
+  )
+  containerElement.appendChild(loadSamplesButtonContainer)
 
-        Promise.all(loadPromises).then(()=>{
-            log.info('Finished loading the samples');
-            if (!useChordsInstruments) {
-                containerElement.classList.remove('two-columns');
-            }
-            loadSamplesButtonElem.remove();
-            // instrumentSelect.render();
-        });
-    });
+  const mainIconSize = 'fa-4x'
 
-    if (COMPILE_ELECTRON) {
-        // auto-download samples
-        loadSamplesButton.flip();
+  const loadSamplesButtonInterface = document.createElement('i')
+  loadSamplesButtonInterface.id = 'load-samples-button-interface'
+  loadSamplesButtonContainer.appendChild(loadSamplesButtonInterface)
+  loadSamplesButtonInterface.classList.add(
+    'fas',
+    'fa-arrow-alt-circle-down',
+    mainIconSize
+  )
+
+  const sampledInstrumentsNames: (leadInstrument | chordsInstrument)[] = []
+
+  function loadSampledInstruments(this: Element): void {
+    log.info('Start downloading audio samples')
+    this.parentElement.classList.add('loading-control')
+    this.classList.add('loading-control', 'fa-spin', 'fa-spinner')
+    this.classList.remove('fa-arrow-alt-circle-down')
+
+    const loadPromises: Promise<any>[] = []
+    if (sampledInstrumentsNames.length > 0) {
+      const sampleLibraryLoadPromise = new Promise((resolve) => {
+        sampledInstruments = SampleLibrary.load({
+          instruments: sampledInstrumentsNames,
+          baseUrl: 'https://nbrosowsky.github.io/tonejs-instruments/samples/',
+        })
+
+        sampledInstrumentsNames.forEach(function (instrumentName) {
+          sampledInstruments[instrumentName].release = 0.5
+          sampledInstruments[instrumentName].toDestination()
+        })
+
+        resolve(sampledInstruments)
+      })
+      void sampleLibraryLoadPromise.then(() => {
+        instrumentSelect.activeOptions = [
+          ...instrumentSelect.activeOptions,
+          ...sampledInstrumentsNames,
+        ]
+      })
+      loadPromises.push(sampleLibraryLoadPromise)
     }
 
-};
+    const pianoLoadPromise: Promise<void> = piano.load()
+    void pianoLoadPromise.then(() => {
+      const addOption = <T extends string, G extends T>(
+        instrumentSelect: CycleSelect<T>,
+        option: G
+      ): void => {
+        instrumentSelect.activeOptions = [
+          ...instrumentSelect.activeOptions,
+          option,
+        ]
+      }
+      addOption(instrumentSelect, 'Piano')
+      if (chordsInstrumentSelect != null) {
+        addOption(chordsInstrumentSelect, 'Piano')
+      }
+    })
+    loadPromises.push(pianoLoadPromise)
 
-let instrumentIconsBasePath: string = path.join(static_correct, 'icons');
-let mainInstrumentsIcons = new Map([
-    ['Piano', '049-piano.svg'],
-    ['PolySynth', '019-synthesizer.svg'],
-    ['Steelpan', '007-timpani.svg']
-]);
+    Promise.all(loadPromises)
+      .then(() => {
+        log.info('Finished loading the samples')
+        loadSamplesButtonContainer.remove()
+      })
+      .catch(() => {
+        this.classList.remove('loading-control', 'fa-spin', 'fa-spinner')
+        this.classList.add('fa-arrow-alt-circle-down')
+      })
+  }
 
-let chordInstrumentsIcons = new Map([
-    ['PolySynth', '019-synthesizer.svg'],
-    ['Organ', '049-piano.svg'],
-]);
+  loadSamplesButtonInterface.addEventListener('click', loadSampledInstruments, {
+    once: true,
+  })
 
-export function renderChordInstrumentSelect(containerElement: HTMLElement) {
-    // create second instrument selector for chord instrument
-    let chordInstrumentSelectElem: HTMLElement = document.createElement('control-item');
-    chordInstrumentSelectElem.id = 'chord-instrument-select-container';
-    chordInstrumentSelectElem.classList.add('right-column');
-    containerElement.appendChild(chordInstrumentSelectElem);
-
-    current_chords_instrument = polysynth_chords;
-
-    chordInstrumentFactories = {
-        'PolySynth': () => {return polysynth_chords},
-        'Organ': () => {return sampledInstruments['organ']},
-        'Harmonium': () => {return sampledInstruments['harmonium']},
-        'None': () => {return silentInstrument}
-    };
-
-    let chordInstrumentOnChange: {handleEvent: (e: Event) => void} = {
-        handleEvent: function(this, e: Event) {
-            current_chords_instrument = chordInstrumentFactories[this.value]();
-    }};
-
-    chordInstrumentSelect = new CycleSelect(chordInstrumentSelectElem,
-        'instrument-select-chord',
-        chordInstrumentOnChange,  // TODO
-        chordInstrumentsIcons, instrumentIconsBasePath
-    );
-
-    // chordInstrumentSelect.on('change', chordInstrumentOnChange.bind(chordInstrumentSelect));
-
-    const initialChordInstrument = 'PolySynth';
-    chordInstrumentSelect.value = initialChordInstrument;
+  if (COMPILE_ELECTRON) {
+    // auto-download samples
+    // TODO: Restore this
+    // loadSamplesButton.flip();
+  }
 }
+
+const instrumentIconsBasePath: string = getPathToStaticFile('icons')
 
 export function renderInstrumentSelect(containerElement: HTMLElement): void {
-    let instrumentSelectElem: HTMLElement = document.createElement('control-item');
-    instrumentSelectElem.id = 'lead-instrument-select-container';
+  const instrumentSelectElement = document.createElement('div')
+  instrumentSelectElement.id = 'lead-instrument-select-container'
+  instrumentSelectElement.classList.add(
+    'control-item',
+    'main-instrument-select'
+  )
+  containerElement.appendChild(instrumentSelectElement)
 
-    instrumentSelectElem.classList.add('left-column');
-    containerElement.appendChild(instrumentSelectElem);
+  function instrumentOnChange<T extends string>(
+    this: CycleSelect<T>,
+    e: Event
+  ) {
+    currentInstrument = instrumentFactories[this.value]()
+  }
 
-    instrumentSelect = new CycleSelect(instrumentSelectElem,
-        'instrument-select-lead',
-        instrumentOnChange,
-        mainInstrumentsIcons, instrumentIconsBasePath
-    );
+  instrumentSelect = new CycleSelect(
+    instrumentSelectElement,
+    instrumentOnChange,
+    mainInstrumentsIcons,
+    instrumentIconsBasePath,
+    ['PolySynth', 'SteelPan']
+  )
+  instrumentSelect.interfaceElement.classList.add('playbackInstrumentSelect')
 
-    const initialInstrument = 'Piano';
-    instrumentSelect.value = initialInstrument;
+  const initialInstrument = 'PolySynth'
+  instrumentSelect.value = initialInstrument
 }
 
-export function mute(mute: boolean, useChordsInstrument: boolean = false) {
-    let instrumentSelectElems = $('.CycleSelect-container[id$="instrument-select-container"]');
-    let instruments = [current_instrument, current_chords_instrument];
-    if (mute) {
-        instrumentSelectElems.toggleClass('CycleSelect-disabled', true);
-        current_instrument = silentInstrument;
-        if (useChordsInstrument) {
-            current_chords_instrument = silentInstrument;
-        }
+export function renderChordsInstrumentSelect(containerElement: HTMLElement) {
+  // create second instrument selector for chord instrument
+  const chordsInstrumentSelectElement = document.createElement('div')
+  chordsInstrumentSelectElement.id = 'chords-instrument-select-container'
+  chordsInstrumentSelectElement.classList.add(
+    'control-item',
+    'chords-instrument-select'
+  )
+  containerElement.appendChild(chordsInstrumentSelectElement)
+
+  function chordsInstrumentOnChange<T extends string>(
+    this: CycleSelect<T>,
+    e: Event
+  ) {
+    currentChordsInstrument = chordsInstrumentFactories[this.value]()
+  }
+
+  chordsInstrumentSelect = new CycleSelect(
+    chordsInstrumentSelectElement,
+    chordsInstrumentOnChange,
+    chordsInstrumentsIcons,
+    instrumentIconsBasePath,
+    ['PolySynth']
+  )
+  chordsInstrumentSelect.interfaceElement.classList.add(
+    'playbackInstrumentSelect'
+  )
+
+  const initialChordsInstrument = 'PolySynth'
+  chordsInstrumentSelect.value = initialChordsInstrument
+}
+
+export function mute(mute: boolean, useChordsInstrument = false) {
+  instrumentSelect.disable(mute)
+  if (chordsInstrumentSelect != null) {
+    chordsInstrumentSelect.disable(mute)
+  }
+  if (mute) {
+    currentInstrument = silentInstrument
+    currentChordsInstrument = silentInstrument
+  } else {
+    instrumentSelect.emit(instrumentSelect.events.ValueChanged)
+    if (chordsInstrumentSelect != null) {
+      chordsInstrumentSelect.emit(chordsInstrumentSelect.events.ValueChanged)
     }
-    else {
-        instrumentSelectElems.toggleClass('CycleSelect-disabled', false);
-        instrumentSelect.value = instrumentSelect.value;
-        if (useChordsInstrument) {
-            chordInstrumentSelect.value = chordInstrumentSelect.value;
-        }
-    }
+  }
 }

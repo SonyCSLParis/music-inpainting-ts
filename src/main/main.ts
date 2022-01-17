@@ -1,15 +1,20 @@
 // Modules to control application life
-import {app, ipcMain} from 'electron'
-app.commandLine.appendSwitch('disable-pinch');
-import * as log from 'loglevel'
+import { app, ipcMain } from 'electron'
+app.commandLine.appendSwitch('disable-pinch')
+import log from 'loglevel'
+import path from 'path'
+import { outputFile } from 'fs-extra'
 
 import * as WindowManager from './windowManager'
-import LinkServer from './linkServer'
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 
-if (isDevelopment) { log.setLevel('debug'); }
-else { log.setLevel('info'); }
+if (isDevelopment) {
+  log.setLevel(log.levels.DEBUG)
+  log.debug('Enabled DEBUG logs from main process')
+} else {
+  log.setLevel(log.levels.INFO)
+}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -26,17 +31,32 @@ app.on('window-all-closed', function () {
 })
 
 app.on('activate', function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (!WindowManager.existsWindow()) {
-    WindowManager.createWindow()
-  }
+  WindowManager.createWindow()
 })
 
-ipcMain.on('disconnect', () => LinkServer.killLink());
+ipcMain.handle(
+  'get-path',
+  (event, fileName, appDirectory: 'documents' | 'temp') => {
+    const storagePath = path.join(
+      app.getPath(appDirectory),
+      'NONOTO_generations',
+      fileName
+    )
+    return storagePath
+  }
+)
 
-LinkServer.attachListeners()
+ipcMain.handle('save-file', (event, fileName: string, buffer: Buffer) => {
+  return outputFile(fileName, buffer)
+})
 
-if (module.hot) {
-    module.hot.accept();
-}
+ipcMain.on('ondragstart', (event, filePath: string, iconPath: string) => {
+  event.sender.startDrag({
+    file: filePath,
+    icon: iconPath,
+  })
+})
+
+ipcMain.on('get-window-id', (event) => {
+  event.returnValue = event.sender.id
+})

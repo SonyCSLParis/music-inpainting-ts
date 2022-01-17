@@ -1,77 +1,117 @@
+@use 'mixins/colors.module';
+
 #configuration-selection {
+  display: grid;
+
+  width: 65%;
+
+  grid-template-columns: 100%;
+  grid-row-gap: 1vh;
+  justify-items: center;
+
+  padding: 2em;
+
+  margin-left: auto;
+  margin-right: auto;
+
+  * {
+    text-align: center;
+  }
+
+  .control-item {
+    max-width: 10em;
+  }
+
+  input {
+    font-size: 100%;
+    height: 3vh;
+    text-align: center;
+
+    &.wrong-input-setting {
+      background-color: lightcoral;
+    }
+  }
+
+  // TODO(@tbazin, 2021/11/04): brute-force way of setting properties
+  // of the different settings container elements
+  div {
     display: grid;
-
-    background-color: mistyrose;
-
-    // border-style: solid;
-    // border-width: thin;
-    // border-color: black;
-    // border-radius: 10px;
-
-    width: 65vw;
-    height: fit-content;
-    grid-row-gap: 2vh;
     justify-items: center;
+    grid-column-gap: 3vw;
+    column-gap: 3vw;
+    grid-row-gap: 1vh;
+    row-gap: 1vh;
+  }
 
-    padding: 2em;
+  &.no-server-config #server-address-input {
+      visibility: hidden;
+  }
+}
 
-    margin-left: auto;
-    margin-right: auto;
+.centeredXY {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
 
-    margin-top: 40vh;
-
-    & input {
-        width: 30vw;
-        font-size: 2vw;
-        height: 3vh;
-        text-align: center;
-    }
-
-    & > div {
-        display: grid;
-        justify-items: center;
-        grid-column-gap: 2vw;
-    }
+#server-configuration-container {
+  width: 100%;
+  &::before {
+    content: 'Server configuration';
+    width: 100%;
+  }
 }
 
 #server-configuration {
-    grid-row: 1;
+  display: grid;
+
+  & input {
+    width: 60% !important;
+    height: 2rem;
+  }
+
+  width: 100%;
+
+  * {
+    width: 100%;
+  }
 }
 
-#mode-configuration {
-    grid-row: 2;
-}
+#mode-configuration-container {
+  &::before {
+    content: 'Interface mode';
+    display: inline-block;
+    width: 100%;
+  }
 
-#server-ip-input {
-    grid-column: 1;
-}
+  display: grid;
+  width: 100%;
 
-#server-port-input {
-    grid-column: 2;
-}
+  #mode-configuration {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    width: 100%;
 
-#deepbach-configuration-button {
-    grid-column: 1;
-}
+    @media screen and (max-width: 500px) {
+      margin: auto;
+    }
 
-#deepsheet-configuration-button {
-    grid-column: 2;
-}
-
-#deepfolk-configuration-button {
-    grid-column: 3;
+    & * {
+      text-align: center;
+      width: 100% !important;
+      height: inherit !important;
+      font-size: 100% !important;
+    }
+  }
 }
 
 #start-button {
-    grid-row: 3;
-
-    // center text vertically (via https://stackoverflow.com/a/2939979)
-    & div {
-        display: table-cell!important;
-        vertical-align: middle;
-    }
+  width: 100% !important;
+  height: 100% !important;
 }
 
 #application-mode-select {
-    position: fixed;
+  display: none;
 }

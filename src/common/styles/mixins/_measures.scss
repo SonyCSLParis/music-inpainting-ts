@@ -1,0 +1,10 @@
+$header-height: min(8vh, 20vw);
+$bottom-controls-height: 140px;
+$advanced-controls-height: 70px;
+
+$expand-tab-height: clamp(20px, 3vh, 35px);
+
+$spectrogram-width: 90%;
+$spectrogram-margin-width: 5vw;
+
+$cycleSelect-size: min(calc(30px + 1.5vw), calc(30px + 2vh), 54px);

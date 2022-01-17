@@ -1,18 +1,7 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-      "target": "es6",
-      "module": "commonjs",
-      "lib": ["dom", "es7"],
-      "pretty": true,
-      "noImplicitAny": false,
-      "removeComments": false,
-      "declaration": true,
-      "sourceMap": true
-  },
-  "allowSyntheticDefaultImports": true,
-  "awesomeTypescriptLoaderOptions": {},
-  "exclude": [
-    "node_modules",
-    "src/main"
-  ]
+    "target": "es2020",
+    "module": "esnext"
+  }
 }

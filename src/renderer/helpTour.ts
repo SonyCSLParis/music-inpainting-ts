@@ -1,143 +1,342 @@
-import * as $ from "jquery";
-import createActivityDetector from 'activity-detector';
+import $ from 'jquery'
+import log from 'loglevel'
+import createActivityDetector from 'activity-detector'
+import { SpectrogramLocator, Locator, SheetLocator } from './locator'
 
-import "trip.js/dist/trip.css";
+import 'shepherd.js/dist/css/shepherd.css'
+import '../common/styles/helpTour.scss'
 
-var Trip = require('trip.js');
+import Shepherd from 'shepherd.js'
 
-// TODO move helpTour to localizations file
+import localizations from '../common/localization.json'
+import { PlaybackManager } from './playback'
+const helpContents = localizations['help']
 
-let noteboxHelp_german: string = "Tippen Sie auf die <b>blauen Kästen</b> des \
-Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen"
-let noteboxHelp_english: string = "Touch the <b>blue boxes</b> to trigger a \
-<b>regeneration</b> of the underlying portion of the score"
+export abstract class MyShepherdTour extends Shepherd.Tour {
+  protected languages: string[]
+  readonly locator: Locator<PlaybackManager, unknown>
+  protected tripDelay_ms = 10000
+  readonly inactivityDetectorDelay?: number
 
-let fermataboxHelp_german: string = 'Tippen Sie auf die <b>gestrichelten Kästchen</b>, um \
-eine <b>Fermata</b> zu setzen. Damit kann die Struktur des Chorales kontrolliert werden';
-let fermataboxHelp_english: string = 'Touch the <b>dotted boxes</b> to position an intermediate <b>fermata</b>. It allows to structure the chorale'
-
-function makeHTMLContent(german: string, english: string) {
-    return `${german}<br><br><i>${english}</i><br><br>`
-}
-
-// TODO contents should depend on AnnotationBox type used
-const tripContents: object[] = [
-        // div[id$='-note-0-0']
-        { sel: "#whole-note-0-0-common",
-          content: makeHTMLContent(noteboxHelp_german, noteboxHelp_english),
-          position : "e",
-            // expose: true
-        },
-        { sel: "#quarter-note-1-3-common-Fermata",
-          content: makeHTMLContent(fermataboxHelp_german, fermataboxHelp_english),
-          position : "s",
-            // expose: true,
-        },
-        // { sel: '#app-title', content: "Press play to listen to the generated music!",
-        //     position: 'n'}
-    ]
-
-const tripDelay_ms: number = 10000;
-
-const totalTripDuration_ms: number = tripDelay_ms * tripContents.length;
-
-const trip = new Trip(tripContents,
-    {
-        showSteps: true,
-        onStart: initHideOnClickOutside,
-        onEnd: removeClickListener,
-        onTripStop: removeClickListener,
-        overlayZIndex: 0,
-        nextLabel: '→',
-        prevLabel: '←',
-        skipLabel: '',
-        finishLabel: 'x',
-        tripTheme: 'white',
-        showNavigation : true,
-        // showCloseBox : true,
-        delay : 10000,
+  static readonly defaultTourOptions: Shepherd.Tour.TourOptions = {
+    useModalOverlay: true,
   }
-);
-
-let tripLoopInterval: any;
-
-function startTripLoop() {
-    // starts the help tour in a looping fashion
-
-    function intervalTripLoop() {
-        tripLoopInterval = setInterval(() => {
-            // if (looping) {
-                trip.start();
-            // }
+  static readonly defaultStepOptions: Shepherd.Step.StepOptions = {
+    popperOptions: {
+      modifiers: [{ name: 'offset', options: { offset: [0, 12] } }],
+    },
+    modalOverlayOpeningRadius: 15,
+    cancelIcon: {
+      enabled: true,
+    },
+    buttons: [
+      {
+        action: function (): void {
+          return this.back()
         },
-        totalTripDuration_ms + 500)
-    }
-    trip.start();
-    intervalTripLoop();
-}
+        secondary: true,
+        text: 'Back',
+      },
+      {
+        action: function (): void {
+          return this.next()
+        },
+        text: 'Next',
+      },
+    ],
+  }
 
-function stopTripLoop() {
+  constructor(
+    languages: string[],
+    locator: Locator<PlaybackManager, unknown>,
+    inactivityDetectorDelay?: number,
+    options?: Shepherd.Tour.TourOptions
+  ) {
+    super({
+      defaultStepOptions: MyShepherdTour.defaultStepOptions,
+      ...MyShepherdTour.defaultTourOptions,
+      ...options,
+    })
+
+    this.languages = languages
+    this.locator = locator
+    if (inactivityDetectorDelay != undefined) {
+      this.inactivityDetectorDelay = inactivityDetectorDelay
+    }
+
+    if (
+      this.inactivityDetectorDelay != null &&
+      this.inactivityDetectorDelay > 0
+    ) {
+      this.registerIdleStateDetector()
+    }
+
+    this.on('start', () => this.onStart())
+    this.on('cancel', () => this.cleanup())
+    this.on('complete', () => this.cleanup())
+
+    this.locator.once('ready', () =>
+      this.addSteps(
+        this.makeStepsOptions().map(
+          (stepOptions) => new Shepherd.Step(this, stepOptions)
+        )
+      )
+    )
+  }
+
+  abstract makeStepsOptions(): Shepherd.Step.StepOptions[]
+
+  protected onStart(): void {
+    document.body.classList.add('help-tour-on')
+    document.body.classList.remove('advanced-controls-disabled')
+    this.locator.refresh()
+    this.initHideOnClickOutside()
+  }
+
+  // clean-up modifications made to the DOM if the trip is exited mid-run
+  protected cleanup(): void {
+    this.removeClickListener()
+    document.body.classList.remove('help-tour-on')
+    document.body.classList.toggle('advanced-controls-disabled')
+    document.body.classList.toggle('advanced-controls-disabled')
+    // this is needed in conjunction with position: sticky for the .trip-block
+    // in order to restore the locator's full size if the viewport was resized during the trip
+    this.locator.refresh()
+  }
+
+  protected makeHTMLContent(contents: Record<string, string>) {
+    switch (this.languages.length) {
+      case 2:
+        return `${contents[this.languages[0]]}<br><br><i>${
+          contents[this.languages[1]]
+        }</i><br><br>`
+      case 1:
+        return `${contents[this.languages[0]]}<br><br>`
+      default:
+        throw new Error(
+          'Unexpected number of languages to use, either 1 or 2 simultaneous languages are supported.'
+        )
+    }
+  }
+
+  get totalTripDuration_ms(): number {
+    return this.tripDelay_ms * this.steps.length
+  }
+
+  private loopInterval: NodeJS.Timeout
+
+  public startLoop(): void {
+    // starts the help tour in a looping fashion
+    const intervalTripLoop = () => {
+      this.loopInterval = setInterval(() => {
+        // if (looping) {
+        this.start()
+        // }
+      }, this.totalTripDuration_ms + 500)
+    }
+    this.start()
+    intervalTripLoop()
+  }
+
+  protected stopLoop(): void {
     // stops the help tour from looping
-    clearInterval(tripLoopInterval);
-}
+    clearInterval(this.loopInterval)
+  }
 
+  public renderIcon(containerElement: HTMLElement): void {
+    const helpElement: HTMLAnchorElement = document.createElement('a')
+    containerElement.appendChild(helpElement)
 
-function outsideClickListener(event) {
-    let target: HTMLElement = event.target;
-    if (!$(target).closest($('div.trip-block')).length) {
-        stopTripLoop();
-        trip.stop();
-    }
-};
+    helpElement.id = 'help-icon'
+    helpElement.title = 'Help'
 
- function initHideOnClickOutside() {
-     // Attach an event listener to the whole document that detects clicks
-     // out of the containing div and closes the selector in that case
-     // Bind this callback when the selector is activated and unbind it when
-     // it is closed
-
-     // must add a delay so that the initial click is
-     // setTimeout(() => {
-    document.addEventListener('click', outsideClickListener);
-     // },
-     // 100);
- };
-
- function removeClickListener() {
-     document.removeEventListener('click', outsideClickListener)
- };
-
-export function render(containerElement: HTMLElement) {
-    let helpElem: HTMLAnchorElement = document.createElement('a');
-    containerElement.appendChild(helpElem);
-
-    helpElem.id = 'help-icon';
-    helpElem.innerHTML = 'Hilfe / <i>Help</i>';
-
-    helpElem.addEventListener('click', function(event) {
+    // const self = this;
+    helpElement.addEventListener(
+      'click',
+      (event) => {
         // stops event from trigerring outsideClickListener registered onTripStart
-        event.stopPropagation();
+        event.stopPropagation()
+        this.cancel()
+        this.start()
+      },
+      true
+    )
+  }
 
-        trip.start()
-    }, true);
-}
+  protected outsideClickListener(event: PointerEvent): void {
+    const target = event.target
+    if (!$(target).closest($('div.shepherd-enabled')).length) {
+      this.stopLoop()
+      this.cancel()
+    }
+  }
 
-export function registerIdleStateDetector(): void {
+  // Attach an event listener to the whole document that detects clicks
+  // out of the containing div and closes the selector in that case
+  // Bind this callback when the selector is activated and unbind it when
+  // it is closed
+  protected initHideOnClickOutside(): void {
+    document.addEventListener('pointerdown', (event) =>
+      this.outsideClickListener(event)
+    )
+  }
+
+  protected removeClickListener(): void {
+    document.removeEventListener('pointerdown', (event) =>
+      this.outsideClickListener(event)
+    )
+  }
+
+  public registerIdleStateDetector(): void {
     const activityDetector = createActivityDetector({
-        timeToIdle: 2 * 1000 * 60,  // launch after 2 minutes of inactivity
-        autoInit: true,
-        inactivityEvents: [],
-    });
+      timeToIdle: this.inactivityDetectorDelay,
+      autoInit: true,
+      inactivityEvents: [],
+    })
 
     activityDetector.on('idle', () => {
-    	console.log('The user is not interacting with the page');
-        startTripLoop();
-    });
+      console.log('The user is not interacting with the page')
+      this.startLoop()
+    })
 
     activityDetector.on('active', () => {
-        console.log('The user is interacting with the page');
-        stopTripLoop();
+      console.log('The user is interacting with the page')
+      this.stopLoop()
     })
+  }
 }
 
-if (module.hot) {}
+export class NonotoTour extends MyShepherdTour {
+  locator: SheetLocator
+
+  makeStepsOptions(): Shepherd.Step.StepOptions[] {
+    return [
+      {
+        title: 'Playback',
+        attachTo: {
+          element: '#playback-commands-gridspan',
+          on: 'right',
+        },
+        text: this.makeHTMLContent(helpContents['general']['play_button']),
+      },
+      {
+        title: 'Regeneration box',
+        attachTo: {
+          element: document.getElementById('4-0-0-timeContainer'),
+          on: 'bottom',
+        },
+        text: this.makeHTMLContent(helpContents['nonoto']['note_box']),
+        modalOverlayOpeningPadding: 10,
+        scrollTo: true,
+        when: {
+          show: () => {
+            this.locator.toggleScrollLock('x', true)
+          },
+        },
+      },
+      {
+        title: 'Fermatas',
+        attachTo: {
+          element: document.getElementById(
+            '1-0-3-timeContainer-common-Fermata'
+          ),
+          // element: '#header',
+          on: 'bottom',
+        },
+        text: this.makeHTMLContent(helpContents['nonoto']['fermata_box']),
+        modalOverlayOpeningPadding: 10,
+        scrollTo: true,
+        when: {
+          show: () => {
+            this.locator.toggleScrollLock('x', true)
+          },
+        },
+      },
+    ]
+  }
+}
+
+export class NotonoTour extends MyShepherdTour {
+  readonly locator: SpectrogramLocator
+
+  makeStepsOptions(): Shepherd.Step.StepOptions[] {
+    return [
+      {
+        title: 'Playback',
+        attachTo: { element: '#playback-commands-gridspan', on: 'right' },
+        text: this.makeHTMLContent(helpContents['general']['play_button']),
+      },
+      {
+        title: 'Spectrogram',
+        attachTo: {
+          element: this.locator.shadowContainer,
+          on: 'bottom',
+        },
+        text: this.makeHTMLContent(
+          helpContents['notono']['spectrogram_general']
+        ),
+        when: {
+          show: () => {
+            this.locator.interfaceElement.classList.add('shepherd-hidden')
+          },
+          hide: () => {
+            this.locator.interfaceElement.classList.remove('shepherd-hidden')
+          },
+        },
+        modalOverlayOpeningPadding: 10,
+      },
+      {
+        title: 'Spectrogram transformations',
+        attachTo: { element: this.locator.shadowContainer, on: 'bottom' },
+        text: this.makeHTMLContent(
+          helpContents['notono']['spectrogram_interaction']
+        ),
+        when: {
+          show: () => this.locator.callToAction(),
+        },
+        modalOverlayOpeningPadding: 10,
+      },
+      {
+        title: 'Model constraints',
+        attachTo: { element: '#constraints-gridspan', on: 'top' },
+        text: this.makeHTMLContent(helpContents['notono']['constraints']),
+        // exposeContainer: 'bottom-controls',
+      },
+      {
+        title: 'Edit tools',
+        attachTo: { element: '#edit-tools-gridspan', on: 'top' },
+        text: this.makeHTMLContent(helpContents['notono']['edit_tools']),
+        // exposeContainer: 'bottom-controls',
+      },
+      {
+        title: 'Downloading',
+        attachTo: { element: '#download-button-gridspan', on: 'top' },
+        text: this.makeHTMLContent(helpContents['notono']['download']),
+        // exposeContainer: 'bottom-controls',
+      },
+      {
+        title: 'Declick / Gain',
+        attachTo: { element: '#mixing-controls-gridspan', on: 'top' },
+        text: this.makeHTMLContent(helpContents['notono']['fade-in']),
+        // exposeContainer: 'bottom-controls',
+      },
+      {
+        title: "Audio drag'n'drop",
+        text: this.makeHTMLContent(helpContents['notono']['drag-n-drop']),
+        // animation: 'fadeInLeft',
+        // exposeContainer: 'bottom-controls',
+      },
+      {
+        title: 'Acknowledgments',
+        text: this.makeHTMLContent(helpContents['general']['attributions']),
+      },
+    ]
+  }
+
+  // clean-up modifications to the DOM if the trip is exited mid-run
+  protected cleanup(): void {
+    super.cleanup()
+
+    this.locator.interfaceElement.classList.remove('trip-hidden')
+  }
+}

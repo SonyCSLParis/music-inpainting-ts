@@ -1,11 +1,18 @@
 // Simple module to store and share the color parameters for Nexus UI
 
-import * as Nexus from 'nexusui'
+import Nexus from 'nexusui'
+import defaultColors from '../common/styles/mixins/_colors.module.scss'
 
-// TODO: use CSS classes!
-// this will allow to share the colors with non-Nexus UI elements, e.g. icons
+export function setColors(accent: string, fill: string): void {
+  Nexus.colors.accent = accent
+  Nexus.colors.fill = fill
+}
+setColors(defaultColors.active_control, defaultColors.idle_control)
 
-Nexus.colors.accent = 'lightpink';  // '#f40081';  //  light pink
-Nexus.colors.fill = '#e5f5fd';  // light blue // '#f0f2ff';  // lilac triadic to '#
-
-export = Nexus
+export class NexusSelectWithShuffle extends Nexus.Select {
+  // update the controller's current value with a randomly chosen one
+  shuffle(): void {
+    this.value = this._options[Math.floor(Math.random() * this._options.length)]
+  }
+}
+export default Nexus
