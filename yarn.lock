@@ -1949,10 +1949,9 @@ atob@^2.1.2:
   resolved "https://registry.yarnpkg.com/atob/-/atob-2.1.2.tgz#6d9517eb9e030d2436666651e86bd9f6f13533c9"
   integrity sha512-Wm6ukoaOGJi/73p/cl2GvLjTI5JM1k/O14isD73YML8StrH/7/lRFgmg8nICZgD3bZZvjwCGxtMOD3wWNAu8cg==
 
-audiokeys@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/audiokeys/-/audiokeys-0.1.1.tgz#49baf9e99bdef464ad5192f47ea332609ed3eb27"
-  integrity sha512-6DRwo3gaeeX2OtotgCBRSSnPkEBog66dwoOplOnWlIZovD7G3ZaJxNDQhrJ37BfntyFWo/IdDVaY7ZOCxFEOpA==
+"audiokeys@https://github.com/SonyCSLParis/AudioKeys#international":
+  version "0.2.0"
+  resolved "https://github.com/SonyCSLParis/AudioKeys#1005ae71d822533beeadc14b8bfbc2493aa77ea3"
 
 automation-events@^3.0.4:
   version "3.0.5"

@@ -5,6 +5,7 @@ type AudioKeysOptions = {
   rootNote: number
   octaveControls: boolean
   velocityControls: boolean
+  layoutIndependentMapping: boolean
 }
 
 interface AudioKeysNoteData {

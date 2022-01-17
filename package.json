@@ -94,7 +94,7 @@
     "abletonlink": "^0.1.1",
     "activity-detector": "^3.0.0",
     "ajv": "^7.0.4",
-    "audiokeys": "^0.1.1",
+    "audiokeys": "https://github.com/SonyCSLParis/AudioKeys#international",
     "deep-equal": "^2.0.3",
     "es6-promise": "^4.2.4",
     "fs-extra": "^9.1.0",

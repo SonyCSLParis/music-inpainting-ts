@@ -67,6 +67,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     polyphony: Infinity,
     rows: 2,
     rootNote: 60,
+    layoutIndependentMapping: true,
   })
 
   constructor() {
