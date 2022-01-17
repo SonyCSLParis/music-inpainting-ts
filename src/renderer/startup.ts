@@ -216,9 +216,9 @@ export function render(
 
   selectMode(applicationModes[0])
 
-  if (availableApplicationModes.length == 1) {
-    applicationModeSelectElement.style.display = 'none'
-  }
+  // if (availableApplicationModes.length == 1) {
+  //   modeConfigurationContainerElement.style.display = 'none'
+  // }
 
   if (globalConfiguration['insert_recaptcha']) {
     renderRecaptcha(renderPage)

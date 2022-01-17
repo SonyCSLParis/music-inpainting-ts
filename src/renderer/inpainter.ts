@@ -1,5 +1,4 @@
 import $ from 'jquery'
-import 'nipplejs'
 import log from 'loglevel'
 import EventEmitter from 'events'
 
@@ -20,7 +19,6 @@ import MidiSheetPlaybackManager from './sheetPlayback'
 import * as Tone from 'tone'
 import { SpectrogramPlaybackManager } from './spectrogramPlayback'
 import { CycleSelect } from './cycleSelect'
-import { NumberControl } from './numberControl'
 import { DownloadButton } from './downloadCommand'
 import { mapTouchEventsToMouseSimplebar } from './utils/simplebar'
 import SimpleBar from 'simplebar'
@@ -905,14 +903,6 @@ export class SheetInpainterBase extends Inpainter<
         div.classList.add('active')
       }
 
-      // // insert NipppleJS manager
-      // var options = {
-      //     zone: div,
-      //     color: "blue"
-      // };
-      // var manager = nipplejs.create(options);
-      // var joystick_data = {};
-      // var last_click = [];
       div.addEventListener('click', onclick)
       // use bubbling and preventDefault to block window scrolling
       div.addEventListener(
