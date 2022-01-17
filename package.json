@@ -43,7 +43,7 @@
   "bugs": {
     "url": "https://github.com/SonyCSLParis/NONOTO/issues"
   },
-  "homepage": "https://github.com/opensheetmusicdisplay/webpack-usage-example#readme",
+  "homepage": "https://github.com/SonyCSLParis/NONOTO",
   "devDependencies": {
     "@types/deep-equal": "^1.0.1",
     "@types/fs-extra": "^9.0.11",
@@ -94,7 +94,7 @@
     "abletonlink": "^0.1.1",
     "activity-detector": "^3.0.0",
     "ajv": "^7.0.4",
-    "audiokeys": "https://github.com/SonyCSLParis/AudioKeys#international",
+    "audiokeys": "https://github.com/SonyCSLParis/AudioKeys",
     "deep-equal": "^2.0.3",
     "es6-promise": "^4.2.4",
     "fs-extra": "^9.1.0",
