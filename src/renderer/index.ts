@@ -648,7 +648,7 @@ function render(
     if (inpainter.dataType == 'sheet') {
       promise = inpainter.generate(inpaintingApiAddress)
     } else if (inpainter.dataType == 'spectrogram') {
-      promise = inpainter.sampleFromDataset(inpaintingApiAddress)
+      promise = inpainter.sampleOrGenerate(inpaintingApiAddress)
     } else {
       // FIXME(@tbazin, 2021/09/14): else branch should not be required,
       // alternatives should be detected automatically

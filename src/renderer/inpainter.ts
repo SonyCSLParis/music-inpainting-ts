@@ -358,6 +358,21 @@ export abstract class Inpainter<
     )
   }
 
+  async sampleOrGenerate(
+    inpaintingApiUrl = this.defaultApiAddress,
+    timeout = 10000
+  ): Promise<this> {
+    try {
+      return await this.sampleFromDataset(inpaintingApiUrl, timeout)
+    } catch (error) {
+      log.error(error)
+      this.enableChanges()
+      return await this.generate(inpaintingApiUrl)
+    } finally {
+      this.enableChanges()
+    }
+  }
+
   // perform an inpainting operation on the current data
   async inpaint(mask, apiAddress: URL = this.defaultApiAddress): Promise<this> {
     return this.apiRequestHelper(
