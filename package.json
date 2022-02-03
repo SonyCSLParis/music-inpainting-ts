@@ -102,7 +102,7 @@
     "jquery-simple-upload": "^1.1.0",
     "jszip": "^3.2.2",
     "loglevel": "^1.6.1",
-    "nexusui": "^2.1.4",
+    "nexusui": "https://github.com/SonyCSLParis/nexusui#types",
     "opensheetmusicdisplay": "^1.0.0",
     "raphael": "^2.3.0",
     "request": "^2.87.0",
