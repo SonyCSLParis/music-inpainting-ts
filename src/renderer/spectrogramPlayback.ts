@@ -1,5 +1,5 @@
 import * as Tone from 'tone'
-import FocusedAudioKeys from './audiokeys/audiokeys'
+import FocusedAudioKeys from './audiokeys/focusedAudiokeys'
 import { Midi } from '@tonaljs/tonal'
 
 import { PlaybackManager } from './playback'
