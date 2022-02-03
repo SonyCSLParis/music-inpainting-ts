@@ -24,6 +24,19 @@ import { mapTouchEventsToMouseSimplebar } from './utils/simplebar'
 import SimpleBar from 'simplebar'
 import type { Options as SimpleBarOptions } from 'simplebar'
 
+function handleFetchError(
+  response: Response,
+  attempted_action = 'perform network request'
+): void | never {
+  if (!response.ok) {
+    throw new Error(
+      'Failed to ' +
+        attempted_action +
+        ` with error code ${response.status} (${response.statusText})`
+    )
+  }
+}
+
 class ScrollLockSimpleBar extends SimpleBar {
   axis: {
     x: {
@@ -285,7 +298,7 @@ export abstract class Inpainter<
   readonly defaultApiAddress: URL
 
   protected abstract apiRequest(
-    httpMethod,
+    httpMethod: 'GET' | 'POST',
     command: apiCommand,
     restParameters: string,
     apiAddress: URL,
@@ -307,7 +320,7 @@ export abstract class Inpainter<
     if (this.disabled) {
       return this
     }
-    await this.apiRequest(
+    return this.apiRequest(
       httpMethod,
       command,
       restParameters,
@@ -315,8 +328,7 @@ export abstract class Inpainter<
       sendCodesWithRequest,
       data,
       timeout
-    )
-    return this.refreshNowPlayingDisplay()
+    ).then(() => this.refreshNowPlayingDisplay())
   }
 
   // retrieve new data without conditioning
@@ -1293,14 +1305,15 @@ export class SheetInpainterBase extends Inpainter<
     }
 
     const commandURL = new URL(generationCommand, inpaintingApiUrl)
-    const jsonResponse = await fetch(commandURL.href, {
+    const response = await fetch(commandURL.href, {
       method: httpMethod,
       body: requestBody,
       headers: {
         'Content-Type': 'application/json',
       },
     })
-    const jsonContent = await jsonResponse.json()
+    handleFetchError(response)
+    const jsonContent = await response.json()
     // update metadata
     // TODO: must check if json HAS the given metadata key first!
     // const new_fermatas = jsonResponse["fermatas"];
@@ -1316,31 +1329,20 @@ export class SheetInpainterBase extends Inpainter<
 
     // save current zoom level to restore it after load
     const zoom = this.sheet.Zoom
-    this.sheet.load(this.currentXML).then(
-      async () => {
-        // restore pre-load zoom level
-        this.sheet.Zoom = zoom
-        this.render()
+    await this.sheet.load(this.currentXML)
+    this.sheet.Zoom = zoom
+    this.render()
 
-        const sequenceDuration = Tone.Time(
-          `0:${this.sequenceDuration_quarters}:0`
-        )
-        const midiConversionURL = new URL('/musicxml-to-midi', inpaintingApiUrl)
-        const midiBlobURL = await this.playbackManager.loadMidi(
-          midiConversionURL.href,
-          this.currentXML,
-          sequenceDuration.toBarsBeatsSixteenths()
-        )
-        this.downloadButton.revokeBlobURL()
-        this.downloadButton.targetURL = midiBlobURL
-
-        this.enableChanges()
-      },
-      (err) => {
-        log.error(err)
-        this.enableChanges()
-      }
+    const sequenceDuration = Tone.Time(`0:${this.sequenceDuration_quarters}:0`)
+    const midiConversionURL = new URL('/musicxml-to-midi', inpaintingApiUrl)
+    const midiBlobURL = await this.playbackManager.loadMidi(
+      midiConversionURL.href,
+      this.currentXML,
+      sequenceDuration.toBarsBeatsSixteenths()
     )
+    this.downloadButton.revokeBlobURL()
+    this.downloadButton.targetURL = midiBlobURL
+    this.enableChanges()
     return this
   }
 
@@ -2215,9 +2217,11 @@ class SpectrogramInpainterBase extends Inpainter<
       'sample-from-dataset-audio' + this.restParameters,
       inpaintingApiUrl
     )
-    return fetch(generationUrl.href, {
+    const response = await fetch(generationUrl.href, {
       method: 'GET',
-    }).then((response) => response.blob())
+    })
+    handleFetchError(response, 'get audio sample')
+    return response.blob()
   }
 
   protected async getAudio(
@@ -2232,13 +2236,15 @@ class SpectrogramInpainterBase extends Inpainter<
     const requestData = JSON.stringify(payload_object)
 
     const generationUrl = new URL('get-audio', inpaintingApiUrl)
-    return fetch(generationUrl.href, {
+    const response = await fetch(generationUrl.href, {
       method: 'POST',
       body: requestData,
       headers: {
         ContentType: 'application/json',
       },
-    }).then((response) => response.blob())
+    })
+    handleFetchError(response, 'convert codemaps to audio')
+    return response.blob()
   }
 
   protected async getSpectrogramImage(
@@ -2253,13 +2259,15 @@ class SpectrogramInpainterBase extends Inpainter<
 
     const generationCommand = '/get-spectrogram-image'
     const generationUrl = new URL(generationCommand, inpaintingApiUrl)
-    return fetch(generationUrl.href, {
+    const response = await fetch(generationUrl.href, {
       method: 'POST',
       body: JSON.stringify(payload),
       headers: {
         ContentType: 'application/json',
       },
-    }).then((response) => response.blob())
+    })
+    handleFetchError(response, 'convert codemaps to spectrogram image')
+    return response.blob()
   }
 
   protected async updateAudio(audioBlob: Blob): Promise<void> {
@@ -2323,21 +2331,23 @@ class SpectrogramInpainterBase extends Inpainter<
 
     const generationUrl = new URL(generationCommand, inpaintingApiUrl)
     try {
-      const jsonResponse = await fetch(generationUrl.href, {
+      const response = await fetch(generationUrl.href, {
         method: 'POST',
         body: form,
         headers: {
           ContentType: 'multipart/form-data',
         },
-      }).then((response) => response.json())
+      })
+      handleFetchError(response, 'analyze audio file')
+      const jsonContent = await response.json()
 
-      newCodes_top = jsonResponse['top_code']
-      newCodes_bottom = jsonResponse['bottom_code']
+      newCodes_top = jsonContent['top_code']
+      newCodes_bottom = jsonContent['bottom_code']
       newConditioning_top = parseConditioningMap(
-        jsonResponse['top_conditioning']
+        jsonContent['top_conditioning']
       )
       newConditioning_bottom = parseConditioningMap(
-        jsonResponse['bottom_conditioning']
+        jsonContent['bottom_conditioning']
       )
 
       const audioPromise = this.getAudio(
@@ -2409,11 +2419,12 @@ class SpectrogramInpainterBase extends Inpainter<
     let newConditioning_bottom: Map<string, (string | number)[][]>
 
     try {
-      const generationUrl = new URL(generationCommand, inpaintingApiUrl)
       const abortController = new AbortController()
       const abortTimeout =
         timeout > 0 ? setTimeout(() => abortController.abort(), timeout) : null
-      const jsonResponse = await fetch(generationUrl.href, {
+
+      const generationUrl = new URL(generationCommand, inpaintingApiUrl)
+      const response = await fetch(generationUrl.href, {
         method: httpMethod,
         body: requestBody,
         headers: {
@@ -2422,7 +2433,8 @@ class SpectrogramInpainterBase extends Inpainter<
         signal: abortController.signal,
       })
       clearTimeout(abortTimeout)
-      const jsonContent = await jsonResponse.json()
+      handleFetchError(response, 'perform inpainting operation')
+      const jsonContent = await response.json()
 
       newCodes_top = jsonContent['top_code']
       newCodes_bottom = jsonContent['bottom_code']
