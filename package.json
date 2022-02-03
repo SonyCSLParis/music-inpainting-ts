@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall-disabled": "electron-builder install-app-deps",
     "start": "electron ./app/main.js",
     "build:web": "webpack --config webpack.web.cjs",
     "build:notono_web": "webpack --config webpack.notono_web.cjs",
@@ -59,8 +59,8 @@
     "copy-webpack-plugin": "^6",
     "cross-env": "^7.0.2",
     "css-loader": "^5.0.2",
-    "electron": "^11.2.3",
-    "electron-builder": "^22.0.0",
+    "electron": "^11",
+    "electron-builder": "^22.14",
     "electron-webpack": "^2.1.2",
     "electron-webpack-ts": "^4",
     "eslint": "^7.19.0",
@@ -83,8 +83,7 @@
     "utf-8-validate": "^5.0.5",
     "webpack": "^4",
     "webpack-json-loader": "^1.0.0",
-    "webpack-merge": "^5.7.3",
-    "yarn": "^1.22.10"
+    "webpack-merge": "^5.7.3"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.3",
@@ -120,5 +119,6 @@
   },
   "resolutions": {
     "webpack-sources": "^1.0.1"
-  }
+  },
+  "packageManager": "yarn@3.1.1"
 }
