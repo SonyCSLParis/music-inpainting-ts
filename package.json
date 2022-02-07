@@ -94,6 +94,7 @@
     "activity-detector": "^3.0.0",
     "ajv": "^7.0.4",
     "audiokeys": "https://github.com/SonyCSLParis/AudioKeys",
+    "chart.js": "^3.7.0",
     "deep-equal": "^2.0.3",
     "es6-promise": "^4.2.4",
     "fs-extra": "^9.1.0",

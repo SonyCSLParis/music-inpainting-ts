@@ -12,12 +12,18 @@ $spectrogram-height-no-scroll: 90%;
   .inpainter-interface-container {
     height: $spectrogram-height;
   }
+  .spectrogram-inpainter-frequency-scale-container {
+    height: calc(#{$spectrogram-height} + 3%);
+  }
 }
 
 .spectrogram-inpainter.no-scroll {
   .spectrogram-inpainter-image-container,
   .inpainter-interface-container {
     height: $spectrogram-height-no-scroll;
+  }
+  .spectrogram-inpainter-frequency-scale-container {
+    height: calc(#{$spectrogram-height-no-scroll} + 3%);
   }
 }
 
@@ -104,11 +110,25 @@ body.notono {
   }
 }
 
-.spectrogram-inpainter-image-container {
+.spectrogram-inpainter-image-container,
+.spectrogram-inpainter-scale-container {
   position: absolute;
-  width: 100vw;
-  top: 5%;
   pointer-events: none;
+}
+.spectrogram-inpainter-frequency-scale-container {
+  left: 2vw;
+  top: 3%;
+}
+
+.spectrogram-inpainter-time-scale-container {
+  width: 92vw;
+  left: 4vw;
+  bottom: 2%;
+}
+
+.spectrogram-inpainter-image-container {
+  top: 5%;
+  width: 100vw;
 
   picture {
     position: relative;

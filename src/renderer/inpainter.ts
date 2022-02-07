@@ -24,6 +24,17 @@ import { mapTouchEventsToMouseSimplebar } from './utils/simplebar'
 import SimpleBar from 'simplebar'
 import type { Options as SimpleBarOptions } from 'simplebar'
 
+import { Tick, Ticks, ScriptableScaleContext } from 'chart.js'
+import Chart from 'chart.js/auto'
+import {
+  Hertz,
+  MelFrequencyScale,
+  MelScaleHelper,
+} from './spectrogram/frequencyScale'
+
+Chart.defaults.font.family = 'Fira-Sans'
+Chart.registry.scales.register(MelFrequencyScale)
+
 function handleFetchError(
   response: Response,
   attempted_action = 'perform network request'
@@ -1694,6 +1705,12 @@ class SpectrogramInpainterBase extends Inpainter<
   readonly snapPoints: HTMLDivElement
   readonly addColumnIconsContainer: HTMLDivElement
   protected sequencer: SequencerToggle
+  protected readonly timeScaleContainer: HTMLDivElement
+  protected readonly timeScaleCanvas: HTMLCanvasElement
+  protected timeScale: Chart
+  protected readonly frequencyScaleContainer: HTMLDivElement
+  protected readonly frequencyScaleCanvas: HTMLCanvasElement
+  protected frequencyScale: Chart
   readonly useTransparentScrollbars = false
 
   readonly instrumentConstraintSelect: NexusSelectWithShuffle
@@ -1761,7 +1778,7 @@ class SpectrogramInpainterBase extends Inpainter<
       inpaintingApiAddress,
       SpectrogramInpainter.displayUpdateRate
     )
-    this.container.classList.add('spectrogram-inpainter')
+    this.container.classList.add('spectrogram-inpainter', 'no-scroll')
 
     this.imageContainer = document.createElement('div')
     this.imageContainer.classList.add('spectrogram-inpainter-image-container')
@@ -1782,9 +1799,32 @@ class SpectrogramInpainterBase extends Inpainter<
     })
 
     this.shadowContainer = document.createElement('div')
-    this.shadowContainer.classList.add('spectrogram-inpainter-shadow-container')
-    this.shadowContainer.classList.add('glow-shadow')
+    this.shadowContainer.classList.add(
+      'spectrogram-inpainter-shadow-container',
+      'glow-shadow'
+    )
     this.interfaceContainer.appendChild(this.shadowContainer)
+
+    this.timeScaleContainer = document.createElement('div')
+    this.timeScaleContainer.classList.add(
+      'spectrogram-inpainter-scale-container',
+      'spectrogram-inpainter-time-scale-container'
+    )
+    this.container.appendChild(this.timeScaleContainer)
+    this.timeScaleCanvas = document.createElement('canvas')
+    this.timeScaleContainer.appendChild(this.timeScaleCanvas)
+
+    this.frequencyScaleContainer = document.createElement('div')
+    this.frequencyScaleContainer.classList.add(
+      'spectrogram-inpainter-scale-container',
+      'spectrogram-inpainter-frequency-scale-container'
+    )
+    this.container.appendChild(this.frequencyScaleContainer)
+    this.frequencyScaleCanvas = document.createElement('canvas')
+    this.frequencyScaleContainer.appendChild(this.frequencyScaleCanvas)
+
+    this.drawTimeScale()
+    this.drawFrequencyScale()
 
     const initialWidth = this.interfaceContainer.clientWidth
     const initialHeight = this.interfaceContainer.clientHeight
@@ -2093,6 +2133,7 @@ class SpectrogramInpainterBase extends Inpainter<
     const width = this.interfaceContainer.clientWidth
     const height = this.imageContainer.clientHeight
     this.sequencer.resize(width, height)
+    // this.frequencyScale.resize(width, height)
 
     this.updateSnapPoints()
 
@@ -2127,6 +2168,137 @@ class SpectrogramInpainterBase extends Inpainter<
 
   protected get numScrollSteps(): number {
     return this.vqvaeTimestepsTop - this.numColumnsTop + 1
+  }
+
+  static maxTicksLimit: number = MelFrequencyScale.maxTicksLimit
+
+  static readonly commonAxesOptions = {
+    grid: {
+      drawBorder: false,
+      display: false,
+    },
+  }
+
+  readonly commonTicksOptions = {
+    color: 'rgba(255, 255, 255, 0.6)',
+    font: (ctx: ScriptableScaleContext) => {
+      return {
+        family: 'Fira-Sans',
+        size: Math.min(this.frequencyScaleContainer.clientWidth / 15, 12),
+        style: undefined,
+        lineHeight: undefined,
+        weight: undefined,
+      }
+    },
+    // maxTicksLimit: (ctx) => 30,
+    showLabelBackdrop: true,
+    backdropColor: 'rgba(0, 0, 0, 0.3)',
+    backdropPadding: 2,
+  }
+
+  drawTimeScale(): Chart {
+    if (this.timeScale != null) {
+      this.timeScale.destroy()
+    }
+
+    const chart = new Chart(this.timeScaleCanvas, {
+      type: 'line',
+      data: {
+        datasets: [],
+      },
+      options: {
+        // ensures the canvas fills the entire container
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            display: false,
+            ...SpectrogramInpainter.commonAxesOptions,
+          },
+          x: {
+            ...SpectrogramInpainter.commonAxesOptions,
+
+            axis: 'x',
+            type: 'linear',
+            display: true,
+
+            min: this.getCurrentScrollPositionTopLayer(),
+            max:
+              this.getCurrentScrollPositionTopLayer() + this.vqvaeTimestepsTop,
+
+            offset: false,
+
+            ticks: {
+              stepSize: 1,
+              align: 'start',
+              callback: function (
+                this,
+                tickValue: number,
+                index: number,
+                ticks: Tick[]
+              ): string {
+                return (
+                  Ticks.formatters.numeric.bind(this)(tickValue, index, ticks) +
+                  's'
+                )
+              },
+              ...this.commonTicksOptions,
+            },
+          },
+        },
+      },
+    })
+    this.timeScale = chart
+    return this.timeScale
+  }
+
+  drawFrequencyScale(
+    maxTicksLimit: number = SpectrogramInpainter.maxTicksLimit
+  ): Chart {
+    if (this.frequencyScale != null) {
+      this.frequencyScale.destroy()
+    }
+
+    const minFrequency: Hertz = 20
+    const maxFrequency: Hertz = 8000
+    const melBreakFrequency: Hertz = 240
+    const melScaleHelper = new MelScaleHelper(melBreakFrequency)
+
+    const chart = new Chart(this.frequencyScaleCanvas, {
+      type: 'line',
+      data: {
+        datasets: [],
+      },
+      options: {
+        // ensures the canvas fills the entire container
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            display: false,
+            ...SpectrogramInpainter.commonAxesOptions,
+          },
+          y: {
+            ...SpectrogramInpainter.commonAxesOptions,
+
+            axis: 'y',
+            display: true,
+            type: 'mel',
+            offset: false,
+
+            min: minFrequency,
+            max: maxFrequency,
+            melBreakFrequency: melBreakFrequency,
+
+            ticks: {
+              align: 'start',
+              crossAlign: 'center',
+              ...this.commonTicksOptions,
+            },
+          },
+        },
+      },
+    })
+    this.frequencyScale = chart
+    return this.frequencyScale
   }
 
   public drawTimestampBoxes(
