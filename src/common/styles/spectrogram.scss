@@ -121,8 +121,8 @@ body.notono {
 }
 
 .spectrogram-inpainter-time-scale-container {
-  width: 92vw;
-  left: 4vw;
+  width: calc(90vw + 1em);
+  left: calc(5vw - 0.5em);
   bottom: 2%;
 }
 
