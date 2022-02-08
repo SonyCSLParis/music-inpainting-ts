@@ -13,7 +13,7 @@ $spectrogram-height-no-scroll: 90%;
     height: $spectrogram-height;
   }
   .spectrogram-inpainter-frequency-scale-container {
-    height: calc(#{$spectrogram-height} + 3%);
+    height: calc(#{$spectrogram-height} + 1.5rem);
   }
 }
 
@@ -23,7 +23,7 @@ $spectrogram-height-no-scroll: 90%;
     height: $spectrogram-height-no-scroll;
   }
   .spectrogram-inpainter-frequency-scale-container {
-    height: calc(#{$spectrogram-height-no-scroll} + 3%);
+    height: calc(#{$spectrogram-height-no-scroll} + 1.5rem);
   }
 }
 
@@ -117,7 +117,7 @@ body.notono {
 }
 .spectrogram-inpainter-frequency-scale-container {
   left: 2vw;
-  top: 3%;
+  top: calc(5% - 1rem);
 }
 
 .spectrogram-inpainter-time-scale-container {

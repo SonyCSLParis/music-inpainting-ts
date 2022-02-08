@@ -57,52 +57,6 @@ function isMajor(tickVal: number): boolean {
   return remain === 1
 }
 
-/**
- * Generate a set of Linear ticks
- * @param generationOptions the options used to generate the ticks
- * @param dataRange the range of the data
- * @returns {object[]} array of tick objects
- */
-function generateTicks(
-  generationOptions: MinMaxRange,
-  dataRange: MinMaxRange
-): Tick[] {
-  const endExp = Math.floor(Math.log10(dataRange.max))
-  const endSignificand = Math.ceil(dataRange.max / Math.pow(10, endExp))
-
-  const ticks: Tick[] = []
-
-  const firstTick = generationOptions.min
-  ticks.push({ value: firstTick, major: isMajor(firstTick) })
-  const lastTick = generationOptions.max
-  ticks.push({ value: lastTick, major: isMajor(lastTick) })
-
-  let tickVal = finiteOrDefault(
-    generationOptions.min,
-    Math.pow(10, Math.floor(Math.log10(dataRange.min)))
-  )
-
-  let exp = Math.floor(Math.log10(tickVal))
-  let significand = Math.floor(tickVal / Math.pow(10, exp))
-  let precision = exp < 0 ? Math.pow(10, Math.abs(exp)) : 1
-
-  do {
-    ticks.push({ value: tickVal, major: isMajor(tickVal) })
-
-    ++significand
-    if (significand === 10) {
-      significand = 1
-      ++exp
-      precision = exp >= 0 ? 1 : precision
-    }
-
-    tickVal =
-      Math.round(significand * Math.pow(10, exp) * precision) / precision
-  } while (exp < endExp || (exp === endExp && significand < endSignificand))
-
-  return ticks
-}
-
 // y-axis scale for (Linear) Mel Scale frequencies with custom break frequency
 export class MelFrequencyScale extends LinearScale<MelScaleOptions> {
   protected melScaleHelper: MelScaleHelper
@@ -131,7 +85,7 @@ export class MelFrequencyScale extends LinearScale<MelScaleOptions> {
   }
 
   buildTicks(): Tick[] {
-    const logarithmicallySpacedTicks = generateTicks(
+    const logarithmicallySpacedTicks = this.generateTicks(
       { min: this.min, max: this.max },
       { min: this.min, max: this.max }
     )
@@ -151,6 +105,58 @@ export class MelFrequencyScale extends LinearScale<MelScaleOptions> {
 
   static formatLabel(label: string): string {
     return label.length > 0 ? label + 'Hz' : ''
+  }
+
+  /**
+   * Generate a set of Linear ticks
+   * @param generationOptions the options used to generate the ticks
+   * @param dataRange the range of the data
+   * @returns {object[]} array of tick objects
+   */
+  generateTicks(
+    generationOptions: MinMaxRange,
+    dataRange: MinMaxRange
+  ): Tick[] {
+    const endExp = Math.floor(Math.log10(dataRange.max))
+    const endSignificand = Math.ceil(dataRange.max / Math.pow(10, endExp))
+
+    const ticks: Tick[] = []
+
+    const firstTick = generationOptions.min
+    ticks.push({ value: firstTick, major: true })
+
+    let tickVal = finiteOrDefault(
+      generationOptions.min,
+      Math.pow(10, Math.floor(Math.log10(dataRange.min)))
+    )
+
+    let exp = Math.floor(Math.log10(tickVal))
+    if (this.height < 200) {
+      exp = Math.max(exp, 3)
+    }
+    if (this.height < 500) {
+      exp = Math.max(exp, 2)
+    }
+    let significand = Math.floor(tickVal / Math.pow(10, exp)) + 1
+    let precision = exp < 0 ? Math.pow(10, Math.abs(exp)) : 1
+
+    do {
+      tickVal =
+        Math.round(significand * Math.pow(10, exp) * precision) / precision
+      ticks.push({ value: tickVal, major: isMajor(tickVal) })
+
+      ++significand
+      if (significand === 10) {
+        significand = 1
+        ++exp
+        precision = exp >= 0 ? 1 : precision
+      }
+    } while (exp < endExp || (exp === endExp && significand < endSignificand))
+
+    const lastTick = generationOptions.max
+    ticks.push({ value: lastTick, major: true })
+
+    return ticks
   }
 }
 
