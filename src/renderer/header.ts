@@ -40,7 +40,7 @@ export function render(
   if (configuration['display_sony_logo']) {
     const cslLogoLinkElement = document.createElement('a')
     cslLogoLinkElement.id = 'csl-logo'
-    cslLogoLinkElement.classList.add('header-item-left')
+    cslLogoLinkElement.classList.add('header-logo', 'header-logo-left')
     // cslLogoLinkElement.href = "https://www.sonycsl.co.jp/";
     //
     // // open in new tab
@@ -85,7 +85,7 @@ export function render(
   if (configuration['display_ircam_logo']) {
     const ircamLogoLinkElement = document.createElement('a')
     ircamLogoLinkElement.id = 'ircam-logo'
-    ircamLogoLinkElement.classList.add('header-item-right')
+    ircamLogoLinkElement.classList.add('header-logo', 'header-logo-right')
 
     containerElement.appendChild(ircamLogoLinkElement)
 

@@ -148,7 +148,11 @@ $panes-background: #beb9d4;
   }
   #header {
     border-bottom-style: solid;
+    .header-logo {
+      filter: main-filter(color.invert($panes), $overlay-lightness-factor / 10);
+    }
   }
+
   #bottom-controls {
     border-top-style: solid;
   }
