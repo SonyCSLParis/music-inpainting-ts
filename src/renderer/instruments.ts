@@ -1,45 +1,33 @@
 // FIXME(theis, 2021/05/25): import Tone.Instrument type def and fix typings
+import log from 'loglevel'
 import * as Tone from 'tone'
 // import { PolySynth, PolySynthOptions, SynthOptions } from 'tone'
 import {
   Instrument,
   InstrumentOptions,
 } from 'tone/build/esm/instrument/Instrument' //  instrument/Instrument'
-type ToneInstrument = Instrument<InstrumentOptions>
-
-// @tonejs/piano@0.2.1 is built as an es6 module, so we use the trick from
-// https://www.typescriptlang.org/docs/handbook/modules.html#optional-module-loading-and-other-advanced-loading-scenarios
-// to load the types and the implementation separately
-// this ensures that babel is correctly applied on the imported javascript
-import { Piano as TonePiano } from '@tonejs/piano'
-const Piano: typeof TonePiano = <typeof TonePiano>(
-  require('babel-loader!@tonejs/piano').Piano
-)
-
+import { Piano } from '@tonejs/piano/'
 import { SampleLibrary } from './dependencies/Tonejs-Instruments'
-import log from 'loglevel'
 
 import { CycleSelect } from './cycleSelect'
-
 import { getPathToStaticFile } from './staticPath'
 
-let piano: TonePiano
+type ToneInstrument = Instrument<InstrumentOptions>
+type InstrumentOrPiano = ToneInstrument | Piano
+
+let piano: Piano
 let sampledInstruments: Record<string, Tone.Sampler> // declare variable but do not load samples yet
-let currentInstrument: ToneInstrument | TonePiano
-let instrumentFactories: Record<string, () => ToneInstrument | TonePiano>
+let currentInstrument: InstrumentOrPiano
+
+let instrumentFactories: Record<string, () => InstrumentOrPiano>
 let silentInstrument: ToneInstrument
-export function getCurrentInstrument(
-  midiChannel = 0
-): ToneInstrument | TonePiano {
+export function getCurrentInstrument(midiChannel = 0): InstrumentOrPiano {
   return currentInstrument
 }
 
-let chordsInstrumentFactories: Record<string, () => ToneInstrument | TonePiano>
-let currentChordsInstrument: ToneInstrument | TonePiano | null = null
-export function getCurrentChordsInstrument():
-  | ToneInstrument
-  | TonePiano
-  | null {
+let chordsInstrumentFactories: Record<string, () => InstrumentOrPiano>
+let currentChordsInstrument: InstrumentOrPiano | null = null
+export function getCurrentChordsInstrument(): InstrumentOrPiano | null {
   return currentChordsInstrument
 }
 

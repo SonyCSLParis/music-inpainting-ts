@@ -8,14 +8,7 @@ import { NumberControl } from './numberControl'
 import Nexus from './nexusColored'
 import type { NexusNumber, NexusSelect } from 'nexusui'
 
-// @tonejs/piano@0.2.1 is built as an es6 module, so we use the trick from
-// https://www.typescriptlang.org/docs/handbook/modules.html#optional-module-loading-and-other-advanced-loading-scenarios
-// to load the types and the implementation separately
-// this ensures that babel is correctly applied on the imported javascript
-import { MidiInput as MidiInputInterface } from '@tonejs/piano'
-const MidiInput: typeof MidiInputInterface = <typeof MidiInputInterface>(
-  require('babel-loader!@tonejs/piano').MidiInput
-)
+import { MidiInput } from '@tonejs/piano/'
 
 // @ts-expect-error: exports private _inputToDevice method
 // adds channel-based event filtering in the _addListeners
