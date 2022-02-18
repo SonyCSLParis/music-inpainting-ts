@@ -37,21 +37,6 @@ $spectrogram-height-no-scroll: 90%;
   position: absolute;
   z-index: -1;
 
-  &.busy .inpainter-interface-container {
-    cursor: wait !important;
-    * {
-      pointer-events: none !important;
-    }
-
-    span svg * {
-      fill: rgba(0, 0, 0, 0.699);
-    }
-
-    * {
-      background: none;
-    }
-  }
-
   background: transparent;
   [nexus-ui] {
     position: absolute;
