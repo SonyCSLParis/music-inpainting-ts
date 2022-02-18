@@ -95,11 +95,6 @@ export class LinkServerElectron extends AbletonLink {
         event.reply(this.prefixMessage('phase'), this.phase)
       }
     })
-    ipcMain.on(this.prefixMessage('get-phase-sync'), (event) => {
-      if (this.linkEnable) {
-        event.returnValue = this.phase
-      }
-    })
 
     ipcMain.on(this.prefixMessage('kill'), () => this.disable())
   }

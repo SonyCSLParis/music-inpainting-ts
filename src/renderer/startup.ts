@@ -94,12 +94,18 @@ console.log(availableApplicationModes)
 if (COMPILE_ELECTRON) {
   void import('electron').then((electron) => {
     // disable the potentially enabled Link Client on page reloads
-    const windowID = <number>electron.ipcRenderer.sendSync('get-window-id')
-    electron.ipcRenderer.send(
-      globalConfiguration['link_channel_prefix'] +
-        windowID.toString() +
-        'disable'
-    )
+    electron.ipcRenderer
+      .invoke('get-window-id')
+      .then((windowID: number) => {
+        electron.ipcRenderer.send(
+          globalConfiguration['link_channel_prefix'] +
+            windowID.toString() +
+            'disable'
+        )
+      })
+      .catch((err) => {
+        throw err
+      })
   })
 }
 

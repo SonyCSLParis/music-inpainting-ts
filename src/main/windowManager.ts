@@ -113,10 +113,6 @@ ipcMain.on('set-background-color', (event, backgroundColor: string) => {
   }
 })
 
-ipcMain.on('get-titleBarStyle', (event) => {
-  const id = event.sender.id
-  const targetWindow = openWindows.get(id)
-  if (targetWindow) {
-    event.returnValue = TITLE_BAR_STYLE
-  }
+ipcMain.handle('get-titleBarStyle', () => {
+  return TITLE_BAR_STYLE
 })

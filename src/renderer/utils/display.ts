@@ -15,7 +15,7 @@ export async function setBackgroundColorElectron(
 export async function getTitleBarDisplay(): Promise<string | null> {
   if (COMPILE_ELECTRON) {
     const ipcRenderer = (await import('electron')).ipcRenderer
-    return <string>ipcRenderer.sendSync('get-titleBarStyle')
+    return <Promise<string>>ipcRenderer.invoke('get-titleBarStyle')
   } else {
     return null
   }
