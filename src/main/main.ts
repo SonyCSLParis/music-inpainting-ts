@@ -57,6 +57,6 @@ ipcMain.on('ondragstart', (event, filePath: string, iconPath: string) => {
   })
 })
 
-ipcMain.on('get-window-id', (event) => {
-  event.returnValue = event.sender.id
+ipcMain.handle('get-window-id', (event) => {
+  return event.sender.id
 })

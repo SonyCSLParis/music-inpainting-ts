@@ -9,9 +9,9 @@ const link_channel_prefix: string = default_config['link_channel_prefix']
 type IpcRendererCallback = (event: IpcRendererEvent, ...args: any[]) => any
 export class LinkClientElectron extends AbletonLinkClient {
   protected _windowID?: number
-  protected get windowID(): number {
+  protected async windowID(): Promise<number> {
     if (this._windowID == null) {
-      this._windowID = <number>ipcRenderer.sendSync('get-window-id')
+      this._windowID = <number>await ipcRenderer.invoke('get-window-id')
     }
     return this._windowID
   }
@@ -20,32 +20,43 @@ export class LinkClientElectron extends AbletonLinkClient {
     super(bpmControl)
   }
 
-  protected prefixMessage(message: string): string {
-    return link_channel_prefix + this.windowID.toString() + message
+  protected async prefixMessage(message: string): Promise<string> {
+    return link_channel_prefix + (await this.windowID()).toString() + message
   }
 
   // Schedule a LINK dependent callback
-  onServerMessage(message: string, callback: IpcRendererCallback): this {
-    ipcRenderer.on(this.prefixMessage(message), callback.bind(this))
+  async onServerMessage(
+    message: string,
+    callback: IpcRendererCallback
+  ): Promise<this> {
+    ipcRenderer.on(await this.prefixMessage(message), callback.bind(this))
     return this
   }
   // Schedule a LINK dependent callback once
-  onServerMessageOnce(message: string, callback: IpcRendererCallback): this {
-    ipcRenderer.once(this.prefixMessage(message), callback.bind(this))
+  async onServerMessageOnce(
+    message: string,
+    callback: IpcRendererCallback
+  ): Promise<this> {
+    ipcRenderer.once(await this.prefixMessage(message), callback.bind(this))
     return this
   }
   // Send values to the Ableton Link server
-  sendToServer(message: string, ...args: any[]): void {
-    ipcRenderer.send(this.prefixMessage(message), ...args)
+  async sendToServer(message: string, ...args: any[]): Promise<void> {
+    ipcRenderer.send(await this.prefixMessage(message), ...args)
   }
-  removeServerListener(message: string, callback: IpcRendererCallback): void {
-    ipcRenderer.removeListener(this.prefixMessage(message), callback)
+  async removeServerListener(
+    message: string,
+    callback: IpcRendererCallback
+  ): Promise<void> {
+    ipcRenderer.removeListener(await this.prefixMessage(message), callback)
   }
-  removeAllServerListeners(message: string): void {
-    ipcRenderer.removeAllListeners(this.prefixMessage(message))
+  async removeAllServerListeners(message: string): Promise<void> {
+    ipcRenderer.removeAllListeners(await this.prefixMessage(message))
   }
 
-  getPhaseAsync(): Promise<number> {
-    return <Promise<number>>ipcRenderer.invoke(this.prefixMessage('get-phase'))
+  async getPhaseAsync(): Promise<number> {
+    return <Promise<number>>(
+      ipcRenderer.invoke(await this.prefixMessage('get-phase'))
+    )
   }
 }
