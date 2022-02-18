@@ -55,10 +55,15 @@ body {
 }
 
 .inpainter.busy {
-  cursor: wait !important;
-  > :not(.loading-spinner-container) {
+  > :not(.loading-spinner-container):not(.simplebar-track) {
+    // emulate modal overlay, highlighting the loading indicator
+    // TODO(@tbazin, 2022/02/18): fix NOTONO scrollbar still disabled by this
     opacity: 0.6;
     filter: blur(2.5px);
+    & * {
+      cursor: wait !important;
+      pointer-events: none !important;
+    }
   }
 }
 

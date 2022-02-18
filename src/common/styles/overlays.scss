@@ -48,21 +48,6 @@ $chords-font-stack: 'Boogaloo', cursive;
   }
 }
 
-.inpainter.busy {
-  .timeContainer {
-    &:hover,
-    *:hover {
-      cursor: wait !important;
-    }
-  }
-
-  .notebox.active {
-    background-color: grey;
-    opacity: 0.2;
-    pointer-events: none;
-  }
-}
-
 .sheet-inpainter.playing .notebox.playing {
   background-color: #f40081;
   transform: scaleY(1.1);
