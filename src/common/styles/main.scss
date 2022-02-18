@@ -37,9 +37,9 @@ body.running {
   }
   &[theme='lavender-dark'] {
     @include colors.theme-colors(lavender-dark);
-    &[theme='lavender-light'] {
-      @include colors.theme-colors(lavender-light);
-    }
+  }
+  &[theme='lavender-light'] {
+    @include colors.theme-colors(lavender-light);
   }
 }
 
