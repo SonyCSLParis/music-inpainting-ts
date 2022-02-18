@@ -31,14 +31,14 @@ $logo-margin-width: min(20%, 25px);
   grid-template-columns: repeat(3, 1fr);
 }
 
-.header-item-left {
+.header-logo-left {
   grid-row: 1;
   grid-column: 1;
   margin-left: $logo-margin-width;
   justify-self: left;
 }
 
-.header-item-right {
+.header-logo-right {
   grid-row: 1;
   grid-column: 3;
   margin-right: $logo-margin-width;
@@ -80,19 +80,10 @@ body.anonymous-mode {
   }
 }
 
-.header-item-left {
-  filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.1));
-}
-
-.header-item-right {
-  filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.1));
-}
-
 $logo-width-small: max(15px, min(10vw, 6vh, 40px));
 $logo-width-full: min(30vw, 16vh, 120px);
 
-.header-item-left,
-.header-item-right {
+.header-logo {
   display: flex;
   align-self: center;
 
@@ -100,6 +91,10 @@ $logo-width-full: min(30vw, 16vh, 120px);
     width: 100%;
     shape-rendering: auto;
   }
+}
+
+.logo:hover {
+  filter: brightness(1.1);
 }
 
 #header picture,
