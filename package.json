@@ -59,7 +59,7 @@
     "copy-webpack-plugin": "^6",
     "cross-env": "^7.0.2",
     "css-loader": "^5.0.2",
-    "electron": "^11",
+    "electron": "^13",
     "electron-builder": "^22.14",
     "electron-webpack": "^2.1.2",
     "electron-webpack-ts": "^4",
