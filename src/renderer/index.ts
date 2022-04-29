@@ -1,19 +1,21 @@
 import $ from 'jquery'
-import Tone from 'tone'
-
 import log from 'loglevel'
 log.setLevel(log.levels.INFO)
 
+import { UndoableInpainter } from './inpainter/inpainter'
+import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
+import { SheetInpainter } from './sheet/sheetInpainter'
+import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
 import {
-  SheetInpainter,
   SpectrogramInpainter,
   VqvaeLayer,
   NotonoTool,
   LayerAndTool,
-  Inpainter,
-} from './inpainter'
+  AudioVQVAELayerDimensions,
+} from './spectrogram/spectrogramInpainter'
+import { SpectrogramInpainterGraphicalView } from './spectrogram/spectrogramInpainterGraphicalView'
 import { NexusSelect } from 'nexusui'
-import {
+import Nexus, {
   NexusSelectWithShuffle,
   setColors as setNexusColors,
 } from './nexusColored'
@@ -30,16 +32,27 @@ import { BPMControl, renderPitchRootAndOctaveControl } from './numberControl'
 import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
 import { getAbletonLinkClientClass } from './ableton_link/linkClient'
 import * as LinkClientCommands from './ableton_link/linkClientCommands'
-import { DownloadButton, filename as filenameType } from './downloadCommand'
+import {
+  DownloadButton,
+  filename as filenameType,
+  NotonoDownloadButton,
+  SheetDownloadButton,
+} from './downloadCommand'
 
 import { MyShepherdTour, NonotoTour, NotonoTour } from './helpTour'
 
 import { createLFOControls } from './lfo'
-import { CycleSelect } from './cycleSelect'
+import {
+  bindSelectModel,
+  VariableValue,
+  createFontAwesomeElements,
+  CycleSelectViewWithDisable,
+  NullableVariableValue,
+} from './cycleSelect'
 import { getPathToStaticFile } from './staticPath'
 import * as ControlLabels from './controlLabels'
 import * as GranularitySelect from './granularitySelect'
-import * as SplashScreen from './startup'
+import { SplashScreen, applicationConfiguration } from './startup'
 
 // WARNING: importing style sheets, order matters!
 import 'simplebar'
@@ -59,11 +72,14 @@ import '../common/styles/disableMouse.scss'
 declare let COMPILE_ELECTRON: boolean
 
 import defaultConfiguration from '../common/default_config.json'
-import { applicationConfiguration } from './startup'
 import { setBackgroundColorElectron, getTitleBarDisplay } from './utils/display'
+import { UndoManager } from 'typed-undo'
+import { IOSMDOptions } from 'opensheetmusicdisplay'
 
-// TODO(@tbazin, 2021/08/05): clean-up this usage of unknown
-let inpainter: Inpainter<PlaybackManager, unknown>
+let inpainter: UndoableInpainter
+let sheetInpainter: SheetInpainter
+let spectrogramInpainter: SpectrogramInpainter
+let inpainterGraphicalView: InpainterGraphicalView
 let playbackManager: PlaybackManager
 let sheetPlaybackManager: MidiSheetPlaybackManager
 let spectrogramPlaybackManager: SpectrogramPlaybackManager
@@ -99,21 +115,23 @@ function render(
 
   if (configuration['osmd']) {
     document.body.classList.add('nonoto')
-    document.body.setAttribute('theme', 'millenial-pink')
-    document.body.getAttribute('theme')
+    // document.body.setAttribute('theme', 'millenial-pink')
+    // void setBackgroundColorElectron(
+    //   colors.millenial_pink_panes_background_color
+    // )
+    // setNexusColors('black', colors.millenial_pink_theme_pink)
+    document.body.setAttribute('theme', 'black-white')
     void setBackgroundColorElectron(
       colors.millenial_pink_panes_background_color
     )
-    setNexusColors(
-      colors.millenial_pink_active_control,
-      colors.millenial_pink_idle_control
-    )
+    setNexusColors('darkgray', 'black', 'lightgray')
   } else if (configuration['spectrogram']) {
     document.body.classList.add('notono')
-    document.body.setAttribute('theme', 'lavender-dark')
+    document.body.setAttribute('theme', 'dark')
     void setBackgroundColorElectron(
       colors.lavender_dark_mode_panes_background_color
     )
+    setNexusColors(colors.arabian_sand, 'black')
   }
 
   // set to true to display the help tour after two minutes of inactivity on the
@@ -158,12 +176,6 @@ function render(
   $(() => {
     const headerGridElement = document.getElementById('header')
     Header.render(headerGridElement, configuration)
-    const appTitleElement = document.getElementById('app-title')
-    appTitleElement.addEventListener('click', () => {
-      if (!inpainter.disabled) {
-        void sampleNewData(inpaintingApiAddress)
-      }
-    })
   })
 
   $(() => {
@@ -174,7 +186,7 @@ function render(
     bottomControlsGridElement.appendChild(bottomControlsExpandTabElement)
     bottomControlsExpandTabElement.addEventListener('click', function () {
       document.body.classList.toggle('advanced-controls-disabled')
-      inpainter.refresh()
+      inpainterGraphicalView.refresh()
     })
 
     const playbackCommandsGridspan = document.createElement('div')
@@ -192,7 +204,6 @@ function render(
       const constraintsContainerElement = document.createElement('div')
       constraintsContainerElement.id = 'constraints-container'
       constraintsContainerElement.classList.add('gridspan')
-      // constraintsContainerElement.classList.add('multi-column-gridspan')
       constraintsGridspanElement.appendChild(constraintsContainerElement)
 
       ControlLabels.createLabel(
@@ -226,50 +237,6 @@ function render(
       bpmControl.value = 80
     })
   }
-
-  $(() => {
-    const isAdvancedControl = true
-    const bottomControlsGridElement = document.getElementById('bottom-controls')
-    let defaultFilename: filenameType
-    if (configuration['spectrogram']) {
-      defaultFilename = { name: 'notono', extension: '.wav' }
-    } else if (configuration['osmd']) {
-      log.warn('Fix DownloadButton drag-out for MIDI')
-      defaultFilename = { name: 'nonoto', extension: '.mid' }
-    } else {
-      throw new Error('Unsupported configuration')
-    }
-
-    const downloadCommandsGridspan = document.createElement('div')
-    downloadCommandsGridspan.id = 'download-button-gridspan'
-    downloadCommandsGridspan.classList.add('gridspan')
-    downloadCommandsGridspan.classList.toggle('advanced', isAdvancedControl)
-    bottomControlsGridElement.appendChild(downloadCommandsGridspan)
-
-    downloadButton = new DownloadButton(
-      downloadCommandsGridspan,
-      defaultFilename,
-      isAdvancedControl
-    )
-
-    if (COMPILE_ELECTRON) {
-      ControlLabels.createLabel(
-        bottomControlsGridElement,
-        'download-button-label',
-        isAdvancedControl,
-        'download-button-label-with-native-drag',
-        downloadButton.container
-      )
-    } else {
-      ControlLabels.createLabel(
-        bottomControlsGridElement,
-        'download-button-label',
-        isAdvancedControl,
-        undefined,
-        downloadButton.container
-      )
-    }
-  })
 
   $(() => {
     const insertLFO: boolean = configuration['insert_variations_lfo']
@@ -331,10 +298,17 @@ function render(
     })
   }
 
-  let sheetInpainter: SheetInpainter
+  let sheetInpainterGraphicalView: SheetInpainterGraphicalView
   $(() => {
     const mainPanel = document.getElementById('main-panel')
     const bottomControlsGridElement = document.getElementById('bottom-controls')
+
+    // create downloadCommand
+    const downloadCommandsGridspan = document.createElement('div')
+    downloadCommandsGridspan.id = 'download-button-gridspan'
+    downloadCommandsGridspan.classList.add('gridspan')
+    downloadCommandsGridspan.classList.toggle('advanced', true)
+    bottomControlsGridElement.appendChild(downloadCommandsGridspan)
 
     if (configuration['osmd']) {
       const granularityControlsGridspanElement = document.createElement('div')
@@ -352,39 +326,51 @@ function render(
       const sheetContainer = document.createElement('div')
       sheetContainer.id = 'sheet-container'
       mainPanel.appendChild(sheetContainer)
-      /*
-       * Create a new instance of OpenSheetMusicDisplay and tell it to draw inside
-       * the container we've created in the steps before. The second parameter tells OSMD
-       * not to redraw on resize.
-       */
 
-      const autoResize = false
-      // TODO(theis): check proper way of enforcing subtype
-      sheetPlaybackManager = new MidiSheetPlaybackManager(bpmControl)
-      sheetInpainter = new SheetInpainter(
+      const undoManager = new UndoManager()
+      sheetInpainter = new SheetInpainter(inpaintingApiAddress, undoManager)
+      inpainter = sheetInpainter
+
+      sheetPlaybackManager = new MidiSheetPlaybackManager(
+        sheetInpainter,
+        bpmControl
+      )
+      playbackManager = sheetPlaybackManager
+
+      const osmdOptions: IOSMDOptions = {
+        autoResize: false,
+        drawingParameters: 'compacttight',
+        drawPartNames: false,
+      }
+      sheetInpainterGraphicalView = new SheetInpainterGraphicalView(
+        sheetInpainter,
         sheetPlaybackManager,
         sheetContainer,
         granularitySelect,
-        downloadButton,
         inpaintingApiAddress,
-        {
-          autoResize: autoResize,
-          drawingParameters: 'compacttight',
-          drawPartNames: false,
-        },
+        osmdOptions,
         configuration['annotation_types'],
         allowOnlyOneFermata
       )
-      inpainter = sheetInpainter
-
-      playbackManager = sheetPlaybackManager
+      inpainterGraphicalView = sheetInpainterGraphicalView
 
       if (configuration['use_chords_instrument']) {
         sheetPlaybackManager.scheduleChordsPlayer(
           configuration['chords_midi_channel'],
-          sheetInpainter
+          sheetInpainterGraphicalView
         )
       }
+
+      log.warn('Fix DownloadButton drag-out for MIDI')
+      const defaultFilename: filenameType = {
+        name: 'nonoto',
+        extension: '.mxml',
+      }
+      downloadButton = new SheetDownloadButton(
+        sheetInpainter,
+        downloadCommandsGridspan,
+        defaultFilename
+      )
     } else if (configuration['spectrogram']) {
       // create and render editToolSelect element
       const vqvaeLayerIcons: Map<LayerAndTool, string> = new Map([
@@ -397,7 +383,7 @@ function render(
           'paint-brush-small.svg',
         ],
         [
-          { layer: VqvaeLayer.Top, tool: NotonoTool.InpaintRandom },
+          { layer: VqvaeLayer.Top, tool: NotonoTool.Randomize },
           'paint-roller-random.svg',
         ],
         [
@@ -409,68 +395,151 @@ function render(
 
       const vqvaeLayerDimensions: Map<
         VqvaeLayer,
-        [number, number, Tone.Unit.Seconds]
+        AudioVQVAELayerDimensions
       > = new Map([
-        [VqvaeLayer.Top, [32, 4, 1]],
-        [VqvaeLayer.Bottom, [64, 8, 0.5]],
+        [
+          VqvaeLayer.Top,
+          { frequencyRows: 32, timeColumns: 4, timeResolution: 1 },
+        ],
+        [
+          VqvaeLayer.Bottom,
+          { frequencyRows: 64, timeColumns: 8, timeResolution: 0.5 },
+        ],
       ])
 
       const iconsBasePath = getPathToStaticFile('icons')
 
+      const editToolSelect = new VariableValue<NotonoTool>([
+        NotonoTool.Inpaint,
+        NotonoTool.Randomize,
+        NotonoTool.Eraser,
+      ])
       const editToolsGridspanElement = document.getElementById(
         'edit-tools-gridspan'
+      )
+      const editToolsContainerElement = document.createElement('div')
+      editToolsContainerElement.id = 'edit-tool-setup-container'
+      editToolsContainerElement.classList.add('gridspan')
+      editToolsGridspanElement.appendChild(editToolsContainerElement)
+      ControlLabels.createLabel(
+        editToolsContainerElement,
+        'edit-tools-gridspan-label',
+        false,
+        undefined,
+        editToolsGridspanElement
       )
       const editToolSelectContainerElement = document.createElement('div')
       editToolSelectContainerElement.id = 'edit-tool-select-container'
       editToolSelectContainerElement.classList.add('control-item')
-      editToolsGridspanElement.appendChild(editToolSelectContainerElement)
+      editToolsContainerElement.appendChild(editToolSelectContainerElement)
+      const editToolSelectInterface = new Nexus.Select(
+        editToolSelectContainerElement,
+        {
+          options: [
+            NotonoTool.Inpaint,
+            NotonoTool.Randomize,
+            NotonoTool.Eraser,
+          ],
+        }
+      )
+      bindSelectModel(editToolSelectInterface, editToolSelect)
+      editToolSelect.value = NotonoTool.Inpaint
       ControlLabels.createLabel(
         editToolSelectContainerElement,
         'edit-tool-select-label',
         false,
         undefined,
-        editToolsGridspanElement
+        editToolsContainerElement
       )
 
-      const vqvaeLayerOnChange = function (
-        this: CycleSelect<LayerAndTool>
-      ): void {
-        const numColumnsTop = vqvaeLayerDimensions.get(VqvaeLayer.Top)[1]
-        const [
-          newNumRows,
-          newNumColumns,
-          columnDuration,
-        ] = vqvaeLayerDimensions.get(this.value.layer)
-        spectrogramInpainter.columnDuration = columnDuration
-        inpainter.render(newNumRows, newNumColumns, numColumnsTop)
-        inpainter.interfaceContainer.classList.toggle(
-          'eraser',
-          this.value.tool == NotonoTool.Eraser
-        )
-      }
+      const layerToggle = new NullableVariableValue<VqvaeLayer>(
+        [VqvaeLayer.Top, VqvaeLayer.Bottom],
+        null,
+        null,
+        VqvaeLayer.Top
+      )
 
-      const editToolSelect = new CycleSelect(
-        editToolSelectContainerElement,
-        vqvaeLayerOnChange,
-        vqvaeLayerIcons,
-        iconsBasePath
+      editToolSelect.on('change', (value) => {
+        if (value == NotonoTool.Eraser) {
+          layerToggle.value = null
+        } else {
+          layerToggle.restorePreviousValue()
+        }
+      })
+
+      const layerToggleContainerElement = document.createElement('div')
+      layerToggleContainerElement.classList.add('control-item')
+      editToolsContainerElement.appendChild(layerToggleContainerElement)
+
+      const layerToggleFontAwesomeIcons = new Map([
+        [VqvaeLayer.Top, null],
+        [VqvaeLayer.Bottom, 'fa-check'],
+      ])
+      const layerToggleIconElements = createFontAwesomeElements<VqvaeLayer>(
+        layerToggleFontAwesomeIcons,
+        ['fa-solid', 'fa-xl']
+      )
+      const layerToggleInterface = new CycleSelectViewWithDisable(
+        layerToggle,
+        layerToggleIconElements
+      )
+      layerToggleContainerElement.appendChild(layerToggleInterface)
+
+      layerToggle.value = VqvaeLayer.Top
+
+      ControlLabels.createLabel(
+        layerToggleContainerElement,
+        'layer-select-label',
+        false,
+        undefined,
+        editToolsContainerElement
       )
 
       const spectrogramContainerElement = document.createElement('div')
       spectrogramContainerElement.id = 'spectrogram-container'
       mainPanel.appendChild(spectrogramContainerElement)
 
-      spectrogramPlaybackManager = new SpectrogramPlaybackManager()
-      const spectrogramInpainter = new SpectrogramInpainter(
+      const undoManager = new UndoManager()
+      spectrogramInpainter = new SpectrogramInpainter(
+        inpaintingApiAddress,
+        undoManager,
+        vqvaeLayerDimensions
+      )
+      inpainter = spectrogramInpainter
+      spectrogramPlaybackManager = new SpectrogramPlaybackManager(
+        spectrogramInpainter
+      )
+      const spectrogramInpainterGraphicalView = new SpectrogramInpainterGraphicalView(
+        spectrogramInpainter,
         spectrogramPlaybackManager,
         spectrogramContainerElement,
+        layerToggle,
         inpaintingApiAddress,
         editToolSelect,
-        downloadButton,
         instrumentConstraintSelect,
         octaveConstraintControl,
         pitchClassConstraintSelect
       )
+      const onshiftKey = (e: KeyboardEvent) => {
+        if (spectrogramInpainterGraphicalView.interacting) {
+          return
+        }
+        if (e.key == 'Shift') {
+          layerToggle.next(true)
+
+          // force repaint to display proper pointer `hover` position
+          spectrogramInpainterGraphicalView.interfaceContainer.style.visibility =
+            'hidden'
+          setTimeout(
+            () =>
+              (spectrogramInpainterGraphicalView.interfaceContainer.style.visibility =
+                'visible'),
+            20
+          )
+        }
+      }
+      document.body.addEventListener('keydown', onshiftKey)
+      document.body.addEventListener('keyup', onshiftKey)
 
       const isAdvancedControl = true
       const volumeControlsGridspanElement = document.createElement('div')
@@ -499,20 +568,96 @@ function render(
         volumeControlsGridspanElement
       )
 
-      spectrogramInpainter.playbackManager.renderFadeInControl(
+      spectrogramInpainterGraphicalView.playbackManager.renderFadeInControl(
         volumeControlsContainerElement
       )
-      spectrogramInpainter.playbackManager.renderGainControl(
+      spectrogramInpainterGraphicalView.playbackManager.renderGainControl(
         volumeControlsContainerElement
       )
 
       playbackManager = spectrogramPlaybackManager
-      inpainter = spectrogramInpainter
+      inpainterGraphicalView = spectrogramInpainterGraphicalView
 
-      spectrogramInpainter.editToolSelect.emit(
-        spectrogramInpainter.editToolSelect.events.ValueChanged
+      const defaultFilename: filenameType = {
+        name: 'notono',
+        extension: '.wav',
+      }
+      downloadButton = new NotonoDownloadButton(
+        spectrogramInpainter,
+        downloadCommandsGridspan,
+        defaultFilename
       )
     }
+
+    if (COMPILE_ELECTRON) {
+      ControlLabels.createLabel(
+        bottomControlsGridElement,
+        'download-button-label',
+        true,
+        'download-button-label-with-native-drag',
+        downloadButton.container
+      )
+    } else {
+      ControlLabels.createLabel(
+        bottomControlsGridElement,
+        'download-button-label',
+        true,
+        undefined,
+        downloadButton.container
+      )
+    }
+
+    // bind interactive event listeners to header elements
+    const appTitleElement = document.getElementById('app-title')
+    appTitleElement.addEventListener('click', () => {
+      if (!inpainterGraphicalView.disabled) {
+        void sampleNewData()
+      }
+    })
+    const safeUndoCallback = () => {
+      if (inpainter.undoManager.canUndo()) {
+        inpainter.undoManager.undo()
+      }
+    }
+    const safeRedoCallback = () => {
+      if (inpainter.undoManager.canRedo()) {
+        inpainter.undoManager.redo()
+      }
+    }
+    const undoButtonInterface = document.getElementById('undo-button-container')
+    undoButtonInterface.addEventListener('click', (event) => {
+      event.stopPropagation()
+      safeUndoCallback()
+    })
+    const redoButtonInterface = document.getElementById('redo-button-container')
+    redoButtonInterface.addEventListener('click', (event) => {
+      event.stopPropagation()
+      safeRedoCallback()
+    })
+    const refreshUndoRedoEnabledInterfaceViews = () => {
+      undoButtonInterface.classList.toggle(
+        'disabled',
+        !inpainter.undoManager.canUndo()
+      )
+      redoButtonInterface.classList.toggle(
+        'disabled',
+        !inpainter.undoManager.canRedo()
+      )
+    }
+    inpainter.undoManager.setListener(refreshUndoRedoEnabledInterfaceViews)
+    refreshUndoRedoEnabledInterfaceViews()
+    document.body.addEventListener('keydown', (event) => {
+      if (!event.ctrlKey && !event.shiftKey) {
+        if (event.metaKey && event.code == 'KeyZ') {
+          event.preventDefault()
+          safeUndoCallback()
+        }
+        if (event.metaKey && event.code == 'KeyY') {
+          event.preventDefault()
+          safeRedoCallback()
+        }
+      }
+    })
   })
 
   $(() => {
@@ -520,6 +665,13 @@ function render(
       'playback-commands-gridspan'
     )
     PlaybackCommands.render(playbackCommandsGridspan, playbackManager)
+
+    // disabling play/pause interface until there is some data to be played
+    playbackCommandsGridspan.classList.add('disabled-gridspan')
+    inpainterGraphicalView.once('ready', () => {
+      // enable play/pause interface
+      playbackCommandsGridspan.classList.remove('disabled-gridspan')
+    })
   })
 
   if (configuration['osmd']) {
@@ -534,7 +686,7 @@ function render(
 
       const instrumentsGridElement = document.createElement('div')
       instrumentsGridElement.id = 'instruments-grid'
-      instrumentsGridElement.classList.add('grid-auto-column')
+      instrumentsGridElement.classList.add('gridspan')
       instrumentsControlGridspanElement.appendChild(instrumentsGridElement)
 
       ControlLabels.createLabel(
@@ -546,13 +698,98 @@ function render(
       )
 
       Instruments.initializeInstruments()
-      Instruments.renderInstrumentSelect(instrumentsGridElement)
-      if (configuration['use_chords_instrument']) {
-        Instruments.renderChordsInstrumentSelect(instrumentsGridElement)
+
+      const instrumentSelect = new Instruments.InstrumentSelect(
+        ['PolySynth', 'SteelPan'],
+        'PolySynth'
+      )
+      const instrumentSelectView = new Instruments.InstrumentSelectView(
+        instrumentSelect
+      )
+      instrumentSelectView.id = 'lead-instrument-select-container'
+      instrumentSelectView.classList.add(
+        'control-item',
+        'main-instrument-select'
+      )
+      instrumentsGridElement.appendChild(instrumentSelectView)
+      ControlLabels.createLabel(
+        instrumentsGridElement,
+        'lead-instrument-select-label',
+        false,
+        undefined,
+        instrumentsGridElement
+      )
+
+      function registerDisableInstrumentsOnMidiEnabled<
+        T extends Instruments.leadInstrument
+      >(instrumentSelect: Instruments.InstrumentSelect<T>) {
+        void import('./midiOut').then((midiOutModule) => {
+          void midiOutModule
+            .getMidiOutputListener()
+            .then((midiOutputListener) => {
+              midiOutputListener.on('device-changed', () => {
+                const isUsingMIDIOutput = midiOutputListener.isActive
+                instrumentsControlGridspanElement.classList.toggle(
+                  'disabled-gridspan',
+                  isUsingMIDIOutput
+                )
+                if (isUsingMIDIOutput) {
+                  // disable in-app rendering when MIDI output is enabled
+                  instrumentSelect.value = null
+                } else if (!isUsingMIDIOutput) {
+                  // re-enable in-app rendering when MIDI output is disabled
+                  instrumentSelect.restorePreviousValue()
+                }
+              })
+            })
+        })
       }
+
+      import('./midiOut')
+        .then((midiOutModule) => {
+          midiOutModule
+            .render(sheetInpainterGraphicalView.playbackManager)
+            .then(() =>
+              registerDisableInstrumentsOnMidiEnabled(instrumentSelect)
+            )
+            .catch((e) => {
+              throw e
+            })
+        })
+        .catch((e) => {
+          throw e
+        })
+
+      let chordsInstrumentSelect: Instruments.ChordsInstrumentSelect<Instruments.chordsInstrument> | null = null
+      if (configuration['use_chords_instrument']) {
+        chordsInstrumentSelect = new Instruments.ChordsInstrumentSelect(
+          ['PolySynth'],
+          'PolySynth'
+        )
+        const chordsInstrumentSelectView = new Instruments.InstrumentSelectView(
+          chordsInstrumentSelect
+        )
+        chordsInstrumentSelectView.id = 'chords-instrument-select-container'
+        chordsInstrumentSelectView.classList.add(
+          'control-item',
+          'chords-instrument-select'
+        )
+        instrumentsGridElement.appendChild(chordsInstrumentSelectView)
+        instrumentsGridElement.appendChild(instrumentSelectView)
+        ControlLabels.createLabel(
+          instrumentsGridElement,
+          'chords-instrument-select-label',
+          false,
+          undefined,
+          instrumentsGridElement
+        )
+        registerDisableInstrumentsOnMidiEnabled(chordsInstrumentSelect)
+      }
+
       Instruments.renderDownloadButton(
         instrumentsGridElement,
-        configuration['use_chords_instrument']
+        instrumentSelect,
+        chordsInstrumentSelect
       )
     })
   }
@@ -580,7 +817,7 @@ function render(
           LinkClientCommands.render(
             abletonLinkSettingsGridspan,
             linkClient,
-            sheetInpainter.playbackManager
+            sheetInpainterGraphicalView.playbackManager
           )
         },
         (err) => log.error(err)
@@ -589,11 +826,7 @@ function render(
   })
 
   $(() => {
-    if (configuration['insert_advanced_controls'] && configuration['osmd']) {
-      void import('./midiOut').then((midiOutModule) => {
-        void midiOutModule.render(sheetInpainter.playbackManager)
-      })
-    } else if (
+    if (
       configuration['insert_advanced_controls'] &&
       configuration['spectrogram']
     ) {
@@ -612,25 +845,24 @@ function render(
       // zoomControlsGridElement.classList.add('two-columns');
       const mainPanel = document.getElementById('main-panel')
       mainPanel.appendChild(zoomControlsGridElement)
-      sheetInpainter.renderZoomControls(zoomControlsGridElement)
+      sheetInpainterGraphicalView.renderZoomControls(zoomControlsGridElement)
     })
   }
 
   $(() => {
     if (configuration['insert_help']) {
       let helpTour: MyShepherdTour
+      // initialize help menu
       if (configuration['spectrogram']) {
-        // initialize help menu
         helpTour = new NotonoTour(
           [configuration['main_language']],
-          inpainter,
+          inpainterGraphicalView,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
       } else if (configuration['osmd']) {
-        // initialize help menu
         helpTour = new NonotoTour(
           [configuration['main_language']],
-          sheetInpainter,
+          sheetInpainterGraphicalView,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
       } else {
@@ -643,26 +875,18 @@ function render(
     }
   })
 
-  async function sampleNewData(inpaintingApiAddress: URL): Promise<void> {
-    let promise: Promise<Inpainter<PlaybackManager, unknown>>
-    if (inpainter.dataType == 'sheet') {
-      promise = inpainter.generate(inpaintingApiAddress)
-    } else if (inpainter.dataType == 'spectrogram') {
-      promise = inpainter.sampleOrGenerate(inpaintingApiAddress)
-    } else {
-      // FIXME(@tbazin, 2021/09/14): else branch should not be required,
-      // alternatives should be detected automatically
-      throw new Error('Unsupported configuration')
+  async function sampleNewData(): Promise<void> {
+    try {
+      await inpainter.generate(inpainterGraphicalView.queryParameters)
+      log.info('Retrieved new media from server')
+    } catch (e) {
+      log.error('Could not retrieve initial media due to: ', e)
     }
-    return promise.then(
-      () => log.info('Retrieved new media from server'),
-      () => log.error('Could not retrieve initial media')
-    )
   }
 
   $(() => {
-    void sampleNewData(inpaintingApiAddress).then(() => {
-      inpainter.emit('ready')
+    void sampleNewData().then(() => {
+      inpainterGraphicalView.emit('ready')
     })
   })
 }
@@ -671,7 +895,7 @@ $(() => {
   // register minimal error handler
   $(document).ajaxError((error) => console.log(error))
 
-  SplashScreen.render(render)
+  new SplashScreen(render)
 })
 
 $(() => {

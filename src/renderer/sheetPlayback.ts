@@ -4,14 +4,15 @@ import * as Tone from 'tone'
 import * as log from 'loglevel'
 import { Midi, Track } from '@tonejs/midi'
 import { Note as MidiNote } from '@tonejs/midi/src/Note'
-import WebMidi from 'webmidi'
+import { WebMidi } from 'webmidi'
 import $ from 'jquery'
 
 import * as Instruments from './instruments'
 import * as MidiOut from './midiOut'
 import * as Chord from './chord'
 import { BPMControl } from './numberControl'
-import { SheetInpainter } from './inpainter'
+import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
+import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
 import { ControlChange } from '@tonejs/midi/src/ControlChange'
 
 type NoteWithMIDIChannel = {
@@ -21,7 +22,7 @@ type NoteWithMIDIChannel = {
   midiChannel: number
 }
 
-export default class MidiSheetPlaybackManager extends PlaybackManager {
+export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpainter> {
   midiLatency = 0
   readonly bpmControl: BPMControl
   protected supportsMidi = false
@@ -45,8 +46,12 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     this._playNote = playNote
   }
 
-  constructor(bpmControl: BPMControl, useChordsInstrument = false) {
-    super()
+  constructor(
+    inpainter: SheetInpainter,
+    bpmControl: BPMControl,
+    useChordsInstrument = false
+  ) {
+    super(inpainter)
     this.bpmControl = bpmControl
     this.useChordsInstrument = useChordsInstrument
     this.transport.bpm.value = this.bpmControl.value
@@ -61,6 +66,26 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
       .catch(() => {
         this.supportsMidi = false
       })
+  }
+
+  // retrieve MIDI from sheet data
+  // TODO(@tbazin, 2022/04/22): move the MIDI directly to the SheetData and
+  // have it sent by the Flask server along with the sheet on every request
+  // this will wallow natural updates of the DownloadButton
+  protected async onInpainterChange(data: SheetData): Promise<void> {
+    // HACK(@tbazin, 2022/04/22): hardcoded value
+    // have the remote API send the sheet duration + time-signature within the JSON data
+    // or retrieve it from the MusicXML in the browser?
+    const sequenceDuration = Tone.Time('0:16:0')
+    const midiConversionURL = new URL(
+      'musicxml-to-midi',
+      this.inpainter.defaultApiAddress
+    )
+    const midiBlobURL = await this.loadMidi(
+      midiConversionURL.href,
+      this.inpainter.currentXML,
+      sequenceDuration.toBarsBeatsSixteenths()
+    )
   }
 
   protected async checkMidiSupport(): Promise<boolean> {
@@ -103,9 +128,10 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
       if (currentMidiOutput) {
         this.playNote = (time: number, event: NoteWithMIDIChannel) => {
           const absoluteTime = time * 1000 + getTimingOffset()
-          currentMidiOutput.playNote(event.name, event.midiChannel, {
+          currentMidiOutput.playNote(event.name, {
             time: absoluteTime,
             duration: event.duration * 1000,
+            channels: event.midiChannel,
           })
         }
         usesMidiOutput = true
@@ -176,12 +202,20 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     return [this.controlChanges_A, this.controlChanges_B]
   }
 
-  protected aIsMuted(): boolean {
+  protected get aIsMuted(): boolean {
     return Array.from(this.midiParts_A.values()).every((part) => part.mute)
   }
 
+  protected _currentTrackIsA = true
+  protected get currentTrackIsA(): boolean {
+    return this._currentTrackIsA
+  }
+  protected toggleTracks(): void {
+    this._currentTrackIsA = !this.currentTrackIsA
+  }
+
   protected get playingMidiPartsIndex(): number {
-    if (this.aIsMuted()) {
+    if (this.currentTrackIsA) {
       return 1
     } else {
       return 0
@@ -209,28 +243,25 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
   }
 
   protected switchTracks(): void {
-    // TODO(@tbazin, 2021/11/12): add crossfade to avoid stuttering on switching
+    // TODO(@tbazin, 2022/04/29): add crossfade for smooth transitioning
     const playing = this.getPlayingMidiParts()
     const playingControlChanges = this.getPlayingControlChanges()
     const next = this.getNextMidiParts()
     const nextControlChanges = this.getNextControlChanges()
+    this.toggleTracks()
 
     next.forEach((part) => {
       part.mute = false
     })
-    if (playing != next) {
-      playing.forEach((part) => {
-        part.mute = true
-      })
-    }
+    playing.forEach((part) => {
+      part.mute = true
+    })
     nextControlChanges.forEach((controlChanges) => {
       controlChanges.mute = false
     })
-    if (playingControlChanges != nextControlChanges) {
-      playingControlChanges.forEach((controlChanges) => {
-        controlChanges.mute = true
-      })
-    }
+    playingControlChanges.forEach((controlChanges) => {
+      controlChanges.mute = true
+    })
   }
 
   scheduleTrackToInstrument(
@@ -268,7 +299,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
       part = new Tone.Part<NoteWithMIDIChannel>((time, note) => {
         this.playNote(time, note)
       }, notesWithChannel)
-      copySkippedNotesToPartEnd(part, notesWithChannel)
+      // copySkippedNotesToPartEnd(part, notesWithChannel)
       part.mute = true
       // @HACK(@tbazin): offsetting the lookAhead to ensure perfect synchronization when
       // using Ableton Link, the downside is that it skips the first few notes,
@@ -283,7 +314,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
       notesWithChannel.forEach((noteEvent) => {
         part.add(noteEvent)
       })
-      copySkippedNotesToPartEnd(part, notesWithChannel)
+      // copySkippedNotesToPartEnd(part, notesWithChannel)
       part.loopEnd = sequenceDuration_barsBeatsSixteenth
     }
 
@@ -296,7 +327,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
           this.triggerPedalCallback,
           pedalControlChanges
         )
-        copySkippedNotesToPartEnd(controlChangesPart, pedalControlChanges)
+        // copySkippedNotesToPartEnd(controlChangesPart, pedalControlChanges)
         controlChangesPart.mute = true
         controlChangesPart.start(0)
         controlChangesPart.loop = true
@@ -308,7 +339,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
         pedalControlChanges.forEach((controlChange: ControlChange) => {
           controlChangesPart.add(controlChange)
         })
-        copySkippedNotesToPartEnd(controlChangesPart, pedalControlChanges)
+        // copySkippedNotesToPartEnd(controlChangesPart, pedalControlChanges)
         controlChangesPart.loopEnd = sequenceDuration_barsBeatsSixteenth
       }
     }
@@ -411,7 +442,10 @@ export default class MidiSheetPlaybackManager extends PlaybackManager {
     return midiBlobURL
   }
 
-  scheduleChordsPlayer(midiChannel: number, inpainter: SheetInpainter): void {
+  scheduleChordsPlayer(
+    midiChannel: number,
+    inpainter: SheetInpainterGraphicalView
+  ): void {
     // schedule callback to play the chords contained in the OSMD
     const playChord = (time: number) => {
       const currentStep = this.quartersProgress()

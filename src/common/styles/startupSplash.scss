@@ -1,15 +1,25 @@
-@use 'mixins/colors.module';
+@use "mixins/interfaces";
+
+#configuration-selection-container {
+  max-height: 90%;
+  width: 65%;
+}
 
 #configuration-selection {
-  display: grid;
+  ::before {
+    display: inline-block;
+    width: 100%;
+  }
+  font-size: clamp(1rem, 2.5vmin, 1.4rem);
 
-  width: 65%;
+  display: grid;
+  width: 100%;
 
   grid-template-columns: 100%;
-  grid-row-gap: 1vh;
+  grid-row-gap: 1.5vh;
   justify-items: center;
 
-  padding: 2em;
+  padding: 1.5vmin 0 1.5vmin 0;
 
   margin-left: auto;
   margin-right: auto;
@@ -26,21 +36,31 @@
     font-size: 100%;
     height: 3vh;
     text-align: center;
-
-    &.wrong-input-setting {
-      background-color: lightcoral;
-    }
   }
 
   // TODO(@tbazin, 2021/11/04): brute-force way of setting properties
   // of the different settings container elements
+  > div,
+  > div > div,
+  > div > div > div {
+    display: inline-grid;
+  }
+  > div > div,
+  > div > div > div {
+    &::before {
+      text-transform: none;
+      font-size: smaller;
+    }
+  }
   div {
-    display: grid;
     justify-items: center;
     grid-column-gap: 3vw;
     column-gap: 3vw;
     grid-row-gap: 1vh;
     row-gap: 1vh;
+  }
+  > * {
+    width: 100%;
   }
 
   &.no-server-config #server-address-input {
@@ -55,11 +75,23 @@
   transform: translate(-50%, -50%);
 }
 
+#use_remote_api-toggle::before {
+  font-size: smaller;
+  content: 'Use custom API';
+}
+
 #server-configuration-container {
   width: 100%;
   &::before {
     content: 'Server configuration';
-    width: 100%;
+  }
+}
+
+#server-address-container {
+  transition: filter 0.1s ease-in-out;
+  width: 100%;
+  &::before {
+    content: 'Custom API address';
   }
 }
 
@@ -72,17 +104,11 @@
   }
 
   width: 100%;
-
-  * {
-    width: 100%;
-  }
 }
 
 #mode-configuration-container {
   &::before {
     content: 'Interface mode';
-    display: inline-block;
-    width: 100%;
   }
 
   display: grid;
@@ -92,17 +118,22 @@
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: 1fr;
-    width: 100%;
+    max-width: 75vw;
 
     @media screen and (max-width: 500px) {
+      grid-auto-flow: row;
       margin: auto;
+    }
+    > div {
+      margin: 0 1vw;
     }
 
     & * {
       text-align: center;
-      width: 100% !important;
+      // width: 100% !important;
+      width: min(100%, 80vw) !important;
       height: inherit !important;
-      font-size: 100% !important;
+      font-size: 0.9rem !important;
     }
   }
 }
@@ -110,8 +141,74 @@
 #start-button {
   width: 100% !important;
   height: 100% !important;
+  div {
+    width: 100% !important;
+  }
+  * {
+    font-size: 1.4rem !important;
+  }
 }
 
 #application-mode-select {
   display: none;
+}
+
+#eula-container {
+  &::before {
+    content: 'End User License Agreement (EULA)';
+  }
+
+  #eula-text-scroll-container {
+    width: 90%;
+    $border-radius: 5px;
+    border-radius: $border-radius;
+    .simplebar-vertical {
+      border-radius: $border-radius;
+      top: 5%;
+      height: 90%;
+      right: 10px;
+    }
+    .simplebar-horizontal {
+      border-radius: $border-radius;
+      left: 25%;
+      width: 50%;
+      bottom: 5px;
+      opacity: 0.7;
+      &.simplebar-hover {
+        opacity: 1;
+      }
+    }
+    padding: 15px 0;
+    border-radius: 5px;
+    max-height: 20vh;
+    height: 20vh;
+  }
+  #eula-text-content {
+    $padding-horizontal: max(1.5rem, 30px);
+    padding: 0 $padding-horizontal 1rem $padding-horizontal;
+    &,
+    * {
+      text-align: justify;
+    }
+    font-weight: 400;
+
+    user-select: text;
+  }
+
+  #eula-accept-toggle-container {
+    &::before {
+      content: 'Agree to the terms of the EULA';
+      font-size: smaller;
+    }
+  }
+
+  &:not(.is-fully-scrolled) {
+    #eula-accept-toggle-container {
+      cursor: not-allowed;
+      :nth-child(n + 1) {
+        @include interfaces.hiddenControl();
+        pointer-events: none;
+      }
+    }
+  }
 }

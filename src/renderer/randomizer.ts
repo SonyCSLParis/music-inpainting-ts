@@ -1,21 +1,20 @@
 import Tone from 'tone'
 
-import { PlaybackManager } from './playback'
-import { Inpainter } from './inpainter'
+import { Inpainter } from './inpainter/inpainter'
 
-class LowFrequencyRandomizer<
-  PlaybackManagerT extends PlaybackManager
-> extends Tone.Loop {
+class LowFrequencyRandomizer<DataT> extends Tone.Loop {
   protected container: HTMLElement
-  readonly inpainter: Inpainter<PlaybackManagerT, unknown>
+  readonly inpainter: Inpainter<DataT>
 
   // numCells: number = 1;
   constructor(
-    inpainter: Inpainter<PlaybackManagerT, unknown>,
+    inpainter: Inpainter<DataT>,
     callback: (time: number, numCells?: number) => void,
     interval: Tone.Unit.Time = '4n'
   ) {
-    super((time) => {}, interval)
+    super((time) => {
+      return
+    }, interval)
     this.inpainter = inpainter
   }
 

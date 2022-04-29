@@ -7,6 +7,27 @@ const { mergeWithCustomize, customizeArray } = require('webpack-merge')
 
 const makeCommonConfiguration = require('./webpack.common.cjs')
 
+function makeOpenGraphData(env) {
+  if (env.app_title == null) {
+    return {}
+  } else if (env.app_title.toLowerCase() == 'notono') {
+    return {
+      'og:title': env.app_title,
+      'og:description':
+        'The AI-assisted NOTONO interface for visual transformation of musical sounds by inpainting.',
+      'og:type': 'website',
+      'og:url': env.deployment_url,
+      'og:image': new URL('static/notono-preview.png', env.deployment_url).href,
+      'og:image:width': '1920',
+      'og:image:height': '1080',
+      'og:image:alt':
+        'An example of interaction with the NOTONO interface is shown.',
+    }
+  } else {
+    return {}
+  }
+}
+
 // Webpack --env parameters are retrieved in module.exports' first argument
 // see: https://webpack.js.org/guides/environment-variables/
 module.exports = function (env) {
@@ -48,7 +69,10 @@ module.exports = function (env) {
           // loader for .ts files.
           test: /\.tsx?$/,
           loader: 'ts-loader',
-          exclude: path.resolve(__dirname, 'node_modules'),
+          exclude: [
+            path.resolve(__dirname, 'node_modules'),
+            path.resolve(__dirname, 'src/main'),
+          ],
         },
         {
           test: /\.(css|scss)$/,
@@ -85,11 +109,14 @@ module.exports = function (env) {
       }),
 
       new HtmlWebpackPlugin({
-        meta: {
-          // Fixes 300ms delay on touch + reduce size on mobile for better display
-          viewport:
-            'width=device-width, initial-scale=0.5, maximum-scale=1.0, user-scalable=no, target-densityDpi=medium-dpi',
-        },
+        meta: Object.assign(
+          {
+            // Fixes 300ms delay on touch + reduce size on mobile for better display
+            viewport:
+              'width=device-width, initial-scale=0.5, maximum-scale=1.0, user-scalable=no, target-densityDpi=medium-dpi',
+          },
+          makeOpenGraphData(env)
+        ),
         title: env.app_title != null ? env.app_title : 'NONOTO / NOTONO',
         favicon: 'src/common/images/favicon.ico',
       }),

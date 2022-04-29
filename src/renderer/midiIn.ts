@@ -1,6 +1,5 @@
 import log from 'loglevel'
-import { IMidiChannel, Input } from 'webmidi'
-import WebMidi from 'webmidi'
+import { Input, WebMidi } from 'webmidi'
 
 import * as ControlLabels from './controlLabels'
 import { NumberControl } from './numberControl'
@@ -8,7 +7,7 @@ import { NumberControl } from './numberControl'
 import Nexus from './nexusColored'
 import type { NexusNumber, NexusSelect } from 'nexusui'
 
-import { MidiInput } from '@tonejs/piano/'
+import { MidiInput } from './midi_io/midiInput'
 
 // @ts-expect-error: exports private _inputToDevice method
 // adds channel-based event filtering in the _addListeners
@@ -56,7 +55,7 @@ export class ChannelBasedMidiInput extends MidiInput {
     }
   }
 
-  channel: IMidiChannel = 'all'
+  channel?: number = null
 
   /**
    * Attach listeners to the device when it's connected
@@ -66,13 +65,13 @@ export class ChannelBasedMidiInput extends MidiInput {
       ChannelBasedMidiInput.connectedDevices.set(device.id, device)
       this.emit('connect', this._inputToDevice(device))
 
-      device.addListener('noteon', 'all', (event) => {
-        if (this.channel == 'all' || event.channel == this.channel) {
+      device.addListener('noteon', (event) => {
+        if (this.channel == null || event.channel == this.channel) {
           if (this.deviceId == 'all' || this.deviceId == device.id) {
             this.emit('keyDown', {
               note: `${event.note.name}${event.note.octave}`,
               midi: event.note.number,
-              velocity: event.velocity,
+              velocity: event.note.rawAttack,
               device: this._inputToDevice(device),
               // @ts-expect-error: adds channel to event
               channel: event.channel,
@@ -81,13 +80,13 @@ export class ChannelBasedMidiInput extends MidiInput {
         }
       })
 
-      device.addListener('noteoff', 'all', (event) => {
-        if (this.channel == 'all' || event.channel == this.channel) {
+      device.addListener('noteoff', (event) => {
+        if (this.channel == null || event.channel == this.channel) {
           if (this.deviceId == 'all' || this.deviceId == device.id) {
             this.emit('keyUp', {
               note: `${event.note.name}${event.note.octave}`,
               midi: event.note.number,
-              velocity: event.velocity,
+              velocity: event.note.rawAttack,
               device: this._inputToDevice(device),
               // @ts-expect-error: adds channel to event
               channel: event.channel,
@@ -96,8 +95,8 @@ export class ChannelBasedMidiInput extends MidiInput {
         }
       })
 
-      device.addListener('controlchange', 'all', (event) => {
-        if (this.channel == 'all' || event.channel == this.channel) {
+      device.addListener('controlchange', (event) => {
+        if (this.channel == null || event.channel == this.channel) {
           if (this.deviceId == 'all' || this.deviceId == device.id) {
             if (event.controller.name == 'holdpedal') {
               this.emit(event.value ? 'pedalDown' : 'pedalUp', {
@@ -120,17 +119,8 @@ export class ChannelBasedMidiInput extends MidiInput {
         MidiInput['_isEnabled'] = true
         return
       }
-      return new Promise<void>((done, error) => {
-        WebMidi.enable((e) => {
-          if (e) {
-            log.info(e)
-            error(e)
-          } else {
-            MidiInput['_isEnabled'] = true
-            done()
-          }
-        })
-      })
+      await WebMidi.enable()
+      MidiInput['_isEnabled'] = true
     }
   }
 }
@@ -246,7 +236,7 @@ export async function render(useChordsInstrument = false): Promise<void> {
 
   function midiInChannelOnchange(this: NexusNumber): void {
     const previousChannel = midiInputListener.channel
-    midiInputListener.channel = this.value != 0 ? this.value : 'all'
+    midiInputListener.channel = this.value != 0 ? this.value : null
     if (midiInputListener.channel != previousChannel) {
       log.info(
         'Selected MIDI In Channel: ' + midiInputListener.channel.toString()

@@ -1,22 +1,5 @@
 /*Font Awesome Fonts*/
 @font-face {
-  font-family: 'FontAwesome';
-  src: url('../../../node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.ttf')
-    format('truetype');
-}
-
-@font-face {
-  font-family: 'Ubuntu-Condensed';
-  src: url('../fonts/Ubuntu_Condensed/UbuntuCondensed-Regular.ttf')
-    format('truetype');
-}
-
-@font-face {
-  font-family: 'Ubuntu-Regular';
-  src: url('../fonts/Ubuntu/Ubuntu-Regular.ttf') format('truetype');
-}
-
-@font-face {
   font-family: 'Fira-Sans';
   src: url('../fonts/Fira_Sans/FiraSans-Light.ttf') format('truetype');
   font-weight: 300;
@@ -73,10 +56,10 @@
 }
 
 @font-face {
-  font-family: 'Julius';
-  src: url('../fonts/Julius_Sans_One/JuliusSansOne-Regular.ttf')
-    format('truetype');
+  font-family: 'Asap';
+  src: url('../fonts/Asap/Asap-VariableFont_wght.ttf') format('truetype');
+  font-weight: 400 500 600 700;
 }
 
-$interface-font-stack: 'Fira-Sans', 'Ubuntu-Regular', sans-serif;
-$interface-font-weight: 500;
+$interface-font-stack: 'Asap', 'Fira-Sans', sans-serif;
+$interface-font-weight: 700;

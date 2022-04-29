@@ -1,9 +1,17 @@
 @use "mixins/colors.module";
 @use "mixins/measures";
+@use "mixins/interfaces";
+@import 'mixins/imports';
+
+.control-label,
+[nexus-ui] {
+  text-transform: capitalize;
+}
 
 .control-item,
 .control-label {
-  &, * {
+  &,
+  * {
     align-self: center;
     align-content: normal;
     align-items: center;
@@ -15,8 +23,13 @@
   display: inline-grid;
   grid-auto-flow: row;
   grid-auto-columns: 100%;
-  select, input {
+  select,
+  input {
     display: inline-grid;
+  }
+
+  svg {
+    overflow: visible;
   }
 }
 
@@ -28,76 +41,90 @@
   }
 }
 
-#bottom-controls .control-item .fas {
-  font-size: measures.$cycleSelect-size;
-}
+// #bottom-controls .control-item .fa-solid {
+//   font-size: measures.$cycleSelect-size;
+// }
 
-#bottom-controls [nexus-ui] {
-  & {
-    width: 100% !important;
-    height: 100% !important;
+#bottom-controls,
+#configuration-selection-container {
+  [nexus-ui] {
+    &,
+    > div > div {
+      width: fit-content !important;
+      height: fit-content !important;
+    }
+    select,
+    input,
+    .nexusTextButton {
+      width: max-content !important;
+      // max-width: 10vw;
+      height: max-content !important;
+    }
   }
-  select {
-    width: max-content !important;
-    height: max-content !important;
-  }
 }
 
-#bottom-controls > *.gridspan {
-  border: thin dotted rgba($color: #ffff, $alpha: 0.05);
-}
-
-#bottom-controls, #configuration-selection {
+#bottom-controls,
+#configuration-selection-container {
   [nexus-ui] {
     display: inline-grid;
+    max-width: 100%;
     * {
-      border-radius: 5em;
+      // border-radius: 0.3em; // 5em;
+    }
+    > div > div {
+      padding: 0.5em !important;
     }
 
     select,
     input {
       text-align: center;
       font-size: min(7vh, 7vw, 15px) !important;
-      // display: inline-grid;
-      max-width: 85%;
     }
     select {
       vertical-align: middle;
       top: 50%;
-      padding: min(0.5vmin, 0.5em);
+      max-width: 100%;
     }
     input {
       height: min(25px, 10vh) !important;
       width: min(4ch, 10vw) !important;
     }
   }
+
+  border-top-style: solid;
+
+  > .gridspan {
+    box-sizing: border-box;
+  }
 }
 
-.control-item {
-  font-size: calc(min(10px + 0.5vw, 1em)) !important;
-  font-weight: 500;
+.hidden {
+  @include interfaces.hiddenControl();
 }
 
 .control-label {
+  display: flex;
   overflow: hidden;
   white-space: nowrap;
 }
 
-.control-label, .disabled-gridspan {
-  font-weight: 400;
-  // font-size: calc(min(10px + 1vw, 1.1em));
-}
-
 #bottom-controls {
-  font-size: calc(1.5 * min(10px + 1vw, 1.1em));
-  * {
+  font-size: normal;
+
+  .gridspan .gridspan {
+    &,
+    *:not(.fa-solid):not(.cycleSelect) {
+      font-size: smaller;
+    }
+  }
+  .gridspan .gridspan {
     font-size: smaller;
   }
 }
 
 .control-item::after {
-  font-weight: 400;
-  font-size: 1em;
+  // font-weight: 400;
+  // font-size: 1em;
 }
 
 #instruments-control-gridspan {
@@ -106,29 +133,9 @@
 }
 
 #instruments-grid {
+  grid-template-columns: auto;
+  grid-auto-columns: auto;
   grid-auto-flow: column;
-  .main-instrument-select {
-    grid-column: 1;
-    &::after {
-      content: "Lead"
-    }
-  }
-  .chords-instrument-select {
-    grid-column: 2;
-    &::after {
-      content: "Chords"
-    }
-  }
-  .instrument-samples-download {
-    &::after {
-      content: "Load samplers"
-    }
-    &.loading-control {
-      &::after {
-        content: "Loading..."
-      }
-    }
-  }
 }
 
 .gridspan {
@@ -140,6 +147,20 @@
 #playback-commands-gridspan {
   grid-row: 1;
   grid-column: 1;
+
+  [class^='.playback-command--stopped'] {
+    @include fa-size($fa-size-scale-2xl);
+  }
+  .playback-command--stopped {
+    @include fa-icon-solid($fa-var-play);
+  }
+  .playback-command--playing {
+    @include fa-icon-solid($fa-var-stop);
+  }
+  .playback-command--waiting {
+    @include fa-icon-solid($fa-var-circle-notch);
+    opacity: 0.3;
+  }
 }
 
 #bpm-control-gridspan {
@@ -168,6 +189,18 @@
 #edit-tools-gridspan {
   grid-row: 1;
   grid-column: 2/3;
+
+  #edit-tool-setup-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 5%;
+
+    [nexus-ui] {
+      max-width: 100%;
+      select {
+        max-width: 100%;
+      }
+    }
+  }
 }
 
 #midi-input-setup-gridspan {
@@ -178,16 +211,32 @@
 #midi-output-setup-gridspan {
   grid-row: 2;
   grid-column: 3/4;
-  .gridspan {
-    grid-template-columns: 85% 15%;
+  // .gridspan {
+  //   grid-template-columns: 85% 15%;
+  // }
+}
+
+#bottom-controls > .gridspan {
+  > :nth-child(2n) {
+    width: 90%;
+    height: 100%;
+    border-radius: 5px;
   }
 }
 
-#midi-input-setup-gridspan, #midi-output-setup-gridspan {
+#midi-input-setup-gridspan,
+#midi-output-setup-gridspan {
   &.midi-enabled .control-item {
-    select, input, svg {
+    select,
+    input,
+    svg {
       filter: invert(1);
     }
+  }
+
+  [nexus-ui] select {
+    width: 60% !important;
+    max-width: unset;
   }
 }
 
@@ -207,7 +256,7 @@
 
   display: inline-grid;
   grid-template-columns: 100%;
-  grid-template-rows: 2.5fr 1fr;
+  grid-template-rows: 3fr 1fr;
   grid-auto-flow: column;
 
   .control-label,
@@ -220,6 +269,15 @@
   }
 }
 
+#bottom-controls .gridspan .gridspan {
+  .control-label {
+    opacity: 0.8;
+  }
+  .gridspan .control-label {
+    opacity: 0.6;
+  }
+}
+
 .multi-column-gridspan {
   grid-template-rows: 1fr;
 }
@@ -229,18 +287,33 @@
 // TODO(theis, 2021_04_21): could replace this with actually rendering
 // the associated controls, but graying them out/visibly disabling them,
 // and offering more info through an info-bubble (with touchscreen support)
+$disabled-gridspan-filter: blur(1.3px);
+
 .disabled-gridspan {
-  display: flex;
+  // display: flex;
   color: gray;
-  justify-content: center;
+  filter: $disabled-gridspan-filter;
+  backdrop-filter: $disabled-gridspan-filter;
+  // justify-content: center;
+  cursor: not-allowed;
+  border-radius: 5px;
+  * {
+    pointer-events: none;
+  }
 }
 
 @media screen and (max-width: 450px) {
-  #pitch-control-container, #volume-controls-container {
+  #pitch-control-container,
+  #volume-controls-container {
     grid-template-rows: auto;
     grid-auto-flow: row;
     * {
-      max-width: 95%
+      max-width: 95%;
+    }
+  }
+  #pitch-control-container {
+    .control-label {
+      display: none;
     }
   }
   #midi-input-setup-container {
@@ -254,8 +327,7 @@
 }
 @media screen and (max-width: 450px) and (min-width: 270px) {
   #pitch-control-container {
-    grid-template-columns: 2fr 1fr;
-    row-gap: 5%;
+    // row-gap: 5%;
   }
   #midi-input-setup-container {
     grid-auto-flow: column;
@@ -290,6 +362,19 @@
   }
 }
 
-#download-button-interface, #load-samples-button-interface {
+#download-button-interface,
+#load-samples-button-interface {
   cursor: pointer;
+}
+
+#load-samples-button {
+  #load-samples-button-interface {
+    @include fa-icon-solid($fa-var-arrow-alt-circle-down);
+    @include fa-size($fa-size-scale-2xl);
+  }
+  &.loading-control {
+    #load-samples-button-interface {
+      @include fa-icon-solid($fa-var-spinner);
+    }
+  }
 }

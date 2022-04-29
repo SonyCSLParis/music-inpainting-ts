@@ -3,5 +3,8 @@
   "compilerOptions": {
     "target": "es2020",
     "module": "esnext"
-  }
+  },
+  "exclude": [
+    "../main/"
+  ]
 }

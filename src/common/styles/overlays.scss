@@ -4,17 +4,15 @@ $chords-font-stack: 'Boogaloo', cursive;
   position: absolute;
   pointer-events: auto;
 
-  &.dragover {
-    background-color: purple;
-  }
-
-  &.dragover .notebox {
-    background-color: purple;
-  }
-
   * {
-    transition: all 0.15s ease-in-out;
+    transition: all 0.25s ease-in;
   }
+}
+
+.sheet-inpainter-overlays {
+  position: absolute;
+  top: 0;
+  z-index: 0;
 }
 
 .notebox {
@@ -22,63 +20,104 @@ $chords-font-stack: 'Boogaloo', cursive;
   position: absolute;
   opacity: 0;
   pointer-events: none;
-  z-index: 1;
-
-  background-color: #009ceb;
 
   box-sizing: border-box;
   width: 100%;
-  height: calc(100% + 1em);
-  top: -0.5em;
-  border-radius: 15px;
+  padding: 0 2px;
+  height: 100%;
+  height: calc(100% + 2em);
+  top: -1em;
+  border-radius: 1px;
+  border: 2px dashed;
+  background-color: transparent;
+
+  &::after {
+    content: '';
+    width: 100%;
+    padding: 0 1px;
+    left: -1px;
+    height: 100%;
+    position: absolute;
+    opacity: 0;
+  }
 
   &.active {
     display: block;
-    opacity: 0.3;
-    pointer-events: auto;
+    opacity: 1;
+    z-index: 1;
+    pointer-events: all;
+
+    &.playing::after {
+      opacity: 0.3;
+    }
 
     &:hover {
       cursor: pointer;
-      opacity: 0.5;
     }
-  }
+    &:hover {
+      &::after {
+        opacity: 0.4;
+      }
+    }
 
-  &.dragover {
-    opacity: 0.7;
+    &.dragover::after {
+      animation: 0.3s ease-in-out 1 forwards blink;
+    }
+    @keyframes blink {
+      0% {
+        opacity: 0.1;
+      }
+      30% {
+        opacity: 0.5;
+      }
+      100% {
+        opacity: 0.4;
+      }
+    }
   }
 }
 
 .sheet-inpainter.playing .notebox.playing {
-  background-color: #f40081;
-  transform: scaleY(1.1);
-  border: solid 0.2em;
-  border-color: blue;
+  transform: scaleY(1.03);
+  border-width: 0.2em;
 }
 
 .Fermata {
   position: absolute;
   pointer-events: auto;
-  z-index: 1;
+  z-index: 3;
   width: 100%;
   height: 2em; // FIXME(theis, 2021_04_27): hardcoded value
   top: -3.75em;
+  overflow: visible;
 
   box-sizing: border-box;
   border-radius: 15px;
   border: dashed 0.15em;
-  border-color: rgba(0, 0, 0, 0.7);
 
   &:hover {
+    backdrop-filter: brightness(1.4);
     cursor: pointer;
-    background-color: rgba(0, 0, 0, 0.3) !important;
   }
-
-  &.active {
-    background-color: rgba(0, 0, 0, 0.6) !important;
+  // ::after pseudo-element used for smooth border-style transitioning
+  &::after {
+    content: '';
+    position: absolute;
+    top: -0.15em;
+    left: -0.15em;
+    width: calc(100% + 0.3em);
+    height: inherit;
+    box-sizing: border-box;
+    border-radius: inherit;
+    border-width: 0.2em;
+    border-style: solid;
+    opacity: 0;
+    transition: inherit;
   }
-
+  &.active::after {
+    opacity: 1;
+  }
   &.imposed {
-    background-color: rgba(0, 0, 0, 0.8) !important;
     cursor: not-allowed;
   }
 }

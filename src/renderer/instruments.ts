@@ -1,16 +1,21 @@
-// FIXME(theis, 2021/05/25): import Tone.Instrument type def and fix typings
 import log from 'loglevel'
 import * as Tone from 'tone'
-// import { PolySynth, PolySynthOptions, SynthOptions } from 'tone'
 import {
   Instrument,
   InstrumentOptions,
-} from 'tone/build/esm/instrument/Instrument' //  instrument/Instrument'
+} from 'tone/build/esm/instrument/Instrument'
 import { Piano } from '@tonejs/piano/'
 import { SampleLibrary } from './dependencies/Tonejs-Instruments'
 
-import { CycleSelect } from './cycleSelect'
+import {
+  CycleSelectView,
+  CycleSelectViewWithDisable,
+  NullableVariableValue,
+  VariableValue,
+  createIconElements,
+} from './cycleSelect'
 import { getPathToStaticFile } from './staticPath'
+import * as ControlLabels from './controlLabels'
 
 type ToneInstrument = Instrument<InstrumentOptions>
 type InstrumentOrPiano = ToneInstrument | Piano
@@ -52,8 +57,8 @@ export function initializeInstruments(): void {
   })
 
   const useEffects = true
-
-  const chorus = new Tone.Chorus(5, 2, 0.5).toDestination()
+  const limiter = new Tone.Limiter().toDestination()
+  const chorus = new Tone.Chorus(5, 2, 0.5).connect(limiter)
   const reverb = new Tone.Reverb().connect(chorus)
 
   silentInstrument = new Tone.Synth().set({
@@ -62,8 +67,11 @@ export function initializeInstruments(): void {
     },
   })
 
-  const polySynth = new Tone.PolySynth(Tone.Synth)
-  const polySynth_chords = new Tone.PolySynth(Tone.Synth)
+  const polySynth = new Tone.PolySynth({ voice: Tone.Synth, maxPolyphony: 64 })
+  const polySynth_chords = new Tone.PolySynth({
+    voice: Tone.Synth,
+    maxPolyphony: 64,
+  })
 
   ;[polySynth, polySynth_chords].forEach((polySynth) => {
     polySynth.set({
@@ -74,7 +82,7 @@ export function initializeInstruments(): void {
         attack: 0.05, // default: 0.005
         decay: 0.1, // default: 0.1
         sustain: 0.3, //default: 0.3
-        release: 1.7, // default: 1},
+        release: 0.2, // default: 1},
       },
       portamento: 0.05,
     })
@@ -142,7 +150,7 @@ export function initializeInstruments(): void {
     SteelPan: () => {
       return steelPan
     },
-    None: () => {
+    null: () => {
       return silentInstrument
     },
   }
@@ -162,7 +170,7 @@ export function initializeInstruments(): void {
     Harmonium: () => {
       return sampledInstruments['harmonium']
     },
-    None: () => {
+    null: () => {
       return silentInstrument
     },
   }
@@ -172,26 +180,28 @@ export function initializeInstruments(): void {
 // TOTO(theis, 2021/06/21): should we change this to an Enum type as advocated in that
 // post's comments (https://dev.to/michaeljota/comment/ebeo)
 const leadInstrumentNames = ['Piano', 'PolySynth', 'SteelPan'] as const
-type leadInstrument = typeof leadInstrumentNames[number]
-const mainInstrumentsIcons = new Map<leadInstrument, string>([
+export type leadInstrument = typeof leadInstrumentNames[number]
+const instrumentsIcons = new Map<leadInstrument | null, string>([
   ['Piano', '049-piano.svg'],
   ['PolySynth', '019-synthesizer.svg'],
   ['SteelPan', '007-timpani.svg'],
+  [null, 'volume-xmark-solid.svg'],
 ])
 
 const chordsInstrumentNames = ['PolySynth', 'Piano'] as const
-type chordsInstrument = typeof chordsInstrumentNames[number]
-const chordsInstrumentsIcons = new Map<chordsInstrument, string>([
+export type chordsInstrument = typeof chordsInstrumentNames[number]
+const chordsInstrumentsIcons = new Map<chordsInstrument | null, string>([
   ['PolySynth', '019-synthesizer.svg'],
   ['Piano', '049-piano.svg'],
 ])
 
-let instrumentSelect: CycleSelect<leadInstrument>
-let chordsInstrumentSelect: CycleSelect<chordsInstrument> | null = null
+let instrumentSelectView: CycleSelectView<leadInstrument>
+// const chordsInstrumentSelect: CycleSelectIconsView<chordsInstrument> | null = null
 declare let COMPILE_ELECTRON: boolean
 export function renderDownloadButton(
   containerElement: HTMLElement,
-  useChordsInstruments: boolean
+  instrumentSelect: VariableValue<leadInstrument>,
+  chordsInstrumentSelect?: VariableValue<chordsInstrument>
 ): void {
   // Manual samples loading button, to reduce network usage by only loading them
   // when requested
@@ -203,15 +213,16 @@ export function renderDownloadButton(
   )
   containerElement.appendChild(loadSamplesButtonContainer)
 
-  const mainIconSize = 'fa-4x'
-
   const loadSamplesButtonInterface = document.createElement('i')
   loadSamplesButtonInterface.id = 'load-samples-button-interface'
   loadSamplesButtonContainer.appendChild(loadSamplesButtonInterface)
-  loadSamplesButtonInterface.classList.add(
-    'fas',
-    'fa-arrow-alt-circle-down',
-    mainIconSize
+
+  const labelElement = ControlLabels.createLabel(
+    containerElement,
+    'sample-instruments-download-button-label',
+    false,
+    undefined,
+    containerElement
   )
 
   const sampledInstrumentsNames: (leadInstrument | chordsInstrument)[] = []
@@ -219,8 +230,7 @@ export function renderDownloadButton(
   function loadSampledInstruments(this: Element): void {
     log.info('Start downloading audio samples')
     this.parentElement.classList.add('loading-control')
-    this.classList.add('loading-control', 'fa-spin', 'fa-spinner')
-    this.classList.remove('fa-arrow-alt-circle-down')
+    this.classList.add('fa-spin')
 
     const loadPromises: Promise<any>[] = []
     if (sampledInstrumentsNames.length > 0) {
@@ -238,28 +248,18 @@ export function renderDownloadButton(
         resolve(sampledInstruments)
       })
       void sampleLibraryLoadPromise.then(() => {
-        instrumentSelect.activeOptions = [
-          ...instrumentSelect.activeOptions,
-          ...sampledInstrumentsNames,
-        ]
+        sampledInstrumentsNames.forEach((instrumentName) => {
+          instrumentSelect.addOption(instrumentName)
+        })
       })
       loadPromises.push(sampleLibraryLoadPromise)
     }
 
     const pianoLoadPromise: Promise<void> = piano.load()
     void pianoLoadPromise.then(() => {
-      const addOption = <T extends string, G extends T>(
-        instrumentSelect: CycleSelect<T>,
-        option: G
-      ): void => {
-        instrumentSelect.activeOptions = [
-          ...instrumentSelect.activeOptions,
-          option,
-        ]
-      }
-      addOption(instrumentSelect, 'Piano')
+      instrumentSelect.addOption('Piano')
       if (chordsInstrumentSelect != null) {
-        addOption(chordsInstrumentSelect, 'Piano')
+        chordsInstrumentSelect.addOption('Piano')
       }
     })
     loadPromises.push(pianoLoadPromise)
@@ -268,6 +268,7 @@ export function renderDownloadButton(
       .then(() => {
         log.info('Finished loading the samples')
         loadSamplesButtonContainer.remove()
+        labelElement.remove()
       })
       .catch(() => {
         this.classList.remove('loading-control', 'fa-spin', 'fa-spinner')
@@ -288,79 +289,51 @@ export function renderDownloadButton(
 
 const instrumentIconsBasePath: string = getPathToStaticFile('icons')
 
-export function renderInstrumentSelect(containerElement: HTMLElement): void {
-  const instrumentSelectElement = document.createElement('div')
-  instrumentSelectElement.id = 'lead-instrument-select-container'
-  instrumentSelectElement.classList.add(
-    'control-item',
-    'main-instrument-select'
-  )
-  containerElement.appendChild(instrumentSelectElement)
-
-  function instrumentOnChange<T extends string>(
-    this: CycleSelect<T>,
-    e: Event
+export class InstrumentSelect<
+  T extends leadInstrument
+> extends NullableVariableValue<T> {
+  constructor(
+    options: T[] = [],
+    initialValue?: T,
+    onchange: (instrument: T) => void = (instrument: T) => {
+      currentInstrument = instrumentFactories[instrument]()
+    }
   ) {
-    currentInstrument = instrumentFactories[this.value]()
+    super(options, initialValue, onchange)
   }
-
-  instrumentSelect = new CycleSelect(
-    instrumentSelectElement,
-    instrumentOnChange,
-    mainInstrumentsIcons,
-    instrumentIconsBasePath,
-    ['PolySynth', 'SteelPan']
-  )
-  instrumentSelect.interfaceElement.classList.add('playbackInstrumentSelect')
-
-  const initialInstrument = 'PolySynth'
-  instrumentSelect.value = initialInstrument
 }
 
-export function renderChordsInstrumentSelect(containerElement: HTMLElement) {
-  // create second instrument selector for chord instrument
-  const chordsInstrumentSelectElement = document.createElement('div')
-  chordsInstrumentSelectElement.id = 'chords-instrument-select-container'
-  chordsInstrumentSelectElement.classList.add(
-    'control-item',
-    'chords-instrument-select'
-  )
-  containerElement.appendChild(chordsInstrumentSelectElement)
-
-  function chordsInstrumentOnChange<T extends string>(
-    this: CycleSelect<T>,
-    e: Event
+export class ChordsInstrumentSelect<
+  T extends chordsInstrument
+> extends InstrumentSelect<T> {
+  constructor(
+    options: T[] = [],
+    initialValue?: T,
+    onchange: (chordsInstrument: T) => void = (chordsInstrument: T) => {
+      currentChordsInstrument = instrumentFactories[chordsInstrument]()
+    }
   ) {
-    currentChordsInstrument = chordsInstrumentFactories[this.value]()
+    super(options, initialValue, onchange)
   }
-
-  chordsInstrumentSelect = new CycleSelect(
-    chordsInstrumentSelectElement,
-    chordsInstrumentOnChange,
-    chordsInstrumentsIcons,
-    instrumentIconsBasePath,
-    ['PolySynth']
-  )
-  chordsInstrumentSelect.interfaceElement.classList.add(
-    'playbackInstrumentSelect'
-  )
-
-  const initialChordsInstrument = 'PolySynth'
-  chordsInstrumentSelect.value = initialChordsInstrument
 }
+
+export class InstrumentSelectView extends CycleSelectViewWithDisable<leadInstrument> {
+  constructor(valueModel: NullableVariableValue<leadInstrument>) {
+    const imageElements = createIconElements(
+      instrumentIconsBasePath,
+      instrumentsIcons
+    )
+    super(valueModel, imageElements)
+    this.classList.add('playbackInstrumentSelect')
+  }
+}
+customElements.define('instrument-select', InstrumentSelectView, {
+  extends: 'div',
+})
 
 export function mute(mute: boolean, useChordsInstrument = false) {
-  instrumentSelect.disable(mute)
-  if (chordsInstrumentSelect != null) {
-    chordsInstrumentSelect.disable(mute)
-  }
   if (mute) {
     currentInstrument = silentInstrument
     currentChordsInstrument = silentInstrument
-  } else {
-    instrumentSelect.emit(instrumentSelect.events.ValueChanged)
-    if (chordsInstrumentSelect != null) {
-      chordsInstrumentSelect.emit(chordsInstrumentSelect.events.ValueChanged)
-    }
   }
 }

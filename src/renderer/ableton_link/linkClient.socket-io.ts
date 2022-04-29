@@ -1,4 +1,4 @@
-import io from 'socket.io-client'
+import { io, Socket } from 'socket.io-client'
 import { AbletonLinkClient } from './linkClient.abstract'
 
 import default_config from '../../common/default_config.json'
@@ -8,7 +8,7 @@ const link_channel_prefix: string = default_config['link_channel_prefix']
 
 type SocketIOCallback = (...args: any[]) => void
 export class LinkClientSocketIO extends AbletonLinkClient {
-  protected readonly socket: SocketIOClient.Socket
+  protected readonly socket: Socket
   static defaultServerURL = new URL('http://localhost:3000')
 
   constructor(
@@ -37,15 +37,11 @@ export class LinkClientSocketIO extends AbletonLinkClient {
   }
   // Schedule a LINK dependent callback once
   removeServerListener(message: string, callback: SocketIOCallback): this {
-    this.socket.removeListener(link_channel_prefix + message, callback)
+    this.socket.off(link_channel_prefix + message, callback)
     return this
   }
   removeAllServerListeners(message: string): this {
-    throw new Error(
-      'This is wrong, should remove listeners for specific message' +
-        'but could not yet find the way to do that with SocketIO'
-    )
-    this.socket.removeAllListeners()
+    this.socket.removeAllListeners(message)
     return this
   }
 }

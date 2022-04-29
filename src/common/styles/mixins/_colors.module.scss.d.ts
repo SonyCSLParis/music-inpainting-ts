@@ -1,6 +1,7 @@
 interface Colors {
-  millenial_pink_idle_control: string
-  millenial_pink_active_control: string
+  millenial_pink_theme_pink: string
+  millenial_pink_theme_blue: string
+  arabian_sand: string
   idle_control: string
   active_control: string
   millenial_pink_panes_background_color: string

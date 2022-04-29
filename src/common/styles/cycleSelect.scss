@@ -1,77 +1,65 @@
 @use "mixins/measures";
 @use "mixins/colors.module";
+@use "mixins/interfaces";
 // Styling for the icon-based select element
 
+.pulsing {
+  animation: 0.2s pulse none 4 alternate;
+}
+
 .cycleSelect {
-  cursor: pointer;
+  @include interfaces.roundedSquareBox;
+  font-size: calc(#{measures.$cycleSelect-size} / 2.5);
+
   position: relative;
+  cursor: pointer;
   width: measures.$cycleSelect-size;
   height: measures.$cycleSelect-size;
-  border-radius: 100%;
-  border-style: solid;
-  border-width: clamp(2px, min(0.3vw, 0.2vh), 3.5px);
-  box-sizing: border-box;
-
-  display: flex;
-  justify-content: center;
+  transform: scale(0.85);
 
   select {
     display: none;
   }
 
-  &.pulsing {
-    transform: scale(1);
-    animation: 0.6s pulse ease-in-out 2 alternate;
+  .cycleSelect--interactive-element {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    z-index: 1;
   }
 
   &.cycleSelect-disabled {
+    @include interfaces.hiddenControl;
     cursor: not-allowed !important;
-    pointer-events: none !important;
-
-    color: rgba(0, 0, 0, 0.8);
-    // display cross-out line
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 6px;
-      left: 5px;
-      border-top-width: thick;
-      border-top-style: solid;
-      width: 100%;
-      transform: rotate(-45deg);
-      transform-origin: 0% 0%;
-    }
-
-    & img {
-      filter: grayscale(100%) contrast(60%);
+    .cycleSelect--interactive-element {
+      pointer-events: none !important;
     }
   }
 }
 
-.cycleSelect  img {
+.cycleSelect > * {
+  transition: opacity 0.07s linear;
   position: absolute;
   align-self: center;
 
   width: 70%;
 
-  visibility: hidden;
-  display: none;
+  opacity: 0;
 
   &.cycleSelect-currentValue {
-    display: initial;
-    visibility: visible;
+    opacity: 1;
   }
 }
 
-
 @keyframes pulse {
-	0% {
-		transform: scale(1);
-		box-shadow: 0 0 0 0;
-	}
+  0% {
+    filter: brightness(1);
+  }
 
-	100% {
-		transform: scale(1.5);
-		box-shadow: 0 0 0 0 6px rgba(0, 0, 0, 0);
-	}
+  100% {
+    filter: brightness(0.7);
+  }
 }

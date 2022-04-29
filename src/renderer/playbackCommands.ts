@@ -1,5 +1,3 @@
-import '@fortawesome/fontawesome-free/css/all.css'
-
 import { PlaybackManager } from './playback'
 import * as ControlLabels from './controlLabels'
 
@@ -15,12 +13,12 @@ export function render(
     }
   }
 
-  const stoppedClasses: string[] = ['stopped', 'fa-play-circle']
-  const playingClasses: string[] = ['playing', 'fa-stop-circle']
-  const waitingClass = 'fa-circle-notch'
+  const stoppedClasses: string[] = ['playback-command--stopped']
+  const playingClasses: string[] = ['playback-command--playing']
+  const waitingClass = 'playback-command--waiting'
   const spinningClass = 'fa-spin'
 
-  const mainIconSize = 'fa-4x'
+  const mainIconSize = 'fa-2xl'
 
   const playButtonContainer = document.createElement('div')
   playButtonContainer.id = 'play-button-container'
@@ -38,7 +36,7 @@ export function render(
   const playButtonInterface = document.createElement('i')
   playButtonInterface.id = 'play-button-interface'
   playButtonContainer.appendChild(playButtonInterface)
-  playButtonInterface.classList.add('fas', mainIconSize)
+  playButtonInterface.classList.add('fa-solid', mainIconSize)
   playButtonInterface.style.alignSelf = 'inherit'
   playButtonInterface.style.cursor = 'pointer'
 
@@ -79,7 +77,9 @@ export function render(
   setPlayingClass(playbackManager.transport.state == 'started')
 
   function playCallback(play: boolean) {
-    setWaitingClass()
+    if (play) {
+      setWaitingClass()
+    }
     void playbackCallback(play)
   }
 

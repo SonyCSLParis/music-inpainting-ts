@@ -4,8 +4,11 @@
 
 @use "mixins/colors.module";
 @use "mixins/measures";
+@use "mixins/interfaces";
 @use "mixins/fonts";
 @use 'sass:color';
+
+@import 'mixins/imports';
 
 html,
 body {
@@ -14,12 +17,18 @@ body {
   max-height: 100vh;
   margin: 0;
   overflow: hidden;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body.splash-screen {
   -webkit-app-region: drag;
   #configuration-selection {
     -webkit-app-region: no-drag;
+  }
+  #app {
+    display: none;
   }
 }
 
@@ -29,7 +38,7 @@ input {
 }
 
 // default theme, also used on the splash-screen
-@include colors.theme-colors(lavender-dark);
+@include colors.theme-colors();
 
 body.running {
   &[theme='millenial-pink'] {
@@ -38,13 +47,20 @@ body.running {
   &[theme='lavender-dark'] {
     @include colors.theme-colors(lavender-dark);
   }
+  &[theme='dark'] {
+    @include colors.theme-colors(dark);
+  }
   &[theme='lavender-light'] {
     @include colors.theme-colors(lavender-light);
+  }
+  &[theme='black-white'] {
+    @include colors.theme-colors(black-white);
   }
 }
 
 body {
   font-family: fonts.$interface-font-stack;
+  font-weight: fonts.$interface-font-weight;
 
   // disable blue box over objects on touch
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
@@ -73,50 +89,62 @@ body {
   }
 }
 
+.sheet-inpainter-stacking-container {
+  top: 15vh;
+}
+
 body.notono {
   .simplebar-track.simplebar-vertical {
     display: none;
   }
 }
 
-.simplebar-track {
-  font-size: x-large;
-  display: flex;
-  justify-content: center;
+.inpainter .simplebar-track {
+  @include fa-icon-solid($fa-var-lock-open);
+  @include fa-size($fa-size-scale-xl);
+  &::before {
+    opacity: 0.4;
+  }
+  &:hover {
+    &::before {
+      opacity: 1;
+    }
+  }
+  &.scroll-lock {
+    @include fa-icon-solid($fa-var-lock);
+    &::before {
+      opacity: 1;
+      animation: 2s fa-beat linear infinite alternate;
+      --fa-beat-scale: 0.9;
+    }
+    &:hover::before {
+      animation-play-state: paused;
+    }
+  }
 
   &::before {
-    font-family: 'FontAwesome';
     position: absolute;
     display: flex;
     align-items: center;
     justify-content: center;
     align-self: center;
-    content: '\F3c1';
     border-radius: 100%;
     pointer-events: auto;
     cursor: pointer;
   }
-  &.scroll-lock::before {
-    color: firebrick;
-    content: '\F023';
-  }
 
   &.simplebar-horizontal::before {
-    height: 1.6em;
-    width: fit-content;
-    left: calc(-1.8em - 1.5vw);
-
-    padding-right: 0.3em;
-    padding-left: 0.3em;
+    height: 2em;
+    width: 2em;
+    top: 0;
+    left: calc(-2em - 1.5vw);
   }
 
   &.simplebar-vertical::before {
-    width: 1.6em;
-    height: fit-content;
-    top: calc(-1.6em - 1.5vh);
+    width: 2em;
+    height: 2em;
+    top: calc(-2em - 1.5vh);
 
-    padding-top: 0.3em;
-    padding-bottom: 0.3em;
     margin-bottom: 2em;
   }
 }
@@ -134,7 +162,7 @@ body.notono {
 
 body.notono,
 body.nonoto {
-  .simplebar-track.simplebar-vertical::before {
+  .inpainter .simplebar-track.simplebar-vertical::before {
     display: none;
   }
 }
@@ -172,13 +200,13 @@ img {
       'footer';
     grid-template-rows: 1fr auto;
 
-    #header {
+    .application-header {
       display: none;
     }
   }
 }
 
-#app > #header {
+#app > .application-header {
   grid-area: header;
 }
 
@@ -191,7 +219,7 @@ img {
   grid-area: footer;
 }
 
-#header,
+.application-header,
 #main-panel,
 #bottom-controls {
   width: 100vw;
@@ -201,6 +229,20 @@ img {
   position: relative !important;
   z-index: 0;
   display: flex;
+  pointer-events: auto;
+
+  position: absolute;
+
+  justify-content: center;
+  align-content: center;
+
+  &.loading {
+    .inpainter .simplebar-track {
+      // hide scrollbars when the inpainter is loading
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
 }
 
 .loading-spinner-container {
@@ -229,9 +271,10 @@ $inverse-trapezoid-perspective-transform: perspective(10px) rotateX(-8deg);
 #bottom-controls {
   display: grid;
   transform-style: preserve-3D;
-  padding-top: calc(#{measures.$expand-tab-height} / 4);
-  padding-bottom: 1vh;
-  grid-template-columns: repeat(4, 25%);
+  padding: 5px 2.5%;
+  width: auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 5%;
   align-items: center;
   justify-items: center;
   z-index: 0;
@@ -258,7 +301,7 @@ $inverse-trapezoid-perspective-transform: perspective(10px) rotateX(-8deg);
       transform: $inverse-trapezoid-perspective-transform;
     }
 
-    font-size: 70%;
+    font-size: x-large;
     display: flex;
     align-content: center;
     justify-content: center;
@@ -283,16 +326,10 @@ $inverse-trapezoid-perspective-transform: perspective(10px) rotateX(-8deg);
     }
 
     &:hover {
-      font-size: 100%;
       height: measures.$expand-tab-height;
       top: calc(0px - #{measures.$expand-tab-height});
     }
   }
-}
-
-body:not(.help-tour-on) .trip-block {
-  // ensures the trip-block takes up no space in the layout
-  display: none !important;
 }
 
 body.help-tour-on {
@@ -345,6 +382,7 @@ select {
 }
 
 .disabled {
+  @include interfaces.hiddenControl;
   color: lightgray;
   cursor: not-allowed;
 
@@ -360,13 +398,10 @@ select {
   text-align: center;
 }
 
-#granularity-select-container--whole-note {
-  width: 45%;
-}
-
-#edit-tool-select-container--top,
-#edit-tool-select-container--bottom {
-  width: 60%;
+#granularity-select-container {
+  img[src*='whole'] {
+    width: 45%;
+  }
 }
 
 .center {

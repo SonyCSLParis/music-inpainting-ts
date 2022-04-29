@@ -7,7 +7,7 @@ export function createLabel(
   isAdvancedControl = false, // FIXME(theis, 2021/08/02): redundant, could be infered from associated controlElement
   localizationId?: string,
   containerElement?: HTMLElement
-): void {
+): HTMLElement {
   const labelElement: HTMLElement = document.createElement('div')
   labelElement.classList.add('control-label')
   labelElement.id = id
@@ -45,4 +45,6 @@ export function createLabel(
     containerElement = bottomControlsElement
   }
   containerElement.appendChild(labelElement)
+
+  return labelElement
 }

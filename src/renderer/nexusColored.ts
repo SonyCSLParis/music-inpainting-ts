@@ -3,11 +3,14 @@
 import Nexus from 'nexusui'
 import defaultColors from '../common/styles/mixins/_colors.module.scss'
 
-export function setColors(accent: string, fill: string): void {
-  Nexus.colors.accent = accent
+export function setColors(accent: string, fill: string, light = 'white'): void {
+  Nexus.colors.accent = accent // used for active control text
   Nexus.colors.fill = fill
+  Nexus.colors.dark = accent // used for idle control text
+  Nexus.colors.mediumLight = accent
+  Nexus.colors.light = light
 }
-setColors(defaultColors.active_control, defaultColors.idle_control)
+setColors(defaultColors.arabian_sand, 'black')
 
 export class NexusSelectWithShuffle extends Nexus.Select {
   // update the controller's current value with a randomly chosen one

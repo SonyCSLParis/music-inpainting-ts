@@ -13,11 +13,6 @@
   &:hover {
     opacity: 1;
   }
-
-  &::before {
-    content: '\F05A';
-    font-family: 'FontAwesome';
-  }
 }
 
 .shepherd-progress-steps {
@@ -27,12 +22,6 @@
   @media screen and (max-width: 500px), screen and (max-height: 300px) {
     display: none !important;
   }
-}
-
-.shepherd-text {
-  // padding-top: 0.75rem;
-  // font-size: max(0.7em, min(2.5vw, 3vh, 1em));
-  // border-bottom: thin solid gray;
 }
 
 .shepherd-header {
@@ -66,7 +55,6 @@
 }
 
 .shepherd-button {
-  // increase size of navigation buttons
   font-size: x-large;
   width: auto;
 }

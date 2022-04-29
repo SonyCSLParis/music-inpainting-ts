@@ -1,13 +1,14 @@
 @use "mixins/measures";
+@use "mixins/interfaces";
 @use "mixins/colors.module";
+@import 'mixins/imports';
 
-#header {
+.application-header {
   display: grid;
   width: 100%;
   min-height: measures.$header-height;
 
   opacity: 1;
-  box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.21);
   font-size: 25px;
 
   justify-items: center;
@@ -20,60 +21,104 @@
   }
 }
 
-body.electron-hiddenInset-window-controls #header {
+body.electron-hiddenInset-window-controls .application-header {
   // small padding for Electron frame-less window-controls on MacOS
-  padding-top: 10px;
+  padding: 40px 0 15px;
+  min-height: unset;
 }
 
 $logo-margin-width: min(20%, 25px);
-#header {
+.application-header {
+  grid-auto-flow: column;
   grid-template-rows: auto;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr;
 }
 
 .header-logo-left {
   grid-row: 1;
-  grid-column: 1;
   margin-left: $logo-margin-width;
   justify-self: left;
 }
 
 .header-logo-right {
   grid-row: 1;
-  grid-column: 3;
   margin-right: $logo-margin-width;
   justify-self: right;
 }
 
-#app-title {
+#app-title-container {
   grid-row: 1;
-  grid-column: 2;
+  display: grid;
+  height: 100%;
+  width: 100%;
+  column-gap: 2%;
+  grid-template-columns: 1fr min-content 1fr;
+  justify-content: center;
 
-  border-width: medium;
+  #redo-button-container,
+  #undo-button-container {
+    @include interfaces.roundedSquareBox;
+    width: fit-content;
+    height: fit-content;
+    align-self: center;
+    justify-self: center;
+    align-content: center;
+    justify-content: center;
+
+    padding: 0.5em;
+    border-radius: 3px;
+    z-index: 1;
+
+    &:not(.disabled) {
+      cursor: pointer;
+      &:hover {
+        filter: brightness(1.2);
+      }
+    }
+  }
+
+  i {
+    @include fa-size($fa-size-scale-xs);
+  }
+  #undo-button {
+    @include fa-icon-solid($fa-var-arrow-rotate-backward);
+  }
+  #redo-button {
+    @include fa-icon-solid($fa-var-arrow-rotate-forward);
+  }
+}
+#app-title {
+  border-width: 2px;
   border-radius: 15px;
-  height: 75%;
+  border-style: solid;
   padding: 0% 8%;
+  height: fit-content;
+  width: fit-content;
+  justify-self: center;
 
   user-select: none;
   white-space: nowrap;
 
-  display: flex;
-  align-items: center;
+  // display: flex;
+  align-self: center;
 
-  font-size: min(10vw, 12vh, 2.3em);
-  font-family: 'Julius' !important;
+  font-size: 100%;
+  font-size: min(8vw, 10vh, 1.8em);
+  font-weight: 900;
+
+  text-transform: uppercase;
 
   // visual cue for resampling-on-click functionality
   cursor: pointer;
 }
 
 body.anonymous-mode {
-  #header {
+  .application-header {
     grid-template-rows: auto !important;
     grid-template-columns: repeat(3, 1fr);
   }
 
-  #app-title {
+  #app-title-container {
     grid-row: 1;
     grid-column: 2;
     font-size: min(5vh, 10vw) !important;
@@ -86,6 +131,7 @@ $logo-width-full: min(30vw, 16vh, 120px);
 .header-logo {
   display: flex;
   align-self: center;
+  pointer-events: none;
 
   & img {
     width: 100%;
@@ -94,11 +140,11 @@ $logo-width-full: min(30vw, 16vh, 120px);
 }
 
 .logo:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.03);
 }
 
-#header picture,
-#header img {
+.application-header picture,
+.application-header img {
   height: auto;
   align-content: center;
   align-items: center;
@@ -106,24 +152,55 @@ $logo-width-full: min(30vw, 16vh, 120px);
   vertical-align: middle;
 }
 
-.logo {
-  height: 100%;
+.header-logo {
+  display: none;
+}
+@media screen and (min-width: 700px) and (min-height: 500px) {
+  #app-title-container {
+    max-width: 500px;
+  }
+  .application-header {
+    grid-template-columns: 1fr 5fr 1fr;
+  }
+  .header-logo {
+    display: flex;
+  }
+  .logo {
+    height: 100%;
+    transition: width 0.3s ease;
 
-  width: $logo-width-small;
-  max-width: 60px;
+    width: $logo-width-small;
+    max-width: 60px;
 
-  border-radius: 30px;
+    border-radius: 3px;
 
-  padding-left: min(15%);
-  padding-right: min(15%);
-  padding-bottom: min(15%, 0.8vh);
-  padding-top: min(15%, 0.8vh);
-
-  @media screen and (min-width: 700px) and (min-height: 500px) {
+    padding-left: min(15%);
+    padding-right: min(15%);
+    padding-bottom: min(15%, 0.8vh);
+    padding-top: min(15%, 0.8vh);
+  }
+}
+@media screen and (min-width: 1000px) and (min-height: 500px) {
+  .logo {
     transition: width 0.3s ease;
     width: $logo-width-full;
     max-width: unset;
     padding-left: min(7%);
     padding-right: min(7%);
   }
+}
+
+.application-header.no-undo-redo {
+  #undo-button-container,
+  #redo-button-container {
+    display: none !important;
+  }
+
+  #app-title-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+#configuration-selection .application-header * {
+  pointer-events: none;
 }

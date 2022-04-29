@@ -2,7 +2,7 @@
 import { ChannelBasedMidiInput, getMidiInputListener } from '../midiIn'
 
 import { EventEmitter } from 'events'
-import WebMidi, { Output } from 'webmidi'
+import { WebMidi, Output } from 'webmidi'
 
 export class MidiOutput extends EventEmitter {
   /**
@@ -16,10 +16,13 @@ export class MidiOutput extends EventEmitter {
   }
 
   set deviceId(deviceId: string | 'all' | null) {
-    this._deviceId = deviceId
-    void MidiOutput.getDeviceName(this.deviceId).then((deviceName) =>
-      this.midiInputListener.setDevice(deviceName)
-    )
+    if (this._deviceId != deviceId) {
+      this._deviceId = deviceId
+      void MidiOutput.getDeviceName(this.deviceId).then((deviceName) =>
+        this.midiInputListener.setDevice(deviceName)
+      )
+      this.emit('device-changed', deviceId)
+    }
   }
 
   static async getDeviceId(name: string): Promise<string | null> {
@@ -120,33 +123,45 @@ export class MidiOutput extends EventEmitter {
 
   // EVENT FUNCTIONS
 
-  emit<EventType extends PedalEventType | ConnectionEventType | NoteEventType>(
-    event: EventType,
-    data: ConditionalEmitter<EventType>
-  ): boolean {
+  emit<
+    EventType extends
+      | PedalEventType
+      | ConnectionEventType
+      | NoteEventType
+      | 'device-changed'
+  >(event: EventType, data: ConditionalEmitter<EventType>): boolean {
     return super.emit(event, data)
   }
 
-  on<EventType extends PedalEventType | ConnectionEventType | NoteEventType>(
-    event: EventType,
-    listener: ConditionalListener<EventType>
-  ): this {
+  on<
+    EventType extends
+      | PedalEventType
+      | ConnectionEventType
+      | NoteEventType
+      | 'device-changed'
+  >(event: EventType, listener: ConditionalListener<EventType>): this {
     super.on(event, listener)
     return this
   }
 
-  once<EventType extends PedalEventType | ConnectionEventType | NoteEventType>(
-    event: EventType,
-    listener: ConditionalListener<EventType>
-  ): this {
+  once<
+    EventType extends
+      | PedalEventType
+      | ConnectionEventType
+      | NoteEventType
+      | 'device-changed'
+  >(event: EventType, listener: ConditionalListener<EventType>): this {
     super.once(event, listener)
     return this
   }
 
-  off<EventType extends PedalEventType | ConnectionEventType | NoteEventType>(
-    event: EventType,
-    listener: ConditionalListener<EventType>
-  ): this {
+  off<
+    EventType extends
+      | PedalEventType
+      | ConnectionEventType
+      | NoteEventType
+      | 'device-changed'
+  >(event: EventType, listener: ConditionalListener<EventType>): this {
     super.off(event, listener)
     return this
   }
@@ -169,16 +184,8 @@ export class MidiOutput extends EventEmitter {
         MidiOutput._isEnabled = true
         return
       }
-      await new Promise<void>((done, error) => {
-        WebMidi.enable((e) => {
-          if (e) {
-            error(e)
-          } else {
-            MidiOutput._isEnabled = true
-            done()
-          }
-        })
-      })
+      await WebMidi.enable()
+      MidiOutput._isEnabled = true
     }
   }
 

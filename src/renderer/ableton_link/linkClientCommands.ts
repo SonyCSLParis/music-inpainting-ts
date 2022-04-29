@@ -3,6 +3,10 @@ import * as ControlLabels from '../controlLabels'
 
 import Nexus from '../nexusColored'
 import MidiSheetPlaybackManager from '../sheetPlayback'
+import {
+  BooleanValue,
+  CycleSelectEnableDisableFontAwesomeView,
+} from '../cycleSelect'
 
 export function render(
   container: HTMLElement,
@@ -30,28 +34,29 @@ export function render(
   linkEnableButtonElement.classList.add('control-item')
   linkClientSetupContainerElement.appendChild(linkEnableButtonElement)
 
-  const linkEnableButton = new Nexus.Button('#link-enable-button', {
-    size: [30, 30],
-    state: false,
-    mode: 'toggle',
-  })
-  linkEnableButton.on('change', (enable: boolean) => {
+  const linkEnableToggle = new BooleanValue()
+  const linkEnableButton = new CycleSelectEnableDisableFontAwesomeView(
+    linkEnableToggle
+  )
+  linkEnableButtonElement.appendChild(linkEnableButton)
+
+  linkEnableToggle.on('change', (enable: boolean) => {
     if (enable) {
-      linkEnableButton.turnOff(false)
+      // linkEnableToggle.turnOff(false)
     } else {
-      linkEnableButton.turnOn(false)
+      // linkEnableButton.turnOn(false)
     }
     void linkClient.pingServer().then(() => {
       if (enable) {
-        void linkClient.enable().then(() => linkEnableButton.turnOn(false))
+        void linkClient.enable() //.then(() => linkEnableButton.turnOn(false))
       } else {
         linkClient.disable()
-        linkEnableButton.turnOff(false)
+        // linkEnableButton.turnOff(false)
       }
     })
   })
   ControlLabels.createLabel(
-    linkEnableButton.element,
+    linkEnableButtonElement,
     'ableton-link-client-enable-button-label',
     false,
     undefined,

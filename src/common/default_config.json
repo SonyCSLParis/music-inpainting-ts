@@ -1,8 +1,8 @@
 {
   "app_name": "NOTONO",
 
-  "disable_inpainting_api_parameters_input": false,
   "inpainting_api_address": "",
+  "insert_custom_api_setup": true,
 
   "annotation_types": ["fermata"],
 
@@ -35,6 +35,10 @@
 
   "insert_recaptcha": false,
   "recaptcha_sitekey": "6Leab_MUAAAAAP7_u_MTF96FH0-8kLtfNTZiD3yu",
+
+  "splash_screen": {
+    "insert_eula_agreement_checkbox": false
+  },
 
   "recaptcha_verification_ip": null,
   "recaptcha_verification_port": 8081,

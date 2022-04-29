@@ -1,0 +1,21 @@
+@mixin roundedSquareBox {
+  border-radius: 10%;
+  border-style: solid;
+  border-width: clamp(2px, min(0.3vw, 0.2vh), 3.5px);
+  box-sizing: border-box;
+
+  display: flex;
+  justify-content: center;
+  align-content: center;
+}
+
+@mixin hiddenControl {
+  filter: blur(2px) opacity(0.3) grayscale(0.25);
+  * {
+    pointer-events: none;
+  }
+  &:focus,
+  &:focus-within {
+    visibility: hidden;
+  }
+}
