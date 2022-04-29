@@ -1,10 +1,32 @@
 @use './measures';
 @use 'sass:color';
 
-$millenial-pink-body-background: #fff7f8;
-$millenial-pink-panes-background: #ffecf9;
-$millenial-pink-idle-control: color.scale(lightpink, $lightness: 20%);
-$millenial-pink-active-control: #4392f1;
+$millenial-pink-body-background-light: #fff7f8;
+$millenial-pink-panes-background: color.scale(
+  #ffecf9,
+  $lightness: -50%,
+  $saturation: -70%
+);
+$millenial-pink-body-background: color.scale(
+  $millenial-pink-panes-background,
+  $lightness: +65%,
+  // $saturation: -20%
+);
+$millenial-pink-idle-control: color.scale(
+  $millenial-pink-body-background,
+  $lightness: -60%
+);
+$millenial-pink-theme-darkblue: color.scale(
+  #4392f1,
+  $lightness: -50%,
+  $saturation: -40%
+);
+$millenial-pink-theme-lightblue: color.scale(
+  #8ec5fc,
+  $lightness: +20%,
+  $saturation: -10%
+);
+$millenial-pink-active-control: $millenial-pink-theme-darkblue;
 
 $lavender-body-background: #c8dadf;
 $lavender-panes-background: #beb9d4;
@@ -12,6 +34,12 @@ $lavender-dark-body-background: rgb(48, 8, 61);
 $lavender-dark-panes-background: rgb(57, 53, 58);
 $lavender-idle-control: #58a4b0;
 $lavender-active-control: #a3bcf9;
+
+$off-white-color: #faebd7;
+$hot-orange-color: #ff6e00;
+$ipswich-pine-color: #e3a95e;
+$arabian-sand-color: color.scale(#be8864, $lightness: +30%);
+$lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 
 $body-background: #c8dadf;
 $panes-background: #beb9d4;
@@ -27,20 +55,34 @@ $panes-background: #beb9d4;
   );
 }
 
-@function main-filter($control-color, $box-shadow-lightness-direction) {
+@function main-filter(
+  $control-color,
+  $box-shadow-lightness-direction,
+  $radius: 1.3px
+) {
   @return drop-shadow(
-    0px 0px 1.3px
+    0px 0px $radius
       controls-box-shadow-color($control-color, $box-shadow-lightness-direction)
   );
 }
 
-@mixin theme-colors($theme: lavender-dark) {
+@mixin theme-colors($theme: dark) {
   $body: $lavender-dark-body-background !default;
+  $body-gradient: none !default;
   $panes: $lavender-dark-panes-background !default;
   $idle-control: $lavender-idle-control !default;
   $active-control: $lavender-active-control !default;
   $overlay-lightness-factor: 1 !default;
   $text: lightgray !default;
+  $accent-color: white !default;
+  $spectrogram-image-filter: brightness(1.15) contrast(1.3) blur(2px) !default;
+  $spectrogram-grid-color: $off-white-color;
+  $spectrogram-background-color: transparent;
+  $cycle-select-icon-filter: none;
+  $panes-border: color.scale(
+    $panes,
+    $lightness: $overlay-lightness-factor * 20%
+  );
 
   @if $theme == lavender-light {
     $body: $lavender-body-background;
@@ -56,25 +98,61 @@ $panes-background: #beb9d4;
     $active-control: $lavender-active-control;
     $overlay-lightness-factor: 1;
     $text: lightgray;
+  } @else if $theme == dark {
+    $body: color.scale(black, $lightness: +2%);
+    $panes: color.scale(black, $lightness: +5%);
+    $active-control: $lighter-arabian-sand-color;
+    $idle-control: $lighter-arabian-sand-color;
+    $overlay-lightness-factor: 1;
+    $spectrogram-background-color: transparent;
+    $spectrogram-grid-color: $hot-orange-color;
+    $text: $arabian-sand-color;
+    $spectrogram-image-filter: invert(1)
+      sepia(1)
+      hue-rotate(-17.8deg)
+      brightness(0.7)
+      contrast(1.5)
+      blur(0.5px);
+    $cycle-select-icon-filter: $spectrogram-image-filter;
   } @else if $theme == millenial-pink {
     // TODO(theis): replace with list variables
     $body: $millenial-pink-body-background;
     $panes: $millenial-pink-panes-background;
+    $panes-border: lightgray;
     $active-control: $millenial-pink-active-control;
     $idle-control: $millenial-pink-idle-control;
-    $overlay-lightness-factor: 1;
+    $overlay-lightness-factor: +1;
     $text: black;
+  } @else if $theme == black-white {
+    $body: color.scale(darkgray, $lightness: +60%);
+    $panes: color.scale(darkgray, $lightness: -80%);
+    $panes-border: lightgray;
+    $active-control: $lighter-arabian-sand-color;
+    $idle-control: $lighter-arabian-sand-color;
+    $accent-color: $hot-orange-color;
+    $overlay-lightness-factor: 1;
+    $text: $arabian-sand-color;
   } @else {
     @error "Unknown theme #{$theme}.";
   }
 
-  $panes-border: color.scale(
-    $panes,
-    $lightness: $overlay-lightness-factor * 20%
-  );
+  @if $theme == black-white {
+    [nexus-ui] * {
+      color: $active-control !important;
+    }
+
+    .cycleSelect img {
+      filter: grayscale(1) brightness(10) hue-rotate(120deg);
+    }
+  }
+
+  $spectrogram-cursor-color: $arabian-sand-color;
 
   // default color, used on the splash screen
   body {
+    background-color: $body;
+  }
+  body.splash-screen {
     background-color: $panes;
   }
 
@@ -83,13 +161,14 @@ $panes-background: #beb9d4;
     color: $text;
   }
 
+  input.wrong-input-setting {
+    background-color: lightcoral;
+  }
+
   .shepherd-content * {
     color: $text;
   }
 
-  .shepherd-content {
-    // border: thin solid gray;
-  }
   .shepherd-header,
   .shepherd-text,
   .shepherd-footer {
@@ -111,10 +190,10 @@ $panes-background: #beb9d4;
   }
 
   .logo {
-    background-color: lightgray;
+    background-color: color.scale($idle-control, $lightness: +50%);
   }
 
-  #configuration-selection {
+  #configuration-selection-container {
     background-color: color.scale(
       $panes,
       $lightness: $overlay-lightness-factor * 15%
@@ -126,14 +205,59 @@ $panes-background: #beb9d4;
         $panes,
         $lightness: $overlay-lightness-factor * 93%
       );
+      background-color: $idle-control;
+    }
+
+    #eula-text-scroll-container {
+      background-color: color.scale(
+        $panes,
+        $lightness: -$overlay-lightness-factor * 50%
+      );
+
+      .simplebar-scrollbar {
+        &,
+        &::before {
+          background-color: color.scale(
+            $text,
+            $lightness: -75%,
+            $saturation: -50%
+          );
+        }
+      }
     }
   }
 
-  #main-panel {
+  .sheet-inpainter {
     background-color: $body;
   }
+  $sheet-color: color.scale(
+    $arabian-sand-color,
+    $lightness: -80%,
+    $saturation: +0%
+  );
+  .sheet-inpainter-sheet {
+    svg,
+    svg * {
+      fill: $sheet-color;
+      stroke: $sheet-color;
+    }
+  }
+  @if $body-gradient != none {
+    .sheet-inpainter::before {
+      position: absolute;
+      content: '';
+      height: 100%;
+      width: 100%;
+      background-color: $body;
+      background-image: $body-gradient;
+      opacity: 0.4;
+    }
+    .sheet-inpainter {
+      background-color: white;
+    }
+  }
 
-  #header,
+  #app .application-header,
   #bottom-controls {
     background-color: $panes;
     border-color: $panes-border;
@@ -146,19 +270,30 @@ $panes-background: #beb9d4;
       );
     }
   }
-  #header {
+  #app .application-header {
     border-bottom-style: solid;
     .header-logo {
       filter: main-filter(color.invert($panes), $overlay-lightness-factor / 10);
     }
+
+    #app-title,
+    #undo-button-container,
+    #redo-button-container {
+      &:not(.disabled) {
+        &:hover {
+          background-color: color.scale(
+            $panes,
+            $lightness: $overlay-lightness-factor * 15%
+          );
+        }
+      }
+    }
   }
 
-  #bottom-controls {
-    border-top-style: solid;
-  }
-
-  #app-title:hover {
-    background-color: lighten($panes, 15%);
+  #bottom-controls > .gridspan {
+    > :nth-child(2n) {
+      background-color: color.scale($panes, $lightness: -70%);
+    }
   }
 
   $simplebar-track-color: null;
@@ -183,7 +318,7 @@ $panes-background: #beb9d4;
   );
   $simplebar-scrollbar-color-transparent: color.scale(
     $simplebar-scrollbar-color,
-    $alpha: -10%
+    $alpha: 0%
   );
 
   .simplebar-track {
@@ -219,10 +354,6 @@ $panes-background: #beb9d4;
     }
   }
 
-  .Fermata {
-    background-color: color.scale($body, $alpha: -50%);
-  }
-
   .simplebar-scrollbar {
     box-shadow: 0 0 2px 1px
       color.scale(
@@ -245,6 +376,15 @@ $panes-background: #beb9d4;
           $lightness: 5%
         );
       }
+    }
+  }
+
+  // TODO(@tbazin, 2022/04/20): refactor priority of simplebar color definitions
+  // to enable factorizing this
+  .transparent-scrollbar .simplebar-track,
+  .simplebar-track {
+    &.scroll-lock::before {
+      color: $active-control;
     }
   }
 
@@ -274,7 +414,10 @@ $panes-background: #beb9d4;
 
   .cycleSelect {
     color: $idle-control;
-    background-color: $panes;
+    background-color: color.scale(
+      $panes,
+      $lightness: -$overlay-lightness-factor * 70%
+    );
   }
 
   .glow-shadow {
@@ -308,68 +451,196 @@ $panes-background: #beb9d4;
     }
   }
 
-  .spectrogram-inpainter .inpainter-interface-container {
-    &::before {
-      left: calc(0vw - #{measures.$spectrogram-margin-width});
-      background: radial-gradient(
-        ellipse farthest-corner at right,
-        transparent 0vw,
-        $body measures.$spectrogram-margin-width
-      );
-    }
+  .spectrogram-inpainter {
+    .inpainter-interface-container {
+      &::before {
+        left: calc(0vw - #{measures.$spectrogram-margin-width});
+        background: radial-gradient(
+          ellipse farthest-corner at right,
+          transparent 0vw,
+          $body measures.$spectrogram-margin-width
+        );
+      }
 
-    &:after {
-      right: calc(0vw - #{measures.$spectrogram-margin-width});
-      background: radial-gradient(
-        ellipse farthest-corner at left,
-        transparent 0vw,
-        $body measures.$spectrogram-margin-width
-      );
+      &:after {
+        right: calc(0vw - #{measures.$spectrogram-margin-width});
+        background: radial-gradient(
+          ellipse farthest-corner at left,
+          transparent 0vw,
+          $body measures.$spectrogram-margin-width
+        );
+      }
+
+      .spectrogram-inpainter-interface {
+        filter: blur(0.6px);
+      }
     }
-    div span {
-      z-index: 100;
-      opacity: 0.6;
+    .spectrogram-inpainter-image-container {
+      picture {
+        filter: $spectrogram-image-filter;
+        img {
+          background-color: $spectrogram-background-color;
+        }
+      }
     }
   }
 
-  .control-item {
-    filter: main-filter($idle-control, $overlay-lightness-factor);
+  .sequencer-grid-overlay span {
+    background: radial-gradient(
+      color.change($off-white-color, $alpha: 0),
+      color.change($off-white-color, $alpha: 0.2) 80%,
+      color.change($off-white-color, $alpha: 0.4)
+    );
+    border: 1em solid color.scale($off-white-color, $alpha: -70%);
+  }
 
-    &:hover {
-      filter: brightness(1.03)
-        main-filter($idle-control, $overlay-lightness-factor);
+  .spectrogram-inpainter-interface {
+    &.bottom * {
+      cursor: #{url('!file-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/paintbrush-solid.svg')}
+          0 28,
+        pointer;
+    }
+    &.top * {
+      cursor: #{url('!url-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/brush-solid.svg')}
+          10 0,
+        pointer;
+    }
+
+    border-color: $spectrogram-grid-color;
+    rect {
+      stroke-opacity: 0.5;
+      stroke: $spectrogram-grid-color;
+    }
+
+    svg:hover {
+      rect.sequencer-toggle-visual {
+        fill: white;
+      }
+    }
+  }
+  .spectrogram-inpainter .eraser {
+    .spectrogram-inpainter-interface * {
+      cursor: #{url('!url-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/eraser-solid.svg')}
+          2 18,
+        pointer !important;
+    }
+  }
+  .spectrogram-inpainter .randomize .spectrogram-inpainter-interface {
+    &.bottom * {
+      cursor: #{url('!file-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/paintbrush-random-solid.svg')}
+          0 28,
+        pointer;
+    }
+    &.top * {
+      cursor: #{url('!url-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/brush-random-solid.svg')}
+          10 0,
+        pointer;
+    }
+  }
+
+  .control-item,
+  input {
+    &:not(.disabled) {
+      &:hover {
+        filter: brightness(1.03)
+          main-filter($idle-control, $overlay-lightness-factor);
+      }
     }
   }
   .control-item.active {
-    filter: main-filter($active-control, $overlay-lightness-factor);
-
     &:hover {
-      filter: brightness(1.03)
+      filter: brightness(1.1)
         main-filter($active-control, $overlay-lightness-factor);
     }
   }
-
-  $main-zoom-background-color: lightgray;
   .zoom-control {
-    background-color: color.scale(
-      $main-zoom-background-color,
-      $lightness: $overlay-lightness-factor * 10%
-    );
-
-    * {
-      background-color: color.scale(
-        $main-zoom-background-color,
-        $lightness: -$overlay-lightness-factor * 10%
+    background-color: color.change(color.invert($body), $alpha: 0.1);
+    > * {
+      background-color: color.change(color.invert($body), $alpha: 0.4);
+      &:hover {
+        background-color: color.invert($body);
+      }
+      border-color: color.scale(
+        $panes,
+        $lightness: $overlay-lightness-factor * 60%
       );
+    }
+  }
+  #help-icon {
+    color: color.invert($body);
+  }
+
+  .sheet-inpainter {
+    .sheet-inpainter-sheet {
+      filter: drop-shadow(0 0 5px rgba($active-control, 0.1));
+    }
+    $sheet-inpainter-notebox-border-color: $millenial-pink-body-background;
+    $sheet-inpainter-notebox-background-color: $millenial-pink-panes-background;
+    $sheet-inpainter-notebox-border-color: white;
+    $sheet-inpainter-notebox-background-color: white;
+    .notebox {
+      border-color: color.scale(
+        $sheet-inpainter-notebox-border-color,
+        $lightness: -30%,
+        $saturation: -30%
+      );
+      &::after {
+        background-color: color.scale(
+          $sheet-inpainter-notebox-background-color,
+          $lightness: +50%
+        );
+      }
+
+      &.playing {
+        border-color: $accent-color;
+
+        &::after {
+          background-color: $sheet-inpainter-notebox-background-color;
+        }
+      }
+
+      &.dragover::after {
+        background-color: $accent-color;
+      }
+    }
+    .Fermata {
+      background-color: rgba(white, 0.3);
+      // border-color: rgba(0, 0, 0, 0.7);
+      &,
+      &::after {
+        border-color: color.invert($body);
+      }
+
+      &.active {
+        background-color: rgba(0, 0, 0, 0.6);
+        background-color: color.scale($accent-color, $saturation: -35%);
+        // border-style: solid;
+        border-color: transparent;
+      }
+
+      &.imposed {
+        background-color: rgba(0, 0, 0, 0.8);
+        background-color: color.scale($accent-color, $saturation: -35%);
+        border-color: black;
+        border-color: color.scale(
+          $accent-color,
+          $lightness: +40%,
+          $saturation: +35%
+        );
+        border-style: solid;
+      }
     }
   }
 }
 
+// $main-color: $lighter-arabian-sand-color;
 :export {
+  // main_color: #{'rgb(#{red($main-color)}, #{green($main-color)}, #{blue($main-color)})'};
+  arabian_sand: $lighter-arabian-sand-color;
   lavender_idle_control: $lavender_idle_control;
   lavender_active_control: $lavender_active_control;
-  millenial_pink_idle_control: $millenial_pink_idle_control;
-  millenial_pink_active_control: $millenial_pink_active_control;
+  millenial_pink_theme_pink: $millenial-pink-idle-control;
+  millenial_pink_theme_blue: $millenial-pink-active-control;
   idle_control: $lavender_idle_control;
   active_control: $lavender_active_control;
   millenial_pink_panes_background_color: $millenial-pink-panes-background;

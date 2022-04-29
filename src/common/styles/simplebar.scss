@@ -1,4 +1,8 @@
-.simplebar-track {
+.simplebar-scrollbar {
+  border-radius: 20px;
+}
+
+.inpainter .simplebar-track {
   &.simplebar-vertical {
     height: 30%;
     top: 50%;
@@ -28,17 +32,18 @@
     }
   }
 
-  &.simplebar-horizontal, &.simplebar-vertical {
+  &.simplebar-horizontal,
+  &.simplebar-vertical {
     position: absolute;
     border-radius: 20px;
 
     // prevent visual glitches when updating the sheet where the scrollbar
     // goes beyond the available area
-    overflow: visible
+    overflow: visible;
   }
 }
 
-.simplebar-scrollbar {
+.inpainter .simplebar-scrollbar {
   pointer-events: auto;
   position: absolute;
   cursor: pointer;

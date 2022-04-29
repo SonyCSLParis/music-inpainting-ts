@@ -1,5 +1,5 @@
 import { MidiOutput } from './midi_io/midiOutput'
-import WebMidi, { Output } from 'webmidi'
+import { WebMidi, Output } from 'webmidi'
 
 import log from 'loglevel'
 import * as Instruments from './instruments'
@@ -7,8 +7,14 @@ import * as ControlLabels from './controlLabels'
 
 import Nexus from './nexusColored'
 import MidiSheetPlaybackManager from './sheetPlayback'
+import { NexusSelect } from 'nexusui'
 
 let globalMidiOutputListener: MidiOutput = null
+let midiOutSelect: NexusSelect | null = null
+
+export function getMidiOutSelect(): NexusSelect | null {
+  return midiOutSelect
+}
 
 export async function getMidiOutputListener(): Promise<MidiOutput> {
   if (globalMidiOutputListener == null) {
@@ -19,8 +25,15 @@ export async function getMidiOutputListener(): Promise<MidiOutput> {
 }
 
 export async function render(
-  playbackManager: MidiSheetPlaybackManager
+  playbackManager: MidiSheetPlaybackManager,
+  insertActivityDisplay = false
 ): Promise<void> {
+  if (midiOutSelect != null) {
+    // TODO(@tbazin, 2022/02/25): could break, should use a semaphore-like setup here, but
+    // overall, this should not be needed...
+    // already rendered
+    return
+  }
   const bottomControlsGridElement = document.getElementById('bottom-controls')
 
   const midiOutputSetupGridspanElement: HTMLElement = document.createElement(
@@ -78,7 +91,7 @@ export async function render(
     return [disabledOutputId].concat(devicesNames)
   }
 
-  const midiOutSelect = new Nexus.Select(midiOutputDeviceSelectElement, {
+  midiOutSelect = new Nexus.Select(midiOutputDeviceSelectElement, {
     size: [150, 50],
     options: await makeOptions(),
   })
@@ -126,21 +139,28 @@ export async function render(
   midiOutSelect.on('change', () => void midiOutOnChange.bind(midiOutSelect)())
   midiOutSelect.value = (await makeOptions())[0]
 
-  const midiOutDisplayButtonContainer = document.createElement('div')
-  midiOutDisplayButtonContainer.classList.add('control-item', 'disable-mouse')
-  midiOutputSetupContainerElement.appendChild(midiOutDisplayButtonContainer)
-  const midiOutDisplayButton = new Nexus.Button(midiOutDisplayButtonContainer, {
-    size: [15, 15],
-    state: false,
-    mode: 'impulse',
-  })
+  if (insertActivityDisplay) {
+    const midiOutDisplayButtonContainer = document.createElement('div')
+    midiOutDisplayButtonContainer.classList.add('control-item', 'disable-mouse')
+    midiOutputSetupContainerElement.appendChild(midiOutDisplayButtonContainer)
+    const midiOutDisplayButton = new Nexus.Button(
+      midiOutDisplayButtonContainer,
+      {
+        size: [15, 15],
+        state: false,
+        mode: 'impulse',
+      }
+    )
 
-  type midiKeyAndPedalEvents = 'keyDown' | 'keyUp' | 'pedalDown' | 'pedalUp'
-  Array<midiKeyAndPedalEvents>('keyDown').forEach((event) => {
-    midiOutputListener.midiInputListener.on(event, () => {
-      midiOutDisplayButton.click()
+    type midiKeyAndPedalEvents = 'keyDown' | 'keyUp' | 'pedalDown' | 'pedalUp'
+    Array<midiKeyAndPedalEvents>('keyDown').forEach((event) => {
+      midiOutputListener.midiInputListener.on(event, () => {
+        midiOutDisplayButton.click()
+      })
     })
-  })
+  }
+
+  return
 }
 
 export async function getOutput(): Promise<false | Output> {

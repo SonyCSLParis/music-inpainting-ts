@@ -1,7 +1,10 @@
 import { getPathToStaticFile } from './staticPath'
 import * as ControlLabels from './controlLabels'
-import { CycleSelect } from './cycleSelect'
-import { SheetInpainter } from './inpainter'
+import {
+  createIconElements,
+  CycleSelectView,
+  VariableValue,
+} from './cycleSelect'
 
 const availableGranularityIcons = new Map([
   [1, 'quarter-note.svg'],
@@ -36,17 +39,31 @@ function makeGranularityIconsList(
 }
 
 // Time-granularity selector
+// TODO(@tbazin, 2022/02/25): turn into class similar to './instruments.ts'
 export function renderGranularitySelect(
   containerElement: HTMLElement,
-  granularities_quarters: number[]
-): CycleSelect<number> {
+  granularitiesQuarters: number[]
+): VariableValue<number> {
   const iconsBasePath: string = getPathToStaticFile('icons')
-  const granularityIcons = makeGranularityIconsList(granularities_quarters)
+  const granularityIcons = makeGranularityIconsList(granularitiesQuarters)
 
   const granularitySelectContainerElement = document.createElement('div')
   granularitySelectContainerElement.classList.add('control-item')
   granularitySelectContainerElement.id = 'granularity-select-container'
   containerElement.appendChild(granularitySelectContainerElement)
+
+  const granularitySelect = new VariableValue<number>(granularitiesQuarters)
+  granularitySelect.value = granularitiesQuarters[0]
+
+  const iconElements = createIconElements<number>(
+    iconsBasePath,
+    granularityIcons
+  )
+  const granularitySelectView = new CycleSelectView(
+    granularitySelect,
+    iconElements
+  )
+  granularitySelectContainerElement.appendChild(granularitySelectView)
 
   ControlLabels.createLabel(
     granularitySelectContainerElement,
@@ -54,22 +71,6 @@ export function renderGranularitySelect(
     false,
     undefined,
     containerElement
-  )
-
-  function granularityOnChange(this: CycleSelect<string>) {
-    const duration_quarters: number = parseInt(this.value)
-    const durationCSSClass: string = SheetInpainter.makeGranularityCSSClass(
-      duration_quarters
-    )
-    $('.notebox').removeClass('active')
-    $('.' + durationCSSClass + '> .notebox').addClass('active')
-  }
-
-  const granularitySelect = new CycleSelect(
-    granularitySelectContainerElement,
-    granularityOnChange,
-    granularityIcons,
-    iconsBasePath
   )
   return granularitySelect
 }

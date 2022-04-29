@@ -1,3 +1,7 @@
+import { Inpainter } from './inpainter/inpainter'
+import { NotonoData } from './spectrogram/spectrogramInpainter'
+import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
+
 declare let COMPILE_ELECTRON: boolean
 
 class Radius {
@@ -51,7 +55,14 @@ export type filename = {
   extension: string
 }
 
-export class DownloadButton {
+export abstract class DownloadButton<
+  DataT = unknown,
+  InpainterT extends Inpainter<DataT> = Inpainter<DataT>
+> {
+  protected readonly inpainter: InpainterT
+
+  protected abstract onInpainterChange(data: DataT): void
+
   protected readonly parent: HTMLElement
   readonly container: HTMLElement
   readonly downloadElement: HTMLAnchorElement
@@ -62,10 +73,12 @@ export class DownloadButton {
   protected mainIconSize = 'fa-3x'
 
   constructor(
+    inpainter: InpainterT,
     container: HTMLElement,
-    defaultFilename: filename,
-    isAdvancedControl = false
+    defaultFilename: filename
   ) {
+    this.inpainter = inpainter
+
     this.container = container
 
     this.interface = document.createElement('div')
@@ -84,7 +97,7 @@ export class DownloadButton {
 
     this.iconElement = document.createElement('i')
     this.iconElement.id = 'download-button-icon'
-    this.iconElement.classList.add('fas')
+    this.iconElement.classList.add('fa-solid')
     this.iconElement.classList.add('fa-download')
     this.iconElement.classList.add(this.mainIconSize)
     this.downloadElement.appendChild(this.iconElement)
@@ -99,54 +112,54 @@ export class DownloadButton {
     if (COMPILE_ELECTRON) {
       // add support for native Drag and Drop
       // FIXME(@tbazin, 2021/11/10): Fix DownloadButton drag-out for MIDI
+      import('electron')
+        .then((electron) => {
+          const ipcRenderer = electron.ipcRenderer
 
-      const ipcRenderer = require('electron').ipcRenderer
-
-      const saveBlob = (
-        blob: Blob,
-        fileName: string,
-        appDir: 'temp' | 'documents' = 'temp'
-      ): Promise<string> => {
-        return new Promise<string>((resolve, _) => {
-          const reader = new FileReader()
-          const storagePathPromise = ipcRenderer.invoke(
-            'get-path',
-            fileName,
-            appDir
-          )
-          storagePathPromise.then((pathName) => {
-            reader.onload = function () {
-              if (reader.readyState == 2) {
-                const buffer = Buffer.from(reader.result)
-                ipcRenderer.invoke('save-file', pathName, buffer).then(() => {
-                  resolve(pathName)
-                })
+          const saveBlob = async (
+            blob: Blob,
+            fileName: string,
+            appDir: 'temp' | 'documents' = 'temp'
+          ): Promise<string> => {
+            {
+              const reader = new FileReader()
+              const storagePath = <string>(
+                await ipcRenderer.invoke('get-path', fileName, appDir)
+              )
+              reader.onload = async function () {
+                if (reader.readyState == 2) {
+                  const buffer = Buffer.from(reader.result)
+                  await ipcRenderer.invoke('save-file', storagePath, buffer)
+                }
+                reader.readAsArrayBuffer(blob)
               }
+              return storagePath
             }
-            reader.readAsArrayBuffer(blob)
+          }
+
+          this.container.addEventListener('dragstart', (event) => {
+            event.preventDefault()
+            const soundStoragePathPromise = saveBlob(
+              this.content,
+              this.makeFilenameWithTimestamp(),
+              'documents'
+            )
+            const imageStoragePathPromise = saveBlob(
+              this.imageContent,
+              'spectrogram.png',
+              'temp'
+            )
+            void Promise.all([
+              soundStoragePathPromise,
+              imageStoragePathPromise,
+            ]).then(([soundPath, imagePath]) => {
+              ipcRenderer.send('ondragstart', soundPath, imagePath)
+            })
           })
         })
-      }
-
-      this.container.addEventListener('dragstart', (event) => {
-        event.preventDefault()
-        const soundStoragePathPromise = saveBlob(
-          this.content,
-          this.makeFilenameWithTimestamp(),
-          'documents'
-        )
-        const imageStoragePathPromise = saveBlob(
-          this.imageContent,
-          'spectrogram.png',
-          'temp'
-        )
-        void Promise.all([
-          soundStoragePathPromise,
-          imageStoragePathPromise,
-        ]).then(([soundPath, imagePath]) => {
-          ipcRenderer.send('ondragstart', soundPath, imagePath)
+        .catch((error) => {
+          throw error
         })
-      })
     } else {
       this.interface.addEventListener('dragstart', (event) => {
         // event.preventDefault()
@@ -156,6 +169,8 @@ export class DownloadButton {
         event.dataTransfer.setDragImage(this.dragImage, 0, height)
       })
     }
+
+    inpainter.on('change', (data: DataT) => this.onInpainterChange(data))
   }
 
   makeFilenameWithTimestamp(baseName?: string, extension?: string): string {
@@ -178,7 +193,6 @@ export class DownloadButton {
   ): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const image = new Image()
-      image.src = URL.createObjectURL(file)
       image.onload = () => {
         URL.revokeObjectURL(image.src)
         const width = image.width
@@ -211,10 +225,12 @@ export class DownloadButton {
         context.filter = 'blur(2px)'
         roundRect(context, centerX + 2, centerY - 2, cropWidth, cropHeight, 20)
 
-        context.fillStyle = 'purple'
-        context.fill()
         context.filter = 'none'
         context.clip()
+        context.filter =
+          'invert(1) sepia(1) hue-rotate(-17.8deg) brightness(0.7) contrast(1.5) blur(0.5px);'
+        context.filter =
+          ' blur(0.5px) contrast(1.5) brightness(0.7) hue-rotate(-17.8deg) sepia(1) invert(1);'
         context.drawImage(image, 2, -2, newWidth, newHeight)
 
         this.resizeCanvas.toBlob((blob) => {
@@ -222,13 +238,14 @@ export class DownloadButton {
           resolve(blob)
         }, file.type)
       }
+      image.src = URL.createObjectURL(file)
       image.onerror = reject
     })
   }
 
   protected resizeCanvas: HTMLCanvasElement
 
-  content: Blob
+  protected content: Blob
 
   protected _imageContent: Blob
   get imageContent(): Blob {
@@ -276,5 +293,25 @@ export class DownloadButton {
       URL.revokeObjectURL(this.targetURL)
       this.targetURL = ''
     }
+  }
+}
+
+export class NotonoDownloadButton extends DownloadButton<NotonoData> {
+  protected onInpainterChange(data: NotonoData): void {
+    this.imageContent = data.spectrogramImage
+    this.content = data.audio
+    this.targetURL = URL.createObjectURL(data.audio)
+  }
+}
+export class SheetDownloadButton extends DownloadButton<
+  SheetData,
+  SheetInpainter
+> {
+  protected onInpainterChange(data: SheetData): void {
+    const sheetBlob = new Blob([this.inpainter.currentXML_string], {
+      type: 'text/xml',
+    })
+    this.content = sheetBlob
+    this.targetURL = URL.createObjectURL(sheetBlob)
   }
 }

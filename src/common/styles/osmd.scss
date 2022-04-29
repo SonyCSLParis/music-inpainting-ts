@@ -1,20 +1,3 @@
-#main-panel {
-  pointer-events: auto;
-
-  position: absolute;
-
-  justify-content: center;
-  align-content: center;
-
-  &.loading {
-    & .simplebar-track {
-      // hide scrollbars when osmd is loading
-      opacity: 0;
-      pointer-events: none;
-    }
-  }
-}
-
 .sheet-inpainter {
   width: 100%;
   .simplebar-wrapper {
@@ -34,14 +17,18 @@
 }
 
 .sheet-inpainter-sheet {
-  pointer-events: none;
+  z-index: 0;
+  width: 10000000px; // HACK infinite width
   margin-left: auto;
   margin-right: auto;
-  margin-top: 15vh;
 
-  width: 10000000px; // HACK infinite width
+  pointer-events: none;
+  * {
+    pointer-events: none;
+  }
 }
 
+$zoom-border-radius: 5px;
 .zoom-control {
   position: absolute;
   left: 10px;
@@ -50,46 +37,39 @@
 
   display: grid;
   grid-template-columns: 1fr 1fr;
+  column-gap: 3px;
   justify-items: center;
-  padding: 0.05em;
-  border-radius: 40px;
-  column-gap: 0.1em;
+  padding: 3px 5px;
+  border-radius: calc(#{$zoom-border-radius} / 2);
 
-  filter: drop-shadow(-1px 1px 1px rgba(0, 0, 0, 0.1));
+  &:hover {
+    opacity: 1;
+  }
 
+  $zoom-icon-size: 40px;
   div {
-    width: fit-content;
-    padding: clamp(0.2em, 4vw, 0.5em);
+    width: $zoom-icon-size;
     cursor: pointer;
 
     text-align: center;
     align-self: center;
 
     i {
-      opacity: 0.8;
-      font-size: clamp(1em, min(15vw, 15vh), 1.6em);
+      font-size: $zoom-icon-size;
     }
-    &:hover {
-      & {
-        opacity: 0.7;
-      }
-      & i {
-        opacity: 1;
-      }
+    &:hover i {
+      filter: brightness(1.15);
     }
   }
 
   // different padding lengths necessary for centering the icons in the rounded container
   $padding-length: clamp(0.2em, 4vw, 0.5em);
-  $small-padding-length: clamp(0.13em, 3vw, 0.3em);
   .zoom-out {
-    border-radius: 100% 0 0 100%;
-    padding: $padding-length $small-padding-length $small-padding-length
-      $padding-length;
+    border-radius: $zoom-border-radius 0 0 $zoom-border-radius;
+    padding: $padding-length;
   }
   .zoom-in {
-    border-radius: 0 100% 100% 0;
-    padding: $padding-length $padding-length $small-padding-length
-      $small-padding-length;
+    border-radius: 0 $zoom-border-radius $zoom-border-radius 0;
+    padding: $padding-length;
   }
 }

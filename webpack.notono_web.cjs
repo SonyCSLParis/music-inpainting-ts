@@ -20,7 +20,6 @@ let merged_defines = mergeWithCustomize({
   plugins: [
     new webpack.DefinePlugin({
       AVAILABLE_APPLICATION_MODES: ['spectrogram'],
-      DEFAULT_INPAINTING_API_ADDRESS: '"https://notono.api.cslmusic.team"',
     }),
   ],
 })

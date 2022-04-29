@@ -8,11 +8,11 @@ import * as WindowManager from '../windowManager'
 
 import default_config from '../../common/default_config.json'
 const link_channel_prefix: string = default_config['link_channel_prefix']
-let link = undefined
+let link: abletonlink | null = null
 let link_enabled = false
 
 function isLinkInitialized(): boolean {
-  return link != undefined
+  return link !== null
 }
 
 function isLinkEnabled(): boolean {
@@ -36,12 +36,12 @@ function initAbletonLinkServer(
   const success = true
 
   link.on('tempo', (bpm) => {
-    log.info('LINK: BPM changed, now ' + bpm)
+    log.info('LINK: BPM changed, now ' + bpm.toString())
     WindowManager.send(link_channel_prefix + 'tempo', bpm)
   })
 
   link.on('numPeers', (numPeers) => {
-    log.info('LINK: numPeers changed, now ' + numPeers)
+    log.info('LINK: numPeers changed, now ' + numPeers.toString())
     WindowManager.send(link_channel_prefix + 'numPeers', numPeers)
   })
 
@@ -75,7 +75,7 @@ function stopLinkDownbeatClock(): void {
 // IPC API for the link server
 
 // Initialize LINK server
-export function attachListeners(link: AbletonLinkBase): void {
+export function attachListeners(link: abletonlink): void {
   // TODO(theis): clean this up
   // ipcMain.on(link_channel_prefix + 'init', (event, bpm, quantum) => {
   // });
@@ -91,7 +91,7 @@ export function attachListeners(link: AbletonLinkBase): void {
   })
 
   // Update LINK on tempo changes coming from the client
-  ipcMain.on(link_channel_prefix + 'tempo', (event, newBPM) => {
+  ipcMain.on(link_channel_prefix + 'tempo', (event, newBPM: number) => {
     // HACK perform a comparison to avoid messaging loops, since
     // the link update triggers a BPM modification message
     // from main to renderer

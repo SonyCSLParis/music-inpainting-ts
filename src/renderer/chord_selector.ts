@@ -238,6 +238,8 @@ export class ChordSelector extends AnnotationBox {
     this.closeChordTypeWheel()
     this.toggleActiveContainer(false)
     this.removeClickListener()
+    // TODO(@tbazin, 2022/04/08): remove usage of deepEqual
+    // ... then remove this dependency
     if (!deepEqual(this.currentChord, this.previousChord)) {
       // trigger update if the contained chord changed
       this.onChordChange()

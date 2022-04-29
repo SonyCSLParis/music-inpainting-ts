@@ -1,7 +1,8 @@
 import $ from 'jquery'
-import log from 'loglevel'
-import createActivityDetector from 'activity-detector'
-import { SpectrogramInpainter, Inpainter, SheetInpainter } from './inpainter'
+import IdleTracker from 'idle-tracker'
+import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
+import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
+import { SpectrogramInpainterGraphicalView } from './spectrogram/spectrogramInpainterGraphicalView'
 
 import 'shepherd.js/dist/css/shepherd.css'
 import '../common/styles/helpTour.scss'
@@ -9,14 +10,14 @@ import '../common/styles/helpTour.scss'
 import Shepherd from 'shepherd.js'
 
 import localizations from '../common/localization.json'
-import { PlaybackManager } from './playback'
 const helpContents = localizations['help']
 
 export abstract class MyShepherdTour extends Shepherd.Tour {
   protected languages: string[]
-  readonly inpainter: Inpainter<PlaybackManager, unknown>
+  readonly inpainter: InpainterGraphicalView
   protected tripDelay_ms = 10000
   readonly inactivityDetectorDelay?: number
+  readonly idleStateDetector?: IdleTracker | null = null
 
   static readonly defaultTourOptions: Shepherd.Tour.TourOptions = {
     useModalOverlay: true,
@@ -48,7 +49,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
 
   constructor(
     languages: string[],
-    inpainter: Inpainter<PlaybackManager, unknown>,
+    inpainterGraphicalView: InpainterGraphicalView,
     inactivityDetectorDelay?: number,
     options?: Shepherd.Tour.TourOptions
   ) {
@@ -59,7 +60,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
     })
 
     this.languages = languages
-    this.inpainter = inpainter
+    this.inpainter = inpainterGraphicalView
     if (inactivityDetectorDelay != undefined) {
       this.inactivityDetectorDelay = inactivityDetectorDelay
     }
@@ -68,7 +69,10 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
       this.inactivityDetectorDelay != null &&
       this.inactivityDetectorDelay > 0
     ) {
-      this.registerIdleStateDetector()
+      // TODO(@tbazin, 2022/04/29): should extract this initialization
+      //   from the HelpTour class for inversion of control
+      this.idleStateDetector = this.createIdleStateDetector()
+      this.idleStateDetector.start()
     }
 
     this.on('start', () => this.onStart())
@@ -104,7 +108,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
     this.inpainter.refresh()
   }
 
-  protected makeHTMLContent(contents: Record<string, string>) {
+  protected makeHTMLContent(contents: Record<string, string>): string | never {
     switch (this.languages.length) {
       case 2:
         return `${contents[this.languages[0]]}<br><br><i>${
@@ -126,7 +130,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
   private loopInterval: NodeJS.Timeout
 
   public startLoop(): void {
-    // starts the help tour in a looping fashion
+    // starts the help tour in a looping fa-solidhion
     const intervalTripLoop = () => {
       this.loopInterval = setInterval(() => {
         // if (looping) {
@@ -148,6 +152,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
     containerElement.appendChild(helpElement)
 
     helpElement.id = 'help-icon'
+    helpElement.classList.add('fa-solid', 'fa-circle-question')
     helpElement.title = 'Help'
 
     // const self = this;
@@ -163,7 +168,9 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
     )
   }
 
-  protected outsideClickListener(event: PointerEvent): void {
+  protected outsideClickListener: (event: PointerEvent) => void = (
+    event: PointerEvent
+  ) => {
     const target = event.target
     if (!$(target).closest($('div.shepherd-enabled')).length) {
       this.stopLoop()
@@ -176,38 +183,31 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
   // Bind this callback when the selector is activated and unbind it when
   // it is closed
   protected initHideOnClickOutside(): void {
-    document.addEventListener('pointerdown', (event) =>
-      this.outsideClickListener(event)
-    )
+    document.addEventListener('pointerdown', this.outsideClickListener)
   }
 
   protected removeClickListener(): void {
-    document.removeEventListener('pointerdown', (event) =>
-      this.outsideClickListener(event)
-    )
+    document.removeEventListener('pointerdown', this.outsideClickListener)
   }
 
-  public registerIdleStateDetector(): void {
-    const activityDetector = createActivityDetector({
-      timeToIdle: this.inactivityDetectorDelay,
-      autoInit: true,
-      inactivityEvents: [],
-    })
-
-    activityDetector.on('idle', () => {
-      console.log('The user is not interacting with the page')
-      this.startLoop()
-    })
-
-    activityDetector.on('active', () => {
-      console.log('The user is interacting with the page')
-      this.stopLoop()
+  public createIdleStateDetector(): IdleTracker {
+    return new IdleTracker({
+      timeout: this.inactivityDetectorDelay,
+      onIdleCallback: (payload) => {
+        if (payload.idle) {
+          console.log('The user is not interacting with the page')
+          this.startLoop()
+        } else {
+          console.log('The user is interacting with the page')
+          this.stopLoop()
+        }
+      },
     })
   }
 }
 
 export class NonotoTour extends MyShepherdTour {
-  inpainter: SheetInpainter
+  inpainter: SheetInpainterGraphicalView
 
   makeStepsOptions(): Shepherd.Step.StepOptions[] {
     return [
@@ -257,7 +257,7 @@ export class NonotoTour extends MyShepherdTour {
 }
 
 export class NotonoTour extends MyShepherdTour {
-  readonly inpainter: SpectrogramInpainter
+  readonly inpainter: SpectrogramInpainterGraphicalView
 
   makeStepsOptions(): Shepherd.Step.StepOptions[] {
     return [

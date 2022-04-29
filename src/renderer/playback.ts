@@ -4,6 +4,7 @@ import log from 'loglevel'
 
 import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
 import EventEmitter from 'events'
+import { Inpainter } from './inpainter/inpainter'
 
 log.setLevel(log.levels.INFO)
 
@@ -153,4 +154,15 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
   }
 }
 
-export class PlaybackManager extends SynchronizedPlaybackManager {}
+export abstract class PlaybackManager<
+  InpainterT extends Inpainter = Inpainter
+> extends SynchronizedPlaybackManager {
+  readonly inpainter: InpainterT
+  protected abstract onInpainterChange(data: unknown): void
+
+  constructor(inpainter: InpainterT) {
+    super()
+    this.inpainter = inpainter
+    this.inpainter.on('change', (data) => this.onInpainterChange(data))
+  }
+}

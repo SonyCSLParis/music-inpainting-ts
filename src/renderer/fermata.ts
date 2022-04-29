@@ -14,7 +14,7 @@ export class FermataBox extends AnnotationBox {
     this._allowOnlyOneActive = allowOnlyOneActive
 
     if (this.allowOnlyOneActive) {
-      this.onclickCallback = function () {
+      this.onclickCallback = () => {
         if (this.container.classList.contains('active')) {
           this.container.classList.toggle('active', false)
         } else {
@@ -23,7 +23,7 @@ export class FermataBox extends AnnotationBox {
         }
       }
     } else {
-      this.onclickCallback = function () {
+      this.onclickCallback = () => {
         this.container.classList.toggle('active')
       }
     }
@@ -56,9 +56,9 @@ export class FermataBox extends AnnotationBox {
       this.container.classList.add('imposed')
       this.container.classList.add('active')
     } else {
-      const self = this
-      this.container.addEventListener('click', () => {
-        self.onclickCallback()
+      // const self = this
+      this.container.addEventListener('pointerdown', () => {
+        this.onclickCallback()
       })
     }
   }

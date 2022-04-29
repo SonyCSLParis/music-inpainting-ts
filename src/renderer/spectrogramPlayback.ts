@@ -1,16 +1,17 @@
+import log from 'loglevel'
 import * as Tone from 'tone'
-import FocusedAudioKeys from './audiokeys/focusedAudiokeys'
 import { Midi } from '@tonaljs/tonal'
 
+import {
+  NotonoData,
+  SpectrogramInpainter,
+} from './spectrogram/spectrogramInpainter'
 import { PlaybackManager } from './playback'
 
-import Nexus from './nexusColored'
-
 import { getMidiInputListener } from './midiIn'
-import { IMidiChannel } from 'webmidi'
+import FocusedAudioKeys from './audiokeys/focusedAudiokeys'
+import Nexus from './nexusColored'
 import * as ControlLabels from './controlLabels'
-
-import log from 'loglevel'
 
 interface NoteEvent {
   note: string
@@ -18,7 +19,12 @@ interface NoteEvent {
   velocity: number
 }
 
-export class SpectrogramPlaybackManager extends PlaybackManager {
+export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpainter> {
+  protected async onInpainterChange(data: NotonoData<never>): Promise<void> {
+    const blobUrl = URL.createObjectURL(data.audio)
+    await this.loadAudio(blobUrl)
+  }
+
   protected playbackLookahead = 0
   protected interactiveLookahead = 0
 
@@ -70,8 +76,8 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
     layoutIndependentMapping: true,
   })
 
-  constructor() {
-    super()
+  constructor(inpainter: SpectrogramInpainter) {
+    super(inpainter)
 
     this.scheduleInitialPlaybackLoop()
     try {
@@ -242,7 +248,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
       size: [40, 20],
       state: false,
     })
-    const fadeIn_duration_s = 0.01
+    const fadeIn_duration_s = 0.1
     fadeInControl.on('change', (enable: boolean) => {
       this.setFadeIn(enable ? fadeIn_duration_s : 0)
     })
@@ -260,7 +266,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager {
 }
 
 interface NoteEventWithChannel extends NoteEvent {
-  channel?: IMidiChannel
+  channel: number | null
 }
 
 export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackManager {
@@ -268,8 +274,8 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
   protected voices_A: Tone.Sampler[]
   protected voices_B: Tone.Sampler[]
 
-  constructor() {
-    super()
+  constructor(inpainter: SpectrogramInpainter) {
+    super(inpainter)
 
     this.voices_A = Array(this.numVoices)
       .fill(0)
@@ -306,13 +312,13 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
   }
 
   protected getSamplersByMidiChannel(
-    channel: IMidiChannel = 1
+    channel: number | number[] | null = 1
   ): Tone.Sampler[] {
-    if (channel === 'all') {
+    if (channel == null) {
       return this.currentVoices
     } else if (Array.isArray(channel)) {
       return this.currentVoices.filter((value, index) => {
-        channel.contains(index + 1)
+        channel.includes(index + 1)
       })
     } else {
       return [this.currentVoices[channel - 1]]
@@ -352,6 +358,14 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
     this.voices_B.forEach((voice) => {
       voice.add('C4', this.buffer_B.get())
     })
+  }
+
+  protected async updateAudio(audioBlob: Blob): Promise<void> {
+    // allocate new local blobURL for the received audio
+    // TODO(@tbazin, 2022/04/29): should we clear previous blob URL?
+    const blobUrl = URL.createObjectURL(audioBlob)
+
+    return this.loadAudio(blobUrl)
   }
 
   setFadeIn(duration_s: number): void {

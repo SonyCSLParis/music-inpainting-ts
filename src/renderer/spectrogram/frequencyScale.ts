@@ -91,11 +91,11 @@ export class MelFrequencyScale extends LinearScale<MelScaleOptions> {
     )
     return logarithmicallySpacedTicks.filter((tick: Tick): boolean => {
       const value = tick.value
-      if ([this.min, this.max].contains(value)) {
+      if ([this.min, this.max].includes(value)) {
         return true
       }
       const firstDigit = value / Math.pow(10, Math.floor(Math.log10(value)))
-      return [1, 2, 5].contains(firstDigit)
+      return [1, 2, 5].includes(firstDigit)
     })
   }
 

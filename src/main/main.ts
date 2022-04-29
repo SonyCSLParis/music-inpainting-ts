@@ -46,7 +46,7 @@ ipcMain.handle(
   }
 )
 
-ipcMain.handle('save-file', (event, fileName: string, buffer: Buffer) => {
+ipcMain.handle('save-file', async (event, fileName: string, buffer: Buffer) => {
   return outputFile(fileName, buffer)
 })
 
