@@ -20,6 +20,10 @@ body {
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  *:focus {
+    outline: unset;
+  }
 }
 
 body.splash-screen {
