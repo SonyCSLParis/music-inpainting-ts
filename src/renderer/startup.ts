@@ -66,9 +66,7 @@ globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] =
   globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] ||
   SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX
 
-globalConfiguration['inpainting_api_address'] =
-  globalConfiguration['inpainting_api_address'] ||
-  DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+globalConfiguration['inpainting_api_address'] = REMOTE_INPAINTING_API_ADDRESS
 
 // TODO(theis) don't create modes like this (goes against 12 Factor App principles)
 // should have truly orthogonal configuration options
@@ -243,8 +241,8 @@ export class SplashScreen {
       this.serverAddressInput = document.createElement('input')
       this.serverAddressInput.type = 'url'
       this.serverAddressInput.id = 'server-address-input'
-      this.serverAddressInput.value = `${globalConfiguration['inpainting_api_address']}`
-      this.serverAddressInput.placeholder = `${globalConfiguration['inpainting_api_address']}`
+      this.serverAddressInput.value = DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+      this.serverAddressInput.placeholder = DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
       serverAddressContainer.appendChild(this.serverAddressInput)
 
       this.serverAddressInput.addEventListener('input', () => {

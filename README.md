@@ -50,8 +50,7 @@ You can download MacOS and Linux standalone applications
 
 ## Configuration
 
-Some configuration options can be set in the `config.json` file at the root of the project.
-In particular, you can change the default location for the computation back-end, by setting the value for the `'inpainting_api_address'` key.
+Some configuration options can be set in the `config.json` file at the root of the project, to override the default configuration found in `src/common/default_config.json`.
 
 ## Issues
 
