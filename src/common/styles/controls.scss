@@ -290,16 +290,17 @@
 $disabled-gridspan-filter: blur(1.3px);
 
 .disabled-gridspan {
-  // display: flex;
-  color: gray;
-  filter: $disabled-gridspan-filter;
-  backdrop-filter: $disabled-gridspan-filter;
-  // justify-content: center;
-  cursor: not-allowed;
-  border-radius: 5px;
-  * {
-    pointer-events: none;
+  > :not(.control-label) {
+    filter: $disabled-gridspan-filter;
+    backdrop-filter: $disabled-gridspan-filter;
+
+    cursor: not-allowed;
+    color: gray;
+    * {
+      pointer-events: none;
+    }
   }
+  border-radius: 5px;
 }
 
 @media screen and (max-width: 450px) {
