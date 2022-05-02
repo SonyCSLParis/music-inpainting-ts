@@ -141,14 +141,11 @@
 
     "nonoto": {
       "note_box": {
-        "en": "Touch the <b>blue boxes</b> to trigger a <b>regeneration</b> of the underlying portion of the score.<br>You can also scroll on these boxes to vary the granularity.",
-        "de": "Tippen Sie auf die <b>blauen Kästen</b> des Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen."
+        "en": "Touch these <b>dotted boxes</b> to trigger a <b>regeneration</b> of the underlying portion of the score.<br>You can also scroll on these boxes to vary the granularity.",
+        "de": "Tippen Sie auf die <b>gestrichelten Kästen</b> des Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen."
       },
 
-      "granularity": {
-        "en": "Touch the <b>blue boxes</b> to trigger a <b>regeneration</b> of the underlying portion of the score.",
-        "de": "Tippen Sie auf die <b>blauen Kästen</b> des Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen."
-      },
+      "granularity": {},
 
       "fermata_box": {
         "de": "Tippen Sie auf die <b>gestrichelten Kästchen</b>, um eine <b>Fermata</b> zu setzen. Damit kann die Struktur des Chorales kontrolliert werden.",
