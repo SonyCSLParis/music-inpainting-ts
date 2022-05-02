@@ -45,6 +45,9 @@
     "url": "https://github.com/SonyCSLParis/NONOTO/issues"
   },
   "homepage": "https://github.com/SonyCSLParis/NONOTO",
+  "engines": {
+    "node": "^16.15.0"
+  },
   "devDependencies": {
     "@types/deep-equal": "^1.0.1",
     "@types/fs-extra": "^9.0.13",
