@@ -185,7 +185,6 @@ const instrumentsIcons = new Map<leadInstrument | null, string>([
   ['Piano', '049-piano.svg'],
   ['PolySynth', '019-synthesizer.svg'],
   ['SteelPan', '007-timpani.svg'],
-  [null, 'volume-xmark-solid.svg'],
 ])
 
 const chordsInstrumentNames = ['PolySynth', 'Piano'] as const
