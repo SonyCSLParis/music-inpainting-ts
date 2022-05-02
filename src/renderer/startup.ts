@@ -42,6 +42,7 @@ const applicationModeToAPIResourceName: Map<ApplicationMode, string> = new Map([
 
 // defined at compile-time via webpack.DefinePlugin
 declare let COMPILE_ELECTRON: boolean
+declare const APP_TITLE: string
 declare const REMOTE_INPAINTING_API_ADDRESS: string
 declare const DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: string
 declare const NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT: boolean
@@ -189,7 +190,6 @@ export class SplashScreen {
 
   constructor(renderPage: (configuration: applicationConfiguration) => void) {
     this.insertEulaAccept =
-      true ||
       globalConfiguration['splash_screen']['insert_eula_agreement_checkbox']
     document.body.classList.add('splash-screen')
 
@@ -212,11 +212,10 @@ export class SplashScreen {
     Header.render(headerContainer, {
       display_sony_logo: true,
       display_ircam_logo: true,
-      app_name: 'notono',
+      app_name: APP_TITLE != null ? APP_TITLE : 'notono',
     })
 
-    this.insertCustomAPIAdressInput =
-      true || !NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT
+    this.insertCustomAPIAdressInput = !NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT
     if (this.insertCustomAPIAdressInput) {
       const serverConfigurationContainerElement = document.createElement('div')
       serverConfigurationContainerElement.id = 'server-configuration-container'
