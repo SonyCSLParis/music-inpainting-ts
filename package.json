@@ -93,13 +93,9 @@
     "fs-extra": "^10.1.0",
     "idle-tracker": "^0.1.2",
     "jquery": "^3.6.0",
-    "jszip": "^3.9.1",
     "loglevel": "^1.8.0",
     "nexusui": "https://github.com/SonyCSLParis/nexusui#types",
     "opensheetmusicdisplay": "^1.5.0",
-    "raphael": "^2.3.0",
-    "request": "^2.88.2",
-    "require": "^2.4.20",
     "screenfull": "^5.0.2",
     "shepherd.js": "^8.3.1",
     "simplebar": "^5.3.6",
@@ -110,11 +106,7 @@
     "tone": "latest",
     "typed-undo": "^2.3.0",
     "webmidi": "^3.0.19",
-    "webpack-sources": "^2.2.0",
     "wheelnav": "^1.7.1"
-  },
-  "resolutions": {
-    "webpack-sources": "^1.0.1"
   },
   "packageManager": "yarn@3.1.1"
 }
