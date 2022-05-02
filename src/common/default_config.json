@@ -1,7 +1,6 @@
 {
   "app_name": "NOTONO",
 
-  "inpainting_api_address": "",
   "insert_custom_api_setup": true,
 
   "annotation_types": ["fermata"],
