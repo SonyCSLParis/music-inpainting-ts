@@ -347,7 +347,6 @@ function render(
         sheetPlaybackManager,
         sheetContainer,
         granularitySelect,
-        inpaintingApiAddress,
         osmdOptions,
         configuration['annotation_types'],
         allowOnlyOneFermata
@@ -514,7 +513,6 @@ function render(
         spectrogramPlaybackManager,
         spectrogramContainerElement,
         layerToggle,
-        inpaintingApiAddress,
         editToolSelect,
         instrumentConstraintSelect,
         octaveConstraintControl,

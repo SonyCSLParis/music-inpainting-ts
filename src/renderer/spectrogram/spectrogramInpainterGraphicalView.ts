@@ -168,7 +168,6 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     playbackManager: SpectrogramPlaybackManager,
     container: HTMLElement,
     vqvaeLayerSelect: VariableValue<VqvaeLayer>,
-    inpaintingApiAddress: URL,
     toolSelect: VariableValue<NotonoTool>,
     instrumentConstraintSelect: NexusSelectWithShuffle,
     octaveConstraintControl: NexusSelect,
@@ -179,7 +178,6 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
       playbackManager,
       container,
       vqvaeLayerSelect,
-      inpaintingApiAddress,
       SpectrogramInpainterGraphicalViewBase.displayUpdateRate
     )
     this.container.classList.add('spectrogram-inpainter', 'no-scroll')
