@@ -273,7 +273,10 @@ $panes-background: #beb9d4;
   #app .application-header {
     border-bottom-style: solid;
     .header-logo {
-      filter: main-filter(color.invert($panes), $overlay-lightness-factor / 10);
+      filter: main-filter(
+        color.invert($panes),
+        calc($overlay-lightness-factor / 10)
+      );
     }
 
     #app-title,
