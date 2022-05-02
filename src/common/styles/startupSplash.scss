@@ -1,5 +1,9 @@
 @use "mixins/interfaces";
 
+body.running #configuration-selection-container {
+  display: none;
+}
+
 #configuration-selection-container {
   max-height: 90%;
   width: 65%;
