@@ -32,7 +32,6 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     sheetPlaybackManager: MidiSheetPlaybackManager,
     container: HTMLElement,
     granularitiesSelect: VariableValue<number>,
-    defaultApiAddress: URL,
     options: IOSMDOptions,
     annotationTypes: string[] = [],
     allowOnlyOneFermata = false
@@ -42,7 +41,6 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
       sheetPlaybackManager,
       container,
       granularitiesSelect,
-      defaultApiAddress,
       SheetInpainterGraphicalViewBase.displayUpdateRate
     )
     this.container.classList.add('sheet-inpainter')

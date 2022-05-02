@@ -145,10 +145,7 @@ export abstract class InpainterGraphicalView<
     playbackManager: PlaybackManagerT,
     container: HTMLElement,
     granularitySelect: VariableValue<GranularityT>, // CycleSelect<EditToolT>,
-    defaultApiAddress: URL,
-    displayUpdateRate: Tone.Unit.Time,
-    // toneDisplayUpdateInterval: Tone.Unit.Time = '4n',
-    ...args
+    displayUpdateRate: Tone.Unit.Time
   ) {
     super()
     this.inpainter = inpainter
