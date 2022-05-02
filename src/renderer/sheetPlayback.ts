@@ -68,24 +68,12 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
       })
   }
 
-  // retrieve MIDI from sheet data
-  // TODO(@tbazin, 2022/04/22): move the MIDI directly to the SheetData and
-  // have it sent by the Flask server along with the sheet on every request
-  // this will wallow natural updates of the DownloadButton
-  protected async onInpainterChange(data: SheetData): Promise<void> {
+  protected onInpainterChange(data: SheetData): void {
     // HACK(@tbazin, 2022/04/22): hardcoded value
     // have the remote API send the sheet duration + time-signature within the JSON data
     // or retrieve it from the MusicXML in the browser?
     const sequenceDuration = Tone.Time('0:16:0')
-    const midiConversionURL = new URL(
-      'musicxml-to-midi',
-      this.inpainter.defaultApiAddress
-    )
-    const midiBlobURL = await this.loadMidi(
-      midiConversionURL.href,
-      this.inpainter.currentXML,
-      sequenceDuration.toBarsBeatsSixteenths()
-    )
+    this.loadMidi(data.midi, sequenceDuration.toBarsBeatsSixteenths())
   }
 
   protected async checkMidiSupport(): Promise<boolean> {
@@ -345,101 +333,54 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
     }
   }
 
-  private midiRequestWithData(
-    url: string,
-    data?: Document | BodyInit,
-    method = 'GET'
-  ): Promise<[Midi, string]> {
-    return new Promise<[Midi, string]>((success, fail) => {
-      const request = new XMLHttpRequest()
-      request.open(method, url)
-      request.responseType = 'arraybuffer'
-      // decode asynchronously
-      request.addEventListener(
-        'load',
-        () => {
-          if (request.readyState === 4 && request.status === 200) {
-            const blob = new Blob([request.response], { type: 'audio/x-midi' })
-            const blobURL: string = URL.createObjectURL(blob)
-            success([new Midi(request.response), blobURL])
-          } else {
-            fail(request.status)
-          }
-        },
-        { once: true }
-      )
-      request.addEventListener('error', fail, { once: true })
-      request.send(data)
-    })
-  }
-
   // FIXME(theis): critical bug in MIDI scheduling
   // timing becomes completely wrong at high tempos
   // should implement a MusicXML to Tone.js formatter instead, using
   // musical rhythm notation rather than concrete seconds-based timing
-  async loadMidi(
-    serverURL: string,
-    musicXML: XMLDocument,
+  protected loadMidi(
+    midi: Midi,
     sequenceDuration_barsBeatsSixteenth: string
-  ): Promise<string> {
-    const serializer = new XMLSerializer()
-    const payload = serializer.serializeToString(musicXML)
+  ): void {
+    if (!this.transport.loop) {
+      this.transport.loop = true
+      this.transport.loopStart = 0
+    }
+    this.transport.loopEnd = sequenceDuration_barsBeatsSixteenth
 
-    $(document).ajaxError((error) => console.log(error))
+    // assumes constant BPM or defaults to 120BPM if no tempo information available
+    const BPM = midi.header.tempos.length > 0 ? midi.header.tempos[0].bpm : 120
+    if (!midi.header.timeSignatures[0]) {
+      // TODO insert warning wrong Flask server
+      // TODO create a test for the flask server
+    }
+    // must set the Transport BPM to that of the midi for proper scheduling
+    // TODO(theis): this will probably lead to phase-drift if repeated
+    // updates are performed successively, should catch up somehow on
+    // the desynchronisation introduced by this temporary tempo change
+    this.transport.bpm.value = BPM
 
-    const midiBlobURL = this.midiRequestWithData(serverURL, payload, 'POST')
-      .then(async ([midi, blobURL]) => {
-        if (!this.transport.loop) {
-          this.transport.loop = true
-          this.transport.loopStart = 0
-        }
-        this.transport.loopEnd = sequenceDuration_barsBeatsSixteenth
+    // Required for Tone.Time conversions to properly work
+    this.transport.timeSignature = midi.header.timeSignatures[0].timeSignature
 
-        // assumes constant BPM or defaults to 120BPM if no tempo information available
-        const BPM =
-          midi.header.tempos.length > 0 ? midi.header.tempos[0].bpm : 120
-        if (!midi.header.timeSignatures[0]) {
-          // TODO insert warning wrong Flask server
-          // TODO create a test for the flask server
-        }
-        // must set the Transport BPM to that of the midi for proper scheduling
-        // TODO(theis): this will probably lead to phase-drift if repeated
-        // updates are performed successively, should catch up somehow on
-        // the desynchronisation introduced by this temporary tempo change
-        this.transport.bpm.value = BPM
+    const nextParts = this.getNextMidiParts()
+    const nextControlChanges = this.getNextControlChanges()
+    midi.tracks.forEach((track, index) => {
+      // midiChannels start at 1
+      const midiChannel = index + 1
+      this.scheduleTrackToInstrument(
+        sequenceDuration_barsBeatsSixteenth,
+        track,
+        midiChannel,
+        nextParts,
+        nextControlChanges
+      )
+    })
 
-        // Required for Tone.Time conversions to properly work
-        this.transport.timeSignature =
-          midi.header.timeSignatures[0].timeSignature
+    // change Transport BPM back to the displayed value
+    // FIXME(theis): if this.bpmControl.value is a floor'ed value, this is wrong
+    this.transport.bpm.value = this.bpmControl.value
 
-        const nextParts = this.getNextMidiParts()
-        const nextControlChanges = this.getNextControlChanges()
-        const schedulingPromises = midi.tracks.map((track, index) => {
-          // midiChannels start at 1
-          const midiChannel = index + 1
-          this.scheduleTrackToInstrument(
-            sequenceDuration_barsBeatsSixteenth,
-            track,
-            midiChannel,
-            nextParts,
-            nextControlChanges
-          )
-        })
-        await Promise.all(schedulingPromises)
-
-        // change Transport BPM back to the displayed value
-        // FIXME(theis): if this.bpmControl.value is a floor'ed value, this is wrong
-        this.transport.bpm.value = this.bpmControl.value
-
-        this.switchTracks()
-        return blobURL
-      })
-      .catch((error) => {
-        console.log(error)
-        return ''
-      })
-
-    return midiBlobURL
+    this.switchTracks()
   }
 
   scheduleChordsPlayer(
