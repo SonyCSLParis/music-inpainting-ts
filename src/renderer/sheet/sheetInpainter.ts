@@ -1,14 +1,19 @@
+import { Midi } from '@tonejs/midi'
 import { UndoableInpainter } from '../inpainter/inpainter'
 
 export interface SheetData {
   sheet: XMLDocument
+  midi: Midi
 }
 
-export class SheetInpainter extends UndoableInpainter<SheetData, 'copy'> {
+export class SheetInpainter extends UndoableInpainter<
+  SheetData,
+  'copy' | 'musicxml-to-midi'
+> {
   protected readonly serializer = new XMLSerializer()
   protected readonly parser = new DOMParser()
 
-  protected removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): void {
+  protected removeMusicXMLHeaderNodes(xmlDocument: XMLDocument): XMLDocument {
     // Strip MusicXML document of title/composer tags
     const titleNode = xmlDocument.getElementsByTagName('work-title')[0]
     const movementTitleNode = xmlDocument.getElementsByTagName(
@@ -18,6 +23,7 @@ export class SheetInpainter extends UndoableInpainter<SheetData, 'copy'> {
 
     titleNode.textContent = movementTitleNode.textContent = composerNode.textContent =
       ''
+    return xmlDocument
   }
 
   protected async apiRequest(
@@ -40,6 +46,23 @@ export class SheetInpainter extends UndoableInpainter<SheetData, 'copy'> {
     return {
       sheet: this.currentXML_string,
     }
+  }
+
+  // FIXME(theis): critical bug in MIDI scheduling
+  // timing becomes completely wrong at high tempos
+  // should implement a MusicXML to Tone.js formatter instead, using
+  // musical rhythm notation rather than concrete seconds-based timing
+  protected async sheetToMidi(
+    musicXML: XMLDocument = this.value.sheet,
+    inpaintingApiUrl = this.defaultApiAddress
+  ): Promise<Midi> {
+    const sheetString = this.serializer.serializeToString(musicXML)
+    const url = new URL('musicxml-to-midi', inpaintingApiUrl).href
+    const response = await fetch(url, {
+      method: 'POST',
+      body: sheetString,
+    })
+    return new Midi(await response.arrayBuffer())
   }
 
   /**
@@ -70,21 +93,24 @@ export class SheetInpainter extends UndoableInpainter<SheetData, 'copy'> {
     // and update the view accordingly
 
     // load the received MusicXML
-    const xml_sheet_string = jsonContent['sheet']
-    const xmldata = this.parser.parseFromString(xml_sheet_string, 'text/xml')
-    this.removeMusicXMLHeaderNodes(xmldata)
-    return { sheet: xmldata }
+    const sheetString: string = jsonContent['sheet']
+    let sheetXML = this.parser.parseFromString(sheetString, 'text/xml')
+    sheetXML = this.removeMusicXMLHeaderNodes(sheetXML)
+    return this.updateSheet(sheetXML)
+  }
 
-    // TODO (@tbazin, 2022/04/22): Fix DownloadButton for MIDI + MusicXML
-    // this.downloadButton.revokeBlobURL()
-    // this.downloadButton.targetURL = midiBlobURL
+  protected async updateSheet(newSheet: XMLDocument): Promise<SheetData> {
+    const midi = await this.sheetToMidi(newSheet)
+    const newData = { sheet: newSheet, midi: midi }
+    this.setValueInteractive(newData)
+    return newData
   }
 
   async loadFile(xmlSheetFile: File): Promise<this> {
     const xmlSheetString = await xmlSheetFile.text()
     const newSheet = this.parser.parseFromString(xmlSheetString, 'text/xml')
     this.removeMusicXMLHeaderNodes(newSheet)
-    this.setValueInteractive({ sheet: newSheet })
+    await this.updateSheet(newSheet)
     return this
   }
 }
