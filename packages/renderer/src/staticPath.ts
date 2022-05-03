@@ -1,4 +1,4 @@
-import * as path from 'path'
+// import * as path from 'path'
 
 // const COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 // const IS_WEB = !COMPILE_ELECTRON
@@ -21,6 +21,8 @@ import * as path from 'path'
 // }
 
 export function getPathToStaticFile(pathToFile: string): string {
-  return new URL(`./${pathToFile}`, import.meta.url).href
+  return ''
+  // return new URL(`../statuc/${pathToFile}`, import.meta.url).href
   // return path.join(static_correct, pathToFile).replace(/\s/gm, '%20')
 }
+export default getPathToStaticFile

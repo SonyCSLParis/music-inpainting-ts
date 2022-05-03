@@ -41,15 +41,30 @@ const applicationModeToAPIResourceName: Map<ApplicationMode, string> = new Map([
 ])
 
 // defined at compile-time via webpack.DefinePlugin
-const COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
-declare const APP_TITLE: string
-declare const REMOTE_INPAINTING_API_ADDRESS: string
-declare const DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: string
-declare const NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT: boolean
-declare const SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX: boolean
-declare const AVAILABLE_APPLICATION_MODES: ApplicationMode[]
-declare const ENABLE_ANONYMOUS_MODE: boolean
+const COMPILE_ELECTRON: boolean =
+  import.meta.env.VITE_COMPILE_ELECTRON != undefined
+const VITE_APP_TITLE: string | undefined = import.meta.env.VITE_APP_TITLE
+const VITE_REMOTE_INPAINTING_API_ADDRESS: string | undefined = import.meta.env
+  .VITE_REMOTE_INPAINTING_API_ADDRESS
+const VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS:
+  | string
+  | undefined = import.meta.env.VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+const VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT: boolean =
+  import.meta.env.VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT !=
+  undefined
+const VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX: boolean =
+  import.meta.env.VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX != undefined
+const VITE_ENABLE_ANONYMOUS_MODE: boolean =
+  import.meta.env.VITE_ENABLE_ANONYMOUS_MODE != undefined
 const isDevelopment: boolean = process.env.NODE_ENV !== 'production'
+// TODO(@tbazin, 2022/05/03): Fix setting list through environment variables
+const VITE_AVAILABLE_APPLICATION_MODES: ApplicationMode[] = [
+  ApplicationMode.Chorale,
+  ApplicationMode.Spectrogram,
+]
+
+console.log(import.meta.env.VITE_TEST)
+console.log(VITE_REMOTE_INPAINTING_API_ADDRESS)
 
 // via https://stackoverflow.com/a/17632779/
 function cloneJSON<T>(obj: T): T {
@@ -64,9 +79,11 @@ const globalConfiguration: applicationConfiguration = {
 // fallback to Webpack globals if no value defined in the JSON configuration
 globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] =
   globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] ||
-  SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX
+  VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX
 
-globalConfiguration['inpainting_api_address'] = REMOTE_INPAINTING_API_ADDRESS
+globalConfiguration[
+  'inpainting_api_address'
+] = VITE_REMOTE_INPAINTING_API_ADDRESS
 
 // TODO(theis) don't create modes like this (goes against 12 Factor App principles)
 // should have truly orthogonal configuration options
@@ -94,14 +111,14 @@ spectrogramConfiguration['spectrogram'] = true
 spectrogramConfiguration['app_name'] = 'notono'
 spectrogramConfiguration['display_ircam_logo'] = true
 
-if (ENABLE_ANONYMOUS_MODE) {
+if (VITE_ENABLE_ANONYMOUS_MODE) {
   spectrogramConfiguration['app_name'] = 'VQ-Inpainting'
   spectrogramConfiguration['display_sony_logo'] = false
   spectrogramConfiguration['display_ircam_logo'] = false
   document.body.classList.add('anonymous-mode')
 }
 
-const availableApplicationModes = AVAILABLE_APPLICATION_MODES
+const availableApplicationModes = VITE_AVAILABLE_APPLICATION_MODES
 console.log(availableApplicationModes)
 
 // TODO(@tbazin, 2021/10/15): move this to index.ts
@@ -109,21 +126,18 @@ console.log(availableApplicationModes)
 // just store it in LinkClient / LinkServer (but this would involve duplicate definitions...)
 // or in a global read-only configuration file in common?
 if (COMPILE_ELECTRON) {
-  void import('electron').then((electron) => {
-    // disable the potentially enabled Link Client on page reloads
-    electron.ipcRenderer
-      .invoke('get-window-id')
-      .then((windowID: number) => {
-        electron.ipcRenderer.send(
-          globalConfiguration['link_channel_prefix'] +
-            windowID.toString() +
-            'disable'
-        )
-      })
-      .catch((err) => {
-        throw err
-      })
-  })
+  window.ipcRenderer
+    .invoke('get-window-id')
+    .then((windowID: number) => {
+      window.ipcRenderer.send(
+        globalConfiguration['link_channel_prefix'] +
+          windowID.toString() +
+          'disable'
+      )
+    })
+    .catch((err) => {
+      throw err
+    })
 }
 
 export class SplashScreen {
@@ -210,10 +224,10 @@ export class SplashScreen {
     Header.render(headerContainer, {
       display_sony_logo: true,
       display_ircam_logo: true,
-      app_name: APP_TITLE != null ? APP_TITLE : 'notono',
+      app_name: VITE_APP_TITLE != null ? VITE_APP_TITLE : 'notono',
     })
 
-    this.insertCustomAPIAdressInput = !NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT
+    this.insertCustomAPIAdressInput = !VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT
     if (this.insertCustomAPIAdressInput) {
       const serverConfigurationContainerElement = document.createElement('div')
       serverConfigurationContainerElement.id = 'server-configuration-container'
@@ -241,8 +255,8 @@ export class SplashScreen {
       this.serverAddressInput = document.createElement('input')
       this.serverAddressInput.type = 'url'
       this.serverAddressInput.id = 'server-address-input'
-      this.serverAddressInput.value = DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
-      this.serverAddressInput.placeholder = DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+      this.serverAddressInput.value = VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+      this.serverAddressInput.placeholder = VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
       serverAddressContainer.appendChild(this.serverAddressInput)
 
       this.serverAddressInput.addEventListener('input', () => {
@@ -414,7 +428,7 @@ export class SplashScreen {
       const resourceName = applicationModeToAPIResourceName.get(applicationMode)
       configuration['inpainting_api_address'] = new URL(
         resourceName,
-        REMOTE_INPAINTING_API_ADDRESS
+        VITE_REMOTE_INPAINTING_API_ADDRESS
       ).toString()
     }
 

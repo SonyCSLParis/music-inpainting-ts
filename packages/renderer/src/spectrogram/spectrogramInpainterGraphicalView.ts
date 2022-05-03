@@ -2,6 +2,7 @@ import { NexusSelectWithShuffle } from '../nexusColored'
 import type { NexusSelect } from 'nexusui'
 import { ScrollLockSimpleBar } from '../utils/simplebar'
 import { Unit as ToneUnit } from 'tone'
+import $ from 'jquery'
 
 import { apiCommand } from '../inpainter/inpainter'
 import {
@@ -38,7 +39,6 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   SpectrogramPlaybackManager,
   VqvaeLayer
 > {
-  readonly inpainter: SpectrogramInpainter
   protected async onInpainterChange(
     data: NotonoData<VqvaeLayer>
   ): Promise<void> {

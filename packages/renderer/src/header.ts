@@ -1,4 +1,5 @@
 import screenfull from 'screenfull'
+import $ from 'jquery'
 
 import { getPathToStaticFile } from './staticPath'
 
@@ -10,6 +11,11 @@ import {
 } from './utils/display'
 import colors from '../styles/mixins/_colors.module.scss'
 import { setColors } from './nexusColored'
+
+import SonyCslLogoURL from '../static/icons/logos/sonycsl-logo.svg'
+import SonyCslLogoNoTextUrl from '../static/icons/logos/sonycsl-logo-no_text.svg'
+import IRCAMLogoURL from '../static/icons/logos/logoircam_noir.png'
+import IRCAMLogoNoTextURL from '../static/icons/logos/logoircam_noir-no_text.png'
 
 const COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
@@ -28,8 +34,7 @@ function restrictCallbackToInitialEventListenerTarget<T extends Event>(
 
 async function setupSystemIntegrationForLinksOpening() {
   if (COMPILE_ELECTRON) {
-    const shell = (await import('electron')).shell
-
+    const shell = window.electronShell
     //open links externally by default
     $(document).on(
       'click',
@@ -72,14 +77,10 @@ export function render(
     const CslLargeLogoElement = document.createElement('source')
     CslLargeLogoElement.type = 'image/svg+xml'
     CslLargeLogoElement.media = '(min-width: 1000px) and (min-height: 500px)'
-    CslLargeLogoElement.srcset = getPathToStaticFile(
-      'icons/logos/sonycsl-logo.svg'
-    )
+    CslLargeLogoElement.srcset = SonyCslLogoURL
     cslLogoContainerElement.appendChild(CslLargeLogoElement)
     const CslSmallLogoElement = document.createElement('img')
-    CslSmallLogoElement.src = getPathToStaticFile(
-      'icons/logos/sonycsl-logo-no_text.svg'
-    )
+    CslSmallLogoElement.src = SonyCslLogoNoTextUrl
     CslSmallLogoElement.alt = 'Sony CSL Logo'
     cslLogoContainerElement.appendChild(CslSmallLogoElement)
 
@@ -133,14 +134,10 @@ export function render(
     const ircamLargeLogoElement = document.createElement('source')
     ircamLargeLogoElement.type = 'image/png'
     ircamLargeLogoElement.media = '(min-width: 1000px) and (min-height: 500px)'
-    ircamLargeLogoElement.srcset = getPathToStaticFile(
-      'icons/logos/logoircam_noir.png'
-    )
+    ircamLargeLogoElement.srcset = IRCAMLogoURL
     ircamLogoContainerElement.appendChild(ircamLargeLogoElement)
     const ircamSmallLogoElement = document.createElement('img')
-    ircamSmallLogoElement.src = getPathToStaticFile(
-      'icons/logos/logoircam_noir-no_text.png'
-    )
+    ircamSmallLogoElement.src = IRCAMLogoNoTextURL
     ircamSmallLogoElement.alt = 'ircam Team Logo'
     ircamLogoContainerElement.appendChild(ircamSmallLogoElement)
 

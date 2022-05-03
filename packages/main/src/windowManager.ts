@@ -1,7 +1,7 @@
 // Module to create native browser windows
 import { BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
-import { LinkServerElectron } from './ableton_link/linkServer.electron'
+// import { LinkServerElectron } from './ableton_link/linkServer.electron'
 
 const isDevelopment = false //process.env.NODE_ENV !== 'production'
 
@@ -21,9 +21,9 @@ const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
 // FIXME(@tbazin, 2021/10/28): avoid using a global like this
 const TITLE_BAR_STYLE = 'hiddenInset'
 
-export function createWindow(): void {
+export async function createWindow(): Promise<void> {
   // Create the browser window
-  const window = new BrowserWindow({
+  const browserWindow = new BrowserWindow({
     title: globalConfiguration['app_name'],
     minWidth: 450,
     minHeight: 450,
@@ -31,51 +31,56 @@ export function createWindow(): void {
     backgroundColor: 'black',
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false,
+      contextIsolation: true,
       // prevent window from getting decreased performance when not focused,
       // which would lead to unstable audio playback
       backgroundThrottling: false,
+      preload: path.join(__dirname, '../../preload/dist/index.cjs'),
     },
     titleBarStyle: TITLE_BAR_STYLE,
   })
-  const linkServer = new LinkServerElectron(window, 120, 4, false)
+  // const linkServer = new LinkServerElectron(window, 120, 4, false)
 
-  if (isDevelopment) {
-    const electronWebpackWebDevelopmentServerPort =
-      process.env.ELECTRON_WEBPACK_WDS_PORT
-    if (electronWebpackWebDevelopmentServerPort != undefined) {
-      void window.loadURL(
-        'http://localhost:' + electronWebpackWebDevelopmentServerPort
-      )
-    }
-  } else {
-    void window.loadURL('file://' + path.join(__dirname, 'index.html'))
-  }
+  // if (isDevelopment) {
+  //   const electronWebpackWebDevelopmentServerPort =
+  //     process.env.ELECTRON_WEBPACK_WDS_PORT
+  //   if (electronWebpackWebDevelopmentServerPort != undefined) {
+  //     void window.loadURL(
+  //       'http://localhost:' + electronWebpackWebDevelopmentServerPort
+  //     )
+  //   }
+  // } else {
+  const pageUrl =
+    import.meta.env.DEV && import.meta.env.VITE_DEV_SERVER_URL !== undefined
+      ? import.meta.env.VITE_DEV_SERVER_URL
+      : new URL('../renderer/dist/index.html', 'file://' + __dirname).toString()
 
-  const windowID = window.id
+  await browserWindow.loadURL(pageUrl)
+
+  const windowID = browserWindow.id
   function onWindowClosed() {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    linkServer.disable()
+    // linkServer.disable()
     openWindows.delete(windowID)
   }
-  window.on('closed', onWindowClosed)
-  window.on('close', onWindowClosed)
+  browserWindow.on('closed', onWindowClosed)
+  browserWindow.on('close', onWindowClosed)
 
-  window.webContents.on('devtools-opened', () => {
-    if (window != null) {
+  browserWindow.webContents.on('devtools-opened', () => {
+    if (browserWindow != null) {
       //test
-      window.focus()
+      browserWindow.focus()
       setImmediate(() => {
-        if (window != null) {
-          window.focus()
+        if (browserWindow != null) {
+          browserWindow.focus()
         }
       })
     }
   })
 
-  openWindows.set(windowID, window)
+  openWindows.set(windowID, browserWindow)
 }
 
 export function existsWindow(): boolean {

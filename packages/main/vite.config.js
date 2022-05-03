@@ -31,6 +31,7 @@ const config = {
       external: [
         'electron',
         'electron-devtools-installer',
+        'abletonlink',
         ...builtinModules.flatMap((p) => [p, `node:${p}`]),
       ],
       output: {

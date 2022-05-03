@@ -25,7 +25,6 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   number
 > {
   readonly dataType = 'sheet'
-  readonly inpainter: SheetInpainter
 
   constructor(
     sheetInpainter: SheetInpainter,

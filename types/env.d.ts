@@ -15,6 +15,16 @@ interface ImportMetaEnv {
    */
   readonly VITE_DEV_SERVER_URL: undefined | string
   readonly VITE_COMPILE_ELECTRON: undefined | string
+  readonly VITE_APP_TITLE: undefined | string
+  readonly VITE_REMOTE_INPAINTING_API_ADDRESS: undefined | string
+  readonly VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: undefined | string
+  readonly VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT:
+    | undefined
+    | string
+  readonly VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX: undefined | string
+  // TODO SET VALUE AT BUILD TIME
+  readonly AVAILABLE_APPLICATION_MODES: ApplicationMode[]
+  readonly VITE_ENABLE_ANONYMOUS_MODE: undefined | string
 }
 
 interface ImportMeta {

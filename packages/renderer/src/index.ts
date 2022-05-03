@@ -69,7 +69,8 @@ import '../styles/osmd.scss'
 import '../styles/spectrogram.scss'
 import '../styles/disableMouse.scss'
 
-const COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
+const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
+console.log('VITE_COMPILE_ELECTRON', VITE_COMPILE_ELECTRON)
 
 import defaultConfiguration from '../../common/default_config.json'
 import { setBackgroundColorElectron, getTitleBarDisplay } from './utils/display'
@@ -100,7 +101,7 @@ function render(
 
   document.body.classList.add('running', 'advanced-controls-disabled')
 
-  if (COMPILE_ELECTRON) {
+  if (VITE_COMPILE_ELECTRON) {
     document.body.classList.add('electron')
     getTitleBarDisplay()
       .then((titleBarDisplay) => {
@@ -298,7 +299,12 @@ function render(
     })
   }
 
-  let sheetInpainterGraphicalView: SheetInpainterGraphicalView
+  let sheetInpainterGraphicalView:
+    | SheetInpainterGraphicalView
+    | undefined = undefined
+  let spectrogramInpainterGraphicalView:
+    | SpectrogramInpainterGraphicalView
+    | undefined = undefined
   $(() => {
     const mainPanel = document.getElementById('main-panel')
     const bottomControlsGridElement = document.getElementById('bottom-controls')
@@ -508,7 +514,7 @@ function render(
       spectrogramPlaybackManager = new SpectrogramPlaybackManager(
         spectrogramInpainter
       )
-      const spectrogramInpainterGraphicalView = new SpectrogramInpainterGraphicalView(
+      spectrogramInpainterGraphicalView = new SpectrogramInpainterGraphicalView(
         spectrogramInpainter,
         spectrogramPlaybackManager,
         spectrogramContainerElement,
@@ -587,7 +593,7 @@ function render(
       )
     }
 
-    if (COMPILE_ELECTRON) {
+    if (VITE_COMPILE_ELECTRON) {
       ControlLabels.createLabel(
         bottomControlsGridElement,
         'download-button-label',
@@ -796,7 +802,7 @@ function render(
     // Insert LINK client controls
     const useAdvancedControls = true
 
-    if (COMPILE_ELECTRON && configuration['osmd'] && useAdvancedControls) {
+    if (VITE_COMPILE_ELECTRON && configuration['osmd'] && useAdvancedControls) {
       getAbletonLinkClientClass().then(
         (LinkClient) => {
           linkClient = new LinkClient(bpmControl)
@@ -851,13 +857,16 @@ function render(
     if (configuration['insert_help']) {
       let helpTour: MyShepherdTour
       // initialize help menu
-      if (configuration['spectrogram']) {
+      if (
+        configuration['spectrogram'] &&
+        spectrogramInpainterGraphicalView != null
+      ) {
         helpTour = new NotonoTour(
           [configuration['main_language']],
-          inpainterGraphicalView,
+          spectrogramInpainterGraphicalView,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
-      } else if (configuration['osmd']) {
+      } else if (configuration['osmd'] && sheetInpainterGraphicalView != null) {
         helpTour = new NonotoTour(
           [configuration['main_language']],
           sheetInpainterGraphicalView,

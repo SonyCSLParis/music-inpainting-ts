@@ -23,6 +23,8 @@
     "../../types/**/*.d.ts"
   ],
   "exclude": [
-    "../renderer/"
+    "../renderer/",
+    "**/*.spec.ts",
+    "**/*.test.ts"
   ]
 }

@@ -1,8 +1,11 @@
-import { ipcRenderer, IpcRendererEvent } from 'electron'
+import type { IpcRendererEvent } from 'electron'
 import { AbletonLinkClient } from './linkClient.abstract'
 
 import default_config from '../../../common/default_config.json'
 import { BPMControl } from '../numberControl'
+
+const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
+const ipcRenderer = VITE_COMPILE_ELECTRON ? window.ipcRenderer : null
 
 const link_channel_prefix: string = default_config['link_channel_prefix']
 
@@ -11,7 +14,7 @@ export class LinkClientElectron extends AbletonLinkClient {
   protected _windowID?: number
   protected async windowID(): Promise<number> {
     if (this._windowID == null) {
-      this._windowID = <number>await ipcRenderer.invoke('get-window-id')
+      this._windowID = <number>await ipcRenderer?.invoke('get-window-id')
     }
     return this._windowID
   }
@@ -29,7 +32,7 @@ export class LinkClientElectron extends AbletonLinkClient {
     message: string,
     callback: IpcRendererCallback
   ): Promise<this> {
-    ipcRenderer.on(await this.prefixMessage(message), callback.bind(this))
+    ipcRenderer?.on(await this.prefixMessage(message), callback.bind(this))
     return this
   }
   // Schedule a LINK dependent callback once
@@ -37,26 +40,26 @@ export class LinkClientElectron extends AbletonLinkClient {
     message: string,
     callback: IpcRendererCallback
   ): Promise<this> {
-    ipcRenderer.once(await this.prefixMessage(message), callback.bind(this))
+    ipcRenderer?.once(await this.prefixMessage(message), callback.bind(this))
     return this
   }
   // Send values to the Ableton Link server
   async sendToServer(message: string, ...args: any[]): Promise<void> {
-    ipcRenderer.send(await this.prefixMessage(message), ...args)
+    ipcRenderer?.send(await this.prefixMessage(message), ...args)
   }
   async removeServerListener(
     message: string,
     callback: IpcRendererCallback
   ): Promise<void> {
-    ipcRenderer.removeListener(await this.prefixMessage(message), callback)
+    ipcRenderer?.removeListener(await this.prefixMessage(message), callback)
   }
   async removeAllServerListeners(message: string): Promise<void> {
-    ipcRenderer.removeAllListeners(await this.prefixMessage(message))
+    ipcRenderer?.removeAllListeners(await this.prefixMessage(message))
   }
 
   async getPhaseAsync(): Promise<number> {
     return <Promise<number>>(
-      ipcRenderer.invoke(await this.prefixMessage('get-phase'))
+      ipcRenderer?.invoke(await this.prefixMessage('get-phase'))
     )
   }
 }
