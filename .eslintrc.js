@@ -1,4 +1,6 @@
 module.exports = {
+  root: true,
+
   extends: [
     'eslint:recommended',
     'plugin:import/errors',
@@ -7,12 +9,16 @@ module.exports = {
 
   env: {
     node: true,
+    es2021: true,
   },
 
+  parser: '@typescript-eslint/parser', // Specifies the ESLint parser
   parserOptions: {
-    ecmaVersion: 6,
-    sourceType: 'script',
+    ecmaVersion: 12,
+    sourceType: 'module',
   },
+  plugins: ['@typescript-eslint'],
+  ignorePatterns: ['node_modules/**', '**/dist/**'],
 
   rules: {
     'no-warning-comments': [
@@ -40,22 +46,11 @@ module.exports = {
     // TypeScript-specific rulesets
     {
       files: ['**/*.ts', '**/*.tsx'],
-      plugins: ['@typescript-eslint'],
       extends: [
         'plugin:import/typescript',
         'plugin:@typescript-eslint/recommended', // A plugin that contains a bunch of ESLint rules that are TypeScript specific
         'plugin:@typescript-eslint/recommended-requiring-type-checking',
       ],
-      parser: '@typescript-eslint/parser', // Specifies the ESLint parser
-      parserOptions: {
-        ecmaVersion: 2021, // Allows for the parsing of modern ECMAScript features
-        sourceType: 'module', // Allows for the use of imports
-        ecmaFeatures: {
-          jsx: true, // Allows for the parsing of JSX
-        },
-        tsconfigRootDir: __dirname,
-        project: ['./tsconfig.json', './src/**/tsconfig.json'],
-      },
     },
 
     // renderer/browser-specific rules
@@ -63,6 +58,7 @@ module.exports = {
       files: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
       env: {
         browser: true,
+        node: false,
       },
     },
 
