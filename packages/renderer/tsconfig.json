@@ -6,10 +6,10 @@
     "sourceMap": false,
     "moduleResolution": "Node",
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "isolatedModules": true,
 
-    "types" : ["node"],
+    "types" : ["node", "webmidi"],
     "baseUrl": ".",
     "paths": {
       "/@/*": [
@@ -18,7 +18,15 @@
     },
     "lib": ["ESNext", "dom", "dom.iterable"]
   },
+  "include": [
+    "src/**/*.ts",
+    "types/**/*.d.ts",
+    "../../types/**/*.d.ts",
+    "../preload/contracts.d.ts"
+  ],
   "exclude": [
-    "../main/"
+    "../main/",
+    "**/*.spec.ts",
+    "**/*.test.ts",
   ]
 }

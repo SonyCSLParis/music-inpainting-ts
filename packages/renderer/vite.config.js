@@ -2,9 +2,13 @@
 
 import { chrome } from '../../.electron-vendors.cache.json'
 import { join } from 'path'
+import { loadEnv } from 'vite'
 import { builtinModules } from 'module'
 
 const PACKAGE_ROOT = __dirname
+
+// process.env = { ...process.env, ...loadEnv(process.env.mode, process.cwd()) }
+const VITE_COMPILE_WEB = process.env.VITE_COMPILE_WEB != undefined
 
 /**
  * @type {import('vite').UserConfig}
@@ -32,7 +36,9 @@ const config = {
     assetsDir: '.',
     rollupOptions: {
       input: join(PACKAGE_ROOT, 'index.html'),
-      // external: [...builtinModules.flatMap((p) => [p, `node:${p}`])],
+      external: VITE_COMPILE_WEB
+        ? []
+        : [...builtinModules.flatMap((p) => [p, `node:${p}`])],
     },
     emptyOutDir: true,
     brotliSize: false,

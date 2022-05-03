@@ -2,7 +2,7 @@ import { Inpainter } from './inpainter/inpainter'
 import { NotonoData } from './spectrogram/spectrogramInpainter'
 import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
 
-const COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
+const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
 class Radius {
   tl: number
@@ -109,57 +109,50 @@ export abstract class DownloadButton<
 
     this.dragImage = new Image()
 
-    if (COMPILE_ELECTRON) {
+    if (VITE_COMPILE_ELECTRON) {
       // add support for native Drag and Drop
       // FIXME(@tbazin, 2021/11/10): Fix DownloadButton drag-out for MIDI
-      import('electron')
-        .then((electron) => {
-          const ipcRenderer = electron.ipcRenderer
-
-          const saveBlob = async (
-            blob: Blob,
-            fileName: string,
-            appDir: 'temp' | 'documents' = 'temp'
-          ): Promise<string> => {
-            {
-              const reader = new FileReader()
-              const storagePath = <string>(
-                await ipcRenderer.invoke('get-path', fileName, appDir)
-              )
-              reader.onload = async function () {
-                if (reader.readyState == 2) {
-                  const buffer = Buffer.from(reader.result)
-                  await ipcRenderer.invoke('save-file', storagePath, buffer)
-                }
-                reader.readAsArrayBuffer(blob)
-              }
-              return storagePath
+      const ipcRenderer = window.ipcRenderer
+      const saveBlob = async (
+        blob: Blob,
+        fileName: string,
+        appDir: 'temp' | 'documents' = 'temp'
+      ): Promise<string> => {
+        {
+          const reader = new FileReader()
+          const storagePath = <string>(
+            await ipcRenderer.invoke('get-path', fileName, appDir)
+          )
+          reader.onload = async function () {
+            if (reader.readyState == 2) {
+              const buffer = Buffer.from(reader.result)
+              await ipcRenderer.invoke('save-file', storagePath, buffer)
             }
+            reader.readAsArrayBuffer(blob)
           }
+          return storagePath
+        }
+      }
 
-          this.container.addEventListener('dragstart', (event) => {
-            event.preventDefault()
-            const soundStoragePathPromise = saveBlob(
-              this.content,
-              this.makeFilenameWithTimestamp(),
-              'documents'
-            )
-            const imageStoragePathPromise = saveBlob(
-              this.imageContent,
-              'spectrogram.png',
-              'temp'
-            )
-            void Promise.all([
-              soundStoragePathPromise,
-              imageStoragePathPromise,
-            ]).then(([soundPath, imagePath]) => {
-              ipcRenderer.send('ondragstart', soundPath, imagePath)
-            })
-          })
+      this.container.addEventListener('dragstart', (event) => {
+        event.preventDefault()
+        const soundStoragePathPromise = saveBlob(
+          this.content,
+          this.makeFilenameWithTimestamp(),
+          'documents'
+        )
+        const imageStoragePathPromise = saveBlob(
+          this.imageContent,
+          'spectrogram.png',
+          'temp'
+        )
+        void Promise.all([
+          soundStoragePathPromise,
+          imageStoragePathPromise,
+        ]).then(([soundPath, imagePath]) => {
+          ipcRenderer.send('ondragstart', soundPath, imagePath)
         })
-        .catch((error) => {
-          throw error
-        })
+      })
     } else {
       this.interface.addEventListener('dragstart', (event) => {
         // event.preventDefault()

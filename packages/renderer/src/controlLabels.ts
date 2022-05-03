@@ -1,5 +1,5 @@
-import * as configuration from '../../common/default_config.json'
-import * as localizations from '../static/localization.json'
+import configuration from '../../common/default_config.json'
+import localizations from '../static/localization.json'
 
 export function createLabel(
   controlElement: HTMLElement,

@@ -12,9 +12,11 @@ import Shepherd from 'shepherd.js'
 import localizations from '../static/localization.json'
 const helpContents = localizations['help']
 
-export abstract class MyShepherdTour extends Shepherd.Tour {
+export abstract class MyShepherdTour<
+  InpainterGraphicalViewT extends InpainterGraphicalView = InpainterGraphicalView
+> extends Shepherd.Tour {
   protected languages: string[]
-  readonly inpainter: InpainterGraphicalView
+  readonly inpainter: InpainterGraphicalViewT
   protected tripDelay_ms = 10000
   readonly inactivityDetectorDelay?: number
   readonly idleStateDetector?: IdleTracker | null = null
@@ -49,7 +51,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
 
   constructor(
     languages: string[],
-    inpainterGraphicalView: InpainterGraphicalView,
+    inpainterGraphicalView: InpainterGraphicalViewT,
     inactivityDetectorDelay?: number,
     options?: Shepherd.Tour.TourOptions
   ) {
@@ -206,9 +208,7 @@ export abstract class MyShepherdTour extends Shepherd.Tour {
   }
 }
 
-export class NonotoTour extends MyShepherdTour {
-  inpainter: SheetInpainterGraphicalView
-
+export class NonotoTour extends MyShepherdTour<SheetInpainterGraphicalView> {
   makeStepsOptions(): Shepherd.Step.StepOptions[] {
     return [
       {
@@ -256,9 +256,7 @@ export class NonotoTour extends MyShepherdTour {
   }
 }
 
-export class NotonoTour extends MyShepherdTour {
-  readonly inpainter: SpectrogramInpainterGraphicalView
-
+export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView> {
   makeStepsOptions(): Shepherd.Step.StepOptions[] {
     return [
       {

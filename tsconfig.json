@@ -1,6 +1,4 @@
 {
-  "extends": "./node_modules/electron-webpack/tsconfig-base.json",
-
   "compilerOptions": {
     "pretty": true,
     "target": "ES2018",
@@ -8,6 +6,7 @@
     "removeComments": true,
     "declaration": true,
     "sourceMap": true,
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "strict": false, // HACK(theis): should be true!
@@ -16,5 +15,5 @@
     "noImplicitAny": false, // HACK(theis): should be true!
   },
   "allowSyntheticDefaultImports": true,
-  "include": ["./src"],
+  "include": ["./packages"],
 }

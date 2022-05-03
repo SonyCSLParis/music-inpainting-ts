@@ -196,7 +196,7 @@ export function createIconElements<T>(
 ): Map<T, HTMLElement> {
   function createIconElement(iconPath: string): HTMLElement {
     const imageElement = document.createElement('img')
-    imageElement.src = path.join(basePath, iconPath)
+    imageElement.src = new URL(iconPath, basePath).href
     return imageElement
   }
   // append all images as <img> to the container
@@ -208,8 +208,11 @@ export function createIconElements<T>(
   return iconElements
 }
 
-export class CycleSelectView<T> extends HTMLDivElement {
-  readonly valueModel: VariableValue<T>
+export class CycleSelectView<
+  T,
+  VariableValueT extends VariableValue<T> = VariableValue<T>
+> extends HTMLDivElement {
+  readonly valueModel: VariableValueT
 
   readonly interactiveElement = document.createElement('div')
   static interfaceCssClass = 'cycleSelect'
@@ -221,10 +224,7 @@ export class CycleSelectView<T> extends HTMLDivElement {
     return this.valueModel.value
   }
 
-  constructor(
-    valueModel: VariableValue<T>,
-    imageElements: Map<T, HTMLElement>
-  ) {
+  constructor(valueModel: VariableValueT, imageElements: Map<T, HTMLElement>) {
     super()
     this.interactiveElement.classList.add('cycleSelect--interactive-element')
     this.appendChild(this.interactiveElement)
@@ -282,9 +282,10 @@ export class CycleSelectView<T> extends HTMLDivElement {
 }
 customElements.define('cycle-select', CycleSelectView, { extends: 'div' })
 
-export class CycleSelectViewWithDisable<T> extends CycleSelectView<T | null> {
-  readonly valueModel: NullableVariableValue<T>
-
+export class CycleSelectViewWithDisable<T> extends CycleSelectView<
+  T | null,
+  NullableVariableValue<T>
+> {
   static disabledCssClass = 'cycleSelect-disabled'
 
   constructor(

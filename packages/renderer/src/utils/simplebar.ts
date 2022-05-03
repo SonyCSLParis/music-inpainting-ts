@@ -1,3 +1,5 @@
+import $ from 'jquery'
+
 import SimpleBar from 'simplebar'
 import type { Options as SimpleBarOptions } from 'simplebar'
 

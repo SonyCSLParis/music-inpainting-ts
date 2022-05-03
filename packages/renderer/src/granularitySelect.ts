@@ -6,13 +6,17 @@ import {
   VariableValue,
 } from './cycleSelect'
 
+import quarterNoteIconUrl from '../static/icons/quarter-note.svg'
+import halfNoteIconUrl from '../static/icons/half-note.svg'
+import wholeNoteIconUrl from '../static/icons/whole.svg'
+
 const availableGranularityIcons = new Map([
-  [1, 'quarter-note.svg'],
-  [2, 'half-note.svg'],
-  [4, 'whole.svg'],
-  [8, 'whole-two.png'],
-  [12, 'whole-three.png'],
-  [16, 'whole-four.png'],
+  [1, quarterNoteIconUrl],
+  [2, halfNoteIconUrl],
+  [4, wholeNoteIconUrl],
+  // [8, 'whole-two.png'],
+  // [12, 'whole-three.png'],
+  // [16, 'whole-four.png'],
 ])
 
 function makeGranularityIconsList(
