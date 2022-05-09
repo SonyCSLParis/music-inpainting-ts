@@ -8,13 +8,13 @@ export async function setBackgroundColorElectron(
 ): Promise<void> {
   if (VITE_COMPILE_ELECTRON) {
     log.debug('Request window background color update')
-    window.ipcRenderer.send('set-background-color', backgroundColor)
+    window.ipcRendererInterface.setBackgroundColor(backgroundColor)
   }
 }
 
 export async function getTitleBarDisplay(): Promise<string | null> {
   if (VITE_COMPILE_ELECTRON) {
-    return <Promise<string>>window.ipcRenderer.invoke('get-titleBarStyle')
+    return window.ipcRendererInterface.getTitleBarStyle()
   } else {
     return null
   }
@@ -23,6 +23,6 @@ export async function getTitleBarDisplay(): Promise<string | null> {
 export async function toggleMaximizeWindowElectron(): Promise<void> {
   if (VITE_COMPILE_ELECTRON) {
     log.debug('Requesting window.maximize toggle')
-    window.ipcRenderer.send('window-toggle-maximize')
+    window.ipcRendererInterface.toggleWindowMaximize()
   }
 }

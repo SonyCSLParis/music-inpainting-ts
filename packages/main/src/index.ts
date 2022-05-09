@@ -50,7 +50,7 @@ ipcMain.handle('save-file', async (event, fileName: string, buffer: Buffer) => {
   return outputFile(fileName, buffer)
 })
 
-ipcMain.on('ondragstart', (event, filePath: string, iconPath: string) => {
+ipcMain.on('start-drag', (event, filePath: string, iconPath: string) => {
   event.sender.startDrag({
     file: filePath,
     icon: iconPath,
