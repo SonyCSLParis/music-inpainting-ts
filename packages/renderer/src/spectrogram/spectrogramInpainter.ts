@@ -75,7 +75,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
     httpMethod: 'GET' | 'POST',
     href: string,
     timeout = 0,
-    requestBody?: { data: BodyInit; dataType: string }
+    requestBody?: { data: BodyInit; dataType: string | null }
   ): Promise<NotonoData<VqvaeLayer>> {
     return this.loadAudioAndSpectrogram(httpMethod, href, timeout, requestBody)
   }
@@ -176,7 +176,9 @@ export class SpectrogramInpainter extends UndoableInpainter<
     audioForm.append('audio', audioBlob)
     const audioRequestBody = {
       data: audioForm,
-      dataType: 'multipart/form-data',
+      // should *not* set Content-Type header when sending FormData through the fetch API
+      // https://stackoverflow.com/questions/36067767/#comment98412965_36082038
+      dataType: null,
     }
     return this.apiRequestHelper(
       'POST',
@@ -185,7 +187,6 @@ export class SpectrogramInpainter extends UndoableInpainter<
       inpaintingApiUrl,
       false,
       0,
-      null,
       audioRequestBody
     )
   }
@@ -205,7 +206,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
     httpMethod: 'GET' | 'POST',
     href: string,
     timeout = 0,
-    requestBody?: { data: BodyInit; dataType: string }
+    requestBody?: { data: BodyInit; dataType: string | null }
   ): Promise<NotonoData<VqvaeLayer>> {
     let newCodes_top: Codemap
     let newCodes_bottom: Codemap
@@ -225,7 +226,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
           method: httpMethod,
           body: requestBody != null ? requestBody.data : null,
           headers:
-            requestBody != null
+            requestBody != null && requestBody.dataType != null
               ? {
                   'Content-Type': requestBody.dataType,
                 }

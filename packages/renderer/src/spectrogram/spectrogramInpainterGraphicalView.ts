@@ -844,22 +844,23 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   protected async dropHandler(e: DragEvent): Promise<void> {
-    // Prevent default behavior (Prevent file from being opened)
-    e.preventDefault()
-    e.stopPropagation()
+    if (e.dataTransfer == null) {
+      return
+    }
 
     if (e.dataTransfer.items) {
+      // Prevent default behavior (Prevent file from being opened)
+      e.preventDefault()
+      e.stopPropagation()
       // Use DataTransferItemList interface to access the file(s)
       for (let i = 0; i < e.dataTransfer.items.length; i++) {
         // If dropped items aren't files, reject them
         if (e.dataTransfer.items[i].kind === 'file') {
           const file = e.dataTransfer.items[i].getAsFile()
+          if (file == null) {
+            continue
+          }
           console.log(`... file[${i}].name = ` + file.name)
-          // const generationParameters =
-          //   '?pitch=' +
-          //   this.midiPitchConstraint.toString() +
-          //   '&instrument_family_str=' +
-          //   this.instrumentConstraint
           await this.inpainter.sendAudio(file, this.queryParameters)
         }
       }

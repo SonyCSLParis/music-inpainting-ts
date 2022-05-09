@@ -44,7 +44,7 @@ export abstract class Inpainter<
     httpMethod: 'GET' | 'POST',
     href: string,
     timeout?: number,
-    requestBody?: { data: BodyInit; dataType: string }
+    requestBody?: { data: BodyInit; dataType: string | null }
   ): Promise<DataT>
 
   readonly defaultApiAddress: URL
@@ -112,7 +112,7 @@ export abstract class Inpainter<
     apiAddress: URL,
     sendCurrentDataWithRequest = false,
     timeout?: number,
-    requestBody?: { data: BodyInit; dataType: string },
+    requestBody?: { data: BodyInit; dataType: string | null },
     jsonData?: Record<string, any>
   ): Promise<this> {
     // if (this.disabled) {
@@ -202,7 +202,7 @@ export abstract class Inpainter<
   async inpaint(
     queryParameters: string[] = [],
     apiAddress: URL = this.defaultApiAddress,
-    requestBody?: { data: BodyInit; dataType: string },
+    requestBody?: { data: BodyInit; dataType: string | null },
     jsonData?: Record<string, any>
   ): Promise<this> {
     return this.apiRequestHelper(
@@ -221,7 +221,7 @@ export abstract class Inpainter<
   // TODO(theis, 2021/07/26): rename this to encode to better reflect
   // encoder/decoder structure?
   async analyze(
-    requestBody?: { data: BodyInit; dataType: string },
+    requestBody?: { data: BodyInit; dataType: string | null },
     jsonData?: Record<string, any>,
     queryParameters: string[] = [],
     apiAddress: URL = this.defaultApiAddress,
