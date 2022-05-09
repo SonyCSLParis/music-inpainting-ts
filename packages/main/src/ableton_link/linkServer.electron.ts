@@ -1,10 +1,9 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import log from 'loglevel'
-import AbletonLink from 'abletonlink'
 import { LinkServer } from './linkServer'
 
 import default_config from '../../../common/default_config.json'
-const link_channel_prefix: string = default_config['link_channel_prefix']
+const link_channel_prefix: string = 'LINK/' /// default_config['link_channel_prefix']
 
 export class LinkServerElectron extends LinkServer {
   protected readonly window: BrowserWindow

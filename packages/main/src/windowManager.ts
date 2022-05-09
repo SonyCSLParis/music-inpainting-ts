@@ -1,7 +1,7 @@
 // Module to create native browser windows
 import { BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
-// import { LinkServerElectron } from './ableton_link/linkServer.electron'
+import { LinkServerElectron } from './ableton_link/linkServer.electron'
 
 const isDevelopment = false //process.env.NODE_ENV !== 'production'
 
@@ -39,7 +39,7 @@ export async function createWindow(): Promise<void> {
     },
     titleBarStyle: TITLE_BAR_STYLE,
   })
-  // const linkServer = new LinkServerElectron(window, 120, 4, false)
+  const linkServer = new LinkServerElectron(browserWindow, 120, 4, false)
 
   // if (isDevelopment) {
   //   const electronWebpackWebDevelopmentServerPort =
@@ -99,6 +99,8 @@ export function broadcast(channel: string, ...args: unknown[]): void {
 }
 
 ipcMain.on('window-toggle-maximize', (event) => {
+  console.log('window-toggle-maximize')
+  console.log(event)
   const id = event.sender.id
   const targetWindow = openWindows.get(id)
   if (targetWindow) {

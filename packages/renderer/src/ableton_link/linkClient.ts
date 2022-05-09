@@ -3,11 +3,12 @@ import { LinkClientConstructor } from './linkClient.abstract'
 let AbletonLinkClientImplementation: LinkClientConstructor
 
 // defined at compile-time via webpack.DefinePlugin
-declare const COMPILE_ELECTRON: boolean
+const VITE_COMPILE_ELECTRON: boolean =
+  import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
 export async function getAbletonLinkClientClass(): Promise<LinkClientConstructor> {
   if (!AbletonLinkClientImplementation) {
-    if (COMPILE_ELECTRON) {
+    if (VITE_COMPILE_ELECTRON) {
       const LinkClientElectron = (await import('./linkClient.electron'))
         .LinkClientElectron
       AbletonLinkClientImplementation = LinkClientElectron

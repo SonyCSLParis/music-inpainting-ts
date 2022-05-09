@@ -15,9 +15,6 @@ export abstract class LinkServer extends AbletonLink {
     enable?: boolean
   ) {
     super(bpm, quantum, enable)
-    this.init()
-    this.attachListeners()
-    this.startDownbeatClock()
   }
 
   protected abstract prefixMessage(message: string): string
