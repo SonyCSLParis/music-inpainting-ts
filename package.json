@@ -1,6 +1,6 @@
 {
   "name": "nonoto",
-  "version": "0.2",
+  "version": "0.2.0",
   "description": "Electron and web application for interactive music composition",
   "private": true,
   "engines": {
