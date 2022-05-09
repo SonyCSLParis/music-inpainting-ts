@@ -55,7 +55,7 @@ module.exports = {
 
     // renderer/browser-specific rules
     {
-      files: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+      files: ['packages/renderer/**/*.ts', 'packages/renderer/**/*.tsx'],
       env: {
         browser: true,
         node: false,
@@ -64,7 +64,7 @@ module.exports = {
 
     // main/Node/server-specific rules
     {
-      files: ['src/main/**/*.ts', 'src/main/**/*.tsx'],
+      files: ['packages/main/**/*.ts', 'packages/main/**/*.tsx'],
       extends: ['plugin:node/recommended'],
       env: {
         node: true,
@@ -72,14 +72,18 @@ module.exports = {
 
       settings: {
         node: {
-          resolvePaths: [__dirname, './src/main', './src/renderer'],
+          resolvePaths: [__dirname, './packages/main', './packages/renderer'],
           tryExtensions: ['.js', '.jsx', '.json', '.node', '.ts', '.d.ts'],
           allowModules: ['electron', 'fs-extra'],
         },
         'import/resolver': {
           node: {
             extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.node'],
-            moduleDirectory: ['node_modules', 'src/renderer', 'src/main'],
+            moduleDirectory: [
+              'node_modules',
+              'packages/renderer',
+              'packages/main',
+            ],
           },
         },
       },
@@ -104,8 +108,8 @@ module.exports = {
         alwaysTryTypes: true, // always try to resolve types under `<root>@types` directory even it doesn't contain any source code, like `@types/unist`
         project: [
           'tsconfig.json',
-          'src/main/tsconfig.json',
-          'src/renderer/tsconfig.json',
+          'packages/main/tsconfig.json',
+          'packages/renderer/tsconfig.json',
         ],
       },
     },
