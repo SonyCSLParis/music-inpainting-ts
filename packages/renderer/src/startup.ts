@@ -237,7 +237,8 @@ export class SplashScreen {
     Header.render(headerContainer, {
       display_sony_logo: true,
       display_ircam_logo: true,
-      app_name: VITE_APP_TITLE != null ? VITE_APP_TITLE : 'notono',
+      app_name:
+        VITE_APP_TITLE != null ? VITE_APP_TITLE.toLowerCase() : 'notono',
     })
 
     this.insertCustomAPIAdressInput =
