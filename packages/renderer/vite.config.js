@@ -9,6 +9,23 @@ const PACKAGE_ROOT = __dirname
 
 // process.env = { ...process.env, ...loadEnv(process.env.mode, process.cwd()) }
 const VITE_COMPILE_WEB = process.env.VITE_COMPILE_WEB != undefined
+const VITE_APP_TITLE =
+  process.env.VITE_APP_TITLE != undefined
+    ? process.env.VITE_APP_TITLE
+    : 'VITE_APP'
+
+const htmlPlugin = () => {
+  return {
+    name: 'html-transform',
+    transformIndexHtml(html) {
+      const updateTitle = html.replace(
+        /<title>(.*?)<\/title>/,
+        `<title>${VITE_APP_TITLE}</title>`
+      )
+      return updateTitle
+    },
+  }
+}
 
 /**
  * @type {import('vite').UserConfig}
@@ -22,7 +39,7 @@ const config = {
       '/@/': join(PACKAGE_ROOT, 'src') + '/',
     },
   },
-  plugins: [],
+  plugins: [htmlPlugin()],
   base: '',
   server: {
     fs: {
