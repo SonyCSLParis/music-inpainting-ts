@@ -2,7 +2,10 @@
 import { ChannelBasedMidiInput, getMidiInputListener } from '../midiIn'
 
 import { EventEmitter } from 'events'
-import { WebMidi, Output } from 'webmidi'
+import {
+  WebMidi,
+  Output,
+} from '../../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
 
 export class MidiOutput extends EventEmitter {
   /**

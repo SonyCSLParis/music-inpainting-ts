@@ -1,6 +1,5 @@
 import { TypedEmitter } from 'tiny-typed-emitter'
 import { NexusButton, NexusSelect } from 'nexusui'
-import * as path from 'path'
 
 import '../styles/cycleSelect.scss'
 import { debounce } from 'chart.js/helpers'
@@ -22,7 +21,7 @@ export class VariableValue<T> extends TypedEmitter<
   constructor(
     options: T[] = [],
     initialValue?: T,
-    onchange?: (value: T, previousValue: T) => void
+    onchange?: (value: T, previousValue?: T) => void
   ) {
     super()
     if (onchange != null) {
@@ -39,7 +38,10 @@ export class VariableValue<T> extends TypedEmitter<
     return this.options.includes(value)
   }
 
-  get value(): T | undefined {
+  get value(): T | never {
+    if (this._value === undefined) {
+      throw new EvalError('Value not initialized')
+    }
     return this._value
   }
   set value(value: T) {
@@ -119,11 +121,11 @@ export class NullableVariableValue<T> extends VariableValue<T | null> {
     options: T[] = [],
     initialValue?: T | null,
     onchange?: (value: T | null) => void,
-    defaultValue?: T
+    defaultValue: T | null = null
   ) {
     super(options, initialValue, onchange)
 
-    this.on('change', (value: T | null, previousValue: T | null) => {
+    this.on('change', (value: T | null, previousValue?: T | null) => {
       this._previousValue = previousValue
     })
 
@@ -152,6 +154,14 @@ export class NullableVariableValue<T> extends VariableValue<T | null> {
     }
   }
 
+  next(looping = true): T | null {
+    if (this._value == null) {
+      return null
+    } else {
+      return this.cycle(true, looping)
+    }
+  }
+
   protected checkValue(value: T): boolean {
     return value === null || super.checkValue(value)
   }
@@ -163,9 +173,13 @@ export function bindButtonModel<V>(
   isPressed: (value: V) => boolean
 ): void {
   view.removeAllListeners()
-  view.preClick = view.preRelease = view.preTouch = view.preTouchRelease = () => {
-    return
-  }
+  view.preClick =
+    view.preRelease =
+    view.preTouch =
+    view.preTouchRelease =
+      () => {
+        return
+      }
   view.element.addEventListener('pointerdown', () => {
     model.next(true)
   })
@@ -191,12 +205,12 @@ export function bindSelectModel<V extends string>(
 }
 
 export function createIconElements<T>(
-  basePath: string,
+  basePath: URL | string | undefined,
   iconPaths: Map<T, string>
 ): Map<T, HTMLElement> {
   function createIconElement(iconPath: string): HTMLElement {
     const imageElement = document.createElement('img')
-    imageElement.src = new URL(iconPath, basePath).href
+    imageElement.src = iconPath // new URL(iconPath, basePath).href
     return imageElement
   }
   // append all images as <img> to the container
@@ -246,6 +260,9 @@ export class CycleSelectView<
     this.valueModel.on('change', () => {
       this.updateVisibleIcon()
     })
+  }
+
+  refresh() {
     this.updateVisibleIcon()
   }
 
@@ -263,10 +280,10 @@ export class CycleSelectView<
 
   protected get currentElement(): HTMLElement | null {
     // return the currently selected element
-    if (this.value === undefined) {
-      return null
-    } else {
+    try {
       return this.imageElements.get(this.value)
+    } catch {
+      return null
     }
   }
 
@@ -330,7 +347,10 @@ customElements.define('cycle-select-with-disable', CycleSelectViewWithDisable, {
 })
 
 export class BooleanValue extends NullableVariableValue<boolean> {
-  constructor(initialValue?: boolean, onchange?: (state: boolean) => void) {
+  constructor(
+    initialValue?: boolean,
+    onchange?: (state: boolean | null) => void
+  ) {
     super([true, false], initialValue, onchange)
   }
 }
@@ -361,7 +381,10 @@ const defaultFontAwesomeEnableDisableIcons = new Map<boolean, string | null>([
   [true, 'fa-check'],
   [false, null],
 ])
-export class CycleSelectEnableDisableFontAwesomeView extends CycleSelectView<boolean> {
+export class CycleSelectEnableDisableFontAwesomeView extends CycleSelectView<
+  boolean | null,
+  BooleanValue
+> {
   constructor(
     valueModel: BooleanValue,
     imageElements?: Map<boolean, HTMLElement>

@@ -1,7 +1,8 @@
+$roundedSquareBox-border-width: 2px;
 @mixin roundedSquareBox {
   border-radius: 10%;
   border-style: solid;
-  border-width: clamp(2px, min(0.3vw, 0.2vh), 3.5px);
+  border-width: $roundedSquareBox-border-width;
   box-sizing: border-box;
 
   display: flex;

@@ -263,3 +263,34 @@ body.notono {
     }
   }
 }
+
+.spectrogram-inpainter {
+  .spectrogram-inpainter-interface {
+    &.bottom * {
+      cursor: url(../static/icons/cursor/arabian_sand/paintbrush-solid.svg) 0 28,
+        pointer;
+    }
+    &.top * {
+      cursor: url(../static/icons/cursor/arabian_sand/brush-solid.svg) 10 0,
+        pointer;
+    }
+  }
+  .eraser .spectrogram-inpainter-interface {
+    * {
+      cursor: url(../static/icons/cursor/arabian_sand/eraser-solid.svg) 2 18,
+        pointer !important;
+    }
+  }
+  .randomize .spectrogram-inpainter-interface {
+    &.bottom * {
+      cursor: url(../static/icons/cursor/arabian_sand/paintbrush-random-solid.svg)
+          0 28,
+        pointer;
+    }
+    &.top * {
+      cursor: url(../static/icons/cursor/arabian_sand/brush-random-solid.svg) 10
+          0,
+        pointer;
+    }
+  }
+}

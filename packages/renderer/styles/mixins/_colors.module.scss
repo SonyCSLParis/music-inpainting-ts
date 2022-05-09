@@ -498,17 +498,6 @@ $panes-background: #beb9d4;
   }
 
   .spectrogram-inpainter-interface {
-    &.bottom * {
-      cursor: #{url('!file-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/paintbrush-solid.svg')}
-          0 28,
-        pointer;
-    }
-    &.top * {
-      cursor: #{url('!url-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/brush-solid.svg')}
-          10 0,
-        pointer;
-    }
-
     border-color: $spectrogram-grid-color;
     rect {
       stroke-opacity: 0.5;
@@ -521,25 +510,40 @@ $panes-background: #beb9d4;
       }
     }
   }
-  .spectrogram-inpainter .eraser {
-    .spectrogram-inpainter-interface * {
-      cursor: #{url('!url-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/eraser-solid.svg')}
-          2 18,
-        pointer !important;
-    }
-  }
-  .spectrogram-inpainter .randomize .spectrogram-inpainter-interface {
-    &.bottom * {
-      cursor: #{url('!file-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/paintbrush-random-solid.svg')}
-          0 28,
-        pointer;
-    }
-    &.top * {
-      cursor: #{url('!url-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/brush-random-solid.svg')}
-          10 0,
-        pointer;
-    }
-  }
+
+  // .spectrogram-inpainter {
+  //   .spectrogram-inpainter-interface {
+  //     &.bottom * {
+  //       cursor: #{url('!file-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/paintbrush-solid.svg')}
+  //           0 28,
+  //         pointer;
+  //     }
+  //     &.top * {
+  //       cursor: #{url('!url-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/brush-solid.svg')}
+  //           10 0,
+  //         pointer;
+  //     }
+  //   }
+  //   .eraser .spectrogram-inpainter-interface {
+  //     * {
+  //       cursor: #{url('!url-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/eraser-solid.svg')}
+  //           2 18,
+  //         pointer !important;
+  //     }
+  //   }
+  //   .randomize .spectrogram-inpainter-interface {
+  //     &.bottom * {
+  //       cursor: #{url('!file-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/paintbrush-random-solid.svg')}
+  //           0 28,
+  //         pointer;
+  //     }
+  //     &.top * {
+  //       cursor: #{url('!url-loader!string-replace-loader?{search:"black", replace:"#{$spectrogram-cursor-color}", flags:"g"}!../../../static/icons/cursor/brush-random-solid.svg')}
+  //           10 0,
+  //         pointer;
+  //     }
+  //   }
+  // }
 
   .control-item,
   input {

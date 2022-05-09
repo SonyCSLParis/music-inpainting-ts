@@ -1,6 +1,6 @@
-@use "mixins/colors.module";
-@use "mixins/measures";
-@use "mixins/interfaces";
+@use 'mixins/colors.module';
+@use 'mixins/measures';
+@use 'mixins/interfaces';
 @import 'mixins/imports';
 
 .control-label,
@@ -210,10 +210,13 @@
 
 #midi-output-setup-gridspan {
   grid-row: 2;
-  grid-column: 3/4;
-  // .gridspan {
-  //   grid-template-columns: 85% 15%;
-  // }
+  grid-column: 2/4;
+  @media screen and (min-width: 600px) {
+    grid-column: 3/4;
+  }
+  .gridspan {
+    grid-template-columns: 100%;
+  }
 }
 
 #bottom-controls > .gridspan {
@@ -235,8 +238,8 @@
   }
 
   [nexus-ui] select {
-    width: 60% !important;
-    max-width: unset;
+    width: max-content !important;
+    max-width: 90%;
   }
 }
 

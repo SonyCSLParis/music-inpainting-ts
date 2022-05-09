@@ -12,12 +12,7 @@ import { getMidiInputListener } from './midiIn'
 import FocusedAudioKeys from './audiokeys/focusedAudiokeys'
 import Nexus from './nexusColored'
 import * as ControlLabels from './controlLabels'
-
-interface NoteEvent {
-  note: string
-  midi: number
-  velocity: number
-}
+import { ToneNoteEvent } from './midi_io/midiInput'
 
 export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpainter> {
   protected async onInpainterChange(data: NotonoData<never>): Promise<void> {
@@ -48,12 +43,10 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
     return [this.player_A, this.player_B]
   }
 
-  protected readonly buffer_A: Tone.ToneAudioBuffer = Tone.ToneAudioBuffer.fromArray(
-    new Float32Array([0])
-  )
-  protected readonly buffer_B: Tone.ToneAudioBuffer = Tone.ToneAudioBuffer.fromArray(
-    new Float32Array([0])
-  )
+  protected readonly buffer_A: Tone.ToneAudioBuffer =
+    Tone.ToneAudioBuffer.fromArray(new Float32Array([0]))
+  protected readonly buffer_B: Tone.ToneAudioBuffer =
+    Tone.ToneAudioBuffer.fromArray(new Float32Array([0]))
 
   protected readonly sampler_A: Tone.Sampler = new Tone.Sampler({
     C4: this.buffer_A,
@@ -81,24 +74,23 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
 
     this.scheduleInitialPlaybackLoop()
     try {
-      void getMidiInputListener().then((midiListener) => {
-        if (midiListener !== null) {
-          midiListener.on('keyDown', (note: NoteEvent) => {
-            this.onkeydown(note)
+      void getMidiInputListener().then((midiInput) => {
+        if (midiInput !== null) {
+          midiInput.on('keyDown', (noteEvent: ToneNoteEvent) => {
+            this.onkeydown(noteEvent)
           })
-          midiListener.on('keyUp', (note: NoteEvent) => {
-            this.onkeyup(note)
+          midiInput.on('keyUp', (noteEvent: ToneNoteEvent) => {
+            this.onkeyup(noteEvent)
           })
         }
       })
-    } catch (e) {
-      log.info('Could not initialize MIDI-Input listener due to: ', e)
+    } catch (error) {
+      log.info('Could not initialize MIDI-Input listener due to: ', error)
     }
 
     this.desktopKeyboard.down((keyboardNote: AudioKeysNoteData) => {
       const note = {
         velocity: keyboardNote.velocity / 127,
-        midi: keyboardNote.note,
         note: Midi.midiToNoteName(keyboardNote.note),
       }
       this.onkeydown(note)
@@ -106,7 +98,6 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
     this.desktopKeyboard.up((keyboardNote: AudioKeysNoteData) => {
       const note = {
         velocity: keyboardNote.velocity / 127,
-        midi: keyboardNote.note,
         note: Midi.midiToNoteName(keyboardNote.note),
       }
       this.onkeyup(note)
@@ -115,14 +106,14 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
     this.toggleLowLatency(true)
   }
 
-  protected onkeyup(data: NoteEvent): this {
+  protected onkeyup(data: ToneNoteEvent): this {
     this.samplers.forEach((sampler) => sampler.triggerRelease(data.note))
     return this
   }
 
   // plays the sound on all samplers to ensure smooth transitioning
   // in the advent of inpainting operations
-  protected onkeydown(data: NoteEvent): this {
+  protected onkeydown(data: ToneNoteEvent): this {
     this.samplers.forEach((sampler) =>
       sampler.triggerAttack(data.note, undefined, data.velocity)
     )
@@ -165,9 +156,8 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
 
   // crossfade between the two players
   protected switchPlayers(): void {
-    const currentlyScheduledCrossFadeValue: number = this.crossFade.fade.getValueAtTime(
-      this.crossFadeOffset
-    )
+    const currentlyScheduledCrossFadeValue: number =
+      this.crossFade.fade.getValueAtTime(this.crossFadeOffset)
     const newCrossFadeValue = Math.round(1 - currentlyScheduledCrossFadeValue) // round ensures binary values
     this.crossFade.fade.linearRampTo(newCrossFadeValue, this.crossFadeDuration)
   }
@@ -200,7 +190,11 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
   }
 
   setFadeIn(duration_s: number): void {
-    this.player_A.fadeIn = this.player_B.fadeIn = this.sampler_A.attack = this.sampler_B.attack = duration_s
+    this.player_A.fadeIn =
+      this.player_B.fadeIn =
+      this.sampler_A.attack =
+      this.sampler_B.attack =
+        duration_s
   }
 
   get Gain(): number {

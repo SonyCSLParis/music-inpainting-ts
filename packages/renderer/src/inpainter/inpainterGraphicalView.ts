@@ -1,6 +1,7 @@
 import EventEmitter from 'events'
 import * as Tone from 'tone'
 import log from 'loglevel'
+import $ from 'jquery'
 import { debounce } from 'chart.js/helpers'
 
 import { PlaybackManager } from '../playback'
@@ -226,7 +227,7 @@ export abstract class InpainterGraphicalView<
   // set currently playing interface position by progress ratio
   protected abstract setCurrentlyPlayingPositionDisplay(progress: number): void
 
-  protected scrollbar?: ScrollLockSimpleBar | null = null
+  protected scrollbar: ScrollLockSimpleBar | null = null
   protected readonly nowPlayingDisplayCallbacks: (() => void)[] = [
     // scroll display to current step if necessary
     // (): void => this.scrollTo(this.playbackManager.transport.progress),
@@ -338,9 +339,10 @@ export abstract class InpainterGraphicalView<
     this.scrollToPosition(targetPosition_px)
   }
 
-  protected abstract getTimecontainerPosition(
-    step: number
-  ): { left: number; right: number }
+  protected abstract getTimecontainerPosition(step: number): {
+    left: number
+    right: number
+  }
 
   protected scheduleDisplayLoop(): void {
     this.displayLoop.dispose()

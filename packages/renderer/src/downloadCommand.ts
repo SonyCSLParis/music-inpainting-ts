@@ -112,7 +112,6 @@ export abstract class DownloadButton<
     if (VITE_COMPILE_ELECTRON) {
       // add support for native Drag and Drop
       // FIXME(@tbazin, 2021/11/10): Fix DownloadButton drag-out for MIDI
-      const ipcRenderer = window.ipcRenderer
       const saveBlob = async (
         blob: Blob,
         fileName: string,
@@ -121,12 +120,15 @@ export abstract class DownloadButton<
         {
           const reader = new FileReader()
           const storagePath = <string>(
-            await ipcRenderer.invoke('get-path', fileName, appDir)
+            await window.ipcRendererInterface.getPath(fileName, appDir)
           )
           reader.onload = async function () {
             if (reader.readyState == 2) {
+              if (reader.result == null) {
+                throw new EvalError('Unexpected null reader')
+              }
               const buffer = Buffer.from(reader.result)
-              await ipcRenderer.invoke('save-file', storagePath, buffer)
+              await window.ipcRendererInterface.saveFile(storagePath, buffer)
             }
             reader.readAsArrayBuffer(blob)
           }
@@ -150,7 +152,7 @@ export abstract class DownloadButton<
           soundStoragePathPromise,
           imageStoragePathPromise,
         ]).then(([soundPath, imagePath]) => {
-          ipcRenderer.send('ondragstart', soundPath, imagePath)
+          window.ipcRendererInterface.startDrag(soundPath, imagePath)
         })
       })
     } else {

@@ -181,17 +181,20 @@ export function initializeInstruments(): void {
 // post's comments (https://dev.to/michaeljota/comment/ebeo)
 const leadInstrumentNames = ['Piano', 'PolySynth', 'SteelPan'] as const
 export type leadInstrument = typeof leadInstrumentNames[number]
+import PianoIconURL from '../static/icons/049-piano.svg'
+import SynthIconURL from '../static/icons/019-synthesizer.svg'
+import TimpaniIconURL from '../static/icons/007-timpani.svg'
 const instrumentsIcons = new Map<leadInstrument | null, string>([
-  ['Piano', '049-piano.svg'],
-  ['PolySynth', '019-synthesizer.svg'],
-  ['SteelPan', '007-timpani.svg'],
+  ['Piano', PianoIconURL],
+  ['PolySynth', SynthIconURL],
+  ['SteelPan', TimpaniIconURL],
 ])
 
 const chordsInstrumentNames = ['PolySynth', 'Piano'] as const
 export type chordsInstrument = typeof chordsInstrumentNames[number]
 const chordsInstrumentsIcons = new Map<chordsInstrument | null, string>([
-  ['PolySynth', '019-synthesizer.svg'],
-  ['Piano', '049-piano.svg'],
+  ['PolySynth', SynthIconURL],
+  ['Piano', PianoIconURL],
 ])
 
 let instrumentSelectView: CycleSelectView<leadInstrument>
@@ -318,10 +321,7 @@ export class ChordsInstrumentSelect<
 
 export class InstrumentSelectView extends CycleSelectViewWithDisable<leadInstrument> {
   constructor(valueModel: NullableVariableValue<leadInstrument>) {
-    const imageElements = createIconElements(
-      instrumentIconsBasePath,
-      instrumentsIcons
-    )
+    const imageElements = createIconElements(undefined, instrumentsIcons)
     super(valueModel, imageElements)
     this.classList.add('playbackInstrumentSelect')
   }

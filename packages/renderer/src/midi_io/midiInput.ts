@@ -1,7 +1,16 @@
 // adapted from Yotam Mann's midiInput.ts in @tonejs/piano
 
 import { EventEmitter } from 'events'
-import { WebMidi, Input } from 'webmidi'
+import { Frequency, NormalRange, Time } from 'tone/build/esm/core/type/Units'
+import {
+  WebMidi,
+  Input,
+} from '../../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
+
+import type {
+  NoteMessageEvent,
+  ControlChangeMessageEvent,
+} from '../../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
 
 type NoteEventType = 'keyDown' | 'keyUp'
 type PedalEventType = 'pedalDown' | 'pedalUp'
@@ -17,10 +26,11 @@ interface MidiEvent {
   device: DeviceData
 }
 
-interface NoteEvent extends MidiEvent {
-  note: string
-  midi: number
-  velocity: number
+export interface ToneNoteEvent {
+  note: Frequency
+  duration?: Time
+  time?: Time
+  velocity?: NormalRange
 }
 
 type ConditionalEmitter<EventType> = EventType extends PedalEventType
@@ -28,19 +38,29 @@ type ConditionalEmitter<EventType> = EventType extends PedalEventType
   : EventType extends ConnectionEventType
   ? DeviceData
   : EventType extends NoteEventType
-  ? NoteEvent
+  ? ToneNoteEvent
   : unknown
 
 type ConditionalListener<EventType> = (e: ConditionalEmitter<EventType>) => void
 
-export class MidiInput extends EventEmitter {
+export class ToneMidiInput extends EventEmitter {
   /**
    * The device ID string. If set to 'all', will listen
    * to all MIDI inputs. Otherwise will filter a specific midi device
    */
-  deviceId: string | 'all'
+  static readonly allMidiChannels = [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+  ]
 
-  constructor(deviceId: string | 'all' = 'all') {
+  deviceId: string | 'all' | null
+
+  channels: number[] = ToneMidiInput.allMidiChannels
+
+  get isActive(): boolean {
+    return this.deviceId != null
+  }
+
+  constructor(deviceId: string | 'all' | null = null) {
     super()
 
     this.deviceId = deviceId
@@ -49,7 +69,7 @@ export class MidiInput extends EventEmitter {
      * Automatically attaches the event listeners when a device is connect
      * and removes listeners when a device is disconnected
      */
-    MidiInput.enabled()
+    ToneMidiInput.enabled()
       .then(() => {
         WebMidi.addListener('connected', (event) => {
           if (event.port.type === 'input') {
@@ -68,48 +88,82 @@ export class MidiInput extends EventEmitter {
       })
   }
 
+  protected webmidiEventToTonejsEvent(event: NoteMessageEvent): ToneNoteEvent {
+    return {
+      note: `${event.note.name}${event.note.octave}`,
+      velocity: event.note.attack,
+    }
+  }
+
+  protected filterByDevice<
+    EventT extends NoteMessageEvent | ControlChangeMessageEvent
+  >(device: Input, callback: (event: EventT) => void): (event: EventT) => void {
+    if (this.deviceId === 'all' || this.deviceId === device.id) {
+      return callback
+    } else {
+      return () => {
+        return
+      }
+    }
+  }
+
+  protected filterByChannel<
+    EventT extends NoteMessageEvent | ControlChangeMessageEvent
+  >(event: EventT, callback: (event: EventT) => void): (event: EventT) => void {
+    if (this.channels.contains(event.message.channel)) {
+      return callback
+    } else {
+      return () => {
+        return
+      }
+    }
+  }
+
+  // triggered on `noteon` events coming from `device`
+  protected makeOnNoteOn(device: Input): (event: NoteMessageEvent) => void {
+    return (event) =>
+      this.filterByDevice(
+        device,
+        this.filterByChannel(event, (event) =>
+          this.emit('keyDown', this.webmidiEventToTonejsEvent(event))
+        )
+      )(event)
+  }
+
+  // triggered on `noteon` events coming from `device`
+  protected makeOnNoteOff(device: Input): (event: NoteMessageEvent) => void {
+    return (event) =>
+      this.filterByDevice(
+        device,
+        this.filterByChannel(event, (event) =>
+          this.emit('keyUp', this.webmidiEventToTonejsEvent(event))
+        )
+      )(event)
+  }
+
   /**
    * Attach listeners to the device when it's connected
    */
-  private _addListeners(device: Input): void {
-    if (!MidiInput.connectedDevices.has(device.id)) {
-      MidiInput.connectedDevices.set(device.id, device)
+  protected _addListeners(device: Input): void {
+    if (!ToneMidiInput._connectedDevices.has(device.id)) {
+      ToneMidiInput._connectedDevices.set(device.id, device)
       this.emit('connect', this._inputToDevice(device))
 
-      device.addListener('noteon', (event) => {
-        if (this.deviceId === 'all' || this.deviceId === device.id) {
-          this.emit('keyDown', {
-            note: `${event.note.name}${event.note.octave}`,
-            midi: event.note.number,
-            velocity: event.note.rawAttack,
-            device: this._inputToDevice(device),
-          })
-        }
-      })
-      device.addListener('noteoff', (event) => {
-        if (this.deviceId === 'all' || this.deviceId === device.id) {
-          this.emit('keyUp', {
-            note: `${event.note.name}${event.note.octave}`,
-            midi: event.note.number,
-            velocity: event.note.rawAttack,
-            device: this._inputToDevice(device),
-          })
-        }
-      })
-
+      device.addListener('noteon', this.makeOnNoteOn(device))
+      device.addListener('noteoff', this.makeOnNoteOff(device))
       device.addListener('controlchange', (event) => {
-        if (this.deviceId === 'all' || this.deviceId === device.id) {
+        this.filterByDevice(device, (event: ControlChangeMessageEvent) => {
           if (event.controller.name === 'holdpedal') {
             this.emit(event.value ? 'pedalDown' : 'pedalUp', {
               device: this._inputToDevice(device),
             })
           }
-        }
+        })
       })
     }
   }
 
-  private _inputToDevice(input: Input): DeviceData {
+  protected _inputToDevice(input: Input): DeviceData {
     return {
       name: input.name,
       id: input.id,
@@ -120,11 +174,11 @@ export class MidiInput extends EventEmitter {
   /**
    * Internal call to remove all event listeners associated with the device
    */
-  private _removeListeners(event: { id: string }): void {
-    if (MidiInput.connectedDevices.has(event.id)) {
-      const device = MidiInput.connectedDevices.get(event.id)
+  protected _removeListeners(event: { id: string }): void {
+    const device = ToneMidiInput._connectedDevices.get(event.id)
+    if (device != undefined) {
       this.emit('disconnect', this._inputToDevice(device))
-      MidiInput.connectedDevices.delete(event.id)
+      ToneMidiInput._connectedDevices.delete(event.id)
       device.removeListener('noteon')
       device.removeListener('noteoff')
       device.removeListener('controlchange')
@@ -132,7 +186,6 @@ export class MidiInput extends EventEmitter {
   }
 
   // EVENT FUNCTIONS
-
   emit<EventType extends PedalEventType | ConnectionEventType | NoteEventType>(
     event: EventType,
     data: ConditionalEmitter<EventType>
@@ -166,17 +219,21 @@ export class MidiInput extends EventEmitter {
 
   // STATIC
 
-  private static connectedDevices: Map<string, Input> = new Map()
+  protected static _connectedDevices: Map<string, Input> = new Map()
 
-  private static _isEnabled = false
+  protected static get connectedDevices(): Map<string, Input> {
+    return this._connectedDevices
+  }
+
+  protected static _isEnabled = false
 
   /**
    * Resolves when the MIDI Input is enabled and ready to use
    */
   static async enabled(): Promise<void> {
-    if (!MidiInput._isEnabled) {
+    if (!ToneMidiInput._isEnabled) {
       await WebMidi.enable()
-      MidiInput._isEnabled = true
+      ToneMidiInput._isEnabled = true
     }
   }
 
@@ -184,7 +241,48 @@ export class MidiInput extends EventEmitter {
    * Get a list of devices that are currently connected
    */
   static async getDevices(): Promise<DeviceData[]> {
-    await MidiInput.enabled()
+    await ToneMidiInput.enabled()
     return WebMidi.inputs
+  }
+
+  static async getDeviceId(name: string): Promise<string | null> {
+    const devices = await ToneMidiInput.getDevices()
+    const maybeDevice = devices.find((data) => data.name.toLowerCase() == name)
+    if (maybeDevice == null) {
+      return null
+    } else {
+      return maybeDevice.id
+    }
+  }
+
+  async setDevice(name: string | 'all' | 'disabled' | null): Promise<void> {
+    if (name == null) {
+      this.deviceId = null
+    } else {
+      name = name.toLowerCase()
+      if (name == 'disabled') {
+        this.deviceId = null
+      } else {
+        if (name == 'all') {
+          this.deviceId = 'all'
+        } else {
+          this.deviceId = await ToneMidiInput.getDeviceId(name)
+        }
+      }
+    }
+  }
+
+  static checkMidiChannelsSetsEqual(
+    channels: number[],
+    previousChannels: number[]
+  ): boolean {
+    if (channels.length != previousChannels.length) {
+      return false
+    }
+    if (channels.length == 1) {
+      return channels[0] == previousChannels[0]
+    } else {
+      return true
+    }
   }
 }

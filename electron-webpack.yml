@@ -1,5 +1,0 @@
-main:
-  webpackConfig: 'webpack.main.cjs'
-
-renderer:
-  webpackConfig: 'webpack.renderer.cjs'

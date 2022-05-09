@@ -1,5 +1,8 @@
 import { MidiOutput } from './midi_io/midiOutput'
-import { WebMidi, Output } from 'webmidi'
+import {
+  WebMidi,
+  Output,
+} from '../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
 
 import log from 'loglevel'
 import * as Instruments from './instruments'
@@ -36,9 +39,8 @@ export async function render(
   }
   const bottomControlsGridElement = document.getElementById('bottom-controls')
 
-  const midiOutputSetupGridspanElement: HTMLElement = document.createElement(
-    'div'
-  )
+  const midiOutputSetupGridspanElement: HTMLElement =
+    document.createElement('div')
   midiOutputSetupGridspanElement.id = 'midi-output-setup-gridspan'
   midiOutputSetupGridspanElement.classList.add('gridspan')
   midiOutputSetupGridspanElement.classList.add('advanced')
@@ -55,9 +57,8 @@ export async function render(
     return
   }
 
-  const midiOutputSetupContainerElement: HTMLElement = document.createElement(
-    'div'
-  )
+  const midiOutputSetupContainerElement: HTMLElement =
+    document.createElement('div')
   midiOutputSetupContainerElement.id = 'midi-output-setup-container'
   midiOutputSetupContainerElement.classList.add('gridspan')
   midiOutputSetupContainerElement.classList.add('advanced')

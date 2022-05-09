@@ -1,5 +1,4 @@
 import log from 'loglevel'
-import { Input, WebMidi } from 'webmidi'
 
 import * as ControlLabels from './controlLabels'
 import { NumberControl } from './numberControl'
@@ -7,130 +6,14 @@ import { NumberControl } from './numberControl'
 import Nexus from './nexusColored'
 import type { NexusNumber, NexusSelect } from 'nexusui'
 
-import { MidiInput } from './midi_io/midiInput'
+import { ToneMidiInput } from './midi_io/midiInput'
 
-// @ts-expect-error: exports private _inputToDevice method
-// adds channel-based event filtering in the _addListeners
-export class ChannelBasedMidiInput extends MidiInput {
-  get isActive(): boolean {
-    return this.deviceId != null
-  }
+let globalMidiInputListener: ToneMidiInput | null = null
 
-  protected static get connectedDevices(): Map<string, Input> {
-    // @ts-expect-error: accessing private member
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-    return MidiInput.connectedDevices
-  }
-
-  protected _inputToDevice(input: Input): DeviceData {
-    // @ts-expect-error: accessing private method
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-    return super._inputToDevice(input)
-  }
-
-  static async getDeviceId(name: string): Promise<string | null> {
-    const devices = await MidiInput.getDevices()
-    const maybeDevice = devices.find((data) => data.name.toLowerCase() == name)
-    if (maybeDevice == null) {
-      return null
-    } else {
-      return maybeDevice.id
-    }
-  }
-
-  async setDevice(name: string | 'all' | 'disabled' | null): Promise<void> {
-    if (name == null) {
-      this.deviceId = null
-    } else {
-      name = name.toLowerCase()
-      if (name == 'disabled') {
-        this.deviceId = null
-      } else {
-        if (name == 'all') {
-          this.deviceId = 'all'
-        } else {
-          this.deviceId = await ChannelBasedMidiInput.getDeviceId(name)
-        }
-      }
-    }
-  }
-
-  channel?: number = null
-
-  /**
-   * Attach listeners to the device when it's connected
-   */
-  protected _addListeners(device: Input): void {
-    if (!ChannelBasedMidiInput.connectedDevices.has(device.id)) {
-      ChannelBasedMidiInput.connectedDevices.set(device.id, device)
-      this.emit('connect', this._inputToDevice(device))
-
-      device.addListener('noteon', (event) => {
-        if (this.channel == null || event.channel == this.channel) {
-          if (this.deviceId == 'all' || this.deviceId == device.id) {
-            this.emit('keyDown', {
-              note: `${event.note.name}${event.note.octave}`,
-              midi: event.note.number,
-              velocity: event.note.rawAttack,
-              device: this._inputToDevice(device),
-              // @ts-expect-error: adds channel to event
-              channel: event.channel,
-            })
-          }
-        }
-      })
-
-      device.addListener('noteoff', (event) => {
-        if (this.channel == null || event.channel == this.channel) {
-          if (this.deviceId == 'all' || this.deviceId == device.id) {
-            this.emit('keyUp', {
-              note: `${event.note.name}${event.note.octave}`,
-              midi: event.note.number,
-              velocity: event.note.rawAttack,
-              device: this._inputToDevice(device),
-              // @ts-expect-error: adds channel to event
-              channel: event.channel,
-            })
-          }
-        }
-      })
-
-      device.addListener('controlchange', (event) => {
-        if (this.channel == null || event.channel == this.channel) {
-          if (this.deviceId == 'all' || this.deviceId == device.id) {
-            if (event.controller.name == 'holdpedal') {
-              this.emit(event.value ? 'pedalDown' : 'pedalUp', {
-                device: this._inputToDevice(device),
-                // @ts-expect-error: adds channel to event
-                channel: event.channel,
-              })
-            }
-          }
-        }
-      })
-    }
-  }
-
-  protected static _isEnabled = WebMidi.enabled
-
-  static async enabled(): Promise<void> {
-    if (!MidiInput['_isEnabled']) {
-      if (WebMidi.enabled) {
-        MidiInput['_isEnabled'] = true
-        return
-      }
-      await WebMidi.enable()
-      MidiInput['_isEnabled'] = true
-    }
-  }
-}
-
-let globalMidiInputListener: ChannelBasedMidiInput | null = null
-
-export async function getMidiInputListener(): Promise<ChannelBasedMidiInput | null> {
-  await ChannelBasedMidiInput.enabled()
+export async function getMidiInputListener(): Promise<ToneMidiInput | null> {
+  await ToneMidiInput.enabled()
   if (globalMidiInputListener == null) {
-    globalMidiInputListener = new ChannelBasedMidiInput(null)
+    globalMidiInputListener = new ToneMidiInput(null)
   }
   return globalMidiInputListener
 }
@@ -138,9 +21,8 @@ export async function getMidiInputListener(): Promise<ChannelBasedMidiInput | nu
 export async function render(useChordsInstrument = false): Promise<void> {
   const bottomControlsGridElement = document.getElementById('bottom-controls')
 
-  const midiInputSetupGridspanElement: HTMLElement = document.createElement(
-    'div'
-  )
+  const midiInputSetupGridspanElement: HTMLElement =
+    document.createElement('div')
   midiInputSetupGridspanElement.id = 'midi-input-setup-gridspan'
   midiInputSetupGridspanElement.classList.add('gridspan', 'advanced')
   bottomControlsGridElement.appendChild(midiInputSetupGridspanElement)
@@ -156,9 +38,8 @@ export async function render(useChordsInstrument = false): Promise<void> {
     return
   }
 
-  const midiInputSetupContainerElement: HTMLElement = document.createElement(
-    'div'
-  )
+  const midiInputSetupContainerElement: HTMLElement =
+    document.createElement('div')
   midiInputSetupContainerElement.id = 'midi-input-setup-container'
   midiInputSetupContainerElement.classList.add('gridspan', 'advanced')
   midiInputSetupGridspanElement.appendChild(midiInputSetupContainerElement)
@@ -185,7 +66,7 @@ export async function render(useChordsInstrument = false): Promise<void> {
   const disabledInputId = 'Disabled'
 
   async function makeOptions(): Promise<string[]> {
-    const devices = await MidiInput.getDevices()
+    const devices = await ToneMidiInput.getDevices()
     const devicesNames = devices.map((data) => data.name)
     return [disabledInputId, 'All'].concat(devicesNames)
   }
@@ -214,10 +95,17 @@ export async function render(useChordsInstrument = false): Promise<void> {
   }
 
   const midiInputListener = await getMidiInputListener()
+  if (midiInputListener == null) {
+    return
+  }
   midiInputListener.on('connect', () => void updateOptions())
   midiInputListener.on('disconnect', () => void updateOptions())
 
   async function midiInOnChange(this: NexusSelect): Promise<void> {
+    const midiInputListener = await getMidiInputListener()
+    if (midiInputListener == null) {
+      return
+    }
     await midiInputListener.setDevice(this.value.toLowerCase())
     midiInputSetupGridspanElement.classList.toggle(
       'midi-enabled',
@@ -234,12 +122,20 @@ export async function render(useChordsInstrument = false): Promise<void> {
   midiInSelect.on('change', () => void midiInOnChange.bind(midiInSelect)())
   midiInSelect.value = 'Disabled'
 
-  function midiInChannelOnchange(this: NexusNumber): void {
-    const previousChannel = midiInputListener.channel
-    midiInputListener.channel = this.value != 0 ? this.value : null
-    if (midiInputListener.channel != previousChannel) {
+  const makeMidiInChannelOnchange = (nexusNumber: NexusNumber) => () => {
+    const previousChannel = midiInputListener.channels
+    midiInputListener.channels =
+      nexusNumber.value != 0
+        ? [nexusNumber.value]
+        : ToneMidiInput.allMidiChannels
+    if (
+      !ToneMidiInput.checkMidiChannelsSetsEqual(
+        midiInputListener.channels,
+        previousChannel
+      )
+    ) {
       log.info(
-        'Selected MIDI In Channel: ' + midiInputListener.channel.toString()
+        'Selected MIDI In Channel: ' + midiInputListener.channels.toString()
       )
     }
   }
@@ -248,10 +144,13 @@ export async function render(useChordsInstrument = false): Promise<void> {
     midiInputSetupContainerElement,
     'midi-input-channel-input-container',
     [0, 16],
-    0,
-    midiInChannelOnchange
+    0
   )
   midiInChannelSelect.render(false, 60)
+  midiInChannelSelect.controller?.on(
+    'change',
+    makeMidiInChannelOnchange(midiInChannelSelect.controller)
+  )
   midiInChannelSelect.container.classList.add('advanced')
 
   const midiInDisplayButtonContainer = document.createElement('div')

@@ -47,7 +47,7 @@ function makeGranularityIconsList(
 export function renderGranularitySelect(
   containerElement: HTMLElement,
   granularitiesQuarters: number[]
-): VariableValue<number> {
+): [VariableValue<number>, CycleSelectView<number>] {
   const iconsBasePath: string = getPathToStaticFile('icons')
   const granularityIcons = makeGranularityIconsList(granularitiesQuarters)
 
@@ -59,10 +59,7 @@ export function renderGranularitySelect(
   const granularitySelect = new VariableValue<number>(granularitiesQuarters)
   granularitySelect.value = granularitiesQuarters[0]
 
-  const iconElements = createIconElements<number>(
-    iconsBasePath,
-    granularityIcons
-  )
+  const iconElements = createIconElements<number>('file::', granularityIcons)
   const granularitySelectView = new CycleSelectView(
     granularitySelect,
     iconElements
@@ -76,5 +73,5 @@ export function renderGranularitySelect(
     undefined,
     containerElement
   )
-  return granularitySelect
+  return [granularitySelect, granularitySelectView]
 }

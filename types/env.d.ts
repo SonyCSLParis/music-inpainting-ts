@@ -23,7 +23,7 @@ interface ImportMetaEnv {
     | string
   readonly VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX: undefined | string
   // TODO SET VALUE AT BUILD TIME
-  readonly AVAILABLE_APPLICATION_MODES: ApplicationMode[]
+  readonly VITE_AVAILABLE_APPLICATION_MODES: undefined | string
   readonly VITE_ENABLE_ANONYMOUS_MODE: undefined | string
 }
 
