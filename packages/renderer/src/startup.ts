@@ -46,9 +46,8 @@ const COMPILE_ELECTRON: boolean =
 const VITE_APP_TITLE: string | undefined = import.meta.env.VITE_APP_TITLE
 const VITE_REMOTE_INPAINTING_API_ADDRESS: string | undefined = import.meta.env
   .VITE_REMOTE_INPAINTING_API_ADDRESS
-const VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS:
-  | string
-  | undefined = import.meta.env.VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+const VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: string | undefined =
+  import.meta.env.VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
 const VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT: boolean =
   import.meta.env.VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT !=
   undefined
@@ -57,14 +56,29 @@ const VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX: boolean =
 const VITE_ENABLE_ANONYMOUS_MODE: boolean =
   import.meta.env.VITE_ENABLE_ANONYMOUS_MODE != undefined
 const isDevelopment: boolean = process.env.NODE_ENV !== 'production'
-// TODO(@tbazin, 2022/05/03): Fix setting list through environment variables
-const VITE_AVAILABLE_APPLICATION_MODES: ApplicationMode[] = [
+
+const defaultApplicationModes: ApplicationMode[] = [
   ApplicationMode.Chorale,
   ApplicationMode.Spectrogram,
 ]
-
-console.log(import.meta.env.VITE_TEST)
-console.log(VITE_REMOTE_INPAINTING_API_ADDRESS)
+function parseAvailableApplicationModes(
+  applicationModes: string | undefined
+): ApplicationMode[] {
+  if (applicationModes == undefined) {
+    return defaultApplicationModes
+  } else {
+    const applicationModesUnvalidated = applicationModes
+      .replace(' ', '')
+      .split(',')
+    return applicationModesUnvalidated
+      .filter((value) => allApplicationModes.contains(value))
+      .map((value) => value as ApplicationMode)
+  }
+}
+const VITE_AVAILABLE_APPLICATION_MODES: ApplicationMode[] =
+  parseAvailableApplicationModes(
+    import.meta.env.VITE_AVAILABLE_APPLICATION_MODES
+  )
 
 // via https://stackoverflow.com/a/17632779/
 function cloneJSON<T>(obj: T): T {
@@ -81,9 +95,8 @@ globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] =
   globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] ||
   VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX
 
-globalConfiguration[
-  'inpainting_api_address'
-] = VITE_REMOTE_INPAINTING_API_ADDRESS
+globalConfiguration['inpainting_api_address'] =
+  VITE_REMOTE_INPAINTING_API_ADDRESS
 
 // TODO(theis) don't create modes like this (goes against 12 Factor App principles)
 // should have truly orthogonal configuration options
@@ -119,25 +132,25 @@ if (VITE_ENABLE_ANONYMOUS_MODE) {
 }
 
 const availableApplicationModes = VITE_AVAILABLE_APPLICATION_MODES
-console.log(availableApplicationModes)
 
 // TODO(@tbazin, 2021/10/15): move this to index.ts
 // TODO(@tbazin, 2021/10/15): remove 'link_channel_prefix' from the editable configuration,
 // just store it in LinkClient / LinkServer (but this would involve duplicate definitions...)
 // or in a global read-only configuration file in common?
 if (COMPILE_ELECTRON) {
-  window.ipcRenderer
-    .invoke('get-window-id')
-    .then((windowID: number) => {
-      window.ipcRenderer.send(
-        globalConfiguration['link_channel_prefix'] +
-          windowID.toString() +
-          'disable'
-      )
-    })
-    .catch((err) => {
-      throw err
-    })
+  window.abletonLinkApi.disable()
+  // window.ipcRenderer
+  //   .invoke('get-window-id')
+  //   .then((windowID: number) => {
+  //     window.ipcRenderer.send(
+  //       globalConfiguration['link_channel_prefix'] +
+  //         windowID.toString() +
+  //         'disable'
+  //     )
+  //   })
+  //   .catch((err) => {
+  //     throw err
+  //   })
 }
 
 export class SplashScreen {
@@ -227,7 +240,8 @@ export class SplashScreen {
       app_name: VITE_APP_TITLE != null ? VITE_APP_TITLE : 'notono',
     })
 
-    this.insertCustomAPIAdressInput = !VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT
+    this.insertCustomAPIAdressInput =
+      !VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT
     if (this.insertCustomAPIAdressInput) {
       const serverConfigurationContainerElement = document.createElement('div')
       serverConfigurationContainerElement.id = 'server-configuration-container'
@@ -243,9 +257,8 @@ export class SplashScreen {
       const useCustomAPIToggleViewContainer = document.createElement('div')
       useCustomAPIToggleViewContainer.id = 'use_remote_api-toggle'
       serverConfigurationElement.appendChild(useCustomAPIToggleViewContainer)
-      const useCustomAPIToggleView = new CycleSelectEnableDisableFontAwesomeView(
-        this.useCustomAPIToggle
-      )
+      const useCustomAPIToggleView =
+        new CycleSelectEnableDisableFontAwesomeView(this.useCustomAPIToggle)
       useCustomAPIToggleViewContainer.appendChild(useCustomAPIToggleView)
 
       const serverAddressContainer = document.createElement('div')
@@ -256,7 +269,8 @@ export class SplashScreen {
       this.serverAddressInput.type = 'url'
       this.serverAddressInput.id = 'server-address-input'
       this.serverAddressInput.value = VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
-      this.serverAddressInput.placeholder = VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+      this.serverAddressInput.placeholder =
+        VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
       serverAddressContainer.appendChild(this.serverAddressInput)
 
       this.serverAddressInput.addEventListener('input', () => {
@@ -356,11 +370,8 @@ export class SplashScreen {
     if (this.insertEulaAccept) {
       // TODO(@tbazin, 2022/04/25): do not return elements, attach them directly
       //  as properties?
-      ;[
-        this.eulaAcceptToggle,
-        this.eulaScrollbar,
-        this.eulaContainer,
-      ] = this.insertEULA(localizations['eula']['en'])
+      ;[this.eulaAcceptToggle, this.eulaScrollbar, this.eulaContainer] =
+        this.insertEULA(localizations['eula']['en'])
       this.eulaScrollbar
         .getScrollElement()
         .addEventListener('scroll', (event) => {
@@ -403,7 +414,8 @@ export class SplashScreen {
     const applicationModeSelectElement = <HTMLSelectElement>(
       document.getElementById('application-mode-select')
     )
-    const applicationMode = applicationModeSelectElement.value as ApplicationMode
+    const applicationMode =
+      applicationModeSelectElement.value as ApplicationMode
     let configuration: applicationConfiguration
     switch (applicationMode) {
       case 'chorale':
@@ -576,9 +588,8 @@ export class SplashScreen {
 
     recaptchaElement.setAttribute('data-theme', 'dark')
     recaptchaElement.setAttribute('data-callback', 'onreceiveRecaptchaResponse')
-    window['onreceiveRecaptchaResponse'] = this.onreceiveRecaptchaResponse.bind(
-      this
-    )
+    window['onreceiveRecaptchaResponse'] =
+      this.onreceiveRecaptchaResponse.bind(this)
     configurationWindow.appendChild(recaptchaElement)
   }
 

@@ -129,8 +129,7 @@ export abstract class MyShepherdTour<
     return this.tripDelay_ms * this.steps.length
   }
 
-  private loopInterval: NodeJS.Timeout
-
+  private loopInterval?: NodeJS.Timeout
   public startLoop(): void {
     // starts the help tour in a looping fa-solidhion
     const intervalTripLoop = () => {
@@ -146,7 +145,9 @@ export abstract class MyShepherdTour<
 
   protected stopLoop(): void {
     // stops the help tour from looping
-    clearInterval(this.loopInterval)
+    if (this.loopInterval != null) {
+      clearInterval(this.loopInterval)
+    }
   }
 
   public renderIcon(containerElement: HTMLElement): void {

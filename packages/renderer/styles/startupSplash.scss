@@ -1,4 +1,4 @@
-@use "mixins/interfaces";
+@use 'mixins/interfaces';
 
 body.running #configuration-selection-container {
   display: none;
@@ -189,7 +189,7 @@ body.running #configuration-selection-container {
   }
   #eula-text-content {
     $padding-horizontal: max(1.5rem, 30px);
-    padding: 0 $padding-horizontal 1rem $padding-horizontal;
+    padding: 0 $padding-horizontal 1rem calc($padding-horizontal / 2);
     &,
     * {
       text-align: justify;

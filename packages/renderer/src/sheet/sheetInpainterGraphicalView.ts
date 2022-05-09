@@ -1,4 +1,5 @@
 import log from 'loglevel'
+import $ from 'jquery'
 
 import {
   InpainterGraphicalView,
@@ -83,9 +84,8 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   protected onchangeGranularity(): void {
-    const durationCSSClass: string = SheetInpainterGraphicalView.makeGranularityCSSClass(
-      this.granularity
-    )
+    const durationCSSClass: string =
+      SheetInpainterGraphicalView.makeGranularityCSSClass(this.granularity)
     Array.from(
       this.interfaceContainer.getElementsByClassName('notebox')
     ).forEach((notebox) =>
@@ -545,16 +545,18 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
           currentBeginTimestamp.lt(measureEndTimestamp) &&
           currentEndTimestamp.lte(pieceDuration)
         ) {
-          let xBeginBox = this.sheet.GraphicSheet.calculateXPositionFromTimestamp(
-            currentBeginTimestamp
-          )[0]
+          let xBeginBox =
+            this.sheet.GraphicSheet.calculateXPositionFromTimestamp(
+              currentBeginTimestamp
+            )[0]
 
           let xEndBox: number
           if (currentEndTimestamp.lt(measureEndTimestamp)) {
             // x-coordinates for the bounding box
-            xEndBox = this.sheet.GraphicSheet.calculateXPositionFromTimestamp(
-              currentEndTimestamp
-            )[0]
+            xEndBox =
+              this.sheet.GraphicSheet.calculateXPositionFromTimestamp(
+                currentEndTimestamp
+              )[0]
           } else {
             // index of the last measure contained in the current box
             // e.g. if durationBox is 2, we arrive in `measureIndex+1`
@@ -584,11 +586,12 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
           }
           const width = xEndBox - xBeginBox
 
-          const timeContainerID = SheetInpainterGraphicalViewBase.makeGranularityID(
-            boxDuration_quarters,
-            measureIndex,
-            boxIndex
-          )
+          const timeContainerID =
+            SheetInpainterGraphicalViewBase.makeGranularityID(
+              boxDuration_quarters,
+              measureIndex,
+              boxIndex
+            )
 
           if (!document.getElementById(timeContainerID)) {
             // the time container does not yet exist, create it
@@ -673,9 +676,10 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     return positionTarget_px
   }
 
-  protected getTimecontainerPosition(
-    step: number
-  ): { left: number; right: number } {
+  protected getTimecontainerPosition(step: number): {
+    left: number
+    right: number
+  } {
     // TODO(@tbazin, 2021/08/31): remove use of JQuery
     // FIXME implement and use timeContainer method
     const containerElementSelector = $(

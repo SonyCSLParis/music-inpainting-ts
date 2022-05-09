@@ -4,7 +4,7 @@ import * as Tone from 'tone'
 import * as log from 'loglevel'
 import { Midi, Track } from '@tonejs/midi'
 import { Note as MidiNote } from '@tonejs/midi/src/Note'
-import { WebMidi } from 'webmidi'
+import { WebMidi } from '../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
 import $ from 'jquery'
 
 import * as Instruments from './instruments'

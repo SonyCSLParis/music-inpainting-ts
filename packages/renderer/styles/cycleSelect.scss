@@ -1,6 +1,6 @@
-@use "mixins/measures";
-@use "mixins/colors.module";
-@use "mixins/interfaces";
+@use 'mixins/measures';
+@use 'mixins/colors.module';
+@use 'mixins/interfaces';
 // Styling for the icon-based select element
 
 .pulsing {
@@ -24,9 +24,11 @@
   .cycleSelect--interactive-element {
     width: 100%;
     height: 100%;
+    box-sizing: content-box;
+    border: inherit;
     position: absolute;
-    top: 0;
-    left: 0;
+    top: calc(-#{interfaces.$roundedSquareBox-border-width});
+    left: calc(-#{interfaces.$roundedSquareBox-border-width});
     opacity: 0;
     z-index: 1;
   }

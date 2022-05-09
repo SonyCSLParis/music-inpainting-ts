@@ -2,6 +2,7 @@ import $ from 'jquery'
 import log from 'loglevel'
 log.setLevel(log.levels.INFO)
 
+import './midi_io/patchWebmidi'
 import { UndoableInpainter } from './inpainter/inpainter'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
 import { SheetInpainter } from './sheet/sheetInpainter'
@@ -61,6 +62,7 @@ import 'simplebar/src/simplebar.css'
 import colors from '../styles/mixins/_colors.module.scss'
 
 import '../styles/main.scss'
+import '../styles/mixins/_fonts.scss'
 import '../styles/simplebar.scss'
 import '../styles/controls.scss'
 import '../styles/overlays.scss'
@@ -70,7 +72,6 @@ import '../styles/spectrogram.scss'
 import '../styles/disableMouse.scss'
 
 const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
-console.log('VITE_COMPILE_ELECTRON', VITE_COMPILE_ELECTRON)
 
 import defaultConfiguration from '../../common/default_config.json'
 import { setBackgroundColorElectron, getTitleBarDisplay } from './utils/display'
@@ -143,17 +144,16 @@ function render(
   // set to true to completely hide the mouse pointer on the interface
   // for touchscreens
   const DISABLE_MOUSE: boolean = configuration['disable_mouse']
-  $(() => {
+  {
     if (DISABLE_MOUSE) {
       document.body.classList.add('disable-mouse')
     }
-  })
+  }
 
-  const granularities_quarters: number[] = configuration[
-    'granularities_quarters'
-  ].sort()
+  const granularities_quarters: number[] =
+    configuration['granularities_quarters'].sort()
 
-  $(() => {
+  {
     let applicationElement = document.getElementById('app')
     if (applicationElement == null) {
       applicationElement = document.createElement('div')
@@ -172,14 +172,12 @@ function render(
     const bottomControlsGridElement = document.createElement('footer')
     bottomControlsGridElement.id = 'bottom-controls'
     applicationElement.appendChild(bottomControlsGridElement)
-  })
 
-  $(() => {
-    const headerGridElement = document.getElementById('header')
+    // render header
     Header.render(headerGridElement, configuration)
-  })
+  }
 
-  $(() => {
+  {
     const bottomControlsGridElement = document.getElementById('bottom-controls')
     const bottomControlsExpandTabElement = document.createElement('div')
     bottomControlsExpandTabElement.id = 'bottom-controls-expand'
@@ -220,14 +218,13 @@ function render(
       editToolsGridspanElement.classList.add('gridspan')
       bottomControlsGridElement.appendChild(editToolsGridspanElement)
     }
-  })
+  }
 
   if (configuration['osmd']) {
-    $(() => {
+    {
       const useSimpleSlider = !configuration['insert_advanced_controls']
-      const bottomControlsGridElement = document.getElementById(
-        'bottom-controls'
-      )
+      const bottomControlsGridElement =
+        document.getElementById('bottom-controls')
       const bpmControlGridspanElement = document.createElement('div')
       bpmControlGridspanElement.id = 'bpm-control-gridspan'
       bpmControlGridspanElement.classList.add('gridspan')
@@ -236,22 +233,22 @@ function render(
       bpmControl = new BPMControl(bpmControlGridspanElement, 'bpm-control')
       bpmControl.render(useSimpleSlider, 200)
       bpmControl.value = 80
-    })
+    }
   }
 
-  $(() => {
+  {
     const insertLFO: boolean = configuration['insert_variations_lfo']
     if (insertLFO) {
       createLFOControls()
     }
-  })
+  }
 
   const inpaintingApiAddress: URL = new URL(
     configuration['inpainting_api_address']
   )
 
   if (configuration['spectrogram']) {
-    $(() => {
+    {
       const constraintsContainerElement = document.getElementById(
         'constraints-container'
       )
@@ -290,22 +287,19 @@ function render(
         undefined,
         constraintsContainerElement
       )
-      const {
-        pitchClassSelect,
-        octaveControl,
-      } = renderPitchRootAndOctaveControl(constraintsContainerElement)
+      const { pitchClassSelect, octaveControl } =
+        renderPitchRootAndOctaveControl(constraintsContainerElement)
       pitchClassConstraintSelect = pitchClassSelect
       octaveConstraintControl = octaveControl
-    })
+    }
   }
 
-  let sheetInpainterGraphicalView:
-    | SheetInpainterGraphicalView
-    | undefined = undefined
+  let sheetInpainterGraphicalView: SheetInpainterGraphicalView | undefined =
+    undefined
   let spectrogramInpainterGraphicalView:
     | SpectrogramInpainterGraphicalView
     | undefined = undefined
-  $(() => {
+  {
     const mainPanel = document.getElementById('main-panel')
     const bottomControlsGridElement = document.getElementById('bottom-controls')
 
@@ -322,10 +316,12 @@ function render(
       granularityControlsGridspanElement.classList.add('gridspan')
       bottomControlsGridElement.appendChild(granularityControlsGridspanElement)
 
-      const granularitySelect = GranularitySelect.renderGranularitySelect(
-        granularityControlsGridspanElement,
-        granularities_quarters
-      )
+      const [granularitySelect, granularitySelectView] =
+        GranularitySelect.renderGranularitySelect(
+          granularityControlsGridspanElement,
+          granularities_quarters
+        )
+      granularitySelectView.refresh()
 
       const allowOnlyOneFermata: boolean =
         configuration['allow_only_one_fermata']
@@ -398,19 +394,17 @@ function render(
         [{ layer: VqvaeLayer.Top, tool: NotonoTool.Eraser }, 'edit-tools.svg'],
       ])
 
-      const vqvaeLayerDimensions: Map<
-        VqvaeLayer,
-        AudioVQVAELayerDimensions
-      > = new Map([
-        [
-          VqvaeLayer.Top,
-          { frequencyRows: 32, timeColumns: 4, timeResolution: 1 },
-        ],
-        [
-          VqvaeLayer.Bottom,
-          { frequencyRows: 64, timeColumns: 8, timeResolution: 0.5 },
-        ],
-      ])
+      const vqvaeLayerDimensions: Map<VqvaeLayer, AudioVQVAELayerDimensions> =
+        new Map([
+          [
+            VqvaeLayer.Top,
+            { frequencyRows: 32, timeColumns: 4, timeResolution: 1 },
+          ],
+          [
+            VqvaeLayer.Bottom,
+            { frequencyRows: 64, timeColumns: 8, timeResolution: 0.5 },
+          ],
+        ])
 
       const iconsBasePath = getPathToStaticFile('icons')
 
@@ -525,7 +519,10 @@ function render(
         pitchClassConstraintSelect
       )
       const onshiftKey = (e: KeyboardEvent) => {
-        if (spectrogramInpainterGraphicalView.interacting) {
+        if (
+          spectrogramInpainterGraphicalView == undefined ||
+          spectrogramInpainterGraphicalView.interacting
+        ) {
           return
         }
         if (e.key == 'Shift') {
@@ -534,12 +531,12 @@ function render(
           // force repaint to display proper pointer `hover` position
           spectrogramInpainterGraphicalView.interfaceContainer.style.visibility =
             'hidden'
-          setTimeout(
-            () =>
-              (spectrogramInpainterGraphicalView.interfaceContainer.style.visibility =
-                'visible'),
-            20
-          )
+          setTimeout(() => {
+            if (spectrogramInpainterGraphicalView != undefined) {
+              spectrogramInpainterGraphicalView.interfaceContainer.style.visibility =
+                'visible'
+            }
+          }, 1)
         }
       }
       document.body.addEventListener('keydown', onshiftKey)
@@ -662,9 +659,9 @@ function render(
         }
       }
     })
-  })
+  }
 
-  $(() => {
+  {
     const playbackCommandsGridspan = document.getElementById(
       'playback-commands-gridspan'
     )
@@ -676,13 +673,12 @@ function render(
       // enable play/pause interface
       playbackCommandsGridspan.classList.remove('disabled-gridspan')
     })
-  })
+  }
 
   if (configuration['osmd']) {
-    $(() => {
-      const bottomControlsGridElement = document.getElementById(
-        'bottom-controls'
-      )
+    {
+      const bottomControlsGridElement =
+        document.getElementById('bottom-controls')
       const instrumentsControlGridspanElement = document.createElement('div')
       instrumentsControlGridspanElement.id = 'instruments-control-gridspan'
       instrumentsControlGridspanElement.classList.add('gridspan')
@@ -710,6 +706,7 @@ function render(
       const instrumentSelectView = new Instruments.InstrumentSelectView(
         instrumentSelect
       )
+      instrumentSelectView.refresh()
       instrumentSelectView.id = 'lead-instrument-select-container'
       instrumentSelectView.classList.add(
         'control-item',
@@ -764,7 +761,8 @@ function render(
           throw e
         })
 
-      let chordsInstrumentSelect: Instruments.ChordsInstrumentSelect<Instruments.chordsInstrument> | null = null
+      let chordsInstrumentSelect: Instruments.ChordsInstrumentSelect<Instruments.chordsInstrument> | null =
+        null
       if (configuration['use_chords_instrument']) {
         chordsInstrumentSelect = new Instruments.ChordsInstrumentSelect(
           ['PolySynth'],
@@ -795,10 +793,10 @@ function render(
         instrumentSelect,
         chordsInstrumentSelect
       )
-    })
+    }
   }
 
-  $(() => {
+  {
     // Insert LINK client controls
     const useAdvancedControls = true
 
@@ -809,9 +807,8 @@ function render(
           playbackManager.registerLinkClient(linkClient)
 
           // render AbletonLink control interface
-          const bottomControlsGridElement = document.getElementById(
-            'bottom-controls'
-          )
+          const bottomControlsGridElement =
+            document.getElementById('bottom-controls')
           const abletonLinkSettingsGridspan = document.createElement('div')
           abletonLinkSettingsGridspan.id = 'ableton-link-settings-gridspan'
           abletonLinkSettingsGridspan.classList.add('gridspan')
@@ -827,9 +824,9 @@ function render(
         (err) => log.error(err)
       )
     }
-  })
+  }
 
-  $(() => {
+  {
     if (
       configuration['insert_advanced_controls'] &&
       configuration['spectrogram']
@@ -839,10 +836,10 @@ function render(
         void midiInModule.render()
       })
     }
-  })
+  }
 
   if (configuration['osmd']) {
-    $(() => {
+    {
       // Insert zoom controls
       const zoomControlsGridElement = document.createElement('div')
       zoomControlsGridElement.classList.add('zoom-control', 'control-item')
@@ -850,10 +847,10 @@ function render(
       const mainPanel = document.getElementById('main-panel')
       mainPanel.appendChild(zoomControlsGridElement)
       sheetInpainterGraphicalView.renderZoomControls(zoomControlsGridElement)
-    })
+    }
   }
 
-  $(() => {
+  {
     if (configuration['insert_help']) {
       let helpTour: MyShepherdTour
       // initialize help menu
@@ -880,7 +877,7 @@ function render(
 
       helpTour.renderIcon(document.getElementById('main-panel'))
     }
-  })
+  }
 
   async function sampleNewData(): Promise<void> {
     try {
@@ -893,19 +890,17 @@ function render(
 
   $(() => {
     void sampleNewData().then(() => {
+      inpainterGraphicalView.render()
       inpainterGraphicalView.emit('ready')
     })
   })
 }
 
-$(() => {
-  // register minimal error handler
-  $(document).ajaxError((error) => console.log(error))
-
+{
   new SplashScreen(render)
-})
+}
 
-$(() => {
+{
   // disable drop events on whole window
   window.addEventListener(
     'dragover',
@@ -923,4 +918,4 @@ $(() => {
     },
     false
   )
-})
+}

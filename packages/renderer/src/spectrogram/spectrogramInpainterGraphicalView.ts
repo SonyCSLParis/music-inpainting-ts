@@ -63,9 +63,10 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     })
   }
 
-  protected getTimecontainerPosition(
-    step: number
-  ): { left: number; right: number } {
+  protected getTimecontainerPosition(step: number): {
+    left: number
+    right: number
+  } {
     const left = step * this.columnWidth
     return {
       left: left,
@@ -84,14 +85,17 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   readonly snapPoints: HTMLDivElement
   readonly addColumnIconsContainer: HTMLDivElement
 
-  protected interactiveGridPerLayer: Map<VqvaeLayer, InteractiveGrid>
+  protected interactiveGridPerLayer: Map<VqvaeLayer, InteractiveGrid> = new Map<
+    VqvaeLayer,
+    InteractiveGrid
+  >()
 
   protected readonly timeScaleContainer: HTMLDivElement
   protected readonly timeScaleCanvas: HTMLCanvasElement
-  protected timeScale: Chart
   protected readonly frequencyScaleContainer: HTMLDivElement
   protected readonly frequencyScaleCanvas: HTMLCanvasElement
-  protected frequencyScale: Chart
+  protected timeScale?: Chart
+  protected frequencyScale?: Chart
 
   readonly useTransparentScrollbars = false
 
@@ -103,31 +107,15 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   readonly autoScrollUpdateInterval = 0.1
   static readonly displayUpdateRate = 0.1
 
-  get columnDuration(): ToneUnit.Seconds {
-    return this.inpainter.layerDimensions.get(this.granularity).timeResolution
+  get columnDuration(): ToneUnit.Seconds | undefined {
+    return this.inpainter.layerDimensions.get(this.granularity)?.timeResolution
   }
 
-  protected get codemapTop(): Codemap | undefined {
-    // TODO(@tbazin, 2022/04/22): refactor to use `?.` syntax
-    //   once when webpack/typescript properly updated
-    // Also, should this check be necessary? Should we just wait
-    //   for the value to be ready to start rendering the GraphicalView?`
-    if (this.inpainter.value != undefined) {
-      return this.inpainter.value.codemap.top
-    } else {
-      return undefined
-    }
+  protected get codemapTop(): Codemap | never {
+    return this.inpainter.value.codemap.top
   }
-  protected get codemapBottom(): Codemap | undefined {
-    // TODO(@tbazin, 2022/04/22): refactor to use `?.` syntax
-    //   once when webpack/typescript properly updated
-    // Also, should this check be necessary? Should we just wait
-    //   for the value to be ready to start rendering the GraphicalView?`
-    if (this.inpainter.value != undefined) {
-      return this.inpainter.value.codemap.bottom
-    } else {
-      return undefined
-    }
+  protected get codemapBottom(): Codemap | never {
+    return this.inpainter.value.codemap.bottom
   }
 
   protected get interactiveGrid(): InteractiveGrid | undefined {
@@ -135,27 +123,22 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   get interacting(): boolean {
-    return this.interactiveGrid.interacting
+    return Boolean(this.interactiveGrid?.interacting)
   }
 
   protected get activeCodemap(): Codemap {
-    switch (this.granularity) {
-      case VqvaeLayer.Top:
-        return this.codemapTop
-      case VqvaeLayer.Bottom:
-        return this.codemapBottom
-    }
+    return this.inpainter.value.codemap[this.granularity]
   }
 
-  protected get currentConditioning_top(): ConditioningMap {
+  protected get currentConditioning_top(): ConditioningMap | never {
     return this.inpainter.value.conditioning.top
   }
-  protected get currentConditioning_bottom(): ConditioningMap {
+  protected get currentConditioning_bottom(): ConditioningMap | never {
     return this.inpainter.value.conditioning.bottom
   }
 
-  get interfaceElement(): HTMLElement {
-    return this.interactiveGrid.element
+  get interfaceElement(): HTMLElement | undefined {
+    return this.interactiveGrid?.element
   }
 
   readonly toolSelect: VariableValue<NotonoTool>
@@ -220,31 +203,6 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     this.frequencyScaleCanvas = document.createElement('canvas')
     this.frequencyScaleContainer.appendChild(this.frequencyScaleCanvas)
 
-    this.drawTimeScale()
-    this.drawFrequencyScale()
-
-    this.numColumnsTop = this.inpainter.layerDimensions.get(
-      VqvaeLayer.Top
-    ).timeColumns
-
-    const initialWidth = this.interfaceContainer.clientWidth
-    const initialHeight = this.interfaceContainer.clientHeight
-    this.interactiveGridPerLayer = new Map<VqvaeLayer, InteractiveGrid>()
-    this.inpainter.layerDimensions.forEach((dimensions, layer) => {
-      this.interactiveGridPerLayer.set(
-        layer,
-        this.drawTimestampBoxes(
-          dimensions.frequencyRows,
-          dimensions.timeColumns,
-          this.numColumnsTop,
-          initialWidth,
-          initialHeight,
-          layer
-        )
-      )
-    })
-    this.refresh()
-
     this.toolSelect = toolSelect
 
     this.toolSelect.on('change', (tool) => {
@@ -274,7 +232,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   protected onchangeGranularity(): void {
-    if (this.interactiveGrid.interacting) {
+    if (this.interacting) {
       return
     }
     Array.from(
@@ -301,8 +259,8 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     return this.instrumentConstraintSelect.value
   }
 
-  public get mask(): InpaintingMask {
-    return this.interactiveGrid.matrix.pattern.map((row) =>
+  public get mask(): InpaintingMask | undefined {
+    return this.interactiveGrid?.matrix.pattern.map((row) =>
       row.map((value) => value == 1)
     )
   }
@@ -422,9 +380,8 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
       const currentScrollRatio =
         scrollElement.scrollLeft /
         (scrollElement.scrollWidth - scrollElement.clientWidth)
-      const numSnapElements: number = this.snapPoints.getElementsByTagName(
-        'snap'
-      ).length
+      const numSnapElements: number =
+        this.snapPoints.getElementsByTagName('snap').length
       // snaps happen on <snap>'s left boundaries
       const numSnapLocations: number = numSnapElements - 1
       return Math.round(currentScrollRatio * numSnapLocations)
@@ -473,11 +430,11 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   protected get numRows(): number {
-    return this.interactiveGrid.rows
+    return this.inpainter.value.codemap[this.granularity].length
   }
 
   protected get numColumns(): number {
-    return this.interactiveGrid.columns
+    return this.inpainter.value.codemap[this.granularity][0].length
   }
 
   protected get numColumnsTotal(): number {
@@ -497,9 +454,9 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
 
   // Duration of the current sound in number of columns at the Top-layer scale
   public get vqvaeTimestepsTop(): number {
-    if (this.codemapTop != null) {
+    try {
       return this.codemapTop[0].length
-    } else {
+    } catch {
       return 4 // HACK(theis, 2021/07/30): default value hardcoded here
     }
   }
@@ -522,28 +479,21 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     }
   }
 
-  public render(
-    numRows: number,
-    numColumns: number,
-    numColumnsTop: number
-  ): void {
-    if (this.interactiveGrid !== null) {
+  public render(): void {
+    if (this.interactiveGrid !== undefined) {
       this.interactiveGrid.destroy()
     }
-    this.drawTimestampBoxes(numRows, numColumns, numColumnsTop)
+    this.drawTimeScale()
+    this.drawFrequencyScale()
+    this.drawTimestampBoxes()
     this.insertGridExpansionIcons()
-
-    $(() => {
-      this.interactiveGrid.on(
-        'toggle',
-        this.ontoggle.bind(this.interactiveGrid)
-      )
-    })
-
     this.refresh()
   }
 
   protected _refresh(): void {
+    if (this.interactiveGrid == undefined) {
+      return
+    }
     this.resize()
     this.onchangeGranularity()
     this.timeScale.draw()
@@ -585,11 +535,12 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
       this.interfaceContainer.clientHeight.toString() + 'px'
     // adapt the spectrogram's image size to the resulting grid's size
     // since the grid size is rounded up to the number of rows and columns
-    this.imageElement.style.height = this.imageContainer.style.height = interfaceHeight
+    this.imageElement.style.height = this.imageContainer.style.height =
+      interfaceHeight
   }
 
   public clear(): void {
-    this.interactiveGrid.matrix.populate.all(0)
+    this.interactiveGrid?.matrix?.populate?.all?.(0)
   }
 
   public get hasEmptyMask(): boolean {
@@ -736,14 +687,13 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     return this.frequencyScale
   }
 
-  public drawTimestampBoxes(
+  protected createInteractiveGrid(
     numRows: number,
     numColumns: number,
-    numColumnsTop: number,
     gridWidth?: number,
     gridHeight?: number,
     layer?: VqvaeLayer
-  ): InteractiveGrid {
+  ) {
     const width = gridWidth || this.interfaceContainer.clientWidth
     const height = gridHeight || this.imageContainer.clientHeight
     const interactiveGrid = new InteractiveGrid(this.interfaceContainer, {
@@ -756,12 +706,31 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
       accent: globalColors.arabian_sand,
     })
     interactiveGrid.element.classList.add('spectrogram-inpainter-interface')
-    interactiveGrid.element.classList.add(layer)
-    interactiveGrid.element.setAttribute('layer', layer)
+    if (layer !== undefined) {
+      interactiveGrid.element.classList.add(layer)
+      interactiveGrid.element.setAttribute('layer', layer)
+    }
 
-    this.numColumnsTop = numColumnsTop
+    interactiveGrid.on('toggle', () => {
+      this.ontoggle()
+    })
 
     return interactiveGrid
+  }
+
+  public drawTimestampBoxes(gridWidth?: number, gridHeight?: number): void {
+    this.inpainter.layerDimensions.forEach((dimensions, layer) => {
+      this.interactiveGridPerLayer.set(
+        layer,
+        this.createInteractiveGrid(
+          dimensions.frequencyRows,
+          dimensions.timeColumns,
+          gridWidth,
+          gridHeight,
+          layer
+        )
+      )
+    })
   }
 
   protected updateSnapPoints(): void {

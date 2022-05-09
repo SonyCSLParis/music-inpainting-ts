@@ -17,12 +17,15 @@ interface CanChangeListeners<T> {
   ready: () => void
 }
 
-class CanChange<T> extends TypedEmitter<CanChangeListeners<T | undefined>> {
+class CanChange<T> extends TypedEmitter<CanChangeListeners<T>> {
   protected _value: T | undefined = undefined
-  get value(): T | undefined {
+  get value(): T | never {
+    if (this._value == undefined) {
+      throw new EvalError('Value not initialized')
+    }
     return this._value
   }
-  set value(newValue: T | undefined) {
+  set value(newValue: T) {
     if (newValue != this._value) {
       const previousValue = this._value
       this._value = newValue
@@ -297,7 +300,7 @@ export abstract class UndoableInpainter<
   }
 
   protected setValueInteractive(newValue: DataT): void {
-    const previousValue = this.value
+    const previousValue = this._value
     super.setValueInteractive(newValue)
     if (previousValue != newValue) {
       if (previousValue != undefined && newValue != undefined) {

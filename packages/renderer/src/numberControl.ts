@@ -25,7 +25,7 @@ export class NumberControl extends EventEmitter {
   readonly labelId: string
   readonly id: string
   readonly range: [number, number]
-  protected controller?: NexusSlider | NexusNumber
+  protected _controller?: NexusSlider | NexusNumber
   private readonly initialValue: number
 
   protected onchange: (newValue: number) => void
@@ -85,21 +85,21 @@ export class NumberControl extends EventEmitter {
       const interactionElement = document.createElement('div')
       interactionElement.id = this.interactionId
       containerElement.appendChild(interactionElement)
-      this.controller = new UniformChangeRateNumber('#' + this.interactionId, {
+      this._controller = new UniformChangeRateNumber('#' + this.interactionId, {
         min: this.range[0],
         max: this.range[1],
         step: 1,
         value: this.initialValue,
       })
-      this.controller.element.style.width =
+      this._controller.element.style.width =
         Math.round(elementWidth).toString() + 'px'
-      this.controller.element.style.padding = '0'
+      this._controller.element.style.padding = '0'
     } else {
       const bpmSliderElement = document.createElement('div')
       bpmSliderElement.id = this.id
       containerElement.appendChild(bpmSliderElement)
 
-      this.controller = new Nexus.Slider(bpmSliderElement, {
+      this._controller = new Nexus.Slider(bpmSliderElement, {
         size: [100, 40],
         mode: 'absolute',
         min: this.range[0],
@@ -109,22 +109,26 @@ export class NumberControl extends EventEmitter {
       })
     }
 
-    this.controller.on('change', this.onchange)
+    this._controller.on('change', this.onchange)
     return this
   }
 
   get value(): number {
-    return this.controller.value
+    return this._controller.value
   }
 
   set value(newValue: number) {
-    this.controller.value = newValue
+    this._controller.value = newValue
+  }
+
+  get controller(): NexusSlider | NexusNumber | undefined {
+    return this._controller
   }
 
   silentUpdate(value: number): void {
-    if (this.controller != null) {
-      this.controller._value.update(value)
-      this.controller.render()
+    if (this._controller != null) {
+      this._controller._value.update(value)
+      this._controller.render()
       this.emit('interface-tempo-changed-silent', value)
     }
   }
@@ -167,7 +171,7 @@ export class BPMControl extends NumberControl {
     while (newBPM < this.range[0]) {
       newBPM = 2 * newBPM
     }
-    this.controller.value = newBPM
+    this._controller.value = newBPM
   }
 
   // see https://stackoverflow.com/a/28951055:
