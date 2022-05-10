@@ -1,7 +1,7 @@
-import {chrome} from '../../.electron-vendors.cache.json';
-import {builtinModules} from 'module';
+import { chrome } from '../../.electron-vendors.cache.json'
+import { builtinModules } from 'module'
 
-const PACKAGE_ROOT = __dirname;
+const PACKAGE_ROOT = __dirname
 
 /**
  * @type {import('vite').UserConfig}
@@ -24,7 +24,7 @@ const config = {
     rollupOptions: {
       external: [
         'electron',
-        ...builtinModules.flatMap(p => [p, `node:${p}`]),
+        ...builtinModules.flatMap((p) => [p, `node:${p}`]),
       ],
       output: {
         entryFileNames: '[name].cjs',
@@ -33,6 +33,6 @@ const config = {
     emptyOutDir: true,
     brotliSize: false,
   },
-};
+}
 
-export default config;
+export default config

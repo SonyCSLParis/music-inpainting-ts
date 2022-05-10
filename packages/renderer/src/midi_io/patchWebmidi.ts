@@ -1,4 +1,4 @@
-import { WebMidi } from '../../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
+import { WebMidi } from '/@webmidiESM'
 
 WebMidi.enable = async function (
   this: typeof WebMidi,

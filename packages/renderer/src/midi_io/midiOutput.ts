@@ -1,11 +1,9 @@
 // adapted from Yotam Mann's midiInput.ts in @tonejs/piano
-import { ChannelBasedMidiInput, getMidiInputListener } from '../midiIn'
+import { ToneMidiInput } from './midiInput'
+import { getMidiInputListener } from '../midiIn'
 
 import { EventEmitter } from 'events'
-import {
-  WebMidi,
-  Output,
-} from '../../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
+import { WebMidi, Output } from '/@webmidiESM'
 
 export class MidiOutput extends EventEmitter {
   /**

@@ -1,13 +1,16 @@
 /* eslint-env node */
 
 import { chrome } from '../../.electron-vendors.cache.json'
-import { join } from 'path'
-import { loadEnv } from 'vite'
+import path, { join } from 'path'
 import { builtinModules } from 'module'
 
 const PACKAGE_ROOT = __dirname
 
-// process.env = { ...process.env, ...loadEnv(process.env.mode, process.cwd()) }
+console.log(PACKAGE_ROOT)
+console.log(
+  path.resolve(PACKAGE_ROOT, '../../node_modules/webmidi/dist/esm/') + '/'
+)
+
 const VITE_COMPILE_WEB = process.env.VITE_COMPILE_WEB != undefined
 const VITE_APP_TITLE =
   process.env.VITE_APP_TITLE != undefined
@@ -17,7 +20,7 @@ const VITE_APP_TITLE =
 const htmlPlugin = () => {
   return {
     name: 'html-transform',
-    transformIndexHtml(html) {
+    transformIndexHtml: (html: string): string => {
       const updateTitle = html.replace(
         /<title>(.*?)<\/title>/,
         `<title>${VITE_APP_TITLE}</title>`
@@ -37,6 +40,11 @@ const config = {
   resolve: {
     alias: {
       '/@/': join(PACKAGE_ROOT, 'src') + '/',
+      '/@webmidiESM/':
+        path.resolve(
+          PACKAGE_ROOT,
+          '../../node_modules/webmidi/dist/esm/webmidi.esm.js'
+        ) + '/',
     },
   },
   plugins: [htmlPlugin()],
@@ -50,7 +58,7 @@ const config = {
     sourcemap: true,
     target: `chrome${chrome}`,
     outDir: 'dist',
-    assetsDir: '.',
+    assetsDir: './assets/',
     rollupOptions: {
       input: join(PACKAGE_ROOT, 'index.html'),
       external: VITE_COMPILE_WEB

@@ -1,8 +1,5 @@
 import { MidiOutput } from './midi_io/midiOutput'
-import {
-  WebMidi,
-  Output,
-} from '../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
+import { WebMidi, Output } from '/@webmidiESM'
 
 import log from 'loglevel'
 import * as Instruments from './instruments'

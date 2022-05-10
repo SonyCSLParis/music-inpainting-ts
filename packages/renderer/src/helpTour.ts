@@ -262,7 +262,7 @@ export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView
     return [
       {
         title: 'Playback',
-        attachTo: { element: '#playback-commands-gridspan', on: 'right' },
+        attachTo: { element: '#playback-commands-gridspan', on: 'top' },
         text: this.makeHTMLContent(helpContents['general']['play_button']),
       },
       {
