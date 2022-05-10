@@ -2,15 +2,9 @@
 
 import { EventEmitter } from 'events'
 import { Frequency, NormalRange, Time } from 'tone/build/esm/core/type/Units'
-import {
-  WebMidi,
-  Input,
-} from '../../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
+import { WebMidi, Input } from '/@webmidiESM'
 
-import type {
-  NoteMessageEvent,
-  ControlChangeMessageEvent,
-} from '../../../../node_modules/webmidi/dist/esm/webmidi.esm.js'
+import type { NoteMessageEvent, ControlChangeMessageEvent } from '/@webmidiESM'
 
 type NoteEventType = 'keyDown' | 'keyUp'
 type PedalEventType = 'pedalDown' | 'pedalUp'

@@ -14,7 +14,10 @@
     "paths": {
       "/@/*": [
         "./src/*"
-      ]
+      ],
+      "/@webmidiESM": [
+        "../../node_modules/webmidi/dist/esm/webmidi.esm.js"
+      ],
     },
     "lib": ["ESNext", "dom", "dom.iterable"]
   },
