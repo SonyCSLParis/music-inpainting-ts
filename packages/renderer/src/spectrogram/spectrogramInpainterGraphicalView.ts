@@ -494,10 +494,11 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     if (this.interactiveGrid == undefined) {
       return
     }
+    this.updateNoScroll()
     this.resize()
     this.onchangeGranularity()
-    this.timeScale.draw()
-    this.frequencyScale.draw()
+    this.timeScale?.draw?.()
+    this.frequencyScale?.draw?.()
     if (this.scrollbar != null) {
       this.scrollbar.recalculate()
     }
@@ -755,10 +756,18 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
 
   protected updateNoScroll(): void {
     // when set, prevents the scroll-bar from appearing
-    const disableScroll =
-      Math.round(this.playbackManager.duration) ==
-      Math.round(this.numColumns * this.columnDuration)
-    this.container.classList.toggle('no-scroll', disableScroll)
+    if (this.columnDuration != null) {
+      const disableScroll =
+        Math.round(this.playbackManager.duration) <=
+        Math.round(this.numColumns * this.columnDuration)
+      this.container.classList.toggle('no-scroll', disableScroll)
+      this.triggerReflow()
+    }
+  }
+
+  protected triggerReflow(): void {
+    const _ = document.body.clientWidth
+    return
   }
 
   getInterfaceElementByIndex(index: number): Element | null {
