@@ -68,9 +68,6 @@
   [nexus-ui] {
     display: inline-grid;
     max-width: 100%;
-    * {
-      // border-radius: 0.3em; // 5em;
-    }
     > div > div {
       padding: 0.5em !important;
     }
@@ -120,11 +117,6 @@
   .gridspan .gridspan {
     font-size: smaller;
   }
-}
-
-.control-item::after {
-  // font-weight: 400;
-  // font-size: 1em;
 }
 
 #instruments-control-gridspan {
@@ -330,9 +322,6 @@ $disabled-gridspan-filter: blur(1.3px);
   }
 }
 @media screen and (max-width: 450px) and (min-width: 270px) {
-  #pitch-control-container {
-    // row-gap: 5%;
-  }
   #midi-input-setup-container {
     grid-auto-flow: column;
     grid-template-columns: auto 1fr 1fr;
