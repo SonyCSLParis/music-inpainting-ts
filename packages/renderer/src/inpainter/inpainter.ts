@@ -53,26 +53,63 @@ export abstract class Inpainter<
   readonly defaultApiAddress: URL
 
   protected handleFetchError(
-    response: Response,
+    error: unknown,
     attempted_action = 'perform network request'
-  ): Response | never {
-    if (!response.ok) {
-      throw new Error(
-        'Failed to ' +
-          attempted_action +
-          ` with error code ${response.status} (${response.statusText})`
-      )
-    }
-    return response
+  ): never {
+    throw new Error(
+      'Failed to ' +
+      attempted_action +
+      // ` with error ${response.status} (${response.statusText})`
+      ` with error ${error}`
+    )
   }
+
+  protected async timeout(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  protected defaultTimeout: number = 5000
 
   protected async fetch(
     input: RequestInfo,
     init?: RequestInit,
-    attemptedAction?: string
-  ): Promise<Response> {
-    const response = await fetch(input, init)
-    return this.handleFetchError(response, attemptedAction)
+    timeout: number = this.defaultTimeout,
+    attemptedAction?: string,
+    exponential_backoff_timeout: number = 60,
+  ): Promise<Response | undefined> {
+    if (init == undefined) {
+      init = {}
+    }
+    let abortTimeout: ReturnType<typeof setTimeout> | null = null
+
+    if (timeout != null && timeout > 0) {
+      const abortController = new AbortController()
+      abortTimeout =
+        setTimeout(() => {
+          log.debug('Timeout exceeded, aborting request')
+          abortController.abort()
+        }, timeout)
+
+      init.signal = abortController.signal
+    }
+
+    try {
+      const response = await fetch(input, init)
+      if (abortTimeout != null) { clearTimeout(abortTimeout) }
+      if (response.ok) {
+        return response
+      }
+    } catch (error: unknown) {
+      if (exponential_backoff_timeout < 1000) {
+        log.error(error)
+        log.error('Fetch error, retrying with exponential timeout ' + exponential_backoff_timeout)
+        await this.timeout(exponential_backoff_timeout)
+        return this.fetch(input, init, timeout, attemptedAction, 2 * exponential_backoff_timeout)
+      }
+      else {
+        this.handleFetchError(error, attemptedAction)
+      }
+    }
   }
 
   protected makeRequestBody(
@@ -112,15 +149,14 @@ export abstract class Inpainter<
     httpMethod: 'GET' | 'POST',
     command: apiCommand | AdditionalAPICommands,
     queryParameters: string[],
-    apiAddress: URL,
+    apiAddress?: URL,
     sendCurrentDataWithRequest = false,
     timeout?: number,
     requestBody?: { data: BodyInit; dataType: string | null },
     jsonData?: Record<string, any>
   ): Promise<this> {
-    // if (this.disabled) {
-    //   return this
-    // }
+    apiAddress = apiAddress || this.defaultApiAddress
+
     if (httpMethod == 'POST' && requestBody == null) {
       requestBody = this.makeRequestBody(jsonData, sendCurrentDataWithRequest)
     }
@@ -148,8 +184,8 @@ export abstract class Inpainter<
   async generate(
     queryParameters: string[] = [],
     jsonData?: Record<string, any>,
-    apiAddress: URL = this.defaultApiAddress,
-    timeout = 0
+    timeout?: number,
+    apiAddress?: URL,
   ): Promise<this> {
     return this.apiRequestHelper(
       'GET',
@@ -158,7 +194,7 @@ export abstract class Inpainter<
       apiAddress,
       false,
       timeout,
-      null,
+      undefined,
       jsonData
     )
   }
@@ -167,8 +203,8 @@ export abstract class Inpainter<
   async sampleFromDataset(
     queryParameters: string[] = [],
     jsonData?: Record<string, any>,
-    apiAddress: URL = this.defaultApiAddress,
-    timeout?: number
+    timeout?: number,
+    apiAddress?: URL,
   ): Promise<this> {
     return this.apiRequestHelper(
       'GET',
@@ -177,7 +213,7 @@ export abstract class Inpainter<
       apiAddress,
       false,
       timeout,
-      null,
+      undefined,
       jsonData
     )
   }
@@ -185,28 +221,29 @@ export abstract class Inpainter<
   async sampleOrGenerate(
     queryParameters: string[] = [],
     jsonData?: Record<string, any>,
-    inpaintingApiUrl = this.defaultApiAddress,
-    timeout = 10000
+    timeout?: number,
+    inpaintingApiUrl?: URL,
   ): Promise<this> {
     try {
       return await this.sampleFromDataset(
         queryParameters,
         jsonData,
+        timeout,
         inpaintingApiUrl,
-        timeout
       )
     } catch (error) {
       log.error(error)
-      return await this.generate(queryParameters, jsonData, inpaintingApiUrl)
+      return await this.generate(queryParameters, jsonData, timeout, inpaintingApiUrl)
     }
   }
 
   // perform an inpainting operation on the current data
   async inpaint(
     queryParameters: string[] = [],
-    apiAddress: URL = this.defaultApiAddress,
     requestBody?: { data: BodyInit; dataType: string | null },
-    jsonData?: Record<string, any>
+    jsonData?: Record<string, any>,
+    timeout?: number,
+    apiAddress: URL = this.defaultApiAddress,
   ): Promise<this> {
     return this.apiRequestHelper(
       'POST',
@@ -214,7 +251,7 @@ export abstract class Inpainter<
       queryParameters,
       apiAddress,
       true,
-      0,
+      timeout,
       requestBody,
       jsonData
     )
@@ -227,8 +264,8 @@ export abstract class Inpainter<
     requestBody?: { data: BodyInit; dataType: string | null },
     jsonData?: Record<string, any>,
     queryParameters: string[] = [],
+    timeout?: number,
     apiAddress: URL = this.defaultApiAddress,
-    timeout = 0
   ): Promise<this> {
     if (requestBody == null && jsonData == null) {
       throw new Error('Must provide at least one of requestBody or jsonData')

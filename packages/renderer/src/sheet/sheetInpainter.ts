@@ -29,7 +29,7 @@ export class SheetInpainter extends UndoableInpainter<
   protected async apiRequest(
     httpMethod: 'GET' | 'POST',
     href: string,
-    timeout = 0,
+    timeout?: number,
     requestBody?: { data: BodyInit; dataType: string }
   ): Promise<SheetData> {
     return this.loadMusicXMLandMidi(httpMethod, href, timeout, requestBody)
@@ -71,23 +71,22 @@ export class SheetInpainter extends UndoableInpainter<
   async loadMusicXMLandMidi(
     httpMethod: 'GET' | 'POST',
     href: string,
-    timeout = 0,
+    timeout?: number,
     requestBody?: { data: BodyInit; dataType: string }
   ): Promise<SheetData> {
-    const abortController = new AbortController()
-    const abortTimeout =
-      timeout > 0 ? setTimeout(() => abortController.abort(), timeout) : null
-
     const maybeBody = requestBody != null ? requestBody.data : null
     const maybeHeaders =
-      requestBody != null ? { 'Content-Type': requestBody.dataType } : {}
+      requestBody != null ? { 'Content-Type': requestBody.dataType } : undefined
     const response = await this.fetch(href, {
       method: httpMethod,
       body: maybeBody,
       headers: maybeHeaders,
-      signal: abortController.signal,
-    })
-    clearTimeout(abortTimeout)
+    }, timeout)
+
+    if (response == undefined) {
+      return this.value
+    }
+
     const jsonContent = await response.json()
     // TODO(@tbazin, 2022/04/23): retrieve updated metadata (e.g. new Fermatas)
     // and update the view accordingly
