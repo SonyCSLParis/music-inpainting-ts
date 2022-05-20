@@ -893,6 +893,9 @@ function render(
   }
 
   $(() => {
+    inpainterGraphicalView.once('ready', () => {
+      inpainterGraphicalView.callToAction()
+    })
     void sampleNewData().then(() => {
       inpainterGraphicalView.render()
       inpainterGraphicalView.emit('ready')
