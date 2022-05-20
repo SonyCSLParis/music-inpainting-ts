@@ -39,8 +39,7 @@ export function getCurrentChordsInstrument(): InstrumentOrPiano | null {
 export function initializeInstruments(): void {
   const pianoVelocities = 1
   log.info(
-    `Loading Tone Piano with ${pianoVelocities} velocit${
-      pianoVelocities > 1 ? 'ies' : 'y'
+    `Loading Tone Piano with ${pianoVelocities} velocit${pianoVelocities > 1 ? 'ies' : 'y'
     }`
   )
   piano = new Piano({
@@ -72,8 +71,8 @@ export function initializeInstruments(): void {
     voice: Tone.Synth,
     maxPolyphony: 64,
   })
-
-  ;[polySynth, polySynth_chords].forEach((polySynth) => {
+  const polySynths = [polySynth, polySynth_chords]
+  polySynths.forEach((polySynth) => {
     polySynth.set({
       oscillator: {
         type: 'triangle1',
@@ -87,6 +86,7 @@ export function initializeInstruments(): void {
       portamento: 0.05,
     })
   })
+
   polySynth_chords.set({
     oscillator: {
       volume: -20,
@@ -293,7 +293,7 @@ const instrumentIconsBasePath: string = getPathToStaticFile('icons')
 
 export class InstrumentSelect<
   T extends leadInstrument
-> extends NullableVariableValue<T> {
+  > extends NullableVariableValue<T> {
   constructor(
     options: T[] = [],
     initialValue?: T,
@@ -307,7 +307,7 @@ export class InstrumentSelect<
 
 export class ChordsInstrumentSelect<
   T extends chordsInstrument
-> extends InstrumentSelect<T> {
+  > extends InstrumentSelect<T> {
   constructor(
     options: T[] = [],
     initialValue?: T,

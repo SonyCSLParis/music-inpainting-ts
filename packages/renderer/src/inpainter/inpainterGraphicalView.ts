@@ -15,7 +15,7 @@ export abstract class InpainterGraphicalView<
   InpainterT extends Inpainter<DataT, never> = Inpainter<DataT, never>,
   PlaybackManagerT extends PlaybackManager<InpainterT> = PlaybackManager<InpainterT>,
   GranularityT = unknown
-> extends EventEmitter {
+  > extends EventEmitter {
   readonly inpainter: InpainterT
   protected onInpainterBusy(): void {
     this.disableChanges()
@@ -316,7 +316,7 @@ export abstract class InpainterGraphicalView<
     // We do this by scheduling a scroll to the next step with duration
     // equal to one quarter-note time (dependent on the current BPM)
     // Inversely, scrolling to a position earlier in time (e.g. when pressing
-    // stop or reaching the end of the loop) is super-fa-solidt
+    // stop or reaching the end of the loop) is super-fast
     let targetPosition_px: number
     try {
       // try to retrieve the position of the (potentially non-existing) next

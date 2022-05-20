@@ -250,7 +250,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
             'content-type': string
           }
         }
-      >await response.json()
+        >await response.json()
 
       newCodes_top = jsonContent['top_code']
       newCodes_bottom = jsonContent['bottom_code']

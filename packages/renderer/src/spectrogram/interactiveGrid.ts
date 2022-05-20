@@ -53,10 +53,10 @@ export class InteractiveGrid extends Nexus.Sequencer {
     container: string | HTMLElement,
     options: Partial<
       BaseInterfaceOptions &
-        SequencerOptions & {
-          fill: string
-          accent: string
-        }
+      SequencerOptions & {
+        fill: string
+        accent: string
+      }
     >
   ) {
     super(container, options)
@@ -294,7 +294,7 @@ export class InteractiveGrid extends Nexus.Sequencer {
         // the delta of cells to turn on and cells to turn off by using the
         // previous position of the pointer.
         //  This brute-force version probably has the advantage of being more robust
-        // to very fa-solidt mouse movements though, which could lead to `this.previousCell`'s
+        // to very fast mouse movements though, which could lead to `this.previousCell`'s
         // value not being accurate, resulting in a mismatched update.
 
         // turn all cells off

@@ -37,7 +37,7 @@ class CanChange<T> extends TypedEmitter<CanChangeListeners<T>> {
 export abstract class Inpainter<
   DataT = unknown,
   AdditionalAPICommands extends string = never
-> extends CanChange<DataT> {
+  > extends CanChange<DataT> {
   constructor(defaultApiAddress: URL) {
     super()
     this.defaultApiAddress = defaultApiAddress
@@ -291,7 +291,7 @@ class UndoableInpainterEdit<DataT> extends UndoableEdit {
 export abstract class UndoableInpainter<
   DataT = unknown,
   AdditionalAPICommands extends string = never
-> extends Inpainter<DataT, AdditionalAPICommands> {
+  > extends Inpainter<DataT, AdditionalAPICommands> {
   readonly undoManager: UndoManager
 
   constructor(defaultApiAddress: URL, undoManager: UndoManager) {

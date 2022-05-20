@@ -194,7 +194,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
       this.player_B.fadeIn =
       this.sampler_A.attack =
       this.sampler_B.attack =
-        duration_s
+      duration_s
   }
 
   get Gain(): number {

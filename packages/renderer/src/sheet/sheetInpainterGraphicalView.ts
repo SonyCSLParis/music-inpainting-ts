@@ -641,7 +641,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     const timePosition = Math.floor(
       (progress +
         transport.context.lookAhead / transport.toSeconds(transport.loopEnd)) *
-        this.sequenceDuration_quarters
+      this.sequenceDuration_quarters
     )
 
     Array.from(
@@ -782,11 +782,11 @@ function ondragoverTimecontainer_handler(event: DragEvent) {
 }
 
 function ondragenterTimecontainer_handler(event: DragEvent) {
-  ;(<HTMLElement>event.target).classList.add('dragover')
+  ; (<HTMLElement>event.target).classList.add('dragover')
 }
 
 function ondragleaveTimecontainer_handler(event: DragEvent) {
-  ;(<HTMLElement>event.target).classList.remove('dragover')
+  ; (<HTMLElement>event.target).classList.remove('dragover')
 }
 
 function makeOndropTimecontainer_handler(
@@ -813,4 +813,4 @@ function makeOndropTimecontainer_handler(
 
 export class SheetInpainterGraphicalView extends LoadingDisplay(
   SheetInpainterGraphicalViewBase
-) {}
+) { }
