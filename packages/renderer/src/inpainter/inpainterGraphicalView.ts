@@ -77,7 +77,7 @@ export abstract class InpainterGraphicalView<
   // subclass this
   protected abstract _refresh(): void
 
-  callToActionHighlightedCellsNumber = 16
+  callToActionHighlightedCellsNumber = 8
 
   // triggers an animation to catch the user's eye
   public callToAction(
