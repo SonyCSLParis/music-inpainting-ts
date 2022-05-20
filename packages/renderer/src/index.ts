@@ -91,6 +91,7 @@ let pitchClassConstraintSelect: NexusSelect
 let octaveConstraintControl: NexusSelect
 let downloadButton: DownloadButton
 let linkClient: AbletonLinkClient
+let helpTour: MyShepherdTour
 
 function render(
   configuration: applicationConfiguration = defaultConfiguration
@@ -852,7 +853,6 @@ function render(
 
   {
     if (configuration['insert_help']) {
-      let helpTour: MyShepherdTour
       // initialize help menu
       if (
         configuration['spectrogram'] &&
@@ -874,8 +874,12 @@ function render(
         // alternatives should be detected automatically
         throw new Error('Unsupported configuration')
       }
-
-      helpTour.renderIcon(document.getElementById('main-panel'))
+      const mainPanel = document.getElementById('main-panel')
+      const helpIcon = helpTour.renderIcon(mainPanel)
+      helpIcon.classList.add('disabled')
+      inpainterGraphicalView.once('ready', () => {
+        helpIcon.classList.remove('disabled')
+      })
     }
   }
 
@@ -918,4 +922,32 @@ function render(
     },
     false
   )
+}
+
+//HACK(@tbazin, 2022/10/20): NO-OP, just using this to introduce an HMR dependency link from
+// this file to the help.json file.
+// This is because, as of 2022/10/20, vite.js does not support performing
+// manual calls to hot.invalidate(),
+// which would be required here to rebuild the app's helpTour on help.json content update
+import helpContentsJSON from '../static/localizations/help.json'
+if (import.meta.hot) {
+  let helpContents = helpContentsJSON
+}
+
+if (import.meta.hot) {
+  import.meta.hot.accept('../static/localizations/help.json', () => {
+    if (helpTour != undefined) {
+      const currentStepId = helpTour.getCurrentStep()?.id
+      let currentStepIndex: number | null = null
+      if (currentStepId != null) {
+        currentStepIndex = helpTour.steps.findIndex(step => step.id == currentStepId)
+      }
+      helpTour.cancel()
+      helpTour?.rebuild?.()
+      if (currentStepIndex != null) {
+        helpTour.start()
+        helpTour.show(helpTour.steps[currentStepIndex].id)
+      }
+    }
+  })
 }

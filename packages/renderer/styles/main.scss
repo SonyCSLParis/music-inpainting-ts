@@ -344,7 +344,7 @@ body.help-tour-on {
   }
 }
 
-body.advanced-controls-disabled {
+body.advanced-controls-disabled:not(.force-advanced-controls) {
   #bottom-controls {
     .expand-tab {
       &::before {
@@ -357,7 +357,7 @@ body.advanced-controls-disabled {
     &,
     .control-item,
     .control-label {
-      display: none !important;
+      display: none;
     }
   }
 }

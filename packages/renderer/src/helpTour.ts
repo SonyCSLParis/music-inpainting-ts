@@ -9,12 +9,13 @@ import '../styles/helpTour.scss'
 
 import Shepherd from 'shepherd.js'
 
-import localizations from '../static/localization.json'
-const helpContents = localizations['help']
+import helpJSON from '../static/localizations/help.json'
+type helpJSON = typeof helpJSON
+let helpContents = helpJSON
 
 export abstract class MyShepherdTour<
   InpainterGraphicalViewT extends InpainterGraphicalView = InpainterGraphicalView
-> extends Shepherd.Tour {
+  > extends Shepherd.Tour {
   protected languages: string[]
   readonly inpainter: InpainterGraphicalViewT
   protected tripDelay_ms = 10000
@@ -29,24 +30,33 @@ export abstract class MyShepherdTour<
       modifiers: [{ name: 'offset', options: { offset: [0, 12] } }],
     },
     modalOverlayOpeningRadius: 15,
+    modalOverlayOpeningPadding: 3,
     cancelIcon: {
       enabled: true,
-    },
-    buttons: [
+    }
+  }
+
+  protected makeNavigationButtons(options: {
+    leftButton?: string,
+    rightButton?: string,
+    leftAction?: () => void,
+    rightAction?: () => void,
+  } = {}): Shepherd.Step.StepOptionsButton[] {
+    return [
       {
-        action: function (): void {
+        action: options?.leftAction || (() => {
           return this.back()
-        },
+        }),
         secondary: true,
-        text: 'Back',
+        text: options?.leftButton != undefined ? options.leftButton : 'Back',
       },
       {
-        action: function (): void {
+        action: options?.rightAction || (() => {
           return this.next()
-        },
-        text: 'Next',
+        }),
+        text: options?.rightButton != undefined ? options.rightButton : 'Next',
       },
-    ],
+    ]
   }
 
   constructor(
@@ -81,20 +91,24 @@ export abstract class MyShepherdTour<
     this.on('cancel', () => this.cleanup())
     this.on('complete', () => this.cleanup())
 
-    this.inpainter.once('ready', () =>
-      this.addSteps(
-        this.makeStepsOptions().map(
-          (stepOptions) => new Shepherd.Step(this, stepOptions)
-        )
-      )
-    )
+    this.inpainter.once('ready', () => this.rebuild())
   }
 
-  abstract makeStepsOptions(): Shepherd.Step.StepOptions[]
+  rebuild() {
+    // import('../static/localizations/help.json').then(helpContents => {
+    this.steps = []
+    this.addSteps(
+      this.makeStepsOptions(helpContents).map(
+        (stepOptions) => new Shepherd.Step(this, { buttons: this.makeNavigationButtons(), ...stepOptions })
+      )
+    )
+
+  }
+
+  abstract makeStepsOptions(helpContents: typeof helpJSON): Shepherd.Step.StepOptions[]
 
   protected onStart(): void {
     document.body.classList.add('help-tour-on')
-    document.body.classList.remove('advanced-controls-disabled')
     this.inpainter.refresh()
     this.initHideOnClickOutside()
   }
@@ -103,8 +117,7 @@ export abstract class MyShepherdTour<
   protected cleanup(): void {
     this.removeClickListener()
     document.body.classList.remove('help-tour-on')
-    document.body.classList.toggle('advanced-controls-disabled')
-    document.body.classList.toggle('advanced-controls-disabled')
+    document.body.classList.remove('force-advanced-controls')
     // this is needed in conjunction with position: sticky for the .trip-block
     // in order to restore the inpainter's full size if the viewport was resized during the trip
     this.inpainter.refresh()
@@ -113,11 +126,10 @@ export abstract class MyShepherdTour<
   protected makeHTMLContent(contents: Record<string, string>): string | never {
     switch (this.languages.length) {
       case 2:
-        return `${contents[this.languages[0]]}<br><br><i>${
-          contents[this.languages[1]]
-        }</i><br><br>`
+        return `${contents[this.languages[0]]}<br><br><i>${contents[this.languages[1]]
+          }</i><br><br>`
       case 1:
-        return `${contents[this.languages[0]]}<br><br>`
+        return contents[this.languages[0]]
       default:
         throw new Error(
           'Unexpected number of languages to use, either 1 or 2 simultaneous languages are supported.'
@@ -131,7 +143,7 @@ export abstract class MyShepherdTour<
 
   private loopInterval?: NodeJS.Timeout
   public startLoop(): void {
-    // starts the help tour in a looping fa-solidhion
+    // starts the help tour in a looping fashion
     const intervalTripLoop = () => {
       this.loopInterval = setInterval(() => {
         // if (looping) {
@@ -150,7 +162,7 @@ export abstract class MyShepherdTour<
     }
   }
 
-  public renderIcon(containerElement: HTMLElement): void {
+  public renderIcon(containerElement: HTMLElement): HTMLElement {
     const helpElement: HTMLAnchorElement = document.createElement('a')
     containerElement.appendChild(helpElement)
 
@@ -164,11 +176,12 @@ export abstract class MyShepherdTour<
       (event) => {
         // stops event from trigerring outsideClickListener registered onTripStart
         event.stopPropagation()
-        this.cancel()
         this.start()
       },
       true
     )
+
+    return helpElement
   }
 
   protected outsideClickListener: (event: PointerEvent) => void = (
@@ -210,7 +223,7 @@ export abstract class MyShepherdTour<
 }
 
 export class NonotoTour extends MyShepherdTour<SheetInpainterGraphicalView> {
-  makeStepsOptions(): Shepherd.Step.StepOptions[] {
+  makeStepsOptions(helpContents: helpJSON): Shepherd.Step.StepOptions[] {
     return [
       {
         title: 'Playback',
@@ -258,76 +271,78 @@ export class NonotoTour extends MyShepherdTour<SheetInpainterGraphicalView> {
 }
 
 export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView> {
-  makeStepsOptions(): Shepherd.Step.StepOptions[] {
+  makeStepsOptions(helpContents: helpJSON): Shepherd.Step.StepOptions[] {
     return [
       {
         title: 'Playback',
         attachTo: { element: '#playback-commands-gridspan', on: 'top' },
-        text: this.makeHTMLContent(helpContents['general']['play_button']),
-      },
-      {
-        title: 'Spectrogram',
-        attachTo: {
-          element: this.inpainter.shadowContainer,
-          on: 'bottom',
-        },
-        text: this.makeHTMLContent(
-          helpContents['notono']['spectrogram_general']
-        ),
-        when: {
-          show: () => {
-            this.inpainter.interfaceElement.classList.add('shepherd-hidden')
-          },
-          hide: () => {
-            this.inpainter.interfaceElement.classList.remove('shepherd-hidden')
-          },
-        },
-        modalOverlayOpeningPadding: 10,
+        text: this.makeHTMLContent(helpContents['notono']['playback']),
+        buttons: this.makeNavigationButtons({ leftButton: 'Cancel', leftAction: () => this.cancel() })
       },
       {
         title: 'Spectrogram transformations',
-        attachTo: { element: this.inpainter.shadowContainer, on: 'bottom' },
+        attachTo: { element: this.inpainter.interfaceContainer, on: 'bottom' },
         text: this.makeHTMLContent(
-          helpContents['notono']['spectrogram_interaction']
+          helpContents['notono']['spectrogram']
         ),
         when: {
-          show: () => this.inpainter.callToAction(),
+          show: () => this.inpainter.callToAction(10),
         },
         modalOverlayOpeningPadding: 10,
-      },
-      {
-        title: 'Model constraints',
-        attachTo: { element: '#constraints-gridspan', on: 'top' },
-        text: this.makeHTMLContent(helpContents['notono']['constraints']),
-        // exposeContainer: 'bottom-controls',
       },
       {
         title: 'Edit tools',
         attachTo: { element: '#edit-tools-gridspan', on: 'top' },
         text: this.makeHTMLContent(helpContents['notono']['edit_tools']),
-        // exposeContainer: 'bottom-controls',
+      },
+      {
+        title: 'Model constraints',
+        attachTo: { element: '#constraints-gridspan', on: 'top' },
+        text: this.makeHTMLContent(helpContents['notono']['constraints']),
+      },
+      {
+        title: 'Regenerate',
+        attachTo: { element: '#app-title-container', on: 'bottom' },
+        text: this.makeHTMLContent(helpContents['general']['title_commands']),
       },
       {
         title: 'Downloading',
         attachTo: { element: '#download-button-gridspan', on: 'top' },
         text: this.makeHTMLContent(helpContents['notono']['download']),
-        // exposeContainer: 'bottom-controls',
+        when: {
+          show: () => document.body.classList.add('force-advanced-controls'),
+          hide: () => document.body.classList.remove('force-advanced-controls'),
+        },
       },
       {
         title: 'Declick / Gain',
         attachTo: { element: '#mixing-controls-gridspan', on: 'top' },
         text: this.makeHTMLContent(helpContents['notono']['fade-in']),
-        // exposeContainer: 'bottom-controls',
+        when: {
+          show: () => document.body.classList.add('force-advanced-controls'),
+          hide: () => document.body.classList.remove('force-advanced-controls'),
+        },
+      },
+      {
+        title: 'MIDI-In',
+        attachTo: { element: '#midi-input-setup-gridspan', on: 'top' },
+        text: this.makeHTMLContent(helpContents['notono']['midi_in']),
+        when: {
+          show: () => document.body.classList.add('force-advanced-controls'),
+          hide: () => document.body.classList.remove('force-advanced-controls'),
+        },
       },
       {
         title: "Audio drag'n'drop",
         text: this.makeHTMLContent(helpContents['notono']['drag-n-drop']),
-        // animation: 'fadeInLeft',
-        // exposeContainer: 'bottom-controls',
+        attachTo: { element: '#main-panel' },
       },
       {
         title: 'Acknowledgments',
         text: this.makeHTMLContent(helpContents['general']['attributions']),
+        attachTo: { element: '#main-panel' },
+        buttons: this.makeNavigationButtons({ rightButton: 'Close' }),
+
       },
     ]
   }
@@ -336,6 +351,14 @@ export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView
   protected cleanup(): void {
     super.cleanup()
 
-    this.inpainter.interfaceElement.classList.remove('trip-hidden')
+    this.inpainter.interfaceElement?.classList.remove('trip-hidden')
   }
 }
+
+if (import.meta.hot) {
+  import.meta.hot.accept('../static/localizations/help.json', (helpContentsUpdated) => {
+    helpContents = helpContentsUpdated
+    console.log('updated help contents')
+  })
+}
+
