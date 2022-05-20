@@ -9,10 +9,10 @@ import {
 import { PlaybackManager } from './playback'
 
 import { getMidiInputListener } from './midiIn'
-import FocusedAudioKeys from './audiokeys/focusedAudiokeys'
 import Nexus from './nexusColored'
 import * as ControlLabels from './controlLabels'
 import { ToneNoteEvent } from './midi_io/midiInput'
+import { AudioKeys } from 'audiokeys'
 
 export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpainter> {
   protected async onInpainterChange(data: NotonoData<never>): Promise<void> {
@@ -62,7 +62,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
   // look-ahead duration to retrieve the state of the crossfade after potential fading operations
   protected crossFadeOffset: Tone.Unit.Time = '+1.1'
 
-  protected readonly desktopKeyboard = new FocusedAudioKeys({
+  protected readonly desktopKeyboard = new AudioKeys({
     polyphony: Infinity,
     rows: 2,
     rootNote: 60,
