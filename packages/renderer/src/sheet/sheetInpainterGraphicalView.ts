@@ -134,8 +134,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
       // TODO(theis, 2021-08-10): use inpainter.inpaint method
       void this.inpainter.inpaint(
         [...this.queryParameters, ...timerangeQueryParameters],
-        this.inpainter.defaultApiAddress,
-        null,
+        undefined,
         metadata
       )
     }

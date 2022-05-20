@@ -74,7 +74,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
   protected async apiRequest(
     httpMethod: 'GET' | 'POST',
     href: string,
-    timeout = 0,
+    timeout?: number,
     requestBody?: { data: BodyInit; dataType: string | null }
   ): Promise<NotonoData<VqvaeLayer>> {
     return this.loadAudioAndSpectrogram(httpMethod, href, timeout, requestBody)
@@ -83,8 +83,9 @@ export class SpectrogramInpainter extends UndoableInpainter<
   protected async getAudioSampleFromDataset(
     queryParameters: string[],
     jsonData?: Record<string, any>,
-    inpaintingApiUrl: URL = this.defaultApiAddress
-  ): Promise<Blob> {
+    timeout?: number,
+    inpaintingApiUrl?: URL
+  ): Promise<Blob | null> {
     const generationUrl = new URL(
       'sample-from-dataset-audio' + this.formatQueryParameters(queryParameters),
       inpaintingApiUrl
@@ -94,17 +95,23 @@ export class SpectrogramInpainter extends UndoableInpainter<
       {
         method: 'GET',
       },
+      timeout,
       'get audio sample'
     )
-    return response.blob()
+    if (response != null) {
+      return response.blob()
+    } else {
+      return null
+    }
   }
 
   protected async getAudio(
     queryParameters: string[],
-    inpaintingApiUrl: URL = this.defaultApiAddress,
     top?: Codemap,
-    bottom?: Codemap
-  ): Promise<Blob> {
+    bottom?: Codemap,
+    timeout?: number,
+    inpaintingApiUrl: URL = this.defaultApiAddress,
+  ): Promise<Blob | null> {
     const payload = {
       top_code: top != null ? top : this.value.codemap.top,
       bottom_code: bottom != null ? bottom : this.value.codemap.bottom,
@@ -121,9 +128,15 @@ export class SpectrogramInpainter extends UndoableInpainter<
           ContentType: 'application/json',
         },
       },
+      timeout,
       'convert codemaps to audio'
     )
-    return this.base64ResponseToBlob(response)
+    if (response != null) {
+      return this.base64ResponseToBlob(response)
+    }
+    else {
+      return null
+    }
   }
 
   protected async base64DataToBlob(
@@ -141,10 +154,11 @@ export class SpectrogramInpainter extends UndoableInpainter<
 
   protected async getSpectrogramImage(
     queryParameters: string[],
-    inpaintingApiUrl: URL = this.defaultApiAddress,
     top?: Codemap,
-    bottom?: Codemap
-  ): Promise<Blob> {
+    bottom?: Codemap,
+    timeout?: number,
+    inpaintingApiUrl: URL = this.defaultApiAddress,
+  ): Promise<Blob | null> {
     const payload = {
       top_code: top != null ? top : this.value.codemap.top,
       bottom_code: bottom != null ? bottom : this.value.codemap.bottom,
@@ -162,14 +176,21 @@ export class SpectrogramInpainter extends UndoableInpainter<
           ContentType: 'application/json',
         },
       },
+      timeout,
       'convert codemaps to spectrogram image'
     )
-    return this.base64ResponseToBlob(response)
+    if (response != null) {
+      return this.base64ResponseToBlob(response)
+    }
+    else {
+      return null
+    }
   }
 
   async sendAudio(
     audioBlob: Blob,
     queryParameters: string[],
+    timeout?: number,
     inpaintingApiUrl = this.defaultApiAddress
   ): Promise<this> {
     const audioForm = new FormData()
@@ -186,7 +207,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
       queryParameters,
       inpaintingApiUrl,
       false,
-      0,
+      timeout,
       audioRequestBody
     )
   }
@@ -205,7 +226,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
   protected async loadAudioAndSpectrogram(
     httpMethod: 'GET' | 'POST',
     href: string,
-    timeout = 0,
+    timeout?: number,
     requestBody?: { data: BodyInit; dataType: string | null }
   ): Promise<NotonoData<VqvaeLayer>> {
     let newCodes_top: Codemap
@@ -216,10 +237,6 @@ export class SpectrogramInpainter extends UndoableInpainter<
     let spectrogramImage: Blob
 
     try {
-      const abortController = new AbortController()
-      const abortTimeout =
-        timeout > 0 ? setTimeout(() => abortController.abort(), timeout) : null
-
       const response = await this.fetch(
         href,
         {
@@ -228,14 +245,13 @@ export class SpectrogramInpainter extends UndoableInpainter<
           headers:
             requestBody != null && requestBody.dataType != null
               ? {
-                  'Content-Type': requestBody.dataType,
-                }
+                'Content-Type': requestBody.dataType,
+              }
               : {},
-          signal: abortController.signal,
         },
-        'perform inpainting operation'
+        timeout,
+        'perform inpainting operation',
       )
-      clearTimeout(abortTimeout)
       // TODO(@tbazin, 2022/04/22): typed API requests
       const jsonContent = <
         {
@@ -323,15 +339,18 @@ export class SpectrogramInpainter extends UndoableInpainter<
   async sampleFromDataset(
     queryParameters: string[],
     jsonData?: Record<string, any>,
-    inpaintingApiUrl = this.defaultApiAddress,
-    timeout = 10000
+    timeout?: number,
+    inpaintingApiUrl?: URL,
   ): Promise<this> {
     const audioBlob = await this.getAudioSampleFromDataset(
       queryParameters,
       jsonData,
+      timeout,
       inpaintingApiUrl
     )
-    await this.sendAudio(audioBlob, queryParameters, inpaintingApiUrl)
+    if (audioBlob != null) {
+      await this.sendAudio(audioBlob, queryParameters, timeout, inpaintingApiUrl)
+    }
     return this
   }
 }
