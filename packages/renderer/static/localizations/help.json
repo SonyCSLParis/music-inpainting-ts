@@ -1,0 +1,65 @@
+{
+  "general": {
+    "play_button": {
+      "en": "Press here to start and stop playback.<br><br>Alternatively, on desktop, you can just press SPACE!"
+    },
+    "title_commands": {
+      "en": "Click on the title here to sample brand new data from the remote model, useful if you're feeling stuck at some point! <br><br>The arrows are for classic undo/redo functionality (and keyboard shortcuts are supported too)."
+    },
+    "undo_redo": {
+      "en": ""
+    },
+    "attributions": {
+      "en": "Icons made by <a href='https://www.flaticon.com/authors/freepik'>Freepik </a> from <a href='www.flaticon.com'>Flaticon</a>."
+    }
+  },
+
+  "nonoto": {
+    "note_box": {
+      "en": "Touch these <b>dotted boxes</b> to trigger a <b>regeneration</b> of the underlying portion of the score.<br>You can also scroll on these boxes to vary the granularity.",
+      "de": "Tippen Sie auf die <b>gestrichelten Kästen</b> des Notenblattes, um die darunter liegenden Teile der Partitur neu <b>generieren</b> zu lassen."
+    },
+
+    "granularity": {},
+
+    "fermata_box": {
+      "de": "Tippen Sie auf die <b>gestrichelten Kästchen</b>, um eine <b>Fermata</b> zu setzen. Damit kann die Struktur des Chorales kontrolliert werden.",
+      "en": "Touch the <b>dotted boxes</b> to position an intermediate <b>fermata</b>. On your following regeneration operations, these will guide the model by requesting it to add an intermediate conclusion here, allowing you to structure your generations."
+    }
+  },
+
+  "notono": {
+    "playback": {
+      "en": "Click here to start and stop playback.<br><br>Alternatively, on desktop, you can just press SPACE or even use your keyboard as a piano!"
+    },
+
+    "midi_in": {
+      "en": "If on a compatible browser, use this pane to configure MIDI Input for low latency playback using a MIDI keyboard or in conjunction with a DAW."
+    },
+
+    "spectrogram": {
+      "en": "This <b>spectrogram</b> image represents the current sound in a time-frequency fashion.<br><b>Click and drag</d> on the cells of this grid to regenerate the underlying zones in the spectrogram."
+    },
+
+    "constraints": {
+      "en": "Here you can define the <b>constraints</b> used when painting over the spectrogram.<br><br>Think of these as the color palette in which you dip your brushes!"
+    },
+
+    "edit_tools": {
+      "en": "Selects the <b>edit tool</b> for regeneration. There are currently three different modes: <ul><li><span style='font-variant: small-caps'>inpaint</span>: the <i>default</i> mode, regenerate zones using both context and constraints,</li><li><span style='font-variant: small-caps'>randomize</span>: regenerate at random without using either context or constraints,</li><li><span style='font-variant: small-caps'>erase</span>: manually silence portions of the sound.</li></ul>Toggle the <b>Refine</b> button to edit fine-grain details, keeping the general idea structure of the sound (more-or-less) fixed."
+    },
+
+    "download": {
+      "en": "Click here at any point to <b>store</b> the current sound locally on your machine."
+    },
+
+    "drag-n-drop": {
+      "en": "...oh, and you can also <b><i>drag and drop</i></b> an audio file from your computer anywhere onto the app to import it and transform it thereafter!<br><br>Imported sounds must weigh at most 2MB if using the hosted API and will automatically be cropped to <b>1min</b>."
+    },
+
+    "fade-in": {
+      "en": "Declick adds a slight <b>fade-in</b> to the audio playback. This can reduce ear-fatigue when working with sounds containing strong attacks.<br><br>Note that the fade-in is <b>not</b> applied when storing sounds via the download button!"
+    }
+  },
+  "test": "toto tutu"
+}

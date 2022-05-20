@@ -353,7 +353,8 @@ $disabled-gridspan-filter: blur(1.3px);
     grid-template-rows: 1fr;
     padding: 0.25vh 0;
   }
-  body.advanced-controls-disabled #bottom-controls {
+  body.advanced-controls-disabled:not(.force-advanced-controls)
+    #bottom-controls {
     grid-template-rows: 1fr;
   }
   .control-label {

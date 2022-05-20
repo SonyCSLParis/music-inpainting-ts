@@ -169,6 +169,8 @@ $panes-background: #beb9d4;
     color: $text;
   }
 
+  $shepherd-button-text-color: color.invert($text);
+
   .shepherd-header,
   .shepherd-text,
   .shepherd-footer {
@@ -179,9 +181,11 @@ $panes-background: #beb9d4;
       background-color: color.invert($panes);
     }
     background-color: $active-control;
-    color: color.invert($text);
+    color: color.scale($shepherd-button-text-color, $alpha: -30%);
+    filter: grayscale(0.6);
     &:hover {
-      color: $text;
+      color: $shepherd-button-text-color;
+      filter: none;
     }
   }
 

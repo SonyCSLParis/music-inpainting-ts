@@ -1,4 +1,4 @@
-@use "mixins/colors.module";
+@use 'mixins/colors.module';
 
 #help-icon {
   top: 1.5vh;
@@ -13,6 +13,12 @@
   &:hover {
     opacity: 1;
   }
+}
+
+.shepherd-text {
+  text-align: justify;
+  font-weight: 400;
+  font-size: min(1rem, 1.7vmax);
 }
 
 .shepherd-progress-steps {
@@ -32,11 +38,11 @@
   }
   // font-size: max(1em, min(3vw, 4vh, 1.3em));
   border-bottom: thin solid gray;
-  // padding-bottom: 0.5rem;
 }
 
-.shepherd-target {
+.shepherd-element {
   border-radius: 15px;
+  background-color: rgba(0, 0, 0, 0);
 }
 
 .shepherd-hidden {
@@ -47,14 +53,29 @@
   font-size: large !important;
 }
 
+.shepherd-header {
+  padding: 0.5rem !important;
+}
+
+.shepherd-header h3,
+.shepherd-cancel-icon {
+  font-size: min(1.5rem, 3vmax);
+}
 .shepherd-footer {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   width: 100%;
+  padding: 0;
+}
+
+.shepherd-title {
+  width: 70%;
 }
 
 .shepherd-button {
-  font-size: x-large;
-  width: auto;
+  font-size: min(1.3rem, 2vmax);
+}
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+  opacity: 0.8;
 }
