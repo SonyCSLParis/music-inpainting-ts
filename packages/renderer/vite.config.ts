@@ -128,7 +128,8 @@ const config: UserConfig = {
   build: {
     sourcemap: true,
     target: `chrome${chrome}`,
-    outDir: 'dist',
+    outDir:
+      'dist' + (VITE_COMPILE_WEB ? '-' + VITE_APP_TITLE.toLowerCase() : ''),
     assetsDir: './assets/',
     rollupOptions: {
       input: join(PACKAGE_ROOT, 'index.html'),
