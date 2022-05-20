@@ -141,27 +141,41 @@ export function render(
     ircamSmallLogoElement.alt = 'ircam Team Logo'
     ircamLogoContainerElement.appendChild(ircamSmallLogoElement)
 
-    ircamLogoContainerElement.style.cursor = 'pointer'
-    ircamLogoContainerElement.addEventListener('click', () => cycleThemes())
+    const allowCyclingThemes = false
+    if (allowCyclingThemes) {
+      ircamLogoContainerElement.style.cursor = 'pointer'
+      ircamLogoContainerElement.addEventListener('click', () => cycleThemes())
+    }
   }
 }
 
-const themes = ['lavender-light', 'lavender-dark', 'dark']
+const themes = ['dark']
 
-function cycleThemes(ev?: MouseEvent): void {
+function cycleThemes(): void {
   const currentTheme = document.body.getAttribute('theme')
-  const newTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length]
-  document.body.setAttribute('theme', newTheme)
-  if (newTheme == 'lavender-light') {
+  let currentThemeIndex = -1
+  if (currentTheme != null && themes.contains(currentTheme)) {
+    currentThemeIndex = themes.indexOf(currentTheme)
+  }
+  const nextTheme = themes[(currentThemeIndex + 1) % themes.length]
+  setTheme(nextTheme)
+}
+
+const themeToElectronBackgroundColor = new Map([
+  ['lavender-light', colors.lavender_dark_mode_panes_background_color],
+  ['lavender-dark', colors.lavender_light_mode_panes_background_color],
+  ['dark', 'black'],
+])
+
+function setTheme(theme: string) {
+  document.body.setAttribute('theme', theme)
+  if (themeToElectronBackgroundColor.has(theme)) {
     void setBackgroundColorElectron(
-      colors.lavender_dark_mode_panes_background_color
+      <string>themeToElectronBackgroundColor.get(theme)
     )
-  } else if (newTheme == 'lavender-dark') {
-    void setBackgroundColorElectron(
-      colors.lavender_light_mode_panes_background_color
-    )
-  } else if (newTheme == 'dark') {
-    void setBackgroundColorElectron('black')
+  }
+
+  if (theme == 'dark') {
     setColors('white', 'black')
   }
 }
