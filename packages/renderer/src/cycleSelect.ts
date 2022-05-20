@@ -177,9 +177,9 @@ export function bindButtonModel<V>(
     view.preRelease =
     view.preTouch =
     view.preTouchRelease =
-      () => {
-        return
-      }
+    () => {
+      return
+    }
   view.element.addEventListener('pointerdown', () => {
     model.next(true)
   })
@@ -225,7 +225,7 @@ export function createIconElements<T>(
 export class CycleSelectView<
   T,
   VariableValueT extends VariableValue<T> = VariableValue<T>
-> extends HTMLDivElement {
+  > extends HTMLElement {
   readonly valueModel: VariableValueT
 
   readonly interactiveElement = document.createElement('div')
@@ -297,7 +297,7 @@ export class CycleSelectView<
     return this
   }
 }
-customElements.define('cycle-select', CycleSelectView, { extends: 'div' })
+customElements.define('cycle-select', CycleSelectView)
 
 export class CycleSelectViewWithDisable<T> extends CycleSelectView<
   T | null,
@@ -342,9 +342,7 @@ export class CycleSelectViewWithDisable<T> extends CycleSelectView<
     )
   }
 }
-customElements.define('cycle-select-with-disable', CycleSelectViewWithDisable, {
-  extends: 'div',
-})
+customElements.define('cycle-select-with-disable', CycleSelectViewWithDisable)
 
 export class BooleanValue extends NullableVariableValue<boolean> {
   constructor(
@@ -400,6 +398,5 @@ export class CycleSelectEnableDisableFontAwesomeView extends CycleSelectView<
 }
 customElements.define(
   'cycle-select-enable-disable-font-awesome',
-  CycleSelectEnableDisableFontAwesomeView,
-  { extends: 'div' }
+  CycleSelectEnableDisableFontAwesomeView
 )

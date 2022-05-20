@@ -326,9 +326,7 @@ export class InstrumentSelectView extends CycleSelectViewWithDisable<leadInstrum
     this.classList.add('playbackInstrumentSelect')
   }
 }
-customElements.define('instrument-select', InstrumentSelectView, {
-  extends: 'div',
-})
+customElements.define('instrument-select', InstrumentSelectView)
 
 export function mute(mute: boolean, useChordsInstrument = false) {
   if (mute) {
