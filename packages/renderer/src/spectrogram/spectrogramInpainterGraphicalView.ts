@@ -546,7 +546,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
 
   public get hasEmptyMask(): boolean {
     // check if the mask contains at least one active cell to regenerate
-    return !this.mask.reduce(
+    return this.mask == undefined || !this.mask.reduce(
       (accumulator, row) =>
         accumulator ||
         row.reduce((accumulator, cellValue) => accumulator || cellValue, false),
@@ -853,4 +853,4 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
 
 export class SpectrogramInpainterGraphicalView extends LoadingDisplay(
   SpectrogramInpainterGraphicalViewBase
-) {}
+) { }
