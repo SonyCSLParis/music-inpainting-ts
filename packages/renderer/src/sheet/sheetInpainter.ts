@@ -35,6 +35,21 @@ export class SheetInpainter extends UndoableInpainter<
     return this.loadMusicXMLandMidi(httpMethod, href, timeout, requestBody)
   }
 
+  protected defaultTimeout: number = 10000
+  protected defaultExponentialBackoffDelay: number = 256
+
+  async generate(
+    queryParameters: string[] = [],
+    jsonData?: Record<string, any>,
+    timeout: number = 25000,
+    apiAddress?: URL,
+  ): Promise<this> {
+    return super.generate(queryParameters,
+      jsonData,
+      timeout,
+      apiAddress)
+  }
+
   get currentXML(): XMLDocument {
     return this.value.sheet
   }

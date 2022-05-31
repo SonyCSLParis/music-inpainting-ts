@@ -69,13 +69,15 @@ export abstract class Inpainter<
   }
 
   protected defaultTimeout: number = 5000
+  protected defaultExponentialBackoffDelay: number = 60
+  protected maxExponentialBackoffDelay: number = 1024
 
   protected async fetch(
     input: RequestInfo,
     init?: RequestInit,
     timeout: number = this.defaultTimeout,
     attemptedAction?: string,
-    exponential_backoff_timeout: number = 60,
+    exponentialBackoffDelay: number = this.defaultExponentialBackoffDelay,
   ): Promise<Response | undefined> {
     if (init == undefined) {
       init = {}
@@ -100,11 +102,11 @@ export abstract class Inpainter<
         return response
       }
     } catch (error: unknown) {
-      if (exponential_backoff_timeout < 1000) {
+      if (exponentialBackoffDelay <= this.maxExponentialBackoffDelay) {
         log.error(error)
-        log.error('Fetch error, retrying with exponential timeout ' + exponential_backoff_timeout)
-        await this.timeout(exponential_backoff_timeout)
-        return this.fetch(input, init, timeout, attemptedAction, 2 * exponential_backoff_timeout)
+        log.error('Fetch error, retrying with exponential timeout ' + exponentialBackoffDelay)
+        await this.timeout(exponentialBackoffDelay)
+        return this.fetch(input, init, timeout, attemptedAction, 2 * exponentialBackoffDelay)
       }
       else {
         this.handleFetchError(error, attemptedAction)
