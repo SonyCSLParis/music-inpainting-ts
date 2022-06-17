@@ -1,14 +1,14 @@
 /*Font Awesome Fonts*/
 @font-face {
   font-family: 'Fira-Sans';
-  src: url(../../static/fonts/Fira_Sans/FiraSans-Light.ttf) format('truetype');
+  src: url('../../static/fonts/Fira_Sans/FiraSans-Light.ttf') format('truetype');
   font-weight: 300;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Fira-Sans';
-  src: url(../../static/fonts/Fira_Sans/FiraSans-LightItalic.ttf)
+  src: url('../../static/fonts/Fira_Sans/FiraSans-LightItalic.ttf')
     format('truetype');
   font-weight: 300;
   font-style: italic;
@@ -16,28 +16,31 @@
 
 @font-face {
   font-family: 'Fira-Sans';
-  src: url(../../static/fonts/Fira_Sans/FiraSans-Regular.ttf) format('truetype');
+  src: url('../../static/fonts/Fira_Sans/FiraSans-Regular.ttf')
+    format('truetype');
   font-weight: 400;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Fira-Sans';
-  src: url(../../static/fonts/Fira_Sans/FiraSans-Italic.ttf) format('truetype');
+  src: url('../../static/fonts/Fira_Sans/FiraSans-Italic.ttf')
+    format('truetype');
   font-weight: 400;
   font-style: italic;
 }
 
 @font-face {
   font-family: 'Fira-Sans';
-  src: url(../../static/fonts/Fira_Sans/FiraSans-Medium.ttf) format('truetype');
+  src: url('../../static/fonts/Fira_Sans/FiraSans-Medium.ttf')
+    format('truetype');
   font-weight: 500;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Fira-Sans';
-  src: url(../../static/fonts/Fira_Sans/FiraSans-SemiBold.ttf)
+  src: url('../../static/fonts/Fira_Sans/FiraSans-SemiBold.ttf')
     format('truetype');
   font-weight: 600;
   font-style: normal;
@@ -45,14 +48,14 @@
 
 @font-face {
   font-family: 'Fira-Sans';
-  src: url(../../static/fonts/Fira_Sans/FiraSans-Bold.ttf) format('truetype');
+  src: url('../../static/fonts/Fira_Sans/FiraSans-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
 }
 
 @font-face {
   font-family: 'Fira-Sans';
-  src: url(../../static/fonts/Fira_Sans/FiraSans-BoldItalic.ttf)
+  src: url('../../static/fonts/Fira_Sans/FiraSans-BoldItalic.ttf')
     format('truetype');
   font-weight: 700;
   font-style: italic;
