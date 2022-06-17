@@ -264,8 +264,8 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
       return {
         ...noteJson,
         midiChannel: midiChannel,
-        time: noteJson.time,
-        duration: noteJson.duration - 0.01,
+        time: Tone.Time(noteJson.time).toBarsBeatsSixteenths(),
+        duration: Tone.Time(noteJson.duration).toNotation(),
       }
     })
 
