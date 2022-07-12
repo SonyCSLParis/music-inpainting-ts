@@ -1,5 +1,5 @@
 import { MidiOutput } from './midi_io/midiOutput'
-import { WebMidi, Output } from '/@webmidiESM'
+import { WebMidi, Output } from 'webmidi'
 
 import log from 'loglevel'
 import * as Instruments from './instruments'

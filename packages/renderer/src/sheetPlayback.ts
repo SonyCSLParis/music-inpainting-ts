@@ -4,7 +4,6 @@ import * as Tone from 'tone'
 import * as log from 'loglevel'
 import { Midi, Track } from '@tonejs/midi'
 import { Note as MidiNote } from '@tonejs/midi/src/Note'
-import { WebMidi } from '/@webmidiESM'
 
 import * as Instruments from './instruments'
 import * as MidiOut from './midiOut'

@@ -1,10 +1,9 @@
 // adapted from Yotam Mann's midiInput.ts in @tonejs/piano
-
 import { EventEmitter } from 'events'
 import { Frequency, NormalRange, Time } from 'tone/build/esm/core/type/Units'
-import { WebMidi, Input } from '/@webmidiESM'
 
-import type { NoteMessageEvent, ControlChangeMessageEvent } from '/@webmidiESM'
+import { WebMidi, Input } from 'webmidi'
+import type { NoteMessageEvent, ControlChangeMessageEvent } from 'webmidi'
 
 type NoteEventType = 'keyDown' | 'keyUp'
 type PedalEventType = 'pedalDown' | 'pedalUp'
