@@ -86,10 +86,7 @@ const indexHtmlTransformHook: IndexHtmlTransformHook = (html, ctx) => {
       href: new URL('favicon.ico', VITE_DEPLOYMENT_URL).href,
     },
   }
-  const tags: HtmlTagDescriptor[] = [
-    faviconTag,
-    ...makeOpenGraphData(),
-  ]
+  const tags: HtmlTagDescriptor[] = [faviconTag, ...makeOpenGraphData()]
   return { html: html, tags: tags }
 }
 
@@ -128,9 +125,7 @@ const config: UserConfig = {
     assetsDir: './assets/',
     rollupOptions: {
       input: join(PACKAGE_ROOT, 'index.html'),
-      external: VITE_COMPILE_WEB
-        ? []
-        : [...builtinModules.flatMap((p) => [p, `node:${p}`])],
+      external: [],
     },
     emptyOutDir: true,
     brotliSize: false,

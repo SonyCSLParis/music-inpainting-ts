@@ -1,6 +1,9 @@
 import { Inpainter } from './inpainter/inpainter'
 import { NotonoData } from './spectrogram/spectrogramInpainter'
 import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
+import { Buffer } from 'buffer'
+import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
+import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
 
 const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
@@ -24,7 +27,9 @@ function roundRect(
   y: number,
   width: number,
   height: number,
-  radius: number | Radius
+  radius: number | Radius,
+  fillStyle?: string,
+  strokeStyle?: string
 ) {
   if (typeof radius === 'undefined') {
     radius = 5
@@ -38,6 +43,7 @@ function roundRect(
     }
   }
   ctx.beginPath()
+  ctx.lineWidth = 0.3
   ctx.moveTo(x + radius.tl, y)
   ctx.lineTo(x + width - radius.tr, y)
   ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr)
@@ -47,6 +53,14 @@ function roundRect(
   ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl)
   ctx.lineTo(x, y + radius.tl)
   ctx.quadraticCurveTo(x, y, x + radius.tl, y)
+  if (fillStyle != undefined) {
+    ctx.fillStyle = fillStyle
+    ctx.fill()
+  }
+  if (strokeStyle != undefined) {
+    ctx.strokeStyle = strokeStyle
+    ctx.stroke()
+  }
   ctx.closePath()
 }
 
@@ -57,14 +71,26 @@ export type filename = {
 
 export abstract class DownloadButton<
   DataT = unknown,
-  InpainterT extends Inpainter<DataT> = Inpainter<DataT>
+  InpainterT extends Inpainter<DataT> = Inpainter<DataT>,
+  InpainterGraphicalViewT extends InpainterGraphicalView<DataT> = InpainterGraphicalView<DataT>
 > {
   protected readonly inpainter: InpainterT
+  protected readonly inpainterGraphicalView: InpainterGraphicalViewT
 
-  protected abstract onInpainterChange(data: DataT): void
+  protected abstract _refreshCallback: () => Promise<void>
+  protected readonly refreshCallback: () => Promise<void> = async () => {
+    this._refreshCallback()
+  }
 
-  protected readonly parent: HTMLElement
+  protected registerUpdateCallback(): void {
+    this.inpainter.on('change', this.refreshCallback)
+  }
+  protected removeUpdateCallback(): void {
+    this.inpainter.removeListener('change', this.refreshCallback)
+  }
+
   readonly container: HTMLElement
+  readonly interfaceContainer: HTMLElement
   readonly downloadElement: HTMLAnchorElement
   protected readonly interface: HTMLElement
   protected readonly iconElement: HTMLElement
@@ -74,98 +100,104 @@ export abstract class DownloadButton<
 
   constructor(
     inpainter: InpainterT,
+    inpainterGraphicalView: InpainterGraphicalViewT,
     container: HTMLElement,
     defaultFilename: filename
   ) {
     this.inpainter = inpainter
+    this.inpainterGraphicalView = inpainterGraphicalView
 
     this.container = container
+    this.interfaceContainer = document.createElement('div')
+    this.interfaceContainer.classList.add('download-button-container')
+    this.container.prepend(this.interfaceContainer)
 
     this.interface = document.createElement('div')
-    this.interface.id = 'download-button-interface'
+    this.interface.classList.add('download-button-interface')
     this.interface.classList.add('control-item')
     this.interface.setAttribute('draggable', 'true')
-    this.container.appendChild(this.interface)
+    this.interfaceContainer.appendChild(this.interface)
 
     // create invisible anchor element to handle download logic
     this.downloadElement = document.createElement('a')
-    this.downloadElement.id = 'download-button'
     this.downloadElement.setAttribute('draggable', 'true')
     this.interface.appendChild(this.downloadElement)
 
     this.defaultFilename = defaultFilename
 
     this.iconElement = document.createElement('i')
-    this.iconElement.id = 'download-button-icon'
     this.iconElement.classList.add('fa-solid')
     this.iconElement.classList.add('fa-download')
     this.iconElement.classList.add(this.mainIconSize)
-    this.downloadElement.appendChild(this.iconElement)
+    this.interface.appendChild(this.iconElement)
 
     this.resizeCanvas = document.createElement('canvas')
     this.resizeCanvas.id = 'drag-n-drop-thumbnail-image-resizer'
     this.resizeCanvas.hidden = true
-    this.interface.appendChild(this.resizeCanvas)
+    this.interfaceContainer.appendChild(this.resizeCanvas)
 
     this.dragImage = new Image()
 
     if (VITE_COMPILE_ELECTRON) {
       // add support for native Drag and Drop
       // FIXME(@tbazin, 2021/11/10): Fix DownloadButton drag-out for MIDI
-      const saveBlob = async (
-        blob: Blob,
-        fileName: string,
-        appDir: 'temp' | 'documents' = 'temp'
-      ): Promise<string> => {
-        {
-          const reader = new FileReader()
-          const storagePath = <string>(
-            await window.ipcRendererInterface.getPath(fileName, appDir)
-          )
-          reader.onload = async function () {
-            if (reader.readyState == 2) {
-              if (reader.result == null) {
-                throw new EvalError('Unexpected null reader')
-              }
-              const buffer = Buffer.from(reader.result)
-              await window.ipcRendererInterface.saveFile(storagePath, buffer)
-            }
-            reader.readAsArrayBuffer(blob)
-          }
-          return storagePath
-        }
-      }
-
-      this.container.addEventListener('dragstart', (event) => {
-        event.preventDefault()
-        const soundStoragePathPromise = saveBlob(
-          this.content,
-          this.makeFilenameWithTimestamp(),
-          'documents'
-        )
-        const imageStoragePathPromise = saveBlob(
-          this.imageContent,
-          'spectrogram.png',
-          'temp'
-        )
-        void Promise.all([
-          soundStoragePathPromise,
-          imageStoragePathPromise,
-        ]).then(([soundPath, imagePath]) => {
-          window.ipcRendererInterface.startDrag(soundPath, imagePath)
-        })
-      })
+      this.interfaceContainer.addEventListener(
+        'dragstart',
+        this.onDragStartElectron
+      )
     } else {
-      this.interface.addEventListener('dragstart', (event) => {
-        // event.preventDefault()
-        const dragData = `audio/x-wav:${this.filename}:${this.targetURL}`
-        event.dataTransfer.setData('DownloadURL', dragData)
-        const height = 150
-        event.dataTransfer.setDragImage(this.dragImage, 0, height)
+      this.interfaceContainer.addEventListener('dragstart', (event) => {
+        if (event.dataTransfer != null) {
+          const dragData = `audio/x-wav:${this.filename}:${this.targetURL}`
+          event.dataTransfer.setData('DownloadURL', dragData)
+          const height = 150
+          event.dataTransfer.setDragImage(this.dragImage, 0, height)
+        }
       })
     }
+    this.registerUpdateCallback()
+  }
 
-    inpainter.on('change', (data: DataT) => this.onInpainterChange(data))
+  protected async saveBlobElectron(
+    blob: Blob,
+    fileName: string,
+    appDir: 'temp' | 'documents' = 'temp'
+  ): Promise<string> {
+    if (VITE_COMPILE_ELECTRON) {
+      {
+        const storagePath = await window.ipcRendererInterface.getPath(
+          fileName,
+          appDir
+        )
+        const buffer = Buffer.from(await blob.arrayBuffer())
+        await window.ipcRendererInterface.saveFile(storagePath, buffer)
+        return storagePath
+      }
+    } else {
+      throw Error('Not in an electron environment')
+    }
+  }
+
+  onDragStartElectron = (event: DragEvent) => {
+    event.preventDefault()
+    if (this._content != undefined && this.imageContent != undefined) {
+      const dataStoragePathPromise = this.saveBlobElectron(
+        this._content,
+        this.makeFilenameWithTimestamp(),
+        'temp'
+      )
+      const dragThumbnailImagePathPromise = this.saveBlobElectron(
+        this.imageContent,
+        'spectrogram.png',
+        'temp'
+      )
+      void Promise.all([
+        dataStoragePathPromise,
+        dragThumbnailImagePathPromise,
+      ]).then(([soundPath, imagePath]) => {
+        window.ipcRendererInterface.startDrag(soundPath, imagePath)
+      })
+    }
   }
 
   makeFilenameWithTimestamp(baseName?: string, extension?: string): string {
@@ -212,26 +244,44 @@ export abstract class DownloadButton<
         this.resizeCanvas.height = newHeight
 
         const context = this.resizeCanvas.getContext('2d')
-        const cropWidth = newWidth / 2
-        const cropHeight = newHeight / 2
-        const centerX = 0
-        const centerY = cropHeight
+        if (context == null) {
+          reject()
+        } else {
+          const cropWidth = newWidth / 2
+          const cropHeight = newHeight / 2
+          const centerX = 0
+          const centerY = cropHeight
 
-        context.filter = 'blur(2px)'
-        roundRect(context, centerX + 2, centerY - 2, cropWidth, cropHeight, 20)
+          context.filter = 'blur(0.2px)'
+          roundRect(
+            context,
+            centerX + 2,
+            centerY - 2,
+            cropWidth,
+            cropHeight,
+            20,
+            'black',
+            '#ff6e0099'
+          )
 
-        context.filter = 'none'
-        context.clip()
-        context.filter =
-          'invert(1) sepia(1) hue-rotate(-17.8deg) brightness(0.7) contrast(1.5) blur(0.5px);'
-        context.filter =
-          ' blur(0.5px) contrast(1.5) brightness(0.7) hue-rotate(-17.8deg) sepia(1) invert(1);'
-        context.drawImage(image, 2, -2, newWidth, newHeight)
+          context.filter = 'none'
+          context.clip()
+          context.filter =
+            'invert(1) sepia(1) hue-rotate(-17.8deg) brightness(0.7) contrast(1.5) blur(0.5px)'
+          // context.filter =
+          //   ' blur(0.5px) contrast(1.5) brightness(0.7) hue-rotate(-17.8deg) sepia(1) invert(1);'
+          // context.filter = 'brightness(10)'
+          context.drawImage(image, 2, -2, newWidth, newHeight)
 
-        this.resizeCanvas.toBlob((blob) => {
-          image.remove()
-          resolve(blob)
-        }, file.type)
+          this.resizeCanvas.toBlob((blob) => {
+            if (blob == null) {
+              reject()
+            } else {
+              image.remove()
+              resolve(blob)
+            }
+          }, file.type)
+        }
       }
       image.src = URL.createObjectURL(file)
       image.onerror = reject
@@ -240,26 +290,37 @@ export abstract class DownloadButton<
 
   protected resizeCanvas: HTMLCanvasElement
 
-  protected content: Blob
+  protected _content?: Blob
+  protected get content(): Blob | undefined {
+    return this._content
+  }
+  protected set content(content: Blob | undefined) {
+    URL.revokeObjectURL(this.targetURL)
+    this._content = content
+    if (content != undefined) {
+      this.targetURL = URL.createObjectURL(content)
+    }
+  }
 
-  protected _imageContent: Blob
-  get imageContent(): Blob {
+  protected _imageContent?: Blob
+  get imageContent(): Blob | undefined {
     return this._imageContent
   }
-  set imageContent(imageBlob: Blob) {
-    void this.resizeImage(imageBlob, 150, 150).then((blob) => {
-      this._imageContent = blob
+  set imageContent(imageBlob: Blob | undefined) {
+    if (imageBlob != undefined) {
+      void this.resizeImage(imageBlob, 150, 150).then((blob) => {
+        this._imageContent = blob
 
-      URL.revokeObjectURL(this.dragImage.src)
-      const blobUrl = URL.createObjectURL(this.imageContent)
-      this.dragImage.src = blobUrl
-    })
+        URL.revokeObjectURL(this.dragImage.src)
+        const blobUrl = URL.createObjectURL(<Blob>this.imageContent)
+        this.dragImage.src = blobUrl
+      })
+    }
   }
 
   get targetURL(): string {
     return this.downloadElement.href
   }
-
   set targetURL(downloadURL: string) {
     this.downloadElement.href = downloadURL
     this.updateFilename()
@@ -289,24 +350,43 @@ export abstract class DownloadButton<
       this.targetURL = ''
     }
   }
+
+  dispose() {
+    try {
+      this.container.removeChild(this.interfaceContainer)
+      URL.revokeObjectURL(this.targetURL)
+    } catch (e) {}
+  }
 }
 
 export class NotonoDownloadButton extends DownloadButton<NotonoData> {
-  protected onInpainterChange(data: NotonoData): void {
-    this.imageContent = data.spectrogramImage
-    this.content = data.audio
-    this.targetURL = URL.createObjectURL(data.audio)
+  protected _refreshCallback = async () => {
+    this.imageContent = this.inpainter.value.spectrogramImage
+    this._content = this.inpainter.value.audio
+    this.targetURL = URL.createObjectURL(this.inpainter.value.audio)
   }
 }
 export class SheetDownloadButton extends DownloadButton<
   SheetData,
-  SheetInpainter
+  SheetInpainter,
+  SheetInpainterGraphicalView
 > {
-  protected onInpainterChange(data: SheetData): void {
+  protected registerUpdateCallback(): void {
+    this.inpainterGraphicalView.on('ready', this.refreshCallback)
+  }
+  protected removeUpdateCallback(): void {
+    this.inpainterGraphicalView.removeListener('ready', this.refreshCallback)
+  }
+
+  protected _refreshCallback: () => Promise<void> = async () => {
     const sheetBlob = new Blob([this.inpainter.currentXML_string], {
       type: 'text/xml',
     })
-    this.content = sheetBlob
+    this._content = sheetBlob
+    const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
+    if (sheetPNGBlob != null) {
+      this.imageContent = sheetPNGBlob
+    }
     this.targetURL = URL.createObjectURL(sheetBlob)
   }
 }

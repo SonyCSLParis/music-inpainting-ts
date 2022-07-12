@@ -83,7 +83,10 @@ export class ToneMidiInput extends EventEmitter {
 
   protected webmidiEventToTonejsEvent(event: NoteMessageEvent): ToneNoteEvent {
     return {
-      note: `${event.note.name}${event.note.octave}`,
+      note:
+        event.note.name +
+        (event.note.accidental ?? '') +
+        event.note.octave.toString(),
       velocity: event.note.attack,
     }
   }

@@ -2,7 +2,7 @@
 @use './mixins/colors.module';
 @use 'sass:color';
 
-$spectrogram-height: 80%;
+$spectrogram-height: 83%;
 $spectrogram-height-no-scroll: 90%;
 
 .spectrogram-inpainter {
@@ -12,6 +12,9 @@ $spectrogram-height-no-scroll: 90%;
   }
   .spectrogram-inpainter-frequency-scale-container {
     height: calc(#{$spectrogram-height} + 1.5rem);
+    canvas {
+      height: 100%;
+    }
   }
 }
 
@@ -130,14 +133,21 @@ body.notono {
   pointer-events: none;
 }
 .spectrogram-inpainter-frequency-scale-container {
+  z-index: 1;
   left: 2vw;
   top: calc(5% - 1rem);
 }
 
 .spectrogram-inpainter-time-scale-container {
+  z-index: 2;
   width: calc(90vw + 1em);
   left: calc(5vw - 0.5em);
-  bottom: 2%;
+  bottom: 10%;
+}
+.spectrogram-inpainter.no-scroll {
+  .spectrogram-inpainter-time-scale-container {
+    bottom: 2%;
+  }
 }
 
 .spectrogram-inpainter-image-container {

@@ -81,7 +81,7 @@ body.running #configuration-selection-container {
 
 #use_remote_api-toggle::before {
   font-size: smaller;
-  content: 'Use custom API';
+  content: 'Use hosted remote API (leave on by default)';
 }
 
 #server-configuration-container {
@@ -95,7 +95,7 @@ body.running #configuration-selection-container {
   transition: filter 0.1s ease-in-out;
   width: 100%;
   &::before {
-    content: 'Custom API address';
+    content: 'Self-hosted API address';
   }
 }
 

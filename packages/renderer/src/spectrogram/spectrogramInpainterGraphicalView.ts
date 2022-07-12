@@ -39,6 +39,9 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   SpectrogramPlaybackManager,
   VqvaeLayer
 > {
+  get isRendered(): boolean {
+    return this.interactiveGrid != undefined
+  }
   protected async onInpainterChange(
     data: NotonoData<VqvaeLayer>
   ): Promise<void> {
@@ -183,6 +186,9 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
 
     this.scrollbar = new ScrollLockSimpleBar(this.imageContainer, {
       clickOnTrack: false,
+    })
+    this.scrollbar.getScrollElement().addEventListener('scroll', () => {
+      this.drawTimeScale()
     })
 
     this.timeScaleContainer = document.createElement('div')
@@ -479,9 +485,9 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     }
   }
 
-  public render(): void {
-    if (this.interactiveGrid !== undefined) {
-      this.interactiveGrid.destroy()
+  protected _render(): void {
+    if (this.isRendered) {
+      this.interactiveGrid?.destroy()
     }
     this.drawTimeScale()
     this.drawFrequencyScale()
@@ -491,7 +497,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   protected _refresh(): void {
-    if (this.interactiveGrid == undefined) {
+    if (!this.isRendered) {
       return
     }
     this.updateNoScroll()
@@ -546,11 +552,17 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
 
   public get hasEmptyMask(): boolean {
     // check if the mask contains at least one active cell to regenerate
-    return this.mask == undefined || !this.mask.reduce(
-      (accumulator, row) =>
-        accumulator ||
-        row.reduce((accumulator, cellValue) => accumulator || cellValue, false),
-      false
+    return (
+      this.mask == undefined ||
+      !this.mask.reduce(
+        (accumulator, row) =>
+          accumulator ||
+          row.reduce(
+            (accumulator, cellValue) => accumulator || cellValue,
+            false
+          ),
+        false
+      )
     )
   }
 
@@ -610,8 +622,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
             display: true,
 
             min: this.getCurrentScrollPositionTopLayer(),
-            max:
-              this.getCurrentScrollPositionTopLayer() + this.vqvaeTimestepsTop,
+            max: this.getCurrentScrollPositionTopLayer() + this.numColumnsTop,
 
             offset: false,
 
@@ -756,10 +767,9 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
 
   protected updateNoScroll(): void {
     // when set, prevents the scroll-bar from appearing
-    if (this.columnDuration != null) {
+    if (this.inpainter.value != null) {
       const disableScroll =
-        Math.round(this.playbackManager.duration) <=
-        Math.round(this.numColumns * this.columnDuration)
+        Math.round(this.vqvaeTimestepsTop) <= Math.round(this.numColumnsTop)
       this.container.classList.toggle('no-scroll', disableScroll)
       this.triggerReflow()
     }
@@ -793,14 +803,14 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   protected setCurrentlyPlayingPositionDisplay(): void {
-    this.interactiveGridPerLayer.forEach((interactiveGrid) => {
+    this.interactiveGridPerLayer.forEach((interactiveGrid, vqvaeLayer) => {
+      const codemap = this.inpainter.value.codemap[vqvaeLayer]
       const scaleRatio = interactiveGrid.columns / this.numColumnsTop
       const currentlyPlayingColumn: number =
         Math.floor(
-          this.playbackManager.transport.progress * interactiveGrid.columns
+          this.playbackManager.transport.progress * codemap[0].length
         ) -
         this.getCurrentScrollPositionTopLayer() * scaleRatio
-
       if (
         currentlyPlayingColumn < 0 ||
         currentlyPlayingColumn > interactiveGrid.columns
@@ -853,4 +863,4 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
 
 export class SpectrogramInpainterGraphicalView extends LoadingDisplay(
   SpectrogramInpainterGraphicalViewBase
-) { }
+) {}

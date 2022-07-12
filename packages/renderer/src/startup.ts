@@ -17,6 +17,8 @@ import defaultConfiguration from '../../common/default_config.json'
 import customConfiguration from '../../../config.json'
 
 import '../styles/startupSplash.scss'
+import { setBackgroundColorElectron } from './utils/display'
+import colors from '../styles/mixins/_colors.module.scss'
 
 export type applicationConfiguration = typeof defaultConfiguration
 
@@ -40,7 +42,6 @@ const applicationModeToAPIResourceName: Map<ApplicationMode, string> = new Map([
   [ApplicationMode.Spectrogram, 'notono/'],
 ])
 
-// defined at compile-time via webpack.DefinePlugin
 const COMPILE_ELECTRON: boolean =
   import.meta.env.VITE_COMPILE_ELECTRON != undefined
 const VITE_APP_TITLE: string | undefined = import.meta.env.VITE_APP_TITLE
@@ -90,7 +91,6 @@ const globalConfiguration: applicationConfiguration = {
   ...customConfiguration,
 }
 
-// fallback to Webpack globals if no value defined in the JSON configuration
 globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] =
   globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] ||
   VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX
@@ -138,7 +138,7 @@ const availableApplicationModes = VITE_AVAILABLE_APPLICATION_MODES
 // just store it in LinkClient / LinkServer (but this would involve duplicate definitions...)
 // or in a global read-only configuration file in common?
 if (COMPILE_ELECTRON) {
-  window.abletonLinkApi.disable()
+  // window.abletonLinkApi.disable()
   // window.ipcRenderer
   //   .invoke('get-window-id')
   //   .then((windowID: number) => {
@@ -161,7 +161,7 @@ export class SplashScreen {
   readonly scrollbar: SimpleBar
 
   readonly insertCustomAPIAdressInput: boolean
-  readonly useCustomAPIToggle?: BooleanValue
+  readonly useHostedAPIToggle?: BooleanValue
   readonly serverAddressInput?: HTMLInputElement
 
   readonly insertEulaAccept: boolean
@@ -181,8 +181,11 @@ export class SplashScreen {
     }
   }
 
-  get useCustomAPI(): boolean {
-    return this.insertCustomAPIAdressInput && this.useCustomAPIToggle.value
+  get useHostedAPI(): boolean {
+    return (
+      this.serverAddressInput == undefined ||
+      (this.useHostedAPIToggle?.value ?? false)
+    )
   }
 
   protected insertEULA(
@@ -254,13 +257,13 @@ export class SplashScreen {
         serverConfigurationElement
       )
 
-      this.useCustomAPIToggle = new BooleanValue(false)
-      const useCustomAPIToggleViewContainer = document.createElement('div')
-      useCustomAPIToggleViewContainer.id = 'use_remote_api-toggle'
-      serverConfigurationElement.appendChild(useCustomAPIToggleViewContainer)
-      const useCustomAPIToggleView =
-        new CycleSelectEnableDisableFontAwesomeView(this.useCustomAPIToggle)
-      useCustomAPIToggleViewContainer.appendChild(useCustomAPIToggleView)
+      this.useHostedAPIToggle = new BooleanValue(true)
+      const useHostedAPIToggleViewContainer = document.createElement('div')
+      useHostedAPIToggleViewContainer.id = 'use_remote_api-toggle'
+      serverConfigurationElement.appendChild(useHostedAPIToggleViewContainer)
+      const useHostedAPIToggleView =
+        new CycleSelectEnableDisableFontAwesomeView(this.useHostedAPIToggle)
+      useHostedAPIToggleViewContainer.appendChild(useHostedAPIToggleView)
 
       const serverAddressContainer = document.createElement('div')
       serverAddressContainer.id = 'server-address-container'
@@ -278,13 +281,17 @@ export class SplashScreen {
         this.checkServerAddress()
       })
 
-      this.useCustomAPIToggle.on('change', (state: boolean) => {
-        serverAddressContainer.classList.toggle('hidden', !state)
-        if (state) {
-          this.serverAddressInput.focus()
+      this.useHostedAPIToggle.on('change', (state: boolean | null) => {
+        if (state == null) {
+          return
+        }
+        serverAddressContainer.classList.toggle('hidden', state)
+        if (state != null && !state) {
+          this.checkServerAddress(this.getCurrentConfiguration(), true)
+          this.serverAddressInput?.focus()
         }
       })
-      this.useCustomAPIToggle.emitChanged()
+      this.useHostedAPIToggle.emitChanged()
     }
 
     const modeConfigurationContainerElement = document.createElement('div')
@@ -433,7 +440,7 @@ export class SplashScreen {
         break
     }
 
-    if (this.useCustomAPI) {
+    if (!this.useHostedAPI) {
       if (this.serverAddressInput.value.length > 0) {
         configuration['inpainting_api_address'] = this.serverAddressInput.value
       }
@@ -450,7 +457,10 @@ export class SplashScreen {
 
   // TODO(theis, 2021/05/18): check that the address points to a valid API server,
   // through a custom ping-like call
-  checkServerAddress(configuration?: applicationConfiguration): boolean {
+  async checkServerAddress(
+    configuration?: applicationConfiguration,
+    forceRetriggerVisualAnimation: boolean = false
+  ): Promise<boolean> {
     let address: string
     if (
       configuration != null &&
@@ -466,27 +476,58 @@ export class SplashScreen {
     }
 
     // taken from https://stackoverflow.com/a/43467144
-    let url: URL
-    let isValid: boolean
+    let url: URL | null = null
+    let isValidURL: boolean = false
     try {
       url = new URL(address)
 
-      isValid = url.protocol === 'http:' || url.protocol === 'https:'
+      isValidURL = url.protocol === 'http:' || url.protocol === 'https:'
     } catch (_) {
-      isValid = false
+      isValidURL = false
     }
 
-    this.serverAddressInput.classList.toggle('wrong-input-setting', !isValid)
+    let serverIsAvailable: boolean = false
+    if (isValidURL && url != undefined) {
+      try {
+        await fetch(new URL('timerange-change', url), {
+          method: 'post',
+        })
+        serverIsAvailable = true
+      } catch (_) {}
+    }
+    this.shakeServerAddressInput(
+      serverIsAvailable,
+      forceRetriggerVisualAnimation
+    )
 
-    return isValid
+    return serverIsAvailable
+  }
+
+  protected shakeServerAddressInput(
+    serverIsAvailable: boolean,
+    forceRetriggerVisualAnimation: boolean = false
+  ): void {
+    this.serverAddressInput?.classList.toggle('wrong-input-setting', false)
+    if (forceRetriggerVisualAnimation) {
+      this.serverAddressInput?.offsetHeight // trigger reflow
+    }
+    this.serverAddressInput?.classList.toggle(
+      'wrong-input-setting',
+      !serverIsAvailable
+    )
   }
 
   // TODO(theis, 2021/05/18): add a shake effect on error
-  protected checkConfiguration(
-    configuration: applicationConfiguration
-  ): boolean {
+  protected async checkConfiguration(
+    configuration: applicationConfiguration,
+    forceRetriggerVisualAnimation: boolean = false
+  ): Promise<boolean> {
     return (
-      !this.insertCustomAPIAdressInput || this.checkServerAddress(configuration)
+      this.useHostedAPI ||
+      (await this.checkServerAddress(
+        configuration,
+        forceRetriggerVisualAnimation
+      ))
     )
   }
 
@@ -509,7 +550,7 @@ export class SplashScreen {
     const startCallback = async (): Promise<void> => {
       await Tone.start()
 
-      this.disposeAndStart()
+      await this.disposeAndStart()
     }
 
     let pulsingTimeout = setTimeout(() => {
@@ -560,7 +601,7 @@ export class SplashScreen {
   ): Promise<void> {
     const recaptchaSuccessful = await this.verifyCaptcha(recaptchaResponse)
     if (recaptchaSuccessful) {
-      this.disposeAndStart()
+      await this.disposeAndStart()
     }
   }
 
@@ -594,10 +635,10 @@ export class SplashScreen {
     configurationWindow.appendChild(recaptchaElement)
   }
 
-  protected disposeAndStart(): void {
+  protected async disposeAndStart(): Promise<void> {
     const currentConfiguration = this.getCurrentConfiguration()
 
-    if (!this.checkConfiguration(currentConfiguration)) {
+    if (!(await this.checkConfiguration(currentConfiguration, true))) {
       return
     }
 

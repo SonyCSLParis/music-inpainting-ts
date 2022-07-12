@@ -13,9 +13,8 @@ export function render(
   linkClient: AbletonLinkClient,
   playbackManager: MidiSheetPlaybackManager
 ): void {
-  const linkClientSetupContainerElement: HTMLElement = document.createElement(
-    'div'
-  )
+  const linkClientSetupContainerElement: HTMLElement =
+    document.createElement('div')
   linkClientSetupContainerElement.id = 'ableton-link-client-setup-container'
   linkClientSetupContainerElement.classList.add('gridspan')
   linkClientSetupContainerElement.classList.add('advanced')
@@ -34,18 +33,13 @@ export function render(
   linkEnableButtonElement.classList.add('control-item')
   linkClientSetupContainerElement.appendChild(linkEnableButtonElement)
 
-  const linkEnableToggle = new BooleanValue()
+  const linkEnableToggle = new BooleanValue(false)
   const linkEnableButton = new CycleSelectEnableDisableFontAwesomeView(
     linkEnableToggle
   )
   linkEnableButtonElement.appendChild(linkEnableButton)
 
-  linkEnableToggle.on('change', (enable: boolean) => {
-    if (enable) {
-      // linkEnableToggle.turnOff(false)
-    } else {
-      // linkEnableButton.turnOn(false)
-    }
+  linkEnableToggle.on('change', (enable: boolean | null) => {
     void linkClient.pingServer().then(() => {
       if (enable) {
         void linkClient.enable() //.then(() => linkEnableButton.turnOn(false))

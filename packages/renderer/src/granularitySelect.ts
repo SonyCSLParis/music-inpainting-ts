@@ -1,4 +1,3 @@
-import { getPathToStaticFile } from './staticPath'
 import * as ControlLabels from './controlLabels'
 import {
   createIconElements,
@@ -48,7 +47,6 @@ export function renderGranularitySelect(
   containerElement: HTMLElement,
   granularitiesQuarters: number[]
 ): [VariableValue<number>, CycleSelectView<number>] {
-  const iconsBasePath: string = getPathToStaticFile('icons')
   const granularityIcons = makeGranularityIconsList(granularitiesQuarters)
 
   const granularitySelectContainerElement = document.createElement('div')

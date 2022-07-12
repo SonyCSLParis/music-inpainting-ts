@@ -3,7 +3,7 @@ import { Transport as ToneTransport } from 'tone/build/esm/core/clock/Transport'
 import log from 'loglevel'
 
 import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
-import EventEmitter from 'events'
+import { EventEmitter } from 'events'
 import { Inpainter } from './inpainter/inpainter'
 
 log.setLevel(log.levels.INFO)
@@ -14,8 +14,8 @@ export interface MinimalPlaybackManager {
 }
 
 abstract class TonePlaybackManager extends EventEmitter {
-  protected playbackLookahead = 0.1
-  protected interactiveLookahead = 0.1
+  protected playbackLookahead = 0.15
+  protected interactiveLookahead = 0.15
 
   get transport(): ToneTransport {
     return Tone.getTransport()
@@ -98,10 +98,7 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
   async stop() {
     if (this.linkClient != null && this.linkClient.isEnabled) {
       log.info('LINK: Cancelling previously scheduled playback start')
-      this.linkClient.removeListener(
-        'downbeat',
-        () => void this.synchronizedStartCallback()
-      )
+      this.linkClient.removeAllListeners('downbeat')
     }
     await super.stop()
   }
@@ -119,14 +116,19 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
   protected onPhaseUpdate(phase: number): void {
     // Set the position in the current measure to the provided phase
     // TODO(theis): should we use the `link.quantum` value?
-    this.transport.position = this.getCurrentMeasure() + ':' + phase.toString()
+    const phaseShift =
+      (this.transport.bpm.value / 60) *
+      (<number>this.interactiveLookahead / 1000)
+    this.transport.position =
+      this.getCurrentMeasure() + ':' + (phase + phaseShift).toString()
   }
 
   registerLinkClient(linkClient: AbletonLinkClient) {
     if (this.linkClient == null) {
       this.linkClient = linkClient
-      this.linkClient.onServerMessage('phase', (_, phase: number) =>
-        this.onPhaseUpdate(phase)
+      this.linkClient.abletonLinkAPI.onPhase(
+        this.linkClient.windowId,
+        (phase: number) => this.onPhaseUpdate(phase)
       )
     } else {
       log.error('Ableton Link Client already registered')

@@ -1,5 +1,6 @@
 import log from 'loglevel'
 import $ from 'jquery'
+import { Canvg } from 'canvg'
 
 import {
   InpainterGraphicalView,
@@ -25,6 +26,9 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   MidiSheetPlaybackManager,
   number
 > {
+  get isRendered(): boolean {
+    return this.sheet.GraphicSheet.MusicPages.length > 0
+  }
   readonly dataType = 'sheet'
 
   constructor(
@@ -188,7 +192,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     return Array.from(this._fermatas.values())
   }
 
-  public render(): void {
+  protected _render(): void {
     this.updateContainerWidth(false)
     this.sheet.render()
     this.drawTimestampBoxes()
@@ -243,10 +247,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
 
     if (
       this.sheetContainer.children.length == 0 ||
-      !this.graphicElement
-        // FIXME(theis, 2021/06/01): upgrade to webpack^5 and to support
-        // conditional chaining!
-        .hasAttribute('viewBox')
+      !this.graphicElement?.hasAttribute('viewBox')
     ) {
       // OSMD renderer hasn't been initialized yet, do nothing
       return
@@ -640,7 +641,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     const timePosition = Math.floor(
       (progress +
         transport.context.lookAhead / transport.toSeconds(transport.loopEnd)) *
-      this.sequenceDuration_quarters
+        this.sequenceDuration_quarters
     )
 
     Array.from(
@@ -761,6 +762,29 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
       }
     }
   }
+
+  async getSheetAsPNG(): Promise<Blob | null> {
+    if (this.graphicElement == null) {
+      return null
+    }
+    const canvas = new OffscreenCanvas(
+      this.graphicElement.clientWidth,
+      this.graphicElement.clientHeight
+    )
+    const context = canvas.getContext('2d')
+    if (context == null) {
+      return null
+    }
+
+    const serializer = new XMLSerializer()
+    const canvg = await Canvg.from(
+      context,
+      serializer.serializeToString(this.graphicElement)
+    )
+    await canvg.render()
+    const blob = await canvas.convertToBlob()
+    return blob
+  }
 }
 
 // TODO(@tbazin, 2021/08/05): move this inside SheetInpainter
@@ -781,11 +805,11 @@ function ondragoverTimecontainer_handler(event: DragEvent) {
 }
 
 function ondragenterTimecontainer_handler(event: DragEvent) {
-  ; (<HTMLElement>event.target).classList.add('dragover')
+  ;(<HTMLElement>event.target).classList.add('dragover')
 }
 
 function ondragleaveTimecontainer_handler(event: DragEvent) {
-  ; (<HTMLElement>event.target).classList.remove('dragover')
+  ;(<HTMLElement>event.target).classList.remove('dragover')
 }
 
 function makeOndropTimecontainer_handler(
@@ -795,21 +819,20 @@ function makeOndropTimecontainer_handler(
     // only allow drop if the source of the drag was a time-container
     const sourceID: string = event.dataTransfer.getData('text/plain')
     const sourceElement: HTMLElement = document.getElementById(sourceID)
+    const targetElement: HTMLElement = <HTMLElement>event.target
     const isValidID: boolean = sourceElement != null
     if (isValidID && sourceElement.classList.contains('notebox')) {
       event.preventDefault()
-      const targetElement: HTMLElement = <HTMLElement>event.target
       copyTimecontainerContent(
         sourceElement.parentElement,
         targetElement.parentElement
       )
-
-      // clean-up after drag
-      targetElement.classList.remove('dragover')
     }
+    // clean-up after drag
+    targetElement.classList.remove('dragover')
   }
 }
 
 export class SheetInpainterGraphicalView extends LoadingDisplay(
   SheetInpainterGraphicalViewBase
-) { }
+) {}

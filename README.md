@@ -2,9 +2,11 @@
 
 ![alt text](nonoto_logo.png)
 
+NONOTO is an interactive interface for symbolic sheet music generation and transformation by inpainting.
+
 NOTONO is an A.I.-powered sound editor. It allows users to edit sound in a graphical, Paint-like approach.
 
-NONOTO is distributed as an [Electron](https://electronjs.org/) app and as a web application.
+NONOTO and NOTONO are distributed as an [Electron](https://electronjs.org/) app and as a web application.
 
 ## Installation
 
@@ -12,16 +14,15 @@ NONOTO is distributed as an [Electron](https://electronjs.org/) app and as a web
 
 We recommended using the `nvm` installation manager for Node.js, available
 [here](https://github.com/nvm-sh/nvm#installing-and-updating).
-NONOTO/NOTONO is currently developed with Node.js version `14.5.0`.
+NONOTO/NOTONO is currently developed with Node.js version `16.15.0`.
 
-We use the `yarn` package manager, you can install it [here](https://classic.yarnpkg.com/fr/docs/install/).
+We use the `yarn` package manager, you can install it [here](https://yarnpkg.com/getting-started/install).
 
-NONOTO can then be installed as follows:
+NONOTO/NOTONO can then be installed as follows:
 
 ```sh
 git clone https://github.com/SonyCSLParis/NONOTO.git
 cd NONOTO
-git checkout spectrogram
 yarn install
 ```
 
@@ -30,16 +31,6 @@ Once, this is done, the NONOTO dev server (an Electron app with live-reloading) 
 ```sh
 yarn dev
 ```
-
-Alternatively, a web server can be created to serve the application over http:
-
-```sh
-yarn build:notono_web
-yarn serve:web
-```
-
-By default, NONOTO uses the port 8080.
-We recommend to use Chrome, but Firefox has been tested to work as well.
 
 ### Electron application
 

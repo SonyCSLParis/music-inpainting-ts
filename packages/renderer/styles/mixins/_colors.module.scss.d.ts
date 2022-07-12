@@ -1,4 +1,6 @@
 interface Colors {
+  darkgray: string
+  lighter_darkgray: string
   millenial_pink_theme_pink: string
   millenial_pink_theme_blue: string
   arabian_sand: string

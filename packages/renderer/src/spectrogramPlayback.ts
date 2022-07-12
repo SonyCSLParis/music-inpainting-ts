@@ -12,7 +12,7 @@ import { getMidiInputListener } from './midiIn'
 import Nexus from './nexusColored'
 import * as ControlLabels from './controlLabels'
 import { ToneNoteEvent } from './midi_io/midiInput'
-import { AudioKeys } from 'audiokeys'
+import { NoSpecialKeysAudioKeys } from './audiokeys/focusedAudiokeys'
 
 export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpainter> {
   protected async onInpainterChange(data: NotonoData<never>): Promise<void> {
@@ -62,7 +62,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
   // look-ahead duration to retrieve the state of the crossfade after potential fading operations
   protected crossFadeOffset: Tone.Unit.Time = '+1.1'
 
-  protected readonly desktopKeyboard = new AudioKeys({
+  protected readonly desktopKeyboard = new NoSpecialKeysAudioKeys({
     polyphony: Infinity,
     rows: 2,
     rootNote: 60,
@@ -166,6 +166,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
   protected scheduleInitialPlaybackLoop(): void {
     this.players.forEach((player) => player.sync())
     this.transport.loop = true
+    this.transport.loopStart = 0
   }
 
   // load a remote audio file into the next player and switch playback to it
@@ -183,7 +184,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
     this.nextPlayer().sync()
 
     // reschedule the Transport loop
-    this.transport.setLoopPoints(0, this.nextPlayer().buffer.duration)
+    this.transport.loopEnd = this.nextPlayer().buffer.duration
     this.nextPlayer().start(0)
 
     this.switchPlayers()
@@ -194,7 +195,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
       this.player_B.fadeIn =
       this.sampler_A.attack =
       this.sampler_B.attack =
-      duration_s
+        duration_s
   }
 
   get Gain(): number {

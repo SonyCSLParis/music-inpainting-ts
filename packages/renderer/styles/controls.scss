@@ -222,9 +222,7 @@
 #midi-input-setup-gridspan,
 #midi-output-setup-gridspan {
   &.midi-enabled .control-item {
-    select,
-    input,
-    svg {
+    select {
       filter: invert(1);
     }
   }
@@ -356,7 +354,15 @@ $disabled-gridspan-filter: blur(1.3px);
   }
 }
 
-#download-button-interface,
+.download-button-interface a {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.download-button-interface,
 #load-samples-button-interface {
   cursor: pointer;
 }

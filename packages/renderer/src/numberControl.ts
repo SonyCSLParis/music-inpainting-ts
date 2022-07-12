@@ -150,7 +150,6 @@ export class BPMControl extends NumberControl {
     super(containerElement, id, range, initialValue, onchange)
 
     this.on('link-tempo-changed', (newTempo: number) => {
-      console.log('link-tempo-changed')
       this.silentUpdate(newTempo)
     })
   }
