@@ -118,7 +118,7 @@
     "tiny-typed-emitter": "^2.1.0",
     "tone": "latest",
     "typed-undo": "^2.3.0",
-    "webmidi": "^3.0.20",
+    "webmidi": "^3.0.21",
     "wheelnav": "^1.7.1"
   },
   "packageManager": "yarn@3.1.1"

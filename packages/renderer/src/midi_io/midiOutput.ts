@@ -3,7 +3,7 @@ import { ToneMidiInput } from './midiInput'
 import { getMidiInputListener } from '../midiIn'
 
 import { EventEmitter } from 'events'
-import { WebMidi, Output } from '/@webmidiESM'
+import { WebMidi, Output } from 'webmidi'
 
 export class MidiOutput extends EventEmitter {
   /**

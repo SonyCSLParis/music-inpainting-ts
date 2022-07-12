@@ -2,7 +2,6 @@ import $ from 'jquery'
 import log from 'loglevel'
 log.setLevel(log.levels.INFO)
 
-import './midi_io/patchWebmidi'
 import { UndoableInpainter } from './inpainter/inpainter'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
 import { SheetInpainter } from './sheet/sheetInpainter'

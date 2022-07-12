@@ -110,11 +110,6 @@ const config: UserConfig = {
   resolve: {
     alias: {
       '/@/': join(PACKAGE_ROOT, 'src') + '/',
-      '/@webmidiESM/':
-        path.resolve(
-          PACKAGE_ROOT,
-          '../../node_modules/webmidi/dist/esm/webmidi.esm.js'
-        ) + '/',
     },
   },
   plugins: [htmlPlugin()],
