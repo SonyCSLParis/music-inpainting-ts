@@ -1,8 +1,6 @@
 import screenfull from 'screenfull'
 import $ from 'jquery'
 
-import { getPathToStaticFile } from './staticPath'
-
 import '../styles/main.scss'
 import '../styles/header.scss'
 import {

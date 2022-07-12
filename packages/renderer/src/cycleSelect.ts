@@ -155,7 +155,7 @@ export class NullableVariableValue<T> extends VariableValue<T | null> {
   }
 
   next(looping = true): T | null {
-    if (this._value == null) {
+    if (this._value === null) {
       return null
     } else {
       return this.cycle(true, looping)
@@ -177,9 +177,9 @@ export function bindButtonModel<V>(
     view.preRelease =
     view.preTouch =
     view.preTouchRelease =
-    () => {
-      return
-    }
+      () => {
+        return
+      }
   view.element.addEventListener('pointerdown', () => {
     model.next(true)
   })
@@ -225,7 +225,7 @@ export function createIconElements<T>(
 export class CycleSelectView<
   T,
   VariableValueT extends VariableValue<T> = VariableValue<T>
-  > extends HTMLElement {
+> extends HTMLElement {
   readonly valueModel: VariableValueT
 
   readonly interactiveElement = document.createElement('div')

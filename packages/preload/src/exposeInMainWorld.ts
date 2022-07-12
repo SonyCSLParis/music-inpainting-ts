@@ -1,5 +1,4 @@
 import { contextBridge } from 'electron'
-// import { Exposed } from '../contracts'
 
 /**
  * Typesafe wrapper for `electron.contextBridge.exposeInMainWorld`.

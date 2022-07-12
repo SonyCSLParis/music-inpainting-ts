@@ -1,5 +1,4 @@
 // adapted from Yotam Mann's midiInput.ts in @tonejs/piano
-import { ToneMidiInput } from './midiInput'
 import { getMidiInputListener } from '../midiIn'
 
 import { EventEmitter } from 'events'

@@ -15,7 +15,7 @@ let helpContents = helpJSON
 
 export abstract class MyShepherdTour<
   InpainterGraphicalViewT extends InpainterGraphicalView = InpainterGraphicalView
-  > extends Shepherd.Tour {
+> extends Shepherd.Tour {
   protected languages: string[]
   readonly inpainter: InpainterGraphicalViewT
   protected tripDelay_ms = 10000
@@ -33,27 +33,33 @@ export abstract class MyShepherdTour<
     modalOverlayOpeningPadding: 3,
     cancelIcon: {
       enabled: true,
-    }
+    },
   }
 
-  protected makeNavigationButtons(options: {
-    leftButton?: string,
-    rightButton?: string,
-    leftAction?: () => void,
-    rightAction?: () => void,
-  } = {}): Shepherd.Step.StepOptionsButton[] {
+  protected makeNavigationButtons(
+    options: {
+      leftButton?: string
+      rightButton?: string
+      leftAction?: () => void
+      rightAction?: () => void
+    } = {}
+  ): Shepherd.Step.StepOptionsButton[] {
     return [
       {
-        action: options?.leftAction || (() => {
-          return this.back()
-        }),
+        action:
+          options?.leftAction ||
+          (() => {
+            return this.back()
+          }),
         secondary: true,
         text: options?.leftButton != undefined ? options.leftButton : 'Back',
       },
       {
-        action: options?.rightAction || (() => {
-          return this.next()
-        }),
+        action:
+          options?.rightAction ||
+          (() => {
+            return this.next()
+          }),
         text: options?.rightButton != undefined ? options.rightButton : 'Next',
       },
     ]
@@ -99,13 +105,18 @@ export abstract class MyShepherdTour<
     this.steps = []
     this.addSteps(
       this.makeStepsOptions(helpContents).map(
-        (stepOptions) => new Shepherd.Step(this, { buttons: this.makeNavigationButtons(), ...stepOptions })
+        (stepOptions) =>
+          new Shepherd.Step(this, {
+            buttons: this.makeNavigationButtons(),
+            ...stepOptions,
+          })
       )
     )
-
   }
 
-  abstract makeStepsOptions(helpContents: typeof helpJSON): Shepherd.Step.StepOptions[]
+  abstract makeStepsOptions(
+    helpContents: typeof helpJSON
+  ): Shepherd.Step.StepOptions[]
 
   protected onStart(): void {
     document.body.classList.add('help-tour-on')
@@ -126,8 +137,9 @@ export abstract class MyShepherdTour<
   protected makeHTMLContent(contents: Record<string, string>): string | never {
     switch (this.languages.length) {
       case 2:
-        return `${contents[this.languages[0]]}<br><br><i>${contents[this.languages[1]]
-          }</i><br><br>`
+        return `${contents[this.languages[0]]}<br><br><i>${
+          contents[this.languages[1]]
+        }</i><br><br>`
       case 1:
         return contents[this.languages[0]]
       default:
@@ -277,14 +289,15 @@ export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView
         title: 'Playback',
         attachTo: { element: '#playback-commands-gridspan', on: 'top' },
         text: this.makeHTMLContent(helpContents['notono']['playback']),
-        buttons: this.makeNavigationButtons({ leftButton: 'Cancel', leftAction: () => this.cancel() })
+        buttons: this.makeNavigationButtons({
+          leftButton: 'Cancel',
+          leftAction: () => this.cancel(),
+        }),
       },
       {
         title: 'Spectrogram transformations',
         attachTo: { element: this.inpainter.interfaceContainer, on: 'bottom' },
-        text: this.makeHTMLContent(
-          helpContents['notono']['spectrogram']
-        ),
+        text: this.makeHTMLContent(helpContents['notono']['spectrogram']),
         when: {
           show: () => this.inpainter.callToAction(10),
         },
@@ -342,7 +355,6 @@ export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView
         text: this.makeHTMLContent(helpContents['general']['attributions']),
         attachTo: { element: '#main-panel' },
         buttons: this.makeNavigationButtons({ rightButton: 'Close' }),
-
       },
     ]
   }
@@ -356,9 +368,11 @@ export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView
 }
 
 if (import.meta.hot) {
-  import.meta.hot.accept('../static/localizations/help.json', (helpContentsUpdated) => {
-    helpContents = helpContentsUpdated
-    console.log('updated help contents')
-  })
+  import.meta.hot.accept(
+    '../static/localizations/help.json',
+    (helpContentsUpdated) => {
+      helpContents = helpContentsUpdated
+      console.log('updated help contents')
+    }
+  )
 }
-

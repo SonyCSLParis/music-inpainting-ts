@@ -14,7 +14,6 @@ import {
   VariableValue,
   createIconElements,
 } from './cycleSelect'
-import { getPathToStaticFile } from './staticPath'
 import * as ControlLabels from './controlLabels'
 
 type ToneInstrument = Instrument<InstrumentOptions>
@@ -39,7 +38,8 @@ export function getCurrentChordsInstrument(): InstrumentOrPiano | null {
 export function initializeInstruments(): void {
   const pianoVelocities = 1
   log.info(
-    `Loading Tone Piano with ${pianoVelocities} velocit${pianoVelocities > 1 ? 'ies' : 'y'
+    `Loading Tone Piano with ${pianoVelocities} velocit${
+      pianoVelocities > 1 ? 'ies' : 'y'
     }`
   )
   piano = new Piano({
@@ -289,11 +289,9 @@ export function renderDownloadButton(
   }
 }
 
-const instrumentIconsBasePath: string = getPathToStaticFile('icons')
-
 export class InstrumentSelect<
   T extends leadInstrument
-  > extends NullableVariableValue<T> {
+> extends NullableVariableValue<T> {
   constructor(
     options: T[] = [],
     initialValue?: T,
@@ -307,7 +305,7 @@ export class InstrumentSelect<
 
 export class ChordsInstrumentSelect<
   T extends chordsInstrument
-  > extends InstrumentSelect<T> {
+> extends InstrumentSelect<T> {
   constructor(
     options: T[] = [],
     initialValue?: T,

@@ -1,4 +1,4 @@
-import EventEmitter from 'events'
+import { EventEmitter } from 'events'
 import * as Tone from 'tone'
 import log from 'loglevel'
 import $ from 'jquery'
@@ -15,8 +15,11 @@ export abstract class InpainterGraphicalView<
   InpainterT extends Inpainter<DataT, never> = Inpainter<DataT, never>,
   PlaybackManagerT extends PlaybackManager<InpainterT> = PlaybackManager<InpainterT>,
   GranularityT = unknown
-  > extends EventEmitter {
+> extends EventEmitter {
   readonly inpainter: InpainterT
+
+  abstract get isRendered(): boolean
+
   protected onInpainterBusy(): void {
     this.disableChanges()
   }
@@ -24,6 +27,9 @@ export abstract class InpainterGraphicalView<
     this.enableChanges()
   }
   protected onInpainterChange(data: DataT): void {
+    if (!this.isRendered) {
+      this.render()
+    }
     this.refresh()
     this.refreshNowPlayingDisplay()
   }
@@ -67,7 +73,12 @@ export abstract class InpainterGraphicalView<
   abstract readonly dataType: 'sheet' | 'spectrogram'
 
   // render the interface on the DOM and bind callbacks
-  public abstract render(...args): void
+  public render(...args: any[]): void {
+    this.emit('busy')
+    this._render(...args)
+    this.emit('ready')
+  }
+  protected abstract _render(...args: any[]): void
 
   // re-render with current parameters
   public refresh(): void {
@@ -364,7 +375,9 @@ export abstract class InpainterGraphicalView<
       const draw = this.playbackManager.transport.context.draw
       this.nowPlayingDisplayCallbacks.forEach((callback) =>
         draw.schedule(() => {
-          callback()
+          if (document.visibilityState == 'visible') {
+            callback()
+          }
         }, this.playbackManager.transport.toSeconds(time))
       )
     }
@@ -377,7 +390,7 @@ export abstract class InpainterGraphicalView<
   protected abstract dropHandler(e: DragEvent): void
 
   toggleScrollLock(axis: 'x' | 'y', force?: boolean): void {
-    this.scrollbar.toggleScrollLock(axis, force)
+    this.scrollbar?.toggleScrollLock(axis, force)
   }
 }
 

@@ -15,7 +15,8 @@
   "include": [
     "src/**/*.ts",
     "contracts.d.ts",
-    "../../types/**/*.d.ts"
+    "../../types/**/*.d.ts",
+    "../renderer/src/ableton_link/linkClient.electron.ts"
   ],
   "exclude": [
     "**/*.spec.ts",

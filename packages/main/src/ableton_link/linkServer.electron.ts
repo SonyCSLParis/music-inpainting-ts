@@ -3,42 +3,52 @@ import log from 'loglevel'
 import { LinkServer } from './linkServer'
 
 import default_config from '../../../common/default_config.json'
-const link_channel_prefix: string = 'LINK/' /// default_config['link_channel_prefix']
 
-export class LinkServerElectron extends LinkServer {
-  protected readonly window: BrowserWindow
+export class LinkServerElectron extends LinkServer<BrowserWindow> {
+  removeTarget(windowId: number) {
+    this.communicationTargets.delete(windowId)
+  }
+  protected static delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
+  protected async isEnabled(window: BrowserWindow): Promise<boolean> {
+    const isEnabled = new Promise<boolean>(async (resolve) => {
+      const listener = () => {
+        log.debug(`Window: ${window.id}: currently enabled!`)
+        resolve(true)
+      }
+      log.debug(`Window: ${window.id}: Register resolve callback`)
+      ipcMain.once(this.prefixMessage('enabled', window), listener)
+      await LinkServerElectron.delay(1000)
+      log.debug(`Window: ${window.id}: Timeout, no answer`)
+      ipcMain.removeListener(this.prefixMessage('enabled', window), listener)
+      resolve(false)
+    })
+    window.webContents.send(this.prefixMessage('is-enabled'))
+    return isEnabled
+  }
+  protected targetToId(window: BrowserWindow): number {
+    return window.id
+  }
 
   static downbeatUpdateRate_ms = 10
-  constructor(
-    window: BrowserWindow,
-    bpm?: number,
-    quantum?: number,
-    enable?: boolean
-  ) {
-    super(window, bpm, quantum, enable)
-    this.window = window
-
-    this.init()
-    this.attachListeners()
-    this.startDownbeatClock()
+  constructor(bpm?: number, quantum?: number, enable?: boolean) {
+    super(bpm, quantum, enable)
   }
 
-  protected prefixMessage(message: string): string {
-    return link_channel_prefix + this.window.id.toString() + message
+  protected prefixMessage(message: string, window?: BrowserWindow): string {
+    return (
+      super.prefixMessage(message) +
+      (window != null ? `/window-${window.id.toString()}/` : '')
+    )
   }
-
-  init(): void {
-    // TODO(theis): how to detect errors in initialization?
-    this.on('tempo', (bpm: number) => {
-      log.info('LINK: BPM changed, now ' + bpm.toString())
-      this.window.webContents.send(this.prefixMessage('bpm'), bpm)
-    })
-    this.on('numPeers', (numPeers: number) => {
-      log.info('LINK: numPeers changed, now ' + numPeers.toString())
-      this.window.webContents.send(this.prefixMessage('numPeers'), numPeers)
-    })
-
-    ipcMain.emit(this.prefixMessage('initialized-status'), true)
+  protected sendToClient(
+    communicationTarget: BrowserWindow,
+    message: string,
+    ...args: any[]
+  ): void {
+    communicationTarget.webContents.send(message, ...args)
   }
 
   attachListeners(): void {
@@ -56,7 +66,6 @@ export class LinkServerElectron extends LinkServer {
       // from main to renderer
       if (this.linkEnable && this.bpm !== newBPM) {
         const previous_link_bpm = this.bpm
-        console.log(newBPM)
         this.bpm = newBPM
 
         log.debug('LINK: Triggered LINK tempo update:')
@@ -65,28 +74,38 @@ export class LinkServerElectron extends LinkServer {
     })
 
     // Enable LINK and start a downbeat clock to synchronize Transport
-    ipcMain.on(this.prefixMessage('enable'), (event) => {
+    ipcMain.on(this.prefixMessage('enable'), async (event) => {
       if (!this.linkEnable) {
-        this.enable() // enable backend LINK-server
+        await this.enable() // enable backend LINK-server
       }
       event.reply(this.prefixMessage('link-enabled-success'))
     })
 
     // Disable LINK
-    ipcMain.on(this.prefixMessage('disable'), (event) => {
-      this.disable()
+    ipcMain.on(this.prefixMessage('disable'), async (event) => {
+      await this.disable()
       event.reply(this.prefixMessage('link-disabled'))
     })
 
     // Accessor for retrieving the current LINK tempo
-    ipcMain.on(this.prefixMessage('get-bpm'), (event) => {
+    ipcMain.on(this.prefixMessage('get-tempo'), (event) => {
       if (this.linkEnable) {
-        event.reply(this.prefixMessage('bpm'), this.bpm)
+        event.reply(this.prefixMessage('tempo'), this.bpm)
+      }
+    })
+    ipcMain.on(this.prefixMessage('set-tempo'), (event, newBpm: number) => {
+      if (this.linkEnable) {
+        this.bpm = newBpm
       }
     })
     ipcMain.on(this.prefixMessage('get-quantum'), (event) => {
       if (this.linkEnable) {
         event.reply(this.prefixMessage('quantum'), this.quantum)
+      }
+    })
+    ipcMain.on(this.prefixMessage('set-quantum'), (event, quantum: number) => {
+      if (this.linkEnable) {
+        this.quantum = quantum
       }
     })
 
@@ -96,49 +115,12 @@ export class LinkServerElectron extends LinkServer {
       }
     })
 
-    ipcMain.on(this.prefixMessage('kill'), () => this.disable())
-  }
-
-  startDownbeatClock(): void {
-    // log.warn('downbeatClock disabled')
-    // return
-    // Start a LINK-based downbeat clock using IPC messages
-    // updateRate_ms, number: interval (in ms) between updates in the clock
-    let lastBeat = 0
-    let lastPhase = 0
-    if (!this.linkEnable) {
-      log.error('Link server not enabled, no reason to start DownbeatClock')
-      return
-    }
-    this.startUpdate(
-      LinkServerElectron.downbeatUpdateRate_ms,
-      (beat, phase) => {
-        beat = 0 ^ beat
-        if (0 > phase - lastPhase) {
-          this.window.webContents.send(this.prefixMessage('downbeat'))
-        }
-        if (0 < beat - lastBeat) {
-          this.window.webContents.send(this.prefixMessage('beat'), { beat })
-          lastBeat = beat
-        }
-        lastPhase = phase
+    ipcMain.on(this.prefixMessage('get-play-state'), (event) => {
+      if (this.linkEnable) {
+        event.reply(this.prefixMessage('play-state'), this.playState)
       }
-    )
-  }
+    })
 
-  stopDownbeatClock(): void {
-    // log.warn('downbeatClock disabled')
-    // Stop the LINK-based downbeat clock
-    this.stopUpdate()
-  }
-
-  enable(): void {
-    super.enable()
-    this.startDownbeatClock()
-  }
-
-  disable(): void {
-    super.disable()
-    this.stopDownbeatClock()
+    ipcMain.on(this.prefixMessage('kill'), () => this.disable())
   }
 }

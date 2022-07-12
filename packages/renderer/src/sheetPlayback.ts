@@ -1,7 +1,7 @@
 import { PlaybackManager } from './playback'
 
 import * as Tone from 'tone'
-import * as log from 'loglevel'
+import log from 'loglevel'
 import { Midi, Track } from '@tonejs/midi'
 import { Note as MidiNote } from '@tonejs/midi/src/Note'
 
@@ -21,21 +21,21 @@ type NoteWithMIDIChannel = {
 }
 
 export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpainter> {
-  midiLatency = 0
   readonly bpmControl: BPMControl
   protected supportsMidi = false
+
+  protected playbackLookahead: number = 0.05
+  protected interactiveLookahead: number = 0.05
 
   // TODO(@tbazin): set-up chords instrument simply as an additional MIDI channel
   // and treat it like the other instruments
   readonly useChordsInstrument: boolean
 
-  _playNote: (time: Tone.Unit.Time, event: NoteWithMIDIChannel) => void
-  get playNote(): (time: Tone.Unit.Time, event: NoteWithMIDIChannel) => void {
+  _playNote: (time: number, event: NoteWithMIDIChannel) => void = () => {}
+  get playNote(): (time: number, event: NoteWithMIDIChannel) => void {
     return this._playNote
   }
-  set playNote(
-    playNote: (time: Tone.Unit.Time, event: NoteWithMIDIChannel) => void
-  ) {
+  set playNote(playNote: (time: number, event: NoteWithMIDIChannel) => void) {
     this.midiParts.forEach((midiParts) =>
       midiParts.forEach((part) => {
         part.callback = playNote
@@ -106,17 +106,13 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
 
     let usesMidiOutput = false
     if (this.supportsMidi) {
-      const getTimingOffset = () => {
-        // https://github.com/Tonejs/Tone.js/issues/805#issuecomment-748172477
-        return WebMidi.time - this.transport.now() * 1000
-      }
       const currentMidiOutput = await MidiOut.getOutput()
       if (currentMidiOutput) {
         this.playNote = (time: number, event: NoteWithMIDIChannel) => {
-          const absoluteTime = time * 1000 + getTimingOffset()
           currentMidiOutput.playNote(event.name, {
-            time: absoluteTime,
-            duration: event.duration * 1000,
+            // https://github.com/Tonejs/Tone.js/issues/805#issuecomment-955812985
+            time: '+' + ((time - this.transport.now()) * 1000).toFixed(),
+            duration: this.transport.toSeconds(event.duration) * 1000,
             channels: event.midiChannel,
           })
         }
@@ -202,9 +198,9 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
 
   protected get playingMidiPartsIndex(): number {
     if (this.currentTrackIsA) {
-      return 1
-    } else {
       return 0
+    } else {
+      return 1
     }
   }
 
@@ -263,8 +259,14 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
       return {
         ...noteJson,
         midiChannel: midiChannel,
-        time: Tone.Time(noteJson.time).toBarsBeatsSixteenths(),
-        duration: Tone.Time(noteJson.duration).toNotation(),
+        time: new Tone.TimeClass(
+          this.transport.context,
+          noteJson.time
+        ).toBarsBeatsSixteenths(),
+        duration: new Tone.TimeClass(
+          this.transport.context,
+          noteJson.duration
+        ).toNotation(),
       }
     })
 
@@ -290,7 +292,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
       // @HACK(@tbazin): offsetting the lookAhead to ensure perfect synchronization when
       // using Ableton Link, the downside is that it skips the first few notes,
       // one possible solution would be to copy them back at the part's end
-      part.start(0, +this.transport.context.lookAhead) // schedule events on the Tone timeline
+      part.start(0, this.transport.context.lookAhead) // schedule events on the Tone timeline
       part.loop = true
       part.loopEnd = sequenceDuration_barsBeatsSixteenth
       nextParts.set(midiChannel, part)
@@ -301,6 +303,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
         part.add(noteEvent)
       })
       // copySkippedNotesToPartEnd(part, notesWithChannel)
+      part.start(0, this.transport.context.lookAhead) // schedule events on the Tone timeline
       part.loopEnd = sequenceDuration_barsBeatsSixteenth
     }
 
@@ -339,6 +342,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
     midi: Midi,
     sequenceDuration_barsBeatsSixteenth: string
   ): void {
+    console.log(midi.toJSON())
     if (!this.transport.loop) {
       this.transport.loop = true
       this.transport.loopStart = 0

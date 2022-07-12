@@ -37,7 +37,7 @@ class CanChange<T> extends TypedEmitter<CanChangeListeners<T>> {
 export abstract class Inpainter<
   DataT = unknown,
   AdditionalAPICommands extends string = never
-  > extends CanChange<DataT> {
+> extends CanChange<DataT> {
   constructor(defaultApiAddress: URL) {
     super()
     this.defaultApiAddress = defaultApiAddress
@@ -58,14 +58,14 @@ export abstract class Inpainter<
   ): never {
     throw new Error(
       'Failed to ' +
-      attempted_action +
-      // ` with error ${response.status} (${response.statusText})`
-      ` with error ${error}`
+        attempted_action +
+        // ` with error ${response.status} (${response.statusText})`
+        ` with error ${error}`
     )
   }
 
   protected async timeout(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   protected defaultTimeout: number = 5000
@@ -77,7 +77,7 @@ export abstract class Inpainter<
     init?: RequestInit,
     timeout: number = this.defaultTimeout,
     attemptedAction?: string,
-    exponentialBackoffDelay: number = this.defaultExponentialBackoffDelay,
+    exponentialBackoffDelay: number = this.defaultExponentialBackoffDelay
   ): Promise<Response | undefined> {
     if (init == undefined) {
       init = {}
@@ -86,29 +86,38 @@ export abstract class Inpainter<
 
     if (timeout != null && timeout > 0) {
       const abortController = new AbortController()
-      abortTimeout =
-        setTimeout(() => {
-          log.debug('Timeout exceeded, aborting request')
-          abortController.abort()
-        }, timeout)
+      abortTimeout = setTimeout(() => {
+        log.debug('Timeout exceeded, aborting request')
+        abortController.abort()
+      }, timeout)
 
       init.signal = abortController.signal
     }
 
     try {
       const response = await fetch(input, init)
-      if (abortTimeout != null) { clearTimeout(abortTimeout) }
+      if (abortTimeout != null) {
+        clearTimeout(abortTimeout)
+      }
       if (response.ok) {
         return response
       }
     } catch (error: unknown) {
       if (exponentialBackoffDelay <= this.maxExponentialBackoffDelay) {
         log.error(error)
-        log.error('Fetch error, retrying with exponential timeout ' + exponentialBackoffDelay)
+        log.error(
+          'Fetch error, retrying with exponential timeout ' +
+            exponentialBackoffDelay
+        )
         await this.timeout(exponentialBackoffDelay)
-        return this.fetch(input, init, timeout, attemptedAction, 2 * exponentialBackoffDelay)
-      }
-      else {
+        return this.fetch(
+          input,
+          init,
+          timeout,
+          attemptedAction,
+          2 * exponentialBackoffDelay
+        )
+      } else {
         this.handleFetchError(error, attemptedAction)
       }
     }
@@ -182,12 +191,19 @@ export abstract class Inpainter<
     return this
   }
 
+  dummyGenerate(
+    queryParameters: string[] = [],
+    silent: boolean = false
+  ): Promise<this> {
+    throw new Error('Not implemented.')
+  }
+
   // retrieve new data without conditioning
   async generate(
     queryParameters: string[] = [],
     jsonData?: Record<string, any>,
-    timeout?: number,
-    apiAddress?: URL,
+    timeout: number = 30000,
+    apiAddress?: URL
   ): Promise<this> {
     return this.apiRequestHelper(
       'GET',
@@ -206,7 +222,7 @@ export abstract class Inpainter<
     queryParameters: string[] = [],
     jsonData?: Record<string, any>,
     timeout?: number,
-    apiAddress?: URL,
+    apiAddress?: URL
   ): Promise<this> {
     return this.apiRequestHelper(
       'GET',
@@ -224,18 +240,23 @@ export abstract class Inpainter<
     queryParameters: string[] = [],
     jsonData?: Record<string, any>,
     timeout?: number,
-    inpaintingApiUrl?: URL,
+    inpaintingApiUrl?: URL
   ): Promise<this> {
     try {
       return await this.sampleFromDataset(
         queryParameters,
         jsonData,
         timeout,
-        inpaintingApiUrl,
+        inpaintingApiUrl
       )
     } catch (error) {
       log.error(error)
-      return await this.generate(queryParameters, jsonData, timeout, inpaintingApiUrl)
+      return await this.generate(
+        queryParameters,
+        jsonData,
+        timeout,
+        inpaintingApiUrl
+      )
     }
   }
 
@@ -245,7 +266,7 @@ export abstract class Inpainter<
     requestBody?: { data: BodyInit; dataType: string | null },
     jsonData?: Record<string, any>,
     timeout?: number,
-    apiAddress: URL = this.defaultApiAddress,
+    apiAddress: URL = this.defaultApiAddress
   ): Promise<this> {
     return this.apiRequestHelper(
       'POST',
@@ -267,7 +288,7 @@ export abstract class Inpainter<
     jsonData?: Record<string, any>,
     queryParameters: string[] = [],
     timeout?: number,
-    apiAddress: URL = this.defaultApiAddress,
+    apiAddress: URL = this.defaultApiAddress
   ): Promise<this> {
     if (requestBody == null && jsonData == null) {
       throw new Error('Must provide at least one of requestBody or jsonData')
@@ -330,7 +351,7 @@ class UndoableInpainterEdit<DataT> extends UndoableEdit {
 export abstract class UndoableInpainter<
   DataT = unknown,
   AdditionalAPICommands extends string = never
-  > extends Inpainter<DataT, AdditionalAPICommands> {
+> extends Inpainter<DataT, AdditionalAPICommands> {
   readonly undoManager: UndoManager
 
   constructor(defaultApiAddress: URL, undoManager: UndoManager) {
@@ -338,16 +359,24 @@ export abstract class UndoableInpainter<
     this.undoManager = undoManager
   }
 
-  protected setValueInteractive(newValue: DataT): void {
-    const previousValue = this._value
-    super.setValueInteractive(newValue)
-    if (previousValue != newValue) {
-      if (previousValue != undefined && newValue != undefined) {
-        this.undoManager.add(
-          new UndoableInpainterEdit(previousValue, newValue, (data: DataT) => {
-            this.value = data
-          })
-        )
+  protected setValueInteractive(newValue: DataT, silent: boolean = true): void {
+    if (!silent) {
+      this.value = newValue
+    } else {
+      const previousValue = this._value
+      super.setValueInteractive(newValue)
+      if (previousValue != newValue) {
+        if (previousValue != undefined && newValue != undefined) {
+          this.undoManager.add(
+            new UndoableInpainterEdit(
+              previousValue,
+              newValue,
+              (data: DataT) => {
+                this.value = data
+              }
+            )
+          )
+        }
       }
     }
   }

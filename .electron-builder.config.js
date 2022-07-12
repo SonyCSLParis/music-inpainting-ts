@@ -1,6 +1,9 @@
-if (process.env.VITE_APP_VERSION === undefined) {
+const VITE_APP_TITLE = process.env.VITE_APP_TITLE ?? 'NONOTO/NOTONO'
+let VITE_APP_VERSION = process.env.VITE_APP_VERSION
+
+if (VITE_APP_VERSION == undefined) {
   const now = new Date()
-  process.env.VITE_APP_VERSION = `${now.getUTCFullYear() - 2000}.${
+  VITE_APP_VERSION = `${now.getUTCFullYear() - 2000}.${
     now.getUTCMonth() + 1
   }.${now.getUTCDate()}-${now.getUTCHours() * 60 + now.getUTCMinutes()}`
 }
@@ -10,13 +13,14 @@ if (process.env.VITE_APP_VERSION === undefined) {
  * @see https://www.electron.build/configuration/configuration
  */
 const config = {
+  productName: VITE_APP_TITLE,
   directories: {
     output: 'dist',
     buildResources: 'buildResources',
   },
-  files: ['src/**/dist/**'],
+  files: ['packages/**/dist/**'],
   extraMetadata: {
-    version: process.env.VITE_APP_VERSION,
+    version: VITE_APP_VERSION,
   },
 }
 

@@ -1,42 +1,82 @@
-import EventEmitter from 'events'
+import { EventEmitter } from 'events'
+import { TypedEmitter } from 'tiny-typed-emitter'
 import log from 'loglevel'
 import { BPMControl } from '../numberControl'
+import {
+  AbletonLinkServerEvent,
+  IAbletonLinkApi,
+} from '../../../preload/src/abletonLinkApi'
 
 export interface LinkClientConstructor {
   new (bpmControl: BPMControl, quantum?: number): AbletonLinkClient
 }
 
+export type AbletonLinkClientRequest = {
+  'get-phase': (never: never) => void
+  'get-quantum': (never: never) => void
+  'get-tempo': (never: never) => void
+  'get-numPeers': (never: never) => void
+
+  'set-tempo': (tempo: number) => void
+  'set-quantum': (quantum: number) => void
+}
+
+type AbletonLinkEvent = AbletonLinkServerEvent & AbletonLinkClientRequest
+
+export abstract class AbletonLinkServerEmitter extends TypedEmitter<AbletonLinkEvent> {}
+
 export abstract class AbletonLinkClient extends EventEmitter {
-  // TODO(@tbazin, 2021/09/13): fix event type, use a type variable?
-  abstract onServerMessage(
-    message: string,
-    callback: (event: any, ...args: any[]) => any
-  ): void
-  abstract onServerMessageOnce(
-    message: string,
-    callback: (event: any, ...args: any[]) => any
-  ): void
-  abstract sendToServer(message: string, ...args: any[]): void
-  abstract removeServerListener(
-    message: string,
-    callback: (event: any, ...args: any[]) => any
-  ): void
-  abstract removeAllServerListeners(message: string): void
-  protected enabled = false
-  protected _initialized = false
-  get initialized(): boolean {
-    return this._initialized
-  }
+  protected readonly windowId = window.electronWindowId
+  readonly abletonLinkAPI: Readonly<IAbletonLinkApi> = window.abletonLinkApi
+
+  // // TODO(@tbazin, 2021/09/13): fix event type, use a type variable?
+  // protected onServerMessage<T extends keyof AbletonLinkServerEvent>(
+  //   message: T,
+  //   callback: AbletonLinkEvent[T]
+  // ): this {
+  //   this.abletonLinkAPI.on(message, callback)
+  //   return this
+  // }
+  // protected onServerMessageOnce<T extends keyof AbletonLinkServerEvent>(
+  //   message: T,
+  //   callback: AbletonLinkEvent[T]
+  // ): this {
+  //   this.abletonLinkAPI.once(message, callback)
+  //   return this
+  // }
+
+  // protected abletonLinkAPI.<T extends keyof AbletonLinkClientRequest>(
+  //   message: T,
+  //   data: Parameters<AbletonLinkEvent[T]>
+  // ): this {
+  //   this.abletonLinkAPI.emit(message, ...data)
+  //   return this
+  // }
+
+  // protected removeServerListener<T extends keyof AbletonLinkServerEvent>(
+  //   message: T,
+  //   callback: AbletonLinkEvent[T]
+  // ): void {
+  //   this.abletonLinkAPI.removeListener(message, callback)
+  // }
+  // protected abstract removeAllServerListeners(
+  //   message: AbletonLinkServerEvent
+  // ): void
+  // protected enabled = false
+  // protected _initialized = false
+  // get initialized(): boolean {
+  //   return this._initialized
+  // }
 
   readonly bpmControl: BPMControl
   constructor(bpmControl: BPMControl) {
     super()
-    document.body.addEventListener('beforeunload', () => this.disableServer())
+    // document.body.addEventListener('beforeunload', () => this.disableServer())
 
     this.bpmControl = bpmControl
     // disable server on client initialization: this is required to avoid
     // leaving a leftover active server if the page is reloaded
-    this.disableServer()
+    // this.disableServer()
 
     // register Ableton Link related callbacks
     this.registerOnBpmChangeCallback()
@@ -45,23 +85,28 @@ export abstract class AbletonLinkClient extends EventEmitter {
 
     this.registerOnInterfaceBpmChangeCallback()
 
-    this.onServerMessage('downbeat', () => {
+    this.abletonLinkAPI.onIsEnabled(this.windowId, () => {
+      if (this.isEnabled) {
+        this.abletonLinkAPI.notifyEnabled(this.windowId)
+      }
+    })
+    this.abletonLinkAPI.onDownbeat(this.windowId, () => {
       if (this.isEnabled) {
         this.emit('downbeat')
       }
     })
-    this.onServerMessage('check-enabled', () => {
-      if (this.isEnabled) {
-        this.sendToServer('checks-enabled')
-      }
-    })
+    // this.onServerMessage('check-enabled', () => {
+    //   if (this.isEnabled) {
+    //     this.abletonLinkAPI.('checks-enabled')
+    //   }
+    // })
 
-    this._initialized = true
+    // this._initialized = true
     this.emit('client-initialized')
   }
 
   protected registerOnNumPeersChangeCallback(): void {
-    this.onServerMessage('numPeers', (_, numPeers: number) => {
+    this.abletonLinkAPI.onNumPeers(this.windowId, (numPeers: number) => {
       if (this.isEnabled) {
         // this display is required as per the Ableton-link test-plan
         // (https://github.com/Ableton/link/blob/master/TEST-PLAN.md)
@@ -102,20 +147,20 @@ export abstract class AbletonLinkClient extends EventEmitter {
   }
 
   requestPhaseAsync(): void {
-    this.sendToServer('get-phase')
+    this.abletonLinkAPI.requestPhaseAsync(this.windowId)
   }
 
-  enableServer(): Promise<void> {
-    return new Promise<void>((resolve) => {
-      this.onServerMessageOnce('link-enabled-success', () => {
-        resolve()
-      })
-      this.sendToServer('enable')
-    })
+  async enableServer(): Promise<void> {
+    await this.abletonLinkAPI.enable(this.windowId)
+    // return new Promise<void>((resolve) => {
+    //   this.onServerMessageOnce('link-enabled-success', () => {
+    //     resolve()
+    //   })
+    // })
   }
 
   protected registerOnBpmChangeCallback(): void {
-    this.onServerMessage('bpm', (_, newBPM: number) => {
+    this.abletonLinkAPI.onTempo(this.windowId, (newBPM: number) => {
       this.bpmControl.emit('link-tempo-changed', newBPM)
       log.debug(
         `Received BPM update from Ableton Link Server with value ${newBPM}`
@@ -124,7 +169,7 @@ export abstract class AbletonLinkClient extends EventEmitter {
   }
 
   protected registerOnQuantumChangeCallback(): void {
-    this.onServerMessage('quantum', (_, quantum: number) => {
+    this.abletonLinkAPI.onQuantum(this.windowId, (quantum: number) => {
       this.emit('quantum', quantum)
       log.debug(
         `Received quantum update from Ableton Link Server with value ${quantum}`
@@ -132,35 +177,40 @@ export abstract class AbletonLinkClient extends EventEmitter {
     })
   }
 
+  protected _enabled: boolean = false
+  get isEnabled(): boolean {
+    return this._enabled
+  }
+
   async enable(): Promise<void> {
     await this.enableServer()
-    this.enabled = true
+    this._enabled = true
     this.emitSynchronizationMessage()
   }
-  disable(): void {
-    this.disableServer()
-    this.enabled = false
+  async disable(): Promise<void> {
+    await this.disableServer()
+    this._enabled = false
   }
 
-  disableServer(): void {
-    this.sendToServer('disable')
+  async disableServer(): Promise<void> {
+    await this.abletonLinkAPI.disable(this.windowId)
   }
 
-  killServer(): void {
-    this.sendToServer('kill')
-  }
+  // killServer(): void {
+  //   this.abletonLinkAPI.('kill')
+  // }
 
   // retrieve current BPM from Link
   setBPMtoLinkBPM_async(): void {
     if (this.isEnabled) {
       // server is expected to reply with a 'bpm' message
-      this.sendToServer('get-bpm')
+      this.abletonLinkAPI.requestTempoAsync(this.windowId)
     }
   }
 
   setLinkServerBPM(bpm: number): void {
     if (this.isEnabled) {
-      this.sendToServer('set-bpm', bpm)
+      this.abletonLinkAPI.setTempo(this.windowId, bpm)
     }
   }
 
@@ -169,27 +219,24 @@ export abstract class AbletonLinkClient extends EventEmitter {
   // with a `quantum` of 4, NONOTO will wait and start playback on the
   // beginning of a new measure (in a 4/4 time-signature setting)
   protected requestQuantum(): void {
-    this.sendToServer('get-quantum')
+    this.abletonLinkAPI.requestQuantumAsync(this.windowId)
   }
-  protected setQuantum(newQuantum: number): void {
-    return this.sendToServer('set-quantum', newQuantum)
+  protected setQuantum(newQuantum: number): Promise<number> {
+    return this.abletonLinkAPI.setQuantum(this.windowId, newQuantum)
   }
 
   protected getState(): void {
     // get current state of the LINK-server on loading the client
-    this.sendToServer('ping')
+    this.abletonLinkAPI.ping(this.windowId)
   }
-  pingServer(): Promise<void> {
-    // clean-up potential existing listeners
-    this.removeAllServerListeners('pong')
+  async pingServer(): Promise<void> {
+    // // clean-up potential existing listeners
+    // this.removeAllServerListeners('pong')
 
     const pingResponse = new Promise<void>((resolve) => {
-      this.onServerMessageOnce('pong', resolve)
+      this.abletonLinkAPI.onPong(this.windowId, resolve)
     })
-    this.sendToServer('ping')
+    await this.abletonLinkAPI.ping(this.windowId)
     return pingResponse
-  }
-  get isEnabled(): boolean {
-    return this.enabled
   }
 }

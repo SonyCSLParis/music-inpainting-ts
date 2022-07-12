@@ -1,51 +1,96 @@
+import { ipcRenderer, IpcRendererEvent } from 'electron'
+import { exposeInMainWorld } from './exposeInMainWorld'
+
 type linkUpdateCallback = (
   beat: number,
   phase: number,
   bpm: number,
   playState: boolean
 ) => any
-import { ipcRenderer, IpcRendererEvent } from 'electron'
-import { exposeInMainWorld } from './exposeInMainWorld'
+
+export type AbletonLinkServerEvent = {
+  tempo: (tempo: number) => void
+  numPeers: (numPeers: number) => void
+  quantum: (quantum: number) => void
+  phase: (phase: number) => void
+  playState: (playing: boolean) => void
+  downbeat: () => void
+}
 
 type Callback = (...args: any[]) => void
 type IpcRendererCallback = (event: IpcRendererEvent, ...args: any[]) => void
 const enum AbletonLinkApiMessage {
-  'bpm' = 'bpm',
+  'tempo' = 'tempo',
   'phase' = 'phase',
   'state' = 'state',
+  'downbeat' = 'downbeat',
+  'numPeers' = 'numPeers',
+  'quantum' = 'quantum',
+  'playState' = 'playState',
 }
 
-export interface IAbletonApi {
-  disable(): void
-  onStateUpdate(callback: linkUpdateCallback): string | undefined
-  removeStateUpdateCallback(key: string): boolean | undefined
-  startUpdateLoop(frequency: number): void
-  stopUpdateLoop(): void
+export interface IAbletonLinkApi {
+  onNumPeers(
+    windowId: number,
+    callback: (numPeers: number) => void
+  ): string | undefined
+  onPhase(
+    windowId: number,
+    callback: (phase: number) => void
+  ): string | undefined
+  onTempo(
+    windowId: number,
+    callback: (tempo: number) => void
+  ): string | undefined
+  onQuantum(
+    windowId: number,
+    callback: (tempo: number) => void
+  ): string | undefined
+  onDownbeat(windowId: number, callback: () => void): string | undefined
+  onPong(windowId: number, callback: () => void): string | undefined
+  onIsEnabled(windowId: number, callback: () => void): string | undefined
+
+  setTempo(windowId: number, newTempo: number): void
+  setQuantum(windowId: number, newQuantum: number): void
+
+  requestQuantumAsync(windowId: number): void
+  requestPhaseAsync(windowId: number): void
+  requestTempoAsync(windowId: number): void
+
+  ping(windowId: number): Promise<void>
+  enable(windowId: number): Promise<void>
+  notifyEnabled(windowId: number): Promise<void>
+  disable(windowId: number): Promise<void>
 }
 
-export class AbletonLinkApi implements IAbletonApi {
+export class AbletonLinkApi implements IAbletonLinkApi {
   protected listeners: Map<
-    AbletonLinkApiMessage,
+    AbletonLinkApiMessage | 'pong' | 'is-enabled',
     Map<string, IpcRendererCallback>
   > = new Map()
-  static ipcMessagePrefix = 'abletonlink/'
+  get linkChannelPrefix(): string {
+    return `abletonlink/`
+  }
 
   protected makeIPCRendererCallbackFromEventFreeCallback(
     callback: Callback
   ): IpcRendererCallback {
+    // strip event for security reasons as it includes `sender`
     return (event: IpcRendererEvent, ...args: any[]) => callback(...args)
   }
 
   protected registerCallback(
-    message: AbletonLinkApiMessage,
-    callback: Callback
+    message: AbletonLinkApiMessage | 'pong' | 'is-enabled',
+    callback: Callback,
+    windowId?: number
   ): string | undefined {
     const saferFn: IpcRendererCallback = (
       event: IpcRendererEvent,
       ...args: any[]
-    ) => callback(...args)
-    // Deliberately strip event as it includes `sender`
-    ipcRenderer.on(AbletonLinkApi.ipcMessagePrefix + message, saferFn)
+    ) => {
+      callback(...args)
+    }
+    ipcRenderer.on(this.prefixChannel(message, windowId), saferFn)
     const key = Symbol().toString()
     if (!this.listeners.has(message)) {
       this.listeners.set(message, new Map())
@@ -57,40 +102,119 @@ export class AbletonLinkApi implements IAbletonApi {
     }
   }
 
-  protected send(channel: string, ...args: any[]): void {
-    ipcRenderer.send(AbletonLinkApi.ipcMessagePrefix + channel, ...args)
+  protected send(channel: string, windowId?: number, ...args: any[]): void {
+    const prefixedChannel = this.prefixChannel(channel, windowId)
+    ipcRenderer.send(prefixedChannel, ...args)
+  }
+  protected invoke(
+    channel: string,
+    windowId?: number,
+    ...args: any[]
+  ): Promise<any> {
+    const prefixedChannel = this.prefixChannel(channel, windowId)
+    return ipcRenderer.invoke(prefixedChannel, ...args)
   }
 
-  onStateUpdate(callback: linkUpdateCallback): string | undefined {
-    return this.registerCallback(AbletonLinkApiMessage.state, callback)
+  protected prefixChannel(message: string, windowId?: number): string {
+    return (
+      this.linkChannelPrefix +
+      message +
+      (windowId != null ? `/window-${windowId}/` : '')
+    )
   }
-  removeStateUpdateCallback(key: string): boolean | undefined {
+
+  onStateUpdate = (
+    windowId: number,
+    callback: linkUpdateCallback
+  ): string | undefined => {
+    return this.registerCallback(
+      AbletonLinkApiMessage.state,
+      callback,
+      undefined
+    )
+  }
+  removeStateUpdateCallback = (key: string): boolean | undefined => {
     return this.listeners.get(AbletonLinkApiMessage.state)?.delete?.(key)
   }
 
-  startUpdateLoop(frequency: number) {
-    this.send('startUpdateLoop', frequency)
+  onPhase = (
+    windowId: number,
+    callback: (phase: number) => void
+  ): string | undefined => {
+    return this.registerCallback(AbletonLinkApiMessage.phase, callback)
   }
-  stopUpdateLoop() {
-    this.send('stopUpdateLoop')
+  onNumPeers = (
+    windowId: number,
+    callback: (numPeers: number) => void
+  ): string | undefined => {
+    return this.registerCallback(AbletonLinkApiMessage.numPeers, callback)
+  }
+  onTempo = (
+    windowId: number,
+    callback: (tempo: number) => void
+  ): string | undefined => {
+    return this.registerCallback(AbletonLinkApiMessage.tempo, callback)
+  }
+  onQuantum = (
+    windowId: number,
+    callback: (quantum: number) => void
+  ): string | undefined => {
+    return this.registerCallback(AbletonLinkApiMessage.quantum, callback)
+  }
+  onDownbeat = (windowId: number, callback: () => void): string | undefined => {
+    return this.registerCallback(AbletonLinkApiMessage.downbeat, callback)
+  }
+  onPlayState = (
+    windowId: number,
+    callback: (playing: boolean) => void
+  ): string | undefined => {
+    return this.registerCallback(AbletonLinkApiMessage.playState, callback)
+  }
+  onPong = (windowId: number, callback: () => void): string | undefined => {
+    return this.registerCallback('pong', callback)
+  }
+  onIsEnabled = (
+    windowId: number,
+    callback: () => void
+  ): string | undefined => {
+    return this.registerCallback('is-enabled', callback)
   }
 
-  disable(): void {
-    this.send('disable')
+  requestPhaseAsync = (windowId: number): void => {
+    return this.send('get-phase')
+  }
+  requestTempoAsync = (windowId: number): void => {
+    return this.send('get-tempo')
+  }
+  requestQuantumAsync = (windowId: number): void => {
+    return this.send('get-quantum')
+  }
+  requestPlayStateAsync = (windowId: number): void => {
+    return this.send('get-play-state')
+  }
+
+  setQuantum = (windowId: number, newQuantum: number): void => {
+    return this.send('set-quantum', undefined, newQuantum)
+  }
+  setTempo = (windowId: number, newTempo: number): void => {
+    return this.send('set-tempo', undefined, newTempo)
+  }
+
+  enable = async (windowId: number): Promise<void> => {
+    await this.send('enable')
+  }
+  disable = async (windowId: number): Promise<void> => {
+    await this.send('disable')
+  }
+
+  notifyEnabled = async (windowId: number): Promise<void> => {
+    this.send('enabled', windowId)
+  }
+  ping = async (windowId: number): Promise<void> => {
+    await this.send('ping')
   }
 }
 
 export const abletonLinkApi = new AbletonLinkApi()
 
-exposeInMainWorld('abletonLinkApi', {
-  disable: () => abletonLinkApi.disable(),
-
-  onStateUpdate: (callback: linkUpdateCallback) =>
-    abletonLinkApi.onStateUpdate(callback),
-  removeStateUpdateCallback: (key: string) =>
-    abletonLinkApi.removeStateUpdateCallback(key),
-
-  startUpdateLoop: (frequency: number) =>
-    abletonLinkApi.startUpdateLoop(frequency),
-  stopUpdateLoop: () => abletonLinkApi.stopUpdateLoop(),
-})
+exposeInMainWorld('abletonLinkApi', abletonLinkApi)

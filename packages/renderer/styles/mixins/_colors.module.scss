@@ -44,6 +44,9 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 $body-background: #c8dadf;
 $panes-background: #beb9d4;
 
+$darkgray: color.scale(black, $lightness: +2%);
+$lighter-darkgray: color.scale(black, $lightness: +5%);
+
 @function controls-box-shadow-color(
   $control-color,
   $box-shadow-lightness-direction
@@ -99,8 +102,8 @@ $panes-background: #beb9d4;
     $overlay-lightness-factor: 1;
     $text: lightgray;
   } @else if $theme == dark {
-    $body: color.scale(black, $lightness: +2%);
-    $panes: color.scale(black, $lightness: +5%);
+    $body: $darkgray;
+    $panes: $lighter-darkgray;
     $active-control: $lighter-arabian-sand-color;
     $idle-control: $lighter-arabian-sand-color;
     $overlay-lightness-factor: 1;
@@ -162,7 +165,26 @@ $panes-background: #beb9d4;
   }
 
   input.wrong-input-setting {
-    background-color: lightcoral;
+    &.wrong-input-setting {
+      animation: shake 0.2s ease-in-out 0s 2;
+      box-shadow: 0 0 0.5em lightcoral;
+      background-color: lightcoral !important;
+    }
+  }
+
+  @keyframes shake {
+    0% {
+      margin-left: 0rem;
+    }
+    25% {
+      margin-left: 0.5rem;
+    }
+    75% {
+      margin-left: -0.5rem;
+    }
+    100% {
+      margin-left: 0rem;
+    }
   }
 
   .shepherd-content * {
@@ -647,6 +669,8 @@ $panes-background: #beb9d4;
 // $main-color: $lighter-arabian-sand-color;
 :export {
   // main_color: #{'rgb(#{red($main-color)}, #{green($main-color)}, #{blue($main-color)})'};
+  darkgray: $darkgray;
+  lighter_darkgray: $lighter-darkgray;
   arabian_sand: $lighter-arabian-sand-color;
   lavender_idle_control: $lavender_idle_control;
   lavender_active_control: $lavender_active_control;

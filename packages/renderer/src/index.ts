@@ -1,6 +1,5 @@
 import $ from 'jquery'
 import log from 'loglevel'
-log.setLevel(log.levels.INFO)
 
 import { UndoableInpainter } from './inpainter/inpainter'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
@@ -49,7 +48,6 @@ import {
   CycleSelectViewWithDisable,
   NullableVariableValue,
 } from './cycleSelect'
-import { getPathToStaticFile } from './staticPath'
 import * as ControlLabels from './controlLabels'
 import * as GranularitySelect from './granularitySelect'
 import { SplashScreen, applicationConfiguration } from './startup'
@@ -72,6 +70,13 @@ import '../styles/disableMouse.scss'
 
 const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
+if (VITE_COMPILE_ELECTRON) {
+  window.ipcRendererInterface
+    .getWindowId()
+    .then((windowId) => (window.electronWindowId = windowId))
+  setBackgroundColorElectron(colors.darkgray)
+}
+
 import defaultConfiguration from '../../common/default_config.json'
 import { setBackgroundColorElectron, getTitleBarDisplay } from './utils/display'
 import { UndoManager } from 'typed-undo'
@@ -81,6 +86,11 @@ let inpainter: UndoableInpainter
 let sheetInpainter: SheetInpainter
 let spectrogramInpainter: SpectrogramInpainter
 let inpainterGraphicalView: InpainterGraphicalView
+let spectrogramInpainterGraphicalView:
+  | SpectrogramInpainterGraphicalView
+  | undefined = undefined
+let sheetInpainterGraphicalView: SheetInpainterGraphicalView | undefined =
+  undefined
 let playbackManager: PlaybackManager
 let sheetPlaybackManager: MidiSheetPlaybackManager
 let spectrogramPlaybackManager: SpectrogramPlaybackManager
@@ -179,6 +189,9 @@ function render(
 
   {
     const bottomControlsGridElement = document.getElementById('bottom-controls')
+    if (bottomControlsGridElement == null) {
+      throw Error('Bottom controls panel not created')
+    }
     const bottomControlsExpandTabElement = document.createElement('div')
     bottomControlsExpandTabElement.id = 'bottom-controls-expand'
     bottomControlsExpandTabElement.classList.add('expand-tab')
@@ -218,13 +231,9 @@ function render(
       editToolsGridspanElement.classList.add('gridspan')
       bottomControlsGridElement.appendChild(editToolsGridspanElement)
     }
-  }
 
-  if (configuration['osmd']) {
-    {
+    if (configuration['osmd']) {
       const useSimpleSlider = !configuration['insert_advanced_controls']
-      const bottomControlsGridElement =
-        document.getElementById('bottom-controls')
       const bpmControlGridspanElement = document.createElement('div')
       bpmControlGridspanElement.id = 'bpm-control-gridspan'
       bpmControlGridspanElement.classList.add('gridspan')
@@ -252,6 +261,9 @@ function render(
       const constraintsContainerElement = document.getElementById(
         'constraints-container'
       )
+      if (constraintsContainerElement == null) {
+        throw Error('Constraint container element not created')
+      }
       const instrumentConstraintSelectElement = document.createElement('div')
       instrumentConstraintSelectElement.id = 'instrument-control'
       instrumentConstraintSelectElement.classList.add('control-item')
@@ -294,11 +306,6 @@ function render(
     }
   }
 
-  let sheetInpainterGraphicalView: SheetInpainterGraphicalView | undefined =
-    undefined
-  let spectrogramInpainterGraphicalView:
-    | SpectrogramInpainterGraphicalView
-    | undefined = undefined
   {
     const mainPanel = document.getElementById('main-panel')
     const bottomControlsGridElement = document.getElementById('bottom-controls')
@@ -362,13 +369,13 @@ function render(
         )
       }
 
-      log.warn('Fix DownloadButton drag-out for MIDI')
       const defaultFilename: filenameType = {
         name: 'nonoto',
         extension: '.mxml',
       }
       downloadButton = new SheetDownloadButton(
         sheetInpainter,
+        sheetInpainterGraphicalView,
         downloadCommandsGridspan,
         defaultFilename
       )
@@ -405,8 +412,6 @@ function render(
             { frequencyRows: 64, timeColumns: 8, timeResolution: 0.5 },
           ],
         ])
-
-      const iconsBasePath = getPathToStaticFile('icons')
 
       const editToolSelect = new VariableValue<NotonoTool>([
         NotonoTool.Inpaint,
@@ -585,6 +590,7 @@ function render(
       }
       downloadButton = new NotonoDownloadButton(
         spectrogramInpainter,
+        spectrogramInpainterGraphicalView,
         downloadCommandsGridspan,
         defaultFilename
       )
@@ -838,7 +844,7 @@ function render(
     }
   }
 
-  if (configuration['osmd']) {
+  if (configuration['osmd'] && sheetInpainterGraphicalView != undefined) {
     {
       // Insert zoom controls
       const zoomControlsGridElement = document.createElement('div')
@@ -883,22 +889,28 @@ function render(
   }
 
   async function sampleNewData(): Promise<void> {
+    const DUMMY_GENERATE = false
     try {
-      await inpainter.generate(inpainterGraphicalView.queryParameters)
-      log.info('Retrieved new media from server')
+      if (!DUMMY_GENERATE) {
+        await inpainter.generate(inpainterGraphicalView.queryParameters)
+      } else {
+        const silentInpainterUpdate = false
+        await inpainter.dummyGenerate(
+          inpainterGraphicalView.queryParameters,
+          silentInpainterUpdate
+        )
+      }
     } catch (e) {
       log.error('Could not retrieve initial media due to: ', e)
     }
+    log.info('Retrieved new media from server')
   }
 
   $(() => {
     inpainterGraphicalView.once('ready', () => {
       inpainterGraphicalView.callToAction()
     })
-    void sampleNewData().then(() => {
-      inpainterGraphicalView.render()
-      inpainterGraphicalView.emit('ready')
-    })
+    void sampleNewData()
   })
 }
 
@@ -932,6 +944,7 @@ function render(
 // manual calls to hot.invalidate(),
 // which would be required here to rebuild the app's helpTour on help.json content update
 import helpContentsJSON from '../static/localizations/help.json'
+import { ipcRendererInterface } from '../../preload/src/ipcRendererInterface'
 if (import.meta.hot) {
   let helpContents = helpContentsJSON
 }
@@ -942,7 +955,9 @@ if (import.meta.hot) {
       const currentStepId = helpTour.getCurrentStep()?.id
       let currentStepIndex: number | null = null
       if (currentStepId != null) {
-        currentStepIndex = helpTour.steps.findIndex(step => step.id == currentStepId)
+        currentStepIndex = helpTour.steps.findIndex(
+          (step) => step.id == currentStepId
+        )
       }
       helpTour.cancel()
       helpTour?.rebuild?.()
@@ -952,4 +967,22 @@ if (import.meta.hot) {
       }
     }
   })
+  import.meta.hot.accept(
+    './downloadCommand',
+    (downloadCommand: typeof import('./downloadCommand')) => {
+      if (
+        spectrogramInpainter != undefined &&
+        spectrogramInpainterGraphicalView != undefined
+      ) {
+        downloadButton.dispose()
+        downloadButton = new downloadCommand.NotonoDownloadButton(
+          spectrogramInpainter,
+          spectrogramInpainterGraphicalView,
+          downloadButton.container,
+          downloadButton.defaultFilename
+        )
+        spectrogramInpainter.emit('change', spectrogramInpainter.value)
+      }
+    }
+  )
 }

@@ -1,9 +1,10 @@
 // Module to create native browser windows
 import { BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
-import { LinkServerElectron } from './ableton_link/linkServer.electron'
+import type { LinkServerElectron } from './ableton_link/linkServer.electron'
 
-const isDevelopment = process.env.NODE_ENV !== 'production'
+const VITE_INTEGRATE_ABLETON_LINK =
+  import.meta.env.VITE_INTEGRATE_ABLETON_LINK != undefined
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -14,11 +15,23 @@ import customConfiguration from '../../../config.json'
 import log from 'loglevel'
 const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
 
-// FIXME(@tbazin, 2021/10/22): bug when trying to import this module with Webpack 4
-// import { colors } from '../../renderer/styles/mixins/_colors.module.scss'
-
 // FIXME(@tbazin, 2021/10/28): avoid using a global like this
 const TITLE_BAR_STYLE = 'hiddenInset'
+
+let linkServer: LinkServerElectron | null = null
+
+if (VITE_INTEGRATE_ABLETON_LINK) {
+  import('./ableton_link/linkServer.electron').then(
+    (linkServerElectronModule) => {
+      linkServer = new linkServerElectronModule.LinkServerElectron(
+        120,
+        4,
+        false
+      )
+    }
+  )
+  log.debug('Initialized global linkServer')
+}
 
 export async function createWindow(): Promise<void> {
   // Create the browser window
@@ -29,8 +42,9 @@ export async function createWindow(): Promise<void> {
     // FIXME(@tbazin, 2021/10/22): hardcoded value
     backgroundColor: 'black',
     webPreferences: {
-      nodeIntegration: true,
+      nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
       // prevent window from getting decreased performance when not focused,
       // which would lead to unstable audio playback
       backgroundThrottling: false,
@@ -38,17 +52,9 @@ export async function createWindow(): Promise<void> {
     },
     titleBarStyle: TITLE_BAR_STYLE,
   })
-  const linkServer = new LinkServerElectron(browserWindow, 120, 4, false)
 
-  // if (isDevelopment) {
-  //   const electronWebpackWebDevelopmentServerPort =
-  //     process.env.ELECTRON_WEBPACK_WDS_PORT
-  //   if (electronWebpackWebDevelopmentServerPort != undefined) {
-  //     void window.loadURL(
-  //       'http://localhost:' + electronWebpackWebDevelopmentServerPort
-  //     )
-  //   }
-  // } else {
+  linkServer?.registerTarget(browserWindow)
+
   const pageUrl =
     import.meta.env.DEV && import.meta.env.VITE_DEV_SERVER_URL !== undefined
       ? import.meta.env.VITE_DEV_SERVER_URL
@@ -57,11 +63,17 @@ export async function createWindow(): Promise<void> {
   await browserWindow.loadURL(pageUrl)
 
   const windowID = browserWindow.id
+  // inject windowId into renderer process to allow filtering ipcRenderer
+  // communications by window
+  await browserWindow.webContents.executeJavaScript(
+    `window.electronWindowId = ${windowID}`
+  )
+
   function onWindowClosed() {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
-    // linkServer.disable()
+    linkServer?.removeTarget(windowID)
     openWindows.delete(windowID)
   }
   browserWindow.on('closed', onWindowClosed)
@@ -98,8 +110,6 @@ export function broadcast(channel: string, ...args: unknown[]): void {
 }
 
 ipcMain.on('window-toggle-maximize', (event) => {
-  console.log('window-toggle-maximize')
-  console.log(event)
   const id = event.sender.id
   const targetWindow = openWindows.get(id)
   if (targetWindow) {
@@ -107,6 +117,10 @@ ipcMain.on('window-toggle-maximize', (event) => {
     targetWindow.isMaximized()
       ? targetWindow.unmaximize()
       : targetWindow.maximize()
+    console.log(
+      'backgroundThrottling: ',
+      targetWindow.webContents.backgroundThrottling
+    )
   }
 })
 
@@ -117,6 +131,10 @@ ipcMain.on('set-background-color', (event, backgroundColor: string) => {
   if (targetWindow) {
     targetWindow.setBackgroundColor(backgroundColor)
     log.debug(`Window: ${id}: set background color to ${backgroundColor}`)
+    console.log(
+      'backgroundThrottling: ',
+      targetWindow.webContents.backgroundThrottling
+    )
   }
 })
 
