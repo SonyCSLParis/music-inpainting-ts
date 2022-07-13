@@ -42,7 +42,7 @@ const applicationModeToAPIResourceName: Map<ApplicationMode, string> = new Map([
   [ApplicationMode.Spectrogram, 'notono/'],
 ])
 
-const COMPILE_ELECTRON: boolean =
+const VITE_COMPILE_ELECTRON: boolean =
   import.meta.env.VITE_COMPILE_ELECTRON != undefined
 const VITE_APP_TITLE: string | undefined = import.meta.env.VITE_APP_TITLE
 const VITE_REMOTE_INPAINTING_API_ADDRESS: string | undefined = import.meta.env
@@ -137,7 +137,7 @@ const availableApplicationModes = VITE_AVAILABLE_APPLICATION_MODES
 // TODO(@tbazin, 2021/10/15): remove 'link_channel_prefix' from the editable configuration,
 // just store it in LinkClient / LinkServer (but this would involve duplicate definitions...)
 // or in a global read-only configuration file in common?
-if (COMPILE_ELECTRON) {
+if (VITE_COMPILE_ELECTRON) {
   // window.abletonLinkApi.disable()
   // window.ipcRenderer
   //   .invoke('get-window-id')
@@ -408,7 +408,7 @@ export class SplashScreen {
       this.renderStartButton()
     }
 
-    if (!COMPILE_ELECTRON) {
+    if (!VITE_COMPILE_ELECTRON) {
       // insert disclaimer
       const disclaimerElement = document.createElement('div')
       disclaimerElement.id = 'splash-screen-disclaimer'

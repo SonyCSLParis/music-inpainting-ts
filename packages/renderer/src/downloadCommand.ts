@@ -201,15 +201,14 @@ export abstract class DownloadButton<
   }
 
   makeFilenameWithTimestamp(baseName?: string, extension?: string): string {
-    baseName = baseName != null ? baseName : this.defaultFilename.name
-
-    extension = extension != null ? extension : this.defaultFilename.extension
+    baseName = baseName ?? this.defaultFilename.name
+    extension = extension ?? this.defaultFilename.extension
     const dotFreeExtension = extension.replace(/^\./, '')
-
     const timestamp: string = new Date()
       .toISOString()
       .replace(/:/g, '_')
       .replace(/\..+/, '')
+
     return `${baseName}-${timestamp}.${dotFreeExtension}`
   }
 
