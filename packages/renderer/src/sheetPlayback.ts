@@ -24,7 +24,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
   readonly bpmControl: BPMControl
   protected supportsMidi = false
 
-  protected playbackLookahead: number = 0.05
+  protected playbackLookahead: number = 0.1
   protected interactiveLookahead: number = 0.05
 
   // TODO(@tbazin): set-up chords instrument simply as an additional MIDI channel
@@ -126,12 +126,14 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
           if ('keyUp' in currentInstrument) {
             currentInstrument.keyDown({
               note: event.name,
-              time: time,
+              time: this.transport.toSeconds(time),
               velocity: event.velocity,
             })
             currentInstrument.keyUp({
               note: event.name,
-              time: time + event.duration,
+              time:
+                this.transport.toSeconds(time) +
+                this.transport.toSeconds(event.duration),
             })
           } else if ('triggerAttackRelease' in currentInstrument) {
             currentInstrument.triggerAttackRelease(
