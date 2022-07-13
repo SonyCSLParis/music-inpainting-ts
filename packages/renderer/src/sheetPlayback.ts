@@ -342,7 +342,6 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
     midi: Midi,
     sequenceDuration_barsBeatsSixteenth: string
   ): void {
-    console.log(midi.toJSON())
     if (!this.transport.loop) {
       this.transport.loop = true
       this.transport.loopStart = 0

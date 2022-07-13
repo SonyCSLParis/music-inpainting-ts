@@ -117,10 +117,6 @@ ipcMain.on('window-toggle-maximize', (event) => {
     targetWindow.isMaximized()
       ? targetWindow.unmaximize()
       : targetWindow.maximize()
-    console.log(
-      'backgroundThrottling: ',
-      targetWindow.webContents.backgroundThrottling
-    )
   }
 })
 
@@ -131,10 +127,6 @@ ipcMain.on('set-background-color', (event, backgroundColor: string) => {
   if (targetWindow) {
     targetWindow.setBackgroundColor(backgroundColor)
     log.debug(`Window: ${id}: set background color to ${backgroundColor}`)
-    console.log(
-      'backgroundThrottling: ',
-      targetWindow.webContents.backgroundThrottling
-    )
   }
 })
 
