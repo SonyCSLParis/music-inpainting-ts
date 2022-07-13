@@ -68,6 +68,7 @@ import '../styles/osmd.scss'
 import '../styles/spectrogram.scss'
 import '../styles/disableMouse.scss'
 
+const VITE_AUTOLOAD_SAMPLES = import.meta.env.VITE_AUTOLOAD_SAMPLES != undefined
 const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
 if (VITE_COMPILE_ELECTRON) {
@@ -703,102 +704,110 @@ function render(
         instrumentsControlGridspanElement
       )
 
-      Instruments.initializeInstruments()
-
-      const instrumentSelect = new Instruments.InstrumentSelect(
-        ['PolySynth', 'SteelPan'],
-        'PolySynth'
-      )
-      const instrumentSelectView = new Instruments.InstrumentSelectView(
-        instrumentSelect
-      )
-      instrumentSelectView.refresh()
-      instrumentSelectView.id = 'lead-instrument-select-container'
-      instrumentSelectView.classList.add(
-        'control-item',
-        'main-instrument-select'
-      )
-      instrumentsGridElement.appendChild(instrumentSelectView)
-      ControlLabels.createLabel(
-        instrumentsGridElement,
-        'lead-instrument-select-label',
-        false,
-        undefined,
-        instrumentsGridElement
-      )
-
-      function registerDisableInstrumentsOnMidiEnabled<
-        T extends Instruments.leadInstrument
-      >(instrumentSelect: Instruments.InstrumentSelect<T>) {
-        void import('./midiOut').then((midiOutModule) => {
-          void midiOutModule
-            .getMidiOutputListener()
-            .then((midiOutputListener) => {
-              midiOutputListener.on('device-changed', () => {
-                const isUsingMIDIOutput = midiOutputListener.isActive
-                instrumentsControlGridspanElement.classList.toggle(
-                  'disabled-gridspan',
-                  isUsingMIDIOutput
-                )
-                if (isUsingMIDIOutput) {
-                  // disable in-app rendering when MIDI output is enabled
-                  instrumentSelect.value = null
-                } else if (!isUsingMIDIOutput) {
-                  // re-enable in-app rendering when MIDI output is disabled
-                  instrumentSelect.restorePreviousValue()
-                }
-              })
-            })
-        })
-      }
-
-      import('./midiOut')
-        .then((midiOutModule) => {
-          midiOutModule
-            .render(sheetInpainterGraphicalView.playbackManager)
-            .then(() =>
-              registerDisableInstrumentsOnMidiEnabled(instrumentSelect)
-            )
-            .catch((e) => {
-              throw e
-            })
-        })
-        .catch((e) => {
-          throw e
-        })
-
-      let chordsInstrumentSelect: Instruments.ChordsInstrumentSelect<Instruments.chordsInstrument> | null =
-        null
-      if (configuration['use_chords_instrument']) {
-        chordsInstrumentSelect = new Instruments.ChordsInstrumentSelect(
-          ['PolySynth'],
-          'PolySynth'
+      Instruments.initializeInstruments().then(() => {
+        let initialInstrumentOptions: Instruments.leadInstrument[] = [
+          'PolySynth',
+          'SteelPan',
+        ]
+        if (VITE_AUTOLOAD_SAMPLES) {
+          initialInstrumentOptions = ['Piano', ...initialInstrumentOptions]
+        }
+        const instrumentSelect = new Instruments.InstrumentSelect(
+          initialInstrumentOptions,
+          initialInstrumentOptions[0]
         )
-        const chordsInstrumentSelectView = new Instruments.InstrumentSelectView(
-          chordsInstrumentSelect
+        const instrumentSelectView = new Instruments.InstrumentSelectView(
+          instrumentSelect
         )
-        chordsInstrumentSelectView.id = 'chords-instrument-select-container'
-        chordsInstrumentSelectView.classList.add(
+        instrumentSelectView.refresh()
+        instrumentSelectView.id = 'lead-instrument-select-container'
+        instrumentSelectView.classList.add(
           'control-item',
-          'chords-instrument-select'
+          'main-instrument-select'
         )
-        instrumentsGridElement.appendChild(chordsInstrumentSelectView)
         instrumentsGridElement.appendChild(instrumentSelectView)
         ControlLabels.createLabel(
           instrumentsGridElement,
-          'chords-instrument-select-label',
+          'lead-instrument-select-label',
           false,
           undefined,
           instrumentsGridElement
         )
-        registerDisableInstrumentsOnMidiEnabled(chordsInstrumentSelect)
-      }
 
-      Instruments.renderDownloadButton(
-        instrumentsGridElement,
-        instrumentSelect,
-        chordsInstrumentSelect
-      )
+        function registerDisableInstrumentsOnMidiEnabled<
+          T extends Instruments.leadInstrument
+        >(instrumentSelect: Instruments.InstrumentSelect<T>) {
+          void import('./midiOut').then((midiOutModule) => {
+            void midiOutModule
+              .getMidiOutputListener()
+              .then((midiOutputListener) => {
+                midiOutputListener.on('device-changed', () => {
+                  const isUsingMIDIOutput = midiOutputListener.isActive
+                  instrumentsControlGridspanElement.classList.toggle(
+                    'disabled-gridspan',
+                    isUsingMIDIOutput
+                  )
+                  if (isUsingMIDIOutput) {
+                    // disable in-app rendering when MIDI output is enabled
+                    instrumentSelect.value = null
+                  } else if (!isUsingMIDIOutput) {
+                    // re-enable in-app rendering when MIDI output is disabled
+                    instrumentSelect.restorePreviousValue()
+                  }
+                })
+              })
+          })
+        }
+
+        import('./midiOut')
+          .then((midiOutModule) => {
+            midiOutModule
+              .render(sheetInpainterGraphicalView.playbackManager)
+              .then(() =>
+                registerDisableInstrumentsOnMidiEnabled(instrumentSelect)
+              )
+              .catch((e) => {
+                throw e
+              })
+          })
+          .catch((e) => {
+            throw e
+          })
+
+        let chordsInstrumentSelect: Instruments.ChordsInstrumentSelect<Instruments.chordsInstrument> | null =
+          null
+        if (configuration['use_chords_instrument']) {
+          chordsInstrumentSelect = new Instruments.ChordsInstrumentSelect(
+            ['PolySynth'],
+            'PolySynth'
+          )
+          const chordsInstrumentSelectView =
+            new Instruments.InstrumentSelectView(chordsInstrumentSelect)
+          chordsInstrumentSelectView.id = 'chords-instrument-select-container'
+          chordsInstrumentSelectView.classList.add(
+            'control-item',
+            'chords-instrument-select'
+          )
+          instrumentsGridElement.appendChild(chordsInstrumentSelectView)
+          instrumentsGridElement.appendChild(instrumentSelectView)
+          ControlLabels.createLabel(
+            instrumentsGridElement,
+            'chords-instrument-select-label',
+            false,
+            undefined,
+            instrumentsGridElement
+          )
+          registerDisableInstrumentsOnMidiEnabled(chordsInstrumentSelect)
+        }
+
+        if (!VITE_AUTOLOAD_SAMPLES) {
+          Instruments.renderDownloadButton(
+            instrumentsGridElement,
+            instrumentSelect,
+            chordsInstrumentSelect
+          )
+        }
+      })
     }
   }
 

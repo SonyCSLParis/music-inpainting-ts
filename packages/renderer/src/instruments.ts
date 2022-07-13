@@ -1,11 +1,12 @@
 import log from 'loglevel'
 import * as Tone from 'tone'
-import {
+import { Piano } from '@tonejs/piano'
+import { SampleLibrary } from './dependencies/Tonejs-Instruments'
+
+import type {
   Instrument,
   InstrumentOptions,
 } from 'tone/build/esm/instrument/Instrument'
-import { Piano } from '@tonejs/piano/build/piano/Piano'
-import { SampleLibrary } from './dependencies/Tonejs-Instruments'
 
 import {
   CycleSelectView,
@@ -18,6 +19,8 @@ import * as ControlLabels from './controlLabels'
 
 type ToneInstrument = Instrument<InstrumentOptions>
 type InstrumentOrPiano = ToneInstrument | Piano
+
+const VITE_AUTOLOAD_SAMPLES = import.meta.env.VITE_AUTOLOAD_SAMPLES != undefined
 
 let piano: Piano
 let sampledInstruments: Record<string, Tone.Sampler> // declare variable but do not load samples yet
@@ -35,27 +38,8 @@ export function getCurrentChordsInstrument(): InstrumentOrPiano | null {
   return currentChordsInstrument
 }
 
-export function initializeInstruments(): void {
-  const pianoVelocities = 1
-  log.info(
-    `Loading Tone Piano with ${pianoVelocities} velocit${
-      pianoVelocities > 1 ? 'ies' : 'y'
-    }`
-  )
-  piano = new Piano({
-    release: true,
-    pedal: true,
-    velocities: 1,
-
-    volume: {
-      pedal: -20,
-      strings: -10,
-      keybed: -20,
-      harmonics: -10,
-    },
-  })
-
-  const useEffects = true
+export async function initializeInstruments(): Promise<void> {
+  const useEffects = false
   const limiter = new Tone.Limiter().toDestination()
   const chorus = new Tone.Chorus(5, 2, 0.5).connect(limiter)
   const reverb = new Tone.Reverb().connect(chorus)
@@ -159,11 +143,6 @@ export function initializeInstruments(): void {
     PolySynth: () => {
       return polySynth_chords
     },
-    Piano: () => {
-      piano.disconnect()
-      piano.toDestination()
-      return piano
-    },
     Organ: () => {
       return sampledInstruments['organ']
     },
@@ -174,6 +153,38 @@ export function initializeInstruments(): void {
       return silentInstrument
     },
   }
+
+  const pianoVelocities = 1
+  log.info(
+    `Loading Tone Piano with ${pianoVelocities} velocit${
+      pianoVelocities > 1 ? 'ies' : 'y'
+    }`
+  )
+  piano = new Piano({
+    release: true,
+    pedal: true,
+    velocities: 1,
+
+    volume: {
+      pedal: -20,
+      strings: -5,
+      keybed: -10,
+      harmonics: -5,
+    },
+  })
+  if (VITE_AUTOLOAD_SAMPLES) {
+    await piano.load()
+  }
+
+  Array.from([instrumentFactories, chordsInstrumentFactories]).forEach(
+    (factories) => {
+      factories['Piano'] = () => {
+        piano.disconnect()
+        piano.toDestination()
+        return piano
+      }
+    }
+  )
 }
 
 // syntax inspired by https://dev.to/angular/managing-key-value-constants-in-typescript-221g
