@@ -6,7 +6,12 @@ export interface SheetData {
   midi: Midi
 }
 
-export class SheetInpainter extends UndoableInpainter<
+export abstract class MidiInpainter<
+  DataT extends { midi: Midi },
+  AdditionalAPICommands extends string = never
+> extends UndoableInpainter<DataT, AdditionalAPICommands> {}
+
+export class SheetInpainter extends MidiInpainter<
   SheetData,
   'copy' | 'musicxml-to-midi'
 > {
@@ -125,7 +130,11 @@ export class SheetInpainter extends UndoableInpainter<
     return newData
   }
 
-  async loadFile(xmlSheetFile: File, silent: boolean = true): Promise<this> {
+  async loadFile(
+    xmlSheetFile: File,
+    queryParameters: string[],
+    silent: boolean = true
+  ): Promise<this> {
     this.emit('busy')
     const xmlSheetString = await xmlSheetFile.text()
     const newSheet = this.parser.parseFromString(xmlSheetString, 'text/xml')

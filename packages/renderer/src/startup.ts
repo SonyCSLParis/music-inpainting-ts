@@ -25,12 +25,14 @@ export type applicationConfiguration = typeof defaultConfiguration
 // TODO(@tbazin, 2021/11/04): merge all symbolic modes
 // and auto-detect sheet layout in app
 enum ApplicationMode {
+  Pia = 'pia',
   Chorale = 'chorale',
   Leadsheet = 'leadsheet',
   Folk = 'folk',
   Spectrogram = 'spectrogram',
 }
 const allApplicationModes = [
+  ApplicationMode.Pia,
   ApplicationMode.Chorale,
   ApplicationMode.Leadsheet,
   ApplicationMode.Folk,
@@ -38,6 +40,7 @@ const allApplicationModes = [
 ]
 
 const applicationModeToAPIResourceName: Map<ApplicationMode, string> = new Map([
+  [ApplicationMode.Pia, 'pia/'],
   [ApplicationMode.Chorale, 'deepbach/'],
   [ApplicationMode.Spectrogram, 'notono/'],
 ])
@@ -72,7 +75,7 @@ function parseAvailableApplicationModes(
       .replace(' ', '')
       .split(',')
     return applicationModesUnvalidated
-      .filter((value) => allApplicationModes.contains(value))
+      .filter((value) => (allApplicationModes as string[]).contains(value))
       .map((value) => value as ApplicationMode)
   }
 }
@@ -104,6 +107,12 @@ const osmdConfiguration = cloneJSON(globalConfiguration)
 osmdConfiguration['osmd'] = true
 osmdConfiguration['app_name'] = 'nonoto'
 osmdConfiguration['spectrogram'] = false
+
+const piaConfiguration = cloneJSON(globalConfiguration)
+piaConfiguration['osmd'] = false
+piaConfiguration['spectrogram'] = false
+piaConfiguration['piano_roll'] = true
+piaConfiguration['app_name'] = 'pianoto'
 
 const choraleConfiguration = cloneJSON(osmdConfiguration)
 choraleConfiguration['use_chords_instrument'] = false
@@ -155,6 +164,8 @@ if (VITE_COMPILE_ELECTRON) {
 
 export class SplashScreen {
   readonly renderPage: (configuration: applicationConfiguration) => void
+
+  startButton: NexusTextButton | null = null
 
   readonly container: HTMLElement
   readonly scrollContainer: HTMLElement
@@ -216,7 +227,10 @@ export class SplashScreen {
     return [eulaAcceptToggle, scrollbar, eulaContainer]
   }
 
-  constructor(renderPage: (configuration: applicationConfiguration) => void) {
+  constructor(
+    renderPage: (configuration: applicationConfiguration) => void,
+    autostart = false
+  ) {
     this.insertEulaAccept =
       globalConfiguration['splash_screen']['insert_eula_agreement_checkbox']
     document.body.classList.add('splash-screen')
@@ -327,6 +341,7 @@ export class SplashScreen {
     const applicationModeButtons = new Map<ApplicationMode, NexusTextButton>()
 
     const applicationModeButtonsLabel: Record<ApplicationMode, string> = {
+      pia: 'PIA',
       chorale: 'DeepBach',
       leadsheet: 'Leadsheets',
       folk: 'Folk songs',
@@ -416,6 +431,14 @@ export class SplashScreen {
       disclaimerElement.innerHTML =
         localizations['splash-screen-disclaimer']['en']
     }
+
+    if (autostart) {
+      this.pressStart()
+    }
+  }
+  protected pressStart(): void {
+    const startButtonElement = document.getElementById('start-button')
+    startButtonElement?.dispatchEvent(new PointerEvent('pointerup'))
   }
 
   protected getCurrentConfiguration(): applicationConfiguration {
@@ -431,6 +454,9 @@ export class SplashScreen {
         break
       case 'leadsheet':
         configuration = leadsheetConfiguration
+        break
+      case 'pia':
+        configuration = piaConfiguration
         break
       case 'folk':
         configuration = folkConfiguration
@@ -541,7 +567,7 @@ export class SplashScreen {
     startButtonElement.classList.add('control-item')
     configurationWindow.appendChild(startButtonElement)
 
-    new Nexus.TextButton('#start-button', {
+    this.startButton = new Nexus.TextButton('#start-button', {
       size: [150, 50],
       state: false,
       text: 'Start',

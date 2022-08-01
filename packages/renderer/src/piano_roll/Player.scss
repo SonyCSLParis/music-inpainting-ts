@@ -1,0 +1,207 @@
+@use 'sass:color';
+$off-white-color: #faebd7;
+$hot-orange-color: #ff6e00;
+$ipswich-pine-color: #e3a95e;
+$arabian-sand-color: color.scale(#be8864, $lightness: +30%);
+$lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
+
+.piano-roll-visualizer {
+  &,
+  * {
+    touch-action: none;
+  }
+}
+
+.midi-visualizer-pointer-hover-verticalLine {
+  visibility: hidden;
+  stroke: black;
+  opacity: 0.2;
+}
+.midi-visualizer-playback-position-cursor {
+  stroke: red;
+  opacity: 0.4;
+}
+.midi-visualizer svg:hover .midi-visualizer-pointer-hover-verticalLine {
+  visibility: visible;
+}
+.midi-visualizer-selection-overlay {
+  fill: black;
+  z-index: 1;
+  opacity: 0.8;
+}
+
+.midi-visualizer {
+  cursor: pointer;
+}
+
+.midi-visualizer svg rect.note {
+  rx: 1.5;
+  ry: 1.5;
+}
+
+@keyframes pulseHue {
+  from {
+    filter: brightness(1.5) hue-rotate(200deg);
+  }
+  to {
+    filter: brightness(1.5) hue-rotate(260deg);
+  }
+}
+
+.midi-visualizer svg rect.note {
+  z-index: 10;
+  &.selected {
+    animation: 2s pulseHue linear infinite;
+    stroke: pink;
+  }
+  &.candidate-selection {
+    stroke-dasharray: 4;
+    // filter: none;
+    // animation: none;
+    // fill: skyblue;
+    fill: color.scale(palegreen, $alpha: -20%);
+  }
+}
+
+/* Custom player style */
+.midi-player {
+  display: none;
+  width: inherit;
+  margin: 4px;
+  margin-bottom: 0;
+}
+.midi-player::part(control-panel) {
+  background: #919191;
+  border: 2px solid #000;
+  border-radius: 10px 10px 0 0;
+}
+.midi-player::part(play-button) {
+  color: #353;
+  border: 2px solid currentColor;
+  background-color: #4d4;
+  border-radius: 20px;
+  transition: all 0.2s;
+  content: 'hello';
+}
+.midi-player::part(play-button):hover {
+  color: #0a0;
+  background-color: #5f5;
+  border-radius: 10px;
+}
+.midi-player::part(time) {
+  font-family: monospace;
+}
+
+/* Custom visualizer style */
+$midi-visualizer-margins-color: color.scale(black, $lightness: +15%);
+$midi-visualizer-margins-length: 4vh;
+$midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
+.midi-visualizer {
+  .midi-visualizer-startend-lines {
+    fill: url(#verticalGradient);
+    fill: $midi-visualizer-margins-color;
+    stroke: lightgray;
+    opacity: 0.5;
+    stroke-width: 3px;
+    stroke-dasharray: 10;
+  }
+  .midi-visualizer-vertical-gradient {
+    .midi-visualizer-vertical-gradient-stop-boundary {
+      stop-color: color.scale(darkgray, $lightness: +90%);
+    }
+    .midi-visualizer-vertical-gradient-stop-inner {
+      stop-color: $midi-visualizer-margins-color;
+    }
+  }
+  svg {
+    background-color: $midi-visualizer-background-color;
+  }
+  height: 100%;
+  width: 100vw;
+  svg {
+    // position: absolute;
+    height: calc(100% - #{2 * $midi-visualizer-margins-length}) !important;
+  }
+}
+.midi-visualizer {
+  .simplebar-content-wrapper,
+  .simplebar-content,
+  .piano-roll-visualizer {
+    height: 100% !important;
+  }
+}
+.midi-visualizer .piano-roll-visualizer {
+  overflow: visible;
+  width: fit-content;
+}
+
+.piano-roll-visualizer {
+  &::before,
+  &::after {
+    position: sticky;
+    right: 0;
+    display: block;
+    content: '';
+    height: $midi-visualizer-margins-length;
+    width: auto;
+  }
+  &::before {
+    top: 0;
+    cursor: s-resize;
+    background: linear-gradient(
+      0deg,
+      $midi-visualizer-background-color 0%,
+      color.scale($midi-visualizer-background-color, $lightness: -10%) 20%,
+      $midi-visualizer-margins-color 100%
+    );
+  }
+  &::after {
+    bottom: 0;
+    cursor: n-resize;
+    background: linear-gradient(
+      180deg,
+      $midi-visualizer-background-color 0%,
+      color.scale($midi-visualizer-background-color, $lightness: -10%) 20%,
+      $midi-visualizer-margins-color 100%
+    );
+  }
+}
+
+.midi-visualizer svg * {
+  pointer-events: none;
+}
+.midi-visualizer svg rect.note {
+  stroke-width: 2;
+  fill: color.scale($hot-orange-color, $alpha: -50%);
+  // stroke: color.scale(black, $alpha: -10%);
+  stroke: color.scale(black, $lightness: +15%);
+}
+.midi-visualizer svg rect.note[data-instrument='2'] {
+  fill: #2ee;
+  stroke: #055;
+}
+.midi-visualizer svg rect.note[data-is-drum='true'] {
+  fill: #888;
+  stroke: #888;
+}
+.midi-visualizer svg rect.note.active {
+  opacity: 1;
+  fill: color.scale($hot-orange-color, $alpha: -30%);
+  stroke: yellow;
+}
+
+.piano-roll-inpainter.in-dragdrop-operation svg {
+  background-color: lightgreen;
+  opacity: 0.6;
+}
+
+.piano-roll-inpainter,
+.piano-roll-inpainter-stacking-container {
+  height: 100%;
+}
+
+.piano-roll-inpainter {
+  .simplebar-track.simplebar-vertical {
+    display: none;
+  }
+}

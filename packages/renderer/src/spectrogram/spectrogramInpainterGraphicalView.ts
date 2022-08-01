@@ -339,28 +339,8 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     return [...super.queryParameters, ...generationParameters]
   }
 
-  protected registerCallback(callback: () => void): void {
-    const registerReleaseCallback = () => {
-      // call the actual callback on pointer release to allow for click and drag
-      document.addEventListener(
-        'pointerup',
-        () => {
-          if (!this.hasEmptyMask) {
-            callback.bind(this)()
-          }
-        },
-        { once: true } // eventListener removed after being called
-      )
-    }
-
-    this.interfaceContainer.addEventListener('pointerdown', () => {
-      if (!this.disabled) {
-        if (this.scrollbar != null) {
-          this.scrollbar.toggleScrollLock('x', true)
-        }
-        registerReleaseCallback()
-      }
-    })
+  protected get canTriggerInpaint(): boolean {
+    return !this.hasEmptyMask
   }
 
   protected getCurrentScrollPositionTopLayer(): number {
@@ -829,35 +809,6 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
 
       interactiveGrid.setPlayingColumn(currentlyPlayingColumn)
     })
-  }
-
-  protected async dropHandler(e: DragEvent): Promise<void> {
-    if (e.dataTransfer == null) {
-      return
-    }
-
-    if (e.dataTransfer.items) {
-      // Prevent default behavior (Prevent file from being opened)
-      e.preventDefault()
-      e.stopPropagation()
-      // Use DataTransferItemList interface to access the file(s)
-      for (let i = 0; i < e.dataTransfer.items.length; i++) {
-        // If dropped items aren't files, reject them
-        if (e.dataTransfer.items[i].kind === 'file') {
-          const file = e.dataTransfer.items[i].getAsFile()
-          if (file == null) {
-            continue
-          }
-          console.log(`... file[${i}].name = ` + file.name)
-          await this.inpainter.sendAudio(file, this.queryParameters)
-        }
-      }
-    } else {
-      // Use DataTransfer interface to access the file(s)
-      for (let i = 0; i < e.dataTransfer.files.length; i++) {
-        console.log(`... file[${i}].name = ` + e.dataTransfer.files[i].name)
-      }
-    }
   }
 }
 

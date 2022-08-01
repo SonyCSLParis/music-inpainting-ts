@@ -64,6 +64,28 @@ function makeOpenGraphData(): HtmlTagDescriptor[] {
       ['og:image:height', '630'],
       ['og:image:alt', 'An screenshot of the NONOTO interface is shown.'],
     ])
+  } else if (VITE_APP_TITLE.toLowerCase() == 'pianoto') {
+    tags = new Map([
+      [
+        'og:title',
+        'NONOTO+PIA: AI-assisted interactive generation of piano performance by inpainting',
+      ],
+      [
+        'og:description',
+        'Be the piano maestro that you deserve to be. Developed at Sony CSL Paris.',
+      ],
+      ['og:type', 'website'],
+      ['og:url', VITE_DEPLOYMENT_URL || ''],
+      [
+        'og:image',
+        // TODO(@tbazin, 2022/08/01): insert correct pianoto screenshot
+        new URL('nonoto-preview-20220511-1200_630.jpg', VITE_DEPLOYMENT_URL)
+          .href,
+      ],
+      ['og:image:width', '1200'],
+      ['og:image:height', '630'],
+      ['og:image:alt', 'An screenshot of the PIANOTO interface is shown.'],
+    ])
   }
   const toTag = ([attrType, content]: [string, string]): HtmlTagDescriptor => {
     const attrs = {}

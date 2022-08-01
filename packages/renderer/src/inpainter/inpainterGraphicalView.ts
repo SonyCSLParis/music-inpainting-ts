@@ -182,20 +182,7 @@ export abstract class InpainterGraphicalView<
     this.scheduleDisplayLoop()
 
     this.toggleTransparentScrollbars()
-
-    this.container.addEventListener('drop', (e) => {
-      e.preventDefault()
-      this.container.classList.remove('in-dragdrop-operation')
-      void this.dropHandler(e)
-    })
-    this.container.addEventListener('dragenter', (e) => {
-      e.preventDefault()
-      this.container.classList.add('in-dragdrop-operation')
-    })
-    this.container.addEventListener('dragleave', (e) => {
-      e.preventDefault()
-      this.container.classList.remove('in-dragdrop-operation')
-    })
+    this.registerDropHandlers()
 
     this.playbackManager = playbackManager
     this.playbackManager.transport.on('start', () => {
@@ -215,6 +202,23 @@ export abstract class InpainterGraphicalView<
     this.once('ready', () => {
       this.disabled = false
       this.container.classList.remove('initializing')
+      this.registerCallback()
+    })
+  }
+
+  protected registerDropHandlers() {
+    this.container.addEventListener('drop', (e) => {
+      e.preventDefault()
+      this.container.classList.remove('in-dragdrop-operation')
+      void this.dropHandler(e)
+    })
+    this.container.addEventListener('dragenter', (e) => {
+      e.preventDefault()
+      this.container.classList.add('in-dragdrop-operation')
+    })
+    this.container.addEventListener('dragleave', (e) => {
+      e.preventDefault()
+      this.container.classList.remove('in-dragdrop-operation')
     })
   }
 
@@ -235,16 +239,61 @@ export abstract class InpainterGraphicalView<
     )
   }
 
+  get interactionTarget(): HTMLElement {
+    return this.interfaceContainer
+  }
+  abstract get canTriggerInpaint(): boolean
+
+  protected abstract regenerationCallback(): Promise<void>
+
+  protected registerReleaseCallback = () => {
+    // call the actual callback on pointer release to allow for click and drag
+    document.addEventListener(
+      'pointerup',
+      () => {
+        if (this.canTriggerInpaint) {
+          this.regenerationCallback.bind(this)()
+        }
+      },
+      { once: true } // eventListener removed after being called
+    )
+  }
+
+  protected onInteractionStart = () => {
+    if (!this.disabled) {
+      if (this.scrollbar != null) {
+        this.scrollbar.toggleScrollLock('x', true)
+      }
+      this.registerReleaseCallback()
+    }
+  }
+
+  protected registerCallback(): void {
+    // TODO(@tbazin, 2022/08/01): potential memory leak
+    if (this.interactionTarget != null) {
+      this.interactionTarget.removeEventListener(
+        'pointerdown',
+        this.onInteractionStart
+      )
+      this.interactionTarget.addEventListener(
+        'pointerdown',
+        this.onInteractionStart
+      )
+    }
+  }
+
   // set currently playing interface position by progress ratio
   protected abstract setCurrentlyPlayingPositionDisplay(progress: number): void
 
   protected scrollbar: ScrollLockSimpleBar | null = null
-  protected readonly nowPlayingDisplayCallbacks: (() => void)[] = [
+  protected readonly nowPlayingDisplayCallbacks: ((
+    progress?: number
+  ) => void)[] = [
     // scroll display to current step if necessary
     // (): void => this.scrollTo(this.playbackManager.transport.progress),
-    (): void => {
-      const transport = this.playbackManager.transport
-      this.setCurrentlyPlayingPositionDisplay(transport.progress)
+    (progress?: number): void => {
+      progress = progress ?? this.playbackManager.transport.progress
+      this.setCurrentlyPlayingPositionDisplay(progress)
     },
   ]
 
@@ -259,11 +308,13 @@ export abstract class InpainterGraphicalView<
     return this.container.getElementsByClassName('simplebar-content-wrapper')[0]
   }
 
-  protected getDisplayCenterPosition_px(): number {
+  protected targetScrollRatio: number = 1 / 2
+
+  protected getTargetScrollPosition_px(): number {
     // return the current position within the sheet display
     const visibleWidth: number = this.scrollableElement.clientWidth
     const centerPosition: number =
-      this.scrollableElement.scrollLeft + visibleWidth / 2
+      this.scrollableElement.scrollLeft + visibleWidth * this.targetScrollRatio
 
     return centerPosition
   }
@@ -286,9 +337,10 @@ export abstract class InpainterGraphicalView<
       return
     }
     const currentDisplayWidth_px: number = this.scrollableElement.clientWidth
-    const newScrollLeft_px = targetPosition_px - currentDisplayWidth_px / 2
+    const newScrollLeft_px =
+      targetPosition_px - currentDisplayWidth_px * this.targetScrollRatio
 
-    const currentCenterPosition_px: number = this.getDisplayCenterPosition_px()
+    const currentCenterPosition_px: number = this.getTargetScrollPosition_px()
     if (currentCenterPosition_px > targetPosition_px) {
       // scrolling to a previous position: instant scroll
       $(this.scrollableElement).stop(true, false)
@@ -372,11 +424,12 @@ export abstract class InpainterGraphicalView<
     ).start(0)
 
     const drawCallback = (time: Tone.Unit.Time) => {
+      const progress = this.playbackManager.transport.progress
       const draw = this.playbackManager.transport.context.draw
       this.nowPlayingDisplayCallbacks.forEach((callback) =>
         draw.schedule(() => {
           if (document.visibilityState == 'visible') {
-            callback()
+            callback(progress)
           }
         }, this.playbackManager.transport.toSeconds(time))
       )
@@ -387,7 +440,34 @@ export abstract class InpainterGraphicalView<
     ).start(0)
   }
 
-  protected abstract dropHandler(e: DragEvent): void
+  async dropHandler(e: DragEvent): Promise<void> {
+    if (e.dataTransfer == null) {
+      return
+    }
+
+    if (e.dataTransfer.items) {
+      // Prevent default behavior (Prevent file from being opened)
+      e.preventDefault()
+      e.stopPropagation()
+      // Use DataTransferItemList interface to access the file(s)
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        // If dropped items aren't files, reject them
+        if (e.dataTransfer.items[i].kind === 'file') {
+          const file = e.dataTransfer.items[i].getAsFile()
+          if (file == null) {
+            continue
+          }
+          console.log(`... file[${i}].name = ` + file.name)
+          await this.inpainter.loadFile(file, this.queryParameters, false)
+        }
+      }
+    } else {
+      // Use DataTransfer interface to access the file(s)
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
+        console.log(`... file[${i}].name = ` + e.dataTransfer.files[i].name)
+      }
+    }
+  }
 
   toggleScrollLock(axis: 'x' | 'y', force?: boolean): void {
     this.scrollbar?.toggleScrollLock(axis, force)
@@ -395,7 +475,6 @@ export abstract class InpainterGraphicalView<
 }
 
 // Mixins
-
 type GConstructor<T> = new (...args: any[]) => T
 type InterfaceConstructor = GConstructor<{
   readonly container: HTMLElement
