@@ -304,6 +304,12 @@ export abstract class Inpainter<
       jsonData
     )
   }
+
+  abstract loadFile(
+    file: File,
+    queryParameters: string[],
+    silent: boolean
+  ): Promise<this>
 }
 
 class UndoableInpainterEdit<DataT> extends UndoableEdit {

@@ -33,7 +33,13 @@ abstract class TonePlaybackManager extends EventEmitter {
 
   // adds a small delay to ensure stable playback as recommended in the Tone.js docs
   protected safeStartPlayback(): void {
-    this.transport.start(this.safeStartDuration, -this.context.lookAhead)
+    this.transport.start(
+      this.safeStartDuration,
+      this.transport.progress *
+        (this.transport.toSeconds(this.transport.loopEnd) -
+          this.transport.toSeconds(this.transport.loopStart)) -
+        this.context.lookAhead
+    )
   }
 
   async play() {

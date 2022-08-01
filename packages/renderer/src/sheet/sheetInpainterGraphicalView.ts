@@ -23,7 +23,7 @@ import { ScrollLockSimpleBar } from '../utils/simplebar'
 class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   SheetData,
   SheetInpainter,
-  MidiSheetPlaybackManager,
+  MidiSheetPlaybackManager<SheetInpainter>,
   number
 > {
   get isRendered(): boolean {
@@ -737,29 +737,6 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     return {
       fermatas: this.getFermatas(),
       chordLabels: this.getChordLabels(),
-    }
-  }
-
-  async dropHandler(e: DragEvent): Promise<void> {
-    // Prevent default behavior (Prevent file from being opened)
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.dataTransfer == null) {
-      return
-    }
-
-    if (e.dataTransfer.items) {
-      // Use DataTransferItemList interface to access the file(s)
-      for (let i = 0; i < e.dataTransfer.items.length; i++) {
-        // If dropped items aren't files, reject them
-        if (e.dataTransfer.items[i].kind === 'file') {
-          const sheetFile = e.dataTransfer.items[i].getAsFile()
-          if (sheetFile == null) {
-            continue
-          }
-          await this.inpainter.loadFile(sheetFile)
-        }
-      }
     }
   }
 

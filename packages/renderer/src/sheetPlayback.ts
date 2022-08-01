@@ -9,9 +9,16 @@ import * as Instruments from './instruments'
 import * as MidiOut from './midiOut'
 import * as Chord from './chord'
 import { BPMControl } from './numberControl'
-import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
+import {
+  MidiInpainter,
+  SheetData,
+  SheetInpainter,
+} from './sheet/sheetInpainter'
 import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
 import { ControlChange } from '@tonejs/midi/src/ControlChange'
+import { Time } from 'tone/build/esm/core/type/Units'
+import { PiaInpainter } from './piano_roll/pianoRollInpainter'
+import { PianoRollInpainterGraphicalView } from './piano_roll/pianoRollInpainterGraphicalView'
 
 type NoteWithMIDIChannel = {
   name: string
@@ -20,12 +27,30 @@ type NoteWithMIDIChannel = {
   midiChannel: number
 }
 
-export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpainter> {
+export default class MidiSheetPlaybackManager<
+  InpainterT extends MidiInpainter<{ midi: Midi }, never> = MidiInpainter<
+    { midi: Midi },
+    never
+  >
+> extends PlaybackManager<InpainterT> {
   readonly bpmControl: BPMControl
   protected supportsMidi = false
 
   protected playbackLookahead: number = 0.1
   protected interactiveLookahead: number = 0.05
+
+  protected _loopEnd: Tone.Unit.Time | null = null
+
+  public get loopEnd(): Tone.Unit.Time | null {
+    return this._loopEnd
+  }
+  public set loopEnd(loopEnd: Tone.Unit.Time | null) {
+    this._loopEnd = loopEnd
+    this.transport.loop = loopEnd != null
+    if (loopEnd != null) {
+      this.transport.loopEnd = loopEnd
+    }
+  }
 
   // TODO(@tbazin): set-up chords instrument simply as an additional MIDI channel
   // and treat it like the other instruments
@@ -45,7 +70,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
   }
 
   constructor(
-    inpainter: SheetInpainter,
+    inpainter: InpainterT,
     bpmControl: BPMControl,
     useChordsInstrument = false
   ) {
@@ -66,12 +91,14 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
       })
   }
 
-  protected onInpainterChange(data: SheetData): void {
-    // HACK(@tbazin, 2022/04/22): hardcoded value
-    // have the remote API send the sheet duration + time-signature within the JSON data
-    // or retrieve it from the MusicXML in the browser?
-    const sequenceDuration = Tone.Time('0:16:0')
-    this.loadMidi(data.midi, sequenceDuration.toBarsBeatsSixteenths())
+  protected onInpainterChange(data: { midi: Midi }): void {
+    // FIXME(@tbazin, 2022/07/31): Fix this!! breaks NONOTO looping
+    this.loopEnd = new Tone.TimeClass(
+      this.context,
+      (data.midi.duration * data.midi.header.tempos[0].bpm) /
+        this.transport.bpm.value
+    ).toBarsBeatsSixteenths()
+    this.loadMidi(data.midi)
   }
 
   protected async checkMidiSupport(): Promise<boolean> {
@@ -85,7 +112,7 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
     }
   }
 
-  registerTempoUpdateCallback(): void {
+  protected registerTempoUpdateCallback(): void {
     this.bpmControl.on('interface-tempo-changed', (newBpm: number) => {
       // HACK perform a comparison to avoid messaging loops, since
       // the link update triggers a bpm modification message
@@ -149,10 +176,10 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
     }
   }
 
-  triggerPedalCallback: (time: Tone.Unit.Time, event: ControlChange) => void = (
+  protected triggerPedalCallback: (
     time: Tone.Unit.Time,
     event: ControlChange
-  ) => {
+  ) => void = (time: Tone.Unit.Time, event: ControlChange) => {
     const currentInstrument = Instruments.getCurrentInstrument()
     if ('pedalUp' in currentInstrument) {
       if (event.value) {
@@ -248,12 +275,12 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
     })
   }
 
-  scheduleTrackToInstrument(
-    sequenceDuration_barsBeatsSixteenth: string,
+  protected scheduleTrackToInstrument(
     midiTrack: Track,
     midiChannel = 1,
     nextParts: Map<number, Tone.Part<NoteWithMIDIChannel>>,
-    nextControlChanges: Map<number, Tone.Part<ControlChange>>
+    nextControlChanges: Map<number, Tone.Part<ControlChange>>,
+    originalTempo: number
   ): void {
     const notes: MidiNote[] = midiTrack.notes
     const notesWithChannel = notes.map((note) => {
@@ -263,11 +290,11 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
         midiChannel: midiChannel,
         time: new Tone.TimeClass(
           this.transport.context,
-          noteJson.time
+          (noteJson.time * originalTempo) / this.transport.bpm.value
         ).toBarsBeatsSixteenths(),
         duration: new Tone.TimeClass(
           this.transport.context,
-          noteJson.duration
+          (noteJson.duration * originalTempo) / this.transport.bpm.value
         ).toNotation(),
       }
     })
@@ -286,17 +313,18 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
     let part = nextParts.get(midiChannel)
     if (part == undefined) {
       log.debug('Creating new part')
-      part = new Tone.Part<NoteWithMIDIChannel>((time, note) => {
-        this.playNote(time, note)
-      }, notesWithChannel)
+      part = new Tone.Part<NoteWithMIDIChannel>(
+        (time, note: NoteWithMIDIChannel) => {
+          this.playNote(time, note)
+        },
+        notesWithChannel
+      )
       // copySkippedNotesToPartEnd(part, notesWithChannel)
       part.mute = true
       // @HACK(@tbazin): offsetting the lookAhead to ensure perfect synchronization when
       // using Ableton Link, the downside is that it skips the first few notes,
       // one possible solution would be to copy them back at the part's end
       part.start(0, this.transport.context.lookAhead) // schedule events on the Tone timeline
-      part.loop = true
-      part.loopEnd = sequenceDuration_barsBeatsSixteenth
       nextParts.set(midiChannel, part)
     } else {
       part.mute = true
@@ -305,8 +333,13 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
         part.add(noteEvent)
       })
       // copySkippedNotesToPartEnd(part, notesWithChannel)
-      part.start(0, this.transport.context.lookAhead) // schedule events on the Tone timeline
-      part.loopEnd = sequenceDuration_barsBeatsSixteenth
+    }
+    part.start(0, this.transport.context.lookAhead) // schedule events on the Tone timeline
+    if (this.loopEnd != null) {
+      part.loop = true
+      part.loopEnd = this.loopEnd
+    } else {
+      part.loop = false
     }
 
     // schedule the pedal
@@ -320,9 +353,6 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
         )
         // copySkippedNotesToPartEnd(controlChangesPart, pedalControlChanges)
         controlChangesPart.mute = true
-        controlChangesPart.start(0)
-        controlChangesPart.loop = true
-        controlChangesPart.loopEnd = sequenceDuration_barsBeatsSixteenth
         nextControlChanges.set(midiChannel, controlChangesPart)
       } else {
         controlChangesPart.mute = true
@@ -331,7 +361,13 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
           controlChangesPart.add(controlChange)
         })
         // copySkippedNotesToPartEnd(controlChangesPart, pedalControlChanges)
-        controlChangesPart.loopEnd = sequenceDuration_barsBeatsSixteenth
+      }
+      controlChangesPart.start(0)
+      if (this.loopEnd != null) {
+        controlChangesPart.loop = true
+        controlChangesPart.loopEnd = this.loopEnd
+      } else {
+        controlChangesPart.loop = false
       }
     }
   }
@@ -340,15 +376,11 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
   // timing becomes completely wrong at high tempos
   // should implement a MusicXML to Tone.js formatter instead, using
   // musical rhythm notation rather than concrete seconds-based timing
-  protected loadMidi(
-    midi: Midi,
-    sequenceDuration_barsBeatsSixteenth: string
-  ): void {
+  protected loadMidi(midi: Midi): void {
     if (!this.transport.loop) {
       this.transport.loop = true
       this.transport.loopStart = 0
     }
-    this.transport.loopEnd = sequenceDuration_barsBeatsSixteenth
 
     // assumes constant BPM or defaults to 120BPM if no tempo information available
     const BPM = midi.header.tempos.length > 0 ? midi.header.tempos[0].bpm : 120
@@ -360,28 +392,40 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
     // TODO(theis): this will probably lead to phase-drift if repeated
     // updates are performed successively, should catch up somehow on
     // the desynchronisation introduced by this temporary tempo change
-    this.transport.bpm.value = BPM
+    // this.transport.bpm.value = BPM
 
     // Required for Tone.Time conversions to properly work
     this.transport.timeSignature = midi.header.timeSignatures[0].timeSignature
 
+    const playingParts = this.getPlayingMidiParts()
+    const playingControlChanges = this.getPlayingControlChanges()
     const nextParts = this.getNextMidiParts()
     const nextControlChanges = this.getNextControlChanges()
     midi.tracks.forEach((track, index) => {
       // midiChannels start at 1
       const midiChannel = index + 1
       this.scheduleTrackToInstrument(
-        sequenceDuration_barsBeatsSixteenth,
         track,
         midiChannel,
         nextParts,
-        nextControlChanges
+        nextControlChanges,
+        BPM
       )
+      if (!playingParts.has(midiChannel)) {
+        console.log('creating playing part')
+        this.scheduleTrackToInstrument(
+          track,
+          midiChannel,
+          playingParts,
+          playingControlChanges,
+          BPM
+        )
+      }
     })
 
     // change Transport BPM back to the displayed value
     // FIXME(theis): if this.bpmControl.value is a floor'ed value, this is wrong
-    this.transport.bpm.value = this.bpmControl.value
+    // this.transport.bpm.value = this.bpmControl.value
 
     this.switchTracks()
   }
@@ -417,5 +461,16 @@ export default class MidiSheetPlaybackManager extends PlaybackManager<SheetInpai
       this.midiParts.forEach((parts) => parts.forEach((part) => part.dispose()))
       resolve()
     })
+  }
+}
+
+class PianoRollPlaybackManager extends MidiSheetPlaybackManager<PiaInpainter> {
+  constructor(
+    inpainter: InpainterT,
+    bpmControl: BPMControl,
+    useChordsInstrument: boolean
+    // pianoRollInpainterGraphicalView: PianoRollInpainterGraphicalView
+  ) {
+    super(inpainter, bpmControl, false)
   }
 }

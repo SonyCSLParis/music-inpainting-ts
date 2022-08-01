@@ -1,5 +1,6 @@
 import $ from 'jquery'
 import log from 'loglevel'
+log.setLevel(log.levels.DEBUG)
 
 import { UndoableInpainter } from './inpainter/inpainter'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
@@ -13,6 +14,9 @@ import {
   AudioVQVAELayerDimensions,
 } from './spectrogram/spectrogramInpainter'
 import { SpectrogramInpainterGraphicalView } from './spectrogram/spectrogramInpainterGraphicalView'
+import { PiaInpainter } from './piano_roll/pianoRollInpainter'
+import { PianoRollInpainterGraphicalView } from './piano_roll/pianoRollInpainterGraphicalView'
+
 import { NexusSelect } from 'nexusui'
 import Nexus, {
   NexusSelectWithShuffle,
@@ -68,6 +72,8 @@ import '../styles/osmd.scss'
 import '../styles/spectrogram.scss'
 import '../styles/disableMouse.scss'
 
+const VITE_DUMMY_GENERATE = import.meta.env.VITE_DUMMY_GENERATE != undefined
+const VITE_AUTOSTART = import.meta.env.VITE_AUTOSTART != undefined
 const VITE_AUTOLOAD_SAMPLES = import.meta.env.VITE_AUTOLOAD_SAMPLES != undefined
 const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
@@ -84,16 +90,20 @@ import { UndoManager } from 'typed-undo'
 import { IOSMDOptions } from 'opensheetmusicdisplay'
 
 let inpainter: UndoableInpainter
-let sheetInpainter: SheetInpainter
-let spectrogramInpainter: SpectrogramInpainter
+let sheetInpainter: SheetInpainter | null = null
+let piaInpainter: PiaInpainter | null = null
+let spectrogramInpainter: SpectrogramInpainter | null = null
 let inpainterGraphicalView: InpainterGraphicalView
 let spectrogramInpainterGraphicalView:
   | SpectrogramInpainterGraphicalView
   | undefined = undefined
 let sheetInpainterGraphicalView: SheetInpainterGraphicalView | undefined =
   undefined
+let piaInpainterGraphicalView: PianoRollInpainterGraphicalView | undefined =
+  undefined
 let playbackManager: PlaybackManager
 let sheetPlaybackManager: MidiSheetPlaybackManager
+let piaPlaybackManager: MidiSheetPlaybackManager
 let spectrogramPlaybackManager: SpectrogramPlaybackManager
 let bpmControl: BPMControl
 let instrumentConstraintSelect: NexusSelectWithShuffle
@@ -126,7 +136,7 @@ function render(
       })
   }
 
-  if (configuration['osmd']) {
+  if (configuration['osmd'] || configuration['piano_roll']) {
     document.body.classList.add('nonoto')
     // document.body.setAttribute('theme', 'millenial-pink')
     // void setBackgroundColorElectron(
@@ -233,7 +243,7 @@ function render(
       bottomControlsGridElement.appendChild(editToolsGridspanElement)
     }
 
-    if (configuration['osmd']) {
+    if (configuration['osmd'] || configuration['piano_roll']) {
       const useSimpleSlider = !configuration['insert_advanced_controls']
       const bpmControlGridspanElement = document.createElement('div')
       bpmControlGridspanElement.id = 'bpm-control-gridspan'
@@ -345,6 +355,7 @@ function render(
         sheetInpainter,
         bpmControl
       )
+      sheetPlaybackManager.loopEnd = '0:16:0'
       playbackManager = sheetPlaybackManager
 
       const osmdOptions: IOSMDOptions = {
@@ -377,6 +388,41 @@ function render(
       downloadButton = new SheetDownloadButton(
         sheetInpainter,
         sheetInpainterGraphicalView,
+        downloadCommandsGridspan,
+        defaultFilename
+      )
+    } else if (configuration['piano_roll']) {
+      const piaContainer = document.createElement('div')
+      piaContainer.id = 'pia-container'
+      mainPanel.appendChild(piaContainer)
+
+      const undoManager = new UndoManager()
+      piaInpainter = new PiaInpainter(inpaintingApiAddress, undoManager)
+      inpainter = piaInpainter
+
+      piaPlaybackManager = new MidiSheetPlaybackManager(
+        piaInpainter,
+        bpmControl
+      )
+      playbackManager = piaPlaybackManager
+
+      const granularitySelect = new VariableValue<never>()
+      piaInpainterGraphicalView = new PianoRollInpainterGraphicalView(
+        piaInpainter,
+        piaPlaybackManager,
+        piaContainer,
+        granularitySelect,
+        0.1
+      )
+      inpainterGraphicalView = piaInpainterGraphicalView
+
+      const defaultFilename: filenameType = {
+        name: 'pia',
+        extension: '.mid',
+      }
+      downloadButton = new SheetDownloadButton(
+        piaInpainter,
+        piaInpainterGraphicalView,
         downloadCommandsGridspan,
         defaultFilename
       )
@@ -682,7 +728,7 @@ function render(
     })
   }
 
-  if (configuration['osmd']) {
+  if (configuration['osmd'] || configuration['piano_roll']) {
     {
       const bottomControlsGridElement =
         document.getElementById('bottom-controls')
@@ -762,7 +808,7 @@ function render(
         import('./midiOut')
           .then((midiOutModule) => {
             midiOutModule
-              .render(sheetInpainterGraphicalView.playbackManager)
+              .render(sheetPlaybackManager ?? piaPlaybackManager)
               .then(() =>
                 registerDisableInstrumentsOnMidiEnabled(instrumentSelect)
               )
@@ -815,7 +861,11 @@ function render(
     // Insert LINK client controls
     const useAdvancedControls = true
 
-    if (VITE_COMPILE_ELECTRON && configuration['osmd'] && useAdvancedControls) {
+    if (
+      VITE_COMPILE_ELECTRON &&
+      (configuration['osmd'] || configuration['piano_roll']) &&
+      useAdvancedControls
+    ) {
       getAbletonLinkClientClass().then(
         (LinkClient) => {
           linkClient = new LinkClient(bpmControl)
@@ -833,7 +883,7 @@ function render(
           LinkClientCommands.render(
             abletonLinkSettingsGridspan,
             linkClient,
-            sheetInpainterGraphicalView.playbackManager
+            sheetPlaybackManager ?? piaPlaybackManager
           )
         },
         (err) => log.error(err)
@@ -883,22 +933,34 @@ function render(
           sheetInpainterGraphicalView,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
+      } else if (
+        configuration['piano_roll'] &&
+        piaInpainterGraphicalView != null
+      ) {
+        // TODO
+        // helpTour = new NonotoTour(
+        //   [configuration['main_language']],
+        //   piaInpainterGraphicalView,
+        //   REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
+        // )
       } else {
         // FIXME(@tbazin, 2021/10/14): else branch should not be required,
         // alternatives should be detected automatically
         throw new Error('Unsupported configuration')
       }
-      const mainPanel = document.getElementById('main-panel')
-      const helpIcon = helpTour.renderIcon(mainPanel)
-      helpIcon.classList.add('disabled')
-      inpainterGraphicalView.once('ready', () => {
-        helpIcon.classList.remove('disabled')
-      })
+      if (helpTour != null) {
+        const mainPanel = document.getElementById('main-panel')
+        const helpIcon = helpTour.renderIcon(mainPanel)
+        helpIcon.classList.add('disabled')
+        inpainterGraphicalView.once('ready', () => {
+          helpIcon.classList.remove('disabled')
+        })
+      }
     }
   }
 
   async function sampleNewData(): Promise<void> {
-    const DUMMY_GENERATE = false
+    const DUMMY_GENERATE = VITE_DUMMY_GENERATE
     try {
       if (!DUMMY_GENERATE) {
         await inpainter.generate(inpainterGraphicalView.queryParameters)
@@ -924,7 +986,7 @@ function render(
 }
 
 {
-  new SplashScreen(render)
+  const splashScreen = new SplashScreen(render, VITE_AUTOSTART)
 }
 
 {
@@ -953,7 +1015,6 @@ function render(
 // manual calls to hot.invalidate(),
 // which would be required here to rebuild the app's helpTour on help.json content update
 import helpContentsJSON from '../static/localizations/help.json'
-import { ipcRendererInterface } from '../../preload/src/ipcRendererInterface'
 if (import.meta.hot) {
   let helpContents = helpContentsJSON
 }
