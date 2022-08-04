@@ -217,6 +217,16 @@ export abstract class InpainterGraphicalView<
       this.container.classList.add('in-dragdrop-operation')
     })
     this.container.addEventListener('dragleave', (e) => {
+      if (
+        e.currentTarget != null &&
+        e.relatedTarget != null &&
+        (e.currentTarget as HTMLElement).contains(
+          // see https://stackoverflow.com/a/54271161
+          e.relatedTarget as HTMLElement
+        )
+      ) {
+        return
+      }
       e.preventDefault()
       this.container.classList.remove('in-dragdrop-operation')
     })

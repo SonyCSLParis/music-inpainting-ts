@@ -92,6 +92,11 @@ export async function createWindow(): Promise<void> {
   })
 
   openWindows.set(windowID, browserWindow)
+
+  // Force exit mode for html5 fullscreen api
+  browserWindow.on('leave-full-screen', (event) => {
+    document.webkitExitFullscreen()
+  })
 }
 
 export function existsWindow(): boolean {

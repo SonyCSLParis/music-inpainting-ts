@@ -1,6 +1,7 @@
 import { NoteSequence, INoteSequence } from '@magenta/music/es6/protobuf'
+import { Note } from '@tonaljs/tonal'
 
-interface PiaNoteData {
+export interface PiaNoteData {
   type: 'note' // must always add this field
   pitch: number
   time: number
@@ -12,13 +13,13 @@ interface PiaNoteData {
 // parse notes as returned by the PIA API to NoteSequence format
 export function convertPiaNoteToNoteSequenceNote(
   noteObject: PiaNoteData
-): NoteSequence.INote {
-  return {
+): NoteSequence.Note {
+  return new NoteSequence.Note({
     pitch: noteObject.pitch,
     velocity: noteObject.velocity,
     startTime: noteObject.time,
     endTime: noteObject.time + noteObject.duration,
-  }
+  })
 }
 
 // parse note in NoteSequence format to the format returned by the PIA API

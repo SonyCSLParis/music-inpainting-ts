@@ -11,6 +11,7 @@ import { PlayerElement, VisualizerElement } from 'html-midi-player'
 import './Player.scss'
 import { PlaybackManager } from '../playback'
 import * as Tone from 'tone'
+import EventEmitter from 'events'
 
 const svgNamespace = 'http://www.w3.org/2000/svg'
 
@@ -20,54 +21,79 @@ const svgNamespace = 'http://www.w3.org/2000/svg'
 type DataAttribute = [string, any] // tslint:disable-line:no-any
 type CSSProperty = [string, string | null]
 
-function trimStartSilence(
-  noteSequence: NoteSequence,
-  maxDuration?: number
-): NoteSequence {
+function trimStartSilence(noteSequence: NoteSequence): NoteSequence {
   if (noteSequence.notes == null || noteSequence.totalTime == null) {
     return noteSequence
   }
-  maxDuration = maxDuration ?? noteSequence.totalTime
 
   const minStartTime = Math.min(
     ...(noteSequence.notes
       .map((note) => note.startTime)
       .filter((startTime) => startTime != null) as Array<number>)
   )
-  return mm_sequences.trim(
-    noteSequence,
-    minStartTime,
-    Math.min(maxDuration, noteSequence.totalTime)
-  )
+  return mm_sequences.trim(noteSequence, minStartTime, noteSequence.totalTime)
 }
 
-function extractFirstVoice(noteSequence: NoteSequence, maxDuration?: number) {
+function extractFirstVoice(noteSequence: NoteSequence) {
   const firstVoice = noteSequence.notes.filter((note) => note.instrument == 0)
-  noteSequence.notes = firstVoice
-  return trimStartSilence(new NoteSequence(noteSequence), maxDuration)
+  return new NoteSequence({
+    ...noteSequence.toJSON(),
+    notes: firstVoice,
+  })
 }
 function removeDrums(noteSequence: NoteSequence) {
   const noDrums = noteSequence.notes.filter((note) => note.isDrum == false)
-  noteSequence.notes = noDrums
-  return new NoteSequence(noteSequence)
+  return new NoteSequence({
+    ...noteSequence.toJSON(),
+    notes: noDrums,
+  })
 }
 function mapAllInstrumentsToFirstVoice(noteSequence: NoteSequence) {
-  const firstVoice = noteSequence.notes.map((note) => {
-    note.instrument = 0
+  const firstVoice = mm_sequences
+    .mergeInstruments(noteSequence)
+    .notes.map((note) => {
+      note.instrument = 0
+      note.program = 0
+      return note
+    })
+
+  noteSequence.notes = firstVoice
+  return new NoteSequence({ ...noteSequence.toJSON() })
+}
+
+function normalizeVelocity(
+  noteSequence: NoteSequence,
+  targetMeanVelocity: number
+): NoteSequence {
+  const notes = noteSequence.notes
+  const numNotesNonNullVelocity = notes.filter(
+    (note) => note.velocity != null
+  ).length
+  const sumVelocities = notes.reduce(
+    (acc, note) => acc + (note.velocity || 0),
+    0
+  )
+  const meanVelocity = sumVelocities / numNotesNonNullVelocity || 0
+  noteSequence.notes = notes.map((note) => {
+    note.velocity =
+      note.velocity != null
+        ? Math.round((note.velocity * targetMeanVelocity) / meanVelocity)
+        : null
     return note
   })
-  noteSequence.notes = firstVoice
   return new NoteSequence(noteSequence)
 }
 
 export function pianorollify(
   noteSequence: NoteSequence,
-  cropDuration: number = 60
+  cropDuration: number = 60,
+  targetMeanVelocity: number = 80
 ): NoteSequence {
   noteSequence = removeDrums(noteSequence)
   noteSequence = mapAllInstrumentsToFirstVoice(noteSequence)
-  noteSequence = trimStartSilence(noteSequence, cropDuration)
-  return noteSequence
+  noteSequence = trimStartSilence(noteSequence)
+  noteSequence = normalizeVelocity(noteSequence, targetMeanVelocity)
+  return mm_sequences.trim(noteSequence, 0, cropDuration, true)
 }
 
 export class MonoVoicePlayerElement extends PlayerElement {
@@ -144,6 +170,10 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     return this.getSize()
   }
 
+  removeNote(note: NoteSequence.Note): void {
+    this.svg.getElementById(this.noteToRectID(note))?.remove()
+  }
+
   drawNote(
     x: number,
     y: number,
@@ -152,9 +182,9 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     fill: string,
     dataAttributes: DataAttribute[],
     cssProperties: CSSProperty[]
-  ) {
+  ): SVGRectElement | null {
     if (!this.svg) {
-      return
+      return null
     }
     const rect: SVGRectElement = document.createElementNS(svgNamespace, 'rect')
     rect.classList.add('note')
@@ -175,6 +205,49 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
       rect.style.setProperty(key, value)
     })
     this.svg.appendChild(rect)
+    return rect
+  }
+
+  protected draw() {
+    if (this.noteSequence == null || this.noteSequence.notes == null) {
+      return
+    }
+    for (let i = 0; i < this.noteSequence.notes.length; i++) {
+      const note = this.noteSequence.notes[i]
+      const size = this.getNotePosition(note, i)
+      const fill = this.getNoteFillColor(note, false)
+      const dataAttributes: DataAttribute[] = [
+        ['index', i],
+        ['instrument', note.instrument],
+        ['program', note.program],
+        ['isDrum', note.isDrum === true],
+        ['pitch', note.pitch],
+      ]
+      const cssProperties: CSSProperty[] = [
+        [
+          '--midi-velocity',
+          String(note.velocity !== undefined ? note.velocity : 127),
+        ],
+      ]
+
+      const rect = this.drawNote(
+        size.x,
+        size.y,
+        size.w,
+        size.h,
+        fill,
+        dataAttributes,
+        cssProperties
+      )
+      if (rect != null) {
+        rect.id = this.noteToRectID(note)
+      }
+    }
+    this.drawn = true
+  }
+
+  noteToRectID(note: NoteSequence.Note): string {
+    return `${note.startTime}-${note.endTime}-${note.pitch}`
   }
 
   getNotePositionPublic(
@@ -199,15 +272,24 @@ export function extractSelectedRegion(
   const afterRegion = noteSequence.notes.filter(
     (noteObject) => noteObject.startTime != null && noteObject.startTime > end
   )
-  const selectedRegion = noteSequence.notes.filter((noteObject) => [
-    noteObject.startTime != null &&
+  const selectedRegion = noteSequence.notes.filter(
+    (noteObject) =>
+      noteObject.startTime != null &&
       noteObject.startTime >= start &&
-      noteObject.startTime <= end,
-  ])
+      noteObject.startTime <= end
+  )
   return [beforeRegion, selectedRegion, afterRegion]
 }
 
 export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
+  get Size(): {
+    width: number
+    height: number
+    widthWithoutMargins: number
+  } {
+    return this.visualizer.Size
+  }
+
   get config(): VisualizerConfig {
     return {
       ...this._config,
@@ -216,6 +298,10 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       // maxPitch: 128,
     }
   }
+  set config(value: VisualizerConfig): VisualizerConfig {
+    this._config = value
+    this.initVisualizer()
+  }
 
   protected renderTimeout = setTimeout(() => {}, 0)
   protected visualizer: NoteByNotePianoRollSVGVisualizer
@@ -223,14 +309,22 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
   protected readonly playbackManager: PlaybackManager
   protected readonly regenerationCallback: () => void
 
+  readonly emitter: EventEmitter
+
   constructor(
     regenerationCallback: () => void,
-    playbackManager: PlaybackManager
+    playbackManager: PlaybackManager,
+    emitter: EventEmitter,
+    config?: VisualizerConfig
   ) {
     super()
     this.regenerationCallback = regenerationCallback
     this.classList.add('midi-visualizer')
     this.playbackManager = playbackManager
+    this.emitter = emitter
+    if (config != undefined) {
+      this._config = config
+    }
   }
 
   protected selectionOverlay: SVGRectElement | null = null
@@ -263,11 +357,14 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       return dashedLine
     }
 
-    this.startEndLines = [
-      NoteByNotePianoRollSVGVisualizer.clickableMarginWidth,
+    const startLineOffset =
+      NoteByNotePianoRollSVGVisualizer.clickableMarginWidth
+    const endLineOffset = Math.min(
+      this.progressToClientX(1),
       this.svgElement.scrollWidth -
-        NoteByNotePianoRollSVGVisualizer.clickableMarginWidth,
-    ]
+        NoteByNotePianoRollSVGVisualizer.clickableMarginWidth
+    )
+    this.startEndLines = [startLineOffset, endLineOffset]
       .reverse()
       .map(makeDashedLineFullHeight) as [SVGLineElement, SVGLineElement]
     this.startEndLines.forEach((element) =>
@@ -290,6 +387,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       this.svgElement == null ||
       this.playbackPositionCursor == null
     ) {
+      console.log('woops')
       return
     }
     const nowPlayingPosition = this.progressToClientX(progress)
@@ -395,11 +493,51 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
   protected get timestamp_B(): number {
     return this.parseAttributeForce('timestamp_b')
   }
-  protected set timestamp_A(value: number) {
-    this.setOrRemoveAttribute('timestamp_a', `${value?.toFixed(4)}`)
+  protected get timestamp_A_ticks(): number {
+    return this.parseAttributeForce('timestamp_a_ticks')
+  }
+  protected get timestamp_B_ticks(): number {
+    return this.parseAttributeForce('timestamp_b_ticks')
+  }
+  protected set timestamp_A(value: number | null) {
+    this.setOrRemoveAttribute(
+      'timestamp_a',
+      (value = value != null ? value.toFixed(10) : null)
+    )
+    if (
+      value != null &&
+      this.noteSequence?.totalTime != null &&
+      this.noteSequence.ticksPerQuarter != null
+    ) {
+      const timestamp_A_ticks = Math.round(
+        value *
+          (this.noteSequence.tempos[0].qpm / 60) *
+          this.noteSequence.ticksPerQuarter
+      )
+      this.setAttribute('timestamp_a_ticks', timestamp_A_ticks.toString())
+    } else {
+      this.removeAttribute('timestamp_a_ticks')
+    }
   }
   protected set timestamp_B(value: number) {
-    this.setOrRemoveAttribute('timestamp_b', `${value?.toFixed(4)}`)
+    this.setOrRemoveAttribute(
+      'timestamp_b',
+      (value = value != null ? value.toFixed(10) : null)
+    )
+    if (
+      value != null &&
+      this.noteSequence?.totalTime != null &&
+      this.noteSequence.ticksPerQuarter != null
+    ) {
+      const timestamp_b_ticks = Math.round(
+        value *
+          (this.noteSequence.tempos[0].qpm / 60) *
+          this.noteSequence.ticksPerQuarter
+      )
+      this.setAttribute('timestamp_b_ticks', timestamp_b_ticks.toString())
+    } else {
+      this.removeAttribute('timestamp_b_ticks')
+    }
   }
   protected get timestamp_A_x(): number {
     return this.parseAttributeForce('timestamp_a_x')
@@ -408,10 +546,10 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     return this.parseAttributeForce('timestamp_b_x')
   }
   protected set timestamp_A_x(value: number) {
-    this.setOrRemoveAttribute('timestamp_a_x', `${value?.toFixed(2)}`)
+    this.setOrRemoveAttribute('timestamp_a_x', `${value?.toFixed(10)}`)
   }
   protected set timestamp_B_x(value: number) {
-    this.setOrRemoveAttribute('timestamp_b_x', `${value?.toFixed(2)}`)
+    this.setOrRemoveAttribute('timestamp_b_x', `${value?.toFixed(10)}`)
   }
 
   protected _timestamp_A_x: number = 0
@@ -471,6 +609,17 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     const timestamp_right = Math.max(this.timestamp_A, this.timestamp_B)
     return [timestamp_left, timestamp_right]
   }
+  get timestamps_ticks(): [number | null, number | null] {
+    const timestamp_left = Math.min(
+      this.timestamp_A_ticks,
+      this.timestamp_B_ticks
+    )
+    const timestamp_right = Math.max(
+      this.timestamp_A_ticks,
+      this.timestamp_B_ticks
+    )
+    return [timestamp_left, timestamp_right]
+  }
   get timestamps_x(): [number | null, number | null] {
     const timestamp_left = Math.min(this.timestamp_A_x, this.timestamp_B_x)
     const timestamp_right = Math.max(this.timestamp_A_x, this.timestamp_B_x)
@@ -478,6 +627,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
   }
 
   protected inSelectionInteraction: boolean = false
+  protected startingSelectionInteraction: boolean = false
   get InSelectionInteraction(): boolean {
     return this.inSelectionInteraction
   }
@@ -498,33 +648,34 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     this.insertSelectionOverlay()
     this.insertPlaybackPositionCursor()
     // this.registerDropHandlers()
+    this.emitter.emit('ready')
   }
 
   protected registerDropHandlers() {
     if (this.svgElement == null) {
       return
     }
-    this.svgElement.addEventListener('drop', (e: DragEvent) => {
+    this.addEventListener('drop', (e: DragEvent) => {
       e.preventDefault()
       e.stopPropagation()
       void this.dropHandler(e)
       this.classList.remove('in-dragdrop-operation')
     })
-    this.svgElement.addEventListener('dragover', (e: DragEvent) => {
+    this.addEventListener('dragover', (e: DragEvent) => {
       if (e.dataTransfer != null) {
         e.stopPropagation()
         e.preventDefault()
         e.dataTransfer.dropEffect = 'copy'
       }
     })
-    this.svgElement.addEventListener('dragenter', (e: DragEvent) => {
+    this.addEventListener('dragenter', (e: DragEvent) => {
       if (e.dataTransfer != null) {
         e.stopPropagation()
         e.preventDefault()
         this.classList.add('in-dragdrop-operation')
       }
     })
-    this.svgElement.addEventListener('dragleave', (e: DragEvent) => {
+    this.addEventListener('dragleave', (e: DragEvent) => {
       if (e.dataTransfer != null) {
         e.stopPropagation()
         e.preventDefault()
@@ -533,44 +684,63 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     })
   }
 
-  protected pointerEventToProgress(ev: PointerEvent): number | null {
-    if (this.svgElement == null) {
+  protected offsetXToProgress(offsetX: number): number | null {
+    if (this.svgElement == null || this.visualizer.Size == null) {
       return null
     }
-    return (
-      (ev.offsetX - NoteByNotePianoRollSVGVisualizer.clickableMarginWidth) /
-      this.svgElement.scrollWidth
-    )
+    const progress =
+      (offsetX - NoteByNotePianoRollSVGVisualizer.clickableMarginWidth) /
+      this.visualizer.Size.widthWithoutMargins
+    return Math.max(0, Math.min(1, progress))
+  }
+  protected pointerEventToProgress(ev: PointerEvent): number | null {
+    return this.offsetXToProgress(ev.offsetX)
   }
   protected pointerEventToTime(ev: PointerEvent): number | null {
     if (this.svgElement == null) {
       return null
     }
     const duration = this.noteSequence?.totalTime
-    if (duration == null) {
+    const progress = this.pointerEventToProgress(ev)
+    if (duration == null || progress == null) {
       return null
     }
-    return (
-      duration *
-      ((ev.offsetX - NoteByNotePianoRollSVGVisualizer.clickableMarginWidth) /
-        this.svgElement.scrollWidth)
-    )
+    return duration * progress
   }
 
   protected seekCallback = (ev: PointerEvent) => {
     const clickProgress = this.pointerEventToProgress(ev)
-    console.log('seeking')
     if (clickProgress == null) {
       return
     }
     this.setPlaybackDisplayProgress(clickProgress)
-    // const wasPlaying = this.playbackManager.transport.state == 'started'
     this.playbackManager.transport.seconds =
       new Tone.TimeClass(
         this.playbackManager.context,
         this.playbackManager.transport.loopEnd
       ).toSeconds() * clickProgress
   }
+
+  // protected setLoopPoints = (ev: PointerEvent) => {
+  //   const clickProgressStart = this.offsetXToProgress(
+  //     parseFloat(this.wrapper.getAttribute('loopStartCandidate'))
+  //   )
+  //   const clickProgress = this.pointerEventToProgress(ev)
+  //   if (clickProgress == null) {
+  //     return
+  //   }
+  //   this.setPlaybackDisplayProgress(clickProgress)
+  //   this.playbackManager.transport.loopStart =
+  //     new Tone.TimeClass(
+  //       this.playbackManager.context,
+  //       this.playbackManager.transport.loopEnd
+  //     ).toSeconds() * clickProgress
+  //   this.playbackManager.transport.loopEnd =
+  //     new Tone.TimeClass(
+  //       this.playbackManager.context,
+  //       this.playbackManager.transport.loopEnd
+  //     ).toSeconds() * clickProgress
+  // }
 
   protected _lastPointermoveClientX: number | null = null
   get lastPointermoveClientX(): number | null {
@@ -592,6 +762,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       if (!ev.shiftKey) {
         ev.preventDefault()
         ev.stopPropagation()
+        this.timestamp_B = null
         this.resetSelectedRegion()
         try {
           this.setSelectedRegion()
@@ -600,12 +771,26 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
         this.timestamp_A = clickTime
         const x = this.svgElement.scrollLeft + ev.offsetX
         this.timestamp_A_x = x
-        this.inSelectionInteraction = true
+        this.startingSelectionInteraction = true
       } else {
         this.seekCallback(ev)
       }
     })
-    this.wrapper.addEventListener('pointerdown', this.seekCallback)
+    this.wrapper.addEventListener('pointerdown', (ev: PointerEvent) => {
+      this.wrapper.setAttribute('loopStartCandidate', ev.clientX.toFixed(4))
+      this.seekCallback(ev)
+    })
+    this.wrapper.addEventListener('pointermove', (ev: PointerEvent) => {
+      if (this.wrapper.hasAttribute('loopStartCandidate')) {
+        // this.setLoopPoints(ev)
+      }
+    })
+    this.wrapper.addEventListener('pointerleave', (ev: PointerEvent) => {
+      this.wrapper.removeAttribute('loopStartCandidate')
+    })
+    this.wrapper.addEventListener('pointerup', (ev: PointerEvent) => {
+      this.wrapper.removeAttribute('loopStartCandidate')
+    })
     this.svgElement.addEventListener('pointermove', (ev: PointerEvent) => {
       this._lastPointermoveClientX = ev.clientX
       this.setCursorHoverPosition(ev.offsetX)
@@ -616,6 +801,10 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       }
       if (ev.offsetY < 0 || ev.offsetY > this.svgElement.clientHeight) {
         this.resetSelectedRegion()
+      }
+      if (!this.inSelectionInteraction && this.startingSelectionInteraction) {
+        this.inSelectionInteraction = true
+        this.startingSelectionInteraction = false
       }
       if (!this.inSelectionInteraction) {
         return
@@ -641,10 +830,8 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
         this.regenerationCallback()
       }
       this.resetSelectedRegion()
-      this.inSelectionInteraction = false
     })
     this.svgElement.addEventListener('pointerleave', () => {
-      console.log('leave')
       this._lastPointermoveClientX = null
       this.resetSelectedRegion()
     })
@@ -662,6 +849,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
 
   protected resetSelectedRegion() {
     this.inSelectionInteraction = false
+    this.startingSelectionInteraction = false
     this.timestamp_A_x = null
     this.timestamp_B_x = null
     this.selectionOverlay?.setAttribute('width', '0')
@@ -719,9 +907,36 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     return [x, width]
   }
 
-  drawNote(note: NoteSequence.INote, noteIndex?: number) {
+  drawNote(
+    note: NoteSequence.INote,
+    noteIndex?: number
+  ): SVGRectElement | null {
+    const dataAttributes: DataAttribute[] = [
+      ['instrument', note.instrument],
+      ['program', note.program],
+      ['isDrum', note.isDrum === true],
+      ['pitch', note.pitch],
+    ]
+    const cssProperties: CSSProperty[] = [
+      [
+        '--midi-velocity',
+        String(note.velocity !== undefined ? note.velocity : 127),
+      ],
+    ]
     const { x, y, w, h } = this.visualizer.getNotePositionPublic(note, 0)
-    this.visualizer.drawNote(x, y, w, h, 'blue', [], [])
+    const rect = this.visualizer.drawNote(
+      x,
+      y,
+      w,
+      h,
+      'blue',
+      dataAttributes,
+      cssProperties
+    )
+    if (rect != null) {
+      rect.id = this.visualizer.noteToRectID(note)
+    }
+    return rect
   }
 
   async dropHandler(e: DragEvent): Promise<void> {

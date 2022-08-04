@@ -74,7 +74,7 @@ body {
   z-index: 0;
 }
 
-.inpainter.busy {
+.inpainter:not(.piano-roll-inpainter).busy {
   > :not(.loading-spinner-container):not(.simplebar-track) {
     // emulate modal overlay, highlighting the loading indicator
     // TODO(@tbazin, 2022/02/18): fix NOTONO scrollbar still disabled by this
@@ -84,6 +84,11 @@ body {
       cursor: wait !important;
       pointer-events: none !important;
     }
+  }
+}
+.piano-roll-inpainter.busy {
+  .loading-spinner {
+    opacity: 0.4;
   }
 }
 

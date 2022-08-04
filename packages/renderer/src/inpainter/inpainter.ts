@@ -148,11 +148,11 @@ export abstract class Inpainter<
     }
   }
 
-  // TODO(@tbazin, 2022/045/28): this is to set values in response to
+  // TODO(@tbazin, 2022/05): this is to set values in response to
   //   interactive API commands, to maintain a coherent state for undoableEdits
   //   but this feels hackish, could this be cleaned-up?
-  protected setValueInteractive(newValue: DataT): void {
-    this.value = newValue
+  protected setValueInteractive(newValue: DataT, silent: boolean): void {
+    this._value = newValue
   }
 
   // triggers API request only if the interface is not disabled
@@ -182,7 +182,7 @@ export abstract class Inpainter<
         timeout,
         requestBody
       )
-      this.setValueInteractive(newValue)
+      this.setValueInteractive(newValue, false)
     } catch (e) {
       log.error(e)
     } finally {
@@ -316,16 +316,19 @@ class UndoableInpainterEdit<DataT> extends UndoableEdit {
   private readonly oldValue: DataT
   private newValue: DataT
   private readonly applyValue: (value: DataT) => void
+  protected readonly canBeMerged: boolean
 
   public constructor(
     oldValue: DataT,
     newValue: DataT,
-    applyValue: (value: DataT) => void
+    applyValue: (value: DataT) => void,
+    canBeMerged: boolean
   ) {
     super()
     this.oldValue = oldValue
     this.newValue = newValue
     this.applyValue = applyValue
+    this.canBeMerged = canBeMerged
   }
 
   public undo(): void {
@@ -340,17 +343,24 @@ class UndoableInpainterEdit<DataT> extends UndoableEdit {
     return this.oldValue !== this.newValue
   }
 
-  public merge(edit: this): boolean {
-    // TODO(@tbazin, 2022/04/29): should maybe enable merging
-    //   for value updates relating to the additional views
-    //   e.g., for a sheet, if separately updating first the sheet,
-    //   then the associated MIDI. The MIDI-related update should
-    //   then be considered non-significant
+  public merge(edit: UndoableInpainterEdit<DataT>): boolean {
+    if (edit.canBeMerged) {
+      this.newValue = edit.newValue
+      return true
+    }
     return false
   }
 
   replace(edit: this): boolean {
     return false
+  }
+}
+
+export class PopUndoManager extends UndoManager {
+  pop() {
+    if (this.edits.length > 0) {
+      this.edits.pop()
+    }
   }
 }
 
@@ -360,29 +370,47 @@ export abstract class UndoableInpainter<
 > extends Inpainter<DataT, AdditionalAPICommands> {
   readonly undoManager: UndoManager
 
+  protected createUndoableEdit(
+    previousValue: DataT,
+    newValue: DataT,
+    canBeMerged: boolean
+  ): UndoableInpainterEdit<DataT> {
+    return new UndoableInpainterEdit(
+      previousValue,
+      newValue,
+      (data: DataT) => {
+        this.onUndo()
+        this.value = data
+      },
+      canBeMerged
+    )
+  }
+
   constructor(defaultApiAddress: URL, undoManager: UndoManager) {
     super(defaultApiAddress)
     this.undoManager = undoManager
   }
 
-  protected setValueInteractive(newValue: DataT, silent: boolean = true): void {
+  protected onUndo(): void {
+    return
+  }
+
+  protected setValueInteractive(
+    newValue: DataT,
+    silent: boolean,
+    canBeMergedEdits: boolean = false
+  ): void {
+    const previousValue = this._value
     if (!silent) {
       this.value = newValue
     } else {
-      const previousValue = this._value
-      super.setValueInteractive(newValue)
-      if (previousValue != newValue) {
-        if (previousValue != undefined && newValue != undefined) {
-          this.undoManager.add(
-            new UndoableInpainterEdit(
-              previousValue,
-              newValue,
-              (data: DataT) => {
-                this.value = data
-              }
-            )
-          )
-        }
+      super.setValueInteractive(newValue, false)
+    }
+    if (previousValue != newValue) {
+      if (previousValue != undefined && newValue != undefined) {
+        this.undoManager.add(
+          this.createUndoableEdit(previousValue, newValue, canBeMergedEdits)
+        )
       }
     }
   }

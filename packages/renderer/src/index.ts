@@ -2,7 +2,7 @@ import $ from 'jquery'
 import log from 'loglevel'
 log.setLevel(log.levels.DEBUG)
 
-import { UndoableInpainter } from './inpainter/inpainter'
+import { PopUndoManager, UndoableInpainter } from './inpainter/inpainter'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
 import { SheetInpainter } from './sheet/sheetInpainter'
 import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
@@ -39,6 +39,7 @@ import {
   DownloadButton,
   filename as filenameType,
   NotonoDownloadButton,
+  PianotoDownloadButton,
   SheetDownloadButton,
 } from './downloadCommand'
 
@@ -136,8 +137,13 @@ function render(
       })
   }
 
-  if (configuration['osmd'] || configuration['piano_roll']) {
+  if (configuration['osmd']) {
     document.body.classList.add('nonoto')
+  }
+  if (configuration['piano_roll']) {
+    document.body.classList.add('pianoto')
+  }
+  if (configuration['osmd'] || configuration['piano_roll']) {
     // document.body.setAttribute('theme', 'millenial-pink')
     // void setBackgroundColorElectron(
     //   colors.millenial_pink_panes_background_color
@@ -252,7 +258,7 @@ function render(
 
       bpmControl = new BPMControl(bpmControlGridspanElement, 'bpm-control')
       bpmControl.render(useSimpleSlider, 200)
-      bpmControl.value = 80
+      bpmControl.value = 120
     }
   }
 
@@ -353,9 +359,10 @@ function render(
 
       sheetPlaybackManager = new MidiSheetPlaybackManager(
         sheetInpainter,
-        bpmControl
+        bpmControl,
+        false,
+        '0:16:0'
       )
-      sheetPlaybackManager.loopEnd = '0:16:0'
       playbackManager = sheetPlaybackManager
 
       const osmdOptions: IOSMDOptions = {
@@ -396,13 +403,18 @@ function render(
       piaContainer.id = 'pia-container'
       mainPanel.appendChild(piaContainer)
 
-      const undoManager = new UndoManager()
-      piaInpainter = new PiaInpainter(inpaintingApiAddress, undoManager)
+      const undoManager = new PopUndoManager()
+      piaInpainter = new PiaInpainter(
+        inpaintingApiAddress,
+        undoManager,
+        2 * 120 * PiaInpainter.PPQ // 2 minutes at 120BPM
+      )
       inpainter = piaInpainter
 
       piaPlaybackManager = new MidiSheetPlaybackManager(
         piaInpainter,
-        bpmControl
+        bpmControl,
+        false
       )
       playbackManager = piaPlaybackManager
 
@@ -420,7 +432,7 @@ function render(
         name: 'pia',
         extension: '.mid',
       }
-      downloadButton = new SheetDownloadButton(
+      downloadButton = new PianotoDownloadButton(
         piaInpainter,
         piaInpainterGraphicalView,
         downloadCommandsGridspan,
@@ -903,15 +915,38 @@ function render(
     }
   }
 
-  if (configuration['osmd'] && sheetInpainterGraphicalView != undefined) {
+  if (
+    (configuration['osmd'] && sheetInpainterGraphicalView != undefined) ||
+    (configuration['piano_roll'] && piaInpainterGraphicalView != undefined)
+  ) {
     {
       // Insert zoom controls
       const zoomControlsGridElement = document.createElement('div')
       zoomControlsGridElement.classList.add('zoom-control', 'control-item')
       // zoomControlsGridElement.classList.add('two-columns');
+      // const mainPanel = document.getElementById('main-panel')
+      inpainterGraphicalView.container.appendChild(zoomControlsGridElement)
+      inpainterGraphicalView.renderZoomControls(zoomControlsGridElement)
+    }
+  }
+  if (
+    !VITE_COMPILE_ELECTRON &&
+    ((configuration['osmd'] && sheetInpainterGraphicalView != undefined) ||
+      (configuration['piano_roll'] && piaInpainterGraphicalView != undefined))
+  ) {
+    {
+      // Insert zoom controls
+      const fullscreenControlContainerElement = document.createElement('div')
+      fullscreenControlContainerElement.classList.add(
+        'fullscreen-control',
+        'control-item'
+      )
+      // zoomControlsGridElement.classList.add('two-columns');
       const mainPanel = document.getElementById('main-panel')
-      mainPanel.appendChild(zoomControlsGridElement)
-      sheetInpainterGraphicalView.renderZoomControls(zoomControlsGridElement)
+      mainPanel.appendChild(fullscreenControlContainerElement)
+      inpainterGraphicalView.renderFullscreenControl(
+        fullscreenControlContainerElement
+      )
     }
   }
 
