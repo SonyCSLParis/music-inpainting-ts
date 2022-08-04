@@ -34,11 +34,23 @@ $zoom-border-radius: 5px;
   left: 10px;
   top: 1.5vh;
   width: fit-content;
+}
+.fullscreen-control {
+  position: absolute;
+  right: 10px;
+  bottom: 1.5vh;
+  width: fit-content;
+}
 
+.zoom-control {
   display: grid;
   grid-template-columns: 1fr 1fr;
   column-gap: 3px;
   justify-items: center;
+}
+
+.zoom-control,
+.fullscreen-control {
   padding: 3px 5px;
   border-radius: calc(#{$zoom-border-radius} / 2);
 

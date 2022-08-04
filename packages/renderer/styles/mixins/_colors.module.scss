@@ -586,7 +586,8 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
         main-filter($active-control, $overlay-lightness-factor);
     }
   }
-  .zoom-control {
+  .zoom-control,
+  .fullscreen-control {
     background-color: color.change(color.invert($body), $alpha: 0.1);
     > * {
       background-color: color.change(color.invert($body), $alpha: 0.4);

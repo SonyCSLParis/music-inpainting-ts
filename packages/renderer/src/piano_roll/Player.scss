@@ -1,4 +1,5 @@
 @use 'sass:color';
+@use 'sass:math';
 $off-white-color: #faebd7;
 $hot-orange-color: #ff6e00;
 $ipswich-pine-color: #e3a95e;
@@ -51,8 +52,8 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 .midi-visualizer svg rect.note {
   z-index: 10;
   &.selected {
+    // &.new-note {
     animation: 2s pulseHue linear infinite;
-    stroke: pink;
   }
   &.candidate-selection {
     stroke-dasharray: 4;
@@ -60,6 +61,15 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
     // animation: none;
     // fill: skyblue;
     fill: color.scale(palegreen, $alpha: -20%);
+  }
+  &.new-note {
+    stroke: black;
+  }
+  &.selected {
+    stroke: pink;
+  }
+  &[data-instrument='1']:not(.selected) {
+    fill: lightpink;
   }
 }
 
@@ -94,7 +104,8 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 
 /* Custom visualizer style */
 $midi-visualizer-margins-color: color.scale(black, $lightness: +15%);
-$midi-visualizer-margins-length: 4vh;
+$midi-visualizer-top-margin-length: 6vh;
+$midi-visualizer-bottom-margin-length: 1vh;
 $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
 .midi-visualizer {
   .midi-visualizer-startend-lines {
@@ -113,14 +124,15 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
       stop-color: $midi-visualizer-margins-color;
     }
   }
-  svg {
-    background-color: $midi-visualizer-background-color;
-  }
+  background-color: $midi-visualizer-background-color;
   height: 100%;
   width: 100vw;
   svg {
     // position: absolute;
-    height: calc(100% - #{2 * $midi-visualizer-margins-length}) !important;
+    height: calc(
+      100% - #{$midi-visualizer-top-margin-length +
+        $midi-visualizer-bottom-margin-length}
+    ) !important;
   }
 }
 .midi-visualizer {
@@ -133,6 +145,10 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
 .midi-visualizer .piano-roll-visualizer {
   overflow: visible;
   width: fit-content;
+  &,
+  svg {
+    min-width: 100%;
+  }
 }
 
 .piano-roll-visualizer {
@@ -142,26 +158,28 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
     right: 0;
     display: block;
     content: '';
-    height: $midi-visualizer-margins-length;
+
     width: auto;
   }
   &::before {
     top: 0;
+    height: calc($midi-visualizer-top-margin-length);
     cursor: s-resize;
     background: linear-gradient(
       0deg,
-      $midi-visualizer-background-color 0%,
-      color.scale($midi-visualizer-background-color, $lightness: -10%) 20%,
+      transparent 0%,
+      color.scale($midi-visualizer-margins-color, $lightness: +90%) 20%,
       $midi-visualizer-margins-color 100%
     );
   }
   &::after {
     bottom: 0;
-    cursor: n-resize;
+    height: calc($midi-visualizer-bottom-margin-length);
+    pointer-events: none;
     background: linear-gradient(
       180deg,
-      $midi-visualizer-background-color 0%,
-      color.scale($midi-visualizer-background-color, $lightness: -10%) 20%,
+      transparent 0%,
+      color.scale($midi-visualizer-margins-color, $lightness: +90%) 20%,
       $midi-visualizer-margins-color 100%
     );
   }
@@ -173,16 +191,8 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
 .midi-visualizer svg rect.note {
   stroke-width: 2;
   fill: color.scale($hot-orange-color, $alpha: -50%);
-  // stroke: color.scale(black, $alpha: -10%);
   stroke: color.scale(black, $lightness: +15%);
-}
-.midi-visualizer svg rect.note[data-instrument='2'] {
-  fill: #2ee;
-  stroke: #055;
-}
-.midi-visualizer svg rect.note[data-is-drum='true'] {
-  fill: #888;
-  stroke: #888;
+  stroke-opacity: calc(1 - (1 - (var(--midi-velocity) / 127)) * 0.3);
 }
 .midi-visualizer svg rect.note.active {
   opacity: 1;
@@ -190,9 +200,14 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
   stroke: yellow;
 }
 
-.piano-roll-inpainter.in-dragdrop-operation svg {
-  background-color: lightgreen;
-  opacity: 0.6;
+.inpainter.piano-roll-inpainter,
+.midi-visualizer {
+  &.in-dragdrop-operation {
+    background-color: lightgreen;
+    &::after {
+      display: none;
+    }
+  }
 }
 
 .piano-roll-inpainter,
@@ -203,5 +218,37 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
 .piano-roll-inpainter {
   .simplebar-track.simplebar-vertical {
     display: none;
+  }
+}
+
+.piano-roll-inpainter {
+  .zoom-control {
+    top: auto;
+    bottom: 1.5vh;
+  }
+  .zoom-control {
+    div {
+      width: 30px;
+    }
+    i {
+      font-size: 30px;
+    }
+  }
+}
+
+body.pianoto {
+  #app-title-container {
+    grid-template-columns: 1fr;
+  }
+  #undo-button-container,
+  #redo-button-container {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  .application-header {
+    grid-template-columns: 15% 1fr 15%;
+  }
+  .header-logo {
+    display: flex;
   }
 }

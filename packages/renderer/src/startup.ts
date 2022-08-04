@@ -131,7 +131,6 @@ const spectrogramConfiguration = cloneJSON(globalConfiguration)
 spectrogramConfiguration['osmd'] = false
 spectrogramConfiguration['spectrogram'] = true
 spectrogramConfiguration['app_name'] = 'notono'
-spectrogramConfiguration['display_ircam_logo'] = true
 
 if (VITE_ENABLE_ANONYMOUS_MODE) {
   spectrogramConfiguration['app_name'] = 'VQ-Inpainting'

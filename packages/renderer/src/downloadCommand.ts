@@ -4,6 +4,8 @@ import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
 import { Buffer } from 'buffer'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
 import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
+import { PiaInpainter, PianoRollData } from './piano_roll/pianoRollInpainter'
+import { PianoRollInpainterGraphicalView } from './piano_roll/pianoRollInpainterGraphicalView'
 
 const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
@@ -387,5 +389,27 @@ export class SheetDownloadButton extends DownloadButton<
       this.imageContent = sheetPNGBlob
     }
     this.targetURL = URL.createObjectURL(sheetBlob)
+  }
+}
+export class PianotoDownloadButton extends DownloadButton<
+  PianoRollData,
+  PiaInpainter,
+  PianoRollInpainterGraphicalView
+> {
+  protected registerUpdateCallback(): void {
+    this.inpainterGraphicalView.on('ready', this.refreshCallback)
+  }
+  protected removeUpdateCallback(): void {
+    this.inpainterGraphicalView.removeListener('ready', this.refreshCallback)
+  }
+
+  protected _refreshCallback = async () => {
+    const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
+    if (sheetPNGBlob != null) {
+      this.imageContent = sheetPNGBlob
+    }
+    const blob = new Blob([this.inpainter.value.midi.toArray()])
+    this._content = blob
+    this.targetURL = URL.createObjectURL(blob)
   }
 }
