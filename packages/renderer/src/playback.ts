@@ -17,6 +17,8 @@ abstract class TonePlaybackManager extends EventEmitter {
   protected playbackLookahead = 0.15
   protected interactiveLookahead = 0.15
 
+  protected enabled = true
+
   get transport(): ToneTransport {
     return Tone.getTransport()
   }
@@ -35,24 +37,35 @@ abstract class TonePlaybackManager extends EventEmitter {
   protected safeStartPlayback(): void {
     this.transport.start(
       this.safeStartDuration,
-      this.transport.progress *
-        (this.transport.toSeconds(this.transport.loopEnd) -
-          this.transport.toSeconds(this.transport.loopStart)) -
+      this.transport.toSeconds(this.totalDuration) *
+        this.progressToTotalProgress(Math.max(0, this.transport.progress)) -
         this.context.lookAhead
     )
   }
 
-  async play() {
+  protected startPlayback(): void {
+    this.transport.start(
+      this.safeStartDuration,
+      this.transport.toSeconds(this.totalDuration) *
+        this.progressToTotalProgress(Math.max(0, this.transport.progress))
+    )
+  }
+
+  async play(): Promise<void> {
+    if (!this.enabled) {
+      return
+    }
     await this.resumeContext()
     // start the normal way
-    this.safeStartPlayback()
+    this.startPlayback()
+    // this.safeStartPlayback()
   }
 
   protected stopSound(): void {
     this.transport.stop()
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     await this.resumeContext()
     this.stopSound()
   }
@@ -68,6 +81,38 @@ abstract class TonePlaybackManager extends EventEmitter {
         : (this.transport.context.lookAhead = this.playbackLookahead)
     }
     this.context.emit('statechange')
+  }
+
+  abstract get totalDuration(): Tone.Unit.Time
+
+  get totalProgress(): number {
+    return this.progressToTotalProgress(this.transport.progress)
+  }
+  totalProgressToTime(totalProgress: number): Tone.Unit.Time {
+    return totalProgress * this.transport.toSeconds(this.totalDuration)
+  }
+
+  progressToTotalProgress(progress: number): number {
+    if (!this.transport.loop) {
+      return progress
+    }
+    return (
+      (this.transport.toTicks(this.transport.loopStart) +
+        progress *
+          (this.transport.toTicks(this.transport.loopEnd) -
+            this.transport.toTicks(this.transport.loopStart))) /
+      this.transport.toTicks(this.totalDuration)
+    )
+  }
+
+  async enable(): Promise<void> {
+    this.enabled = true
+    this.emit('enabled')
+  }
+  async disable(): Promise<void> {
+    this.emit('disabled')
+    this.transport.pause()
+    this.enabled = false
   }
 }
 

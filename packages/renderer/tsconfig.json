@@ -22,8 +22,7 @@
     "src/**/*.ts",
     "types/**/*.d.ts",
     "../../types/**/*.d.ts",
-    "../preload/contracts.d.ts"
-  ],
+    "../preload/contracts.d.ts"],
   "exclude": [
     "../main/",
     "**/*.spec.ts",

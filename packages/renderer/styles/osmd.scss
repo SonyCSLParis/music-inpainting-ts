@@ -30,16 +30,12 @@
 
 $zoom-border-radius: 5px;
 .zoom-control {
-  position: absolute;
   left: 10px;
   top: 1.5vh;
-  width: fit-content;
 }
 .fullscreen-control {
-  position: absolute;
   right: 10px;
   bottom: 1.5vh;
-  width: fit-content;
 }
 
 .zoom-control {
@@ -50,9 +46,12 @@ $zoom-border-radius: 5px;
 }
 
 .zoom-control,
-.fullscreen-control {
+.fullscreen-control,
+.reset-loop-control {
+  position: absolute;
   padding: 3px 5px;
   border-radius: calc(#{$zoom-border-radius} / 2);
+  width: fit-content;
 
   &:hover {
     opacity: 1;

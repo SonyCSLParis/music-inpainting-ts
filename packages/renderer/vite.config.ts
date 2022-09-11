@@ -41,7 +41,7 @@ function makeOpenGraphData(): HtmlTagDescriptor[] {
       ],
       ['og:image:width', '1200'],
       ['og:image:height', '630'],
-      ['og:image:alt', 'An screenshot of the NOTONO interface is shown.'],
+      ['og:image:alt', 'An screenshot of the NOTONO interface.'],
     ])
   } else if (VITE_APP_TITLE.toLowerCase() == 'nonoto') {
     tags = new Map([
@@ -62,13 +62,13 @@ function makeOpenGraphData(): HtmlTagDescriptor[] {
       ],
       ['og:image:width', '1200'],
       ['og:image:height', '630'],
-      ['og:image:alt', 'An screenshot of the NONOTO interface is shown.'],
+      ['og:image:alt', 'An screenshot of the NONOTO interface.'],
     ])
   } else if (VITE_APP_TITLE.toLowerCase() == 'pianoto') {
     tags = new Map([
       [
         'og:title',
-        'NONOTO+PIA: AI-assisted interactive generation of piano performance by inpainting',
+        'PIANOTO: AI-assisted interactive generation of piano performance by inpainting',
       ],
       [
         'og:description',
@@ -78,13 +78,13 @@ function makeOpenGraphData(): HtmlTagDescriptor[] {
       ['og:url', VITE_DEPLOYMENT_URL || ''],
       [
         'og:image',
-        // TODO(@tbazin, 2022/08/01): insert correct pianoto screenshot
-        new URL('nonoto-preview-20220511-1200_630.jpg', VITE_DEPLOYMENT_URL)
+        new URL('pianoto-preview-20220905-1200_630.png', VITE_DEPLOYMENT_URL)
           .href,
       ],
+      ['og:image:type', 'image/png'],
       ['og:image:width', '1200'],
       ['og:image:height', '630'],
-      ['og:image:alt', 'An screenshot of the PIANOTO interface is shown.'],
+      ['og:image:alt', 'An screenshot of the PIANOTO interface.'],
     ])
   }
   const toTag = ([attrType, content]: [string, string]): HtmlTagDescriptor => {

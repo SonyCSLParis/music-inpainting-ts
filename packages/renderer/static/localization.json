@@ -58,6 +58,10 @@
       "en": "Playback"
     },
 
+    "record-button-label": {
+      "en": "Record"
+    },
+
     "edit-tools-gridspan-label": {
       "en": "Config"
     },
@@ -123,6 +127,10 @@
 
     "ableton-link-client-downbeat-display-label": {
       "en": "Downbeat"
+    },
+
+    "midi-file-select-label": {
+      "en": "Template"
     }
   },
 

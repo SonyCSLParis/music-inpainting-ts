@@ -95,7 +95,9 @@ export async function createWindow(): Promise<void> {
 
   // Force exit mode for html5 fullscreen api
   browserWindow.on('leave-full-screen', (event) => {
-    document.webkitExitFullscreen()
+    if (document != undefined) {
+      document.webkitExitFullscreen()
+    }
   })
 }
 

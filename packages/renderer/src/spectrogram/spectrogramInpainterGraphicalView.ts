@@ -20,7 +20,7 @@ import {
 } from './spectrogramInpainter'
 import { SpectrogramPlaybackManager } from '../spectrogramPlayback'
 
-import { Tick, Ticks, ScriptableScaleContext } from 'chart.js'
+import { Tick, Ticks, ScriptableScaleContext, TickOptions } from 'chart.js'
 import Chart from 'chart.js/auto'
 import { Hertz, MelFrequencyScale } from './frequencyScale'
 
@@ -29,8 +29,6 @@ import { VariableValue } from '../cycleSelect'
 import { InteractiveGrid } from './interactiveGrid'
 import log from 'loglevel'
 
-const chartsFontFamily = "'Fira-Sans'"
-Chart.defaults.font.family = chartsFontFamily
 Chart.registry.scales.register(MelFrequencyScale)
 
 class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
@@ -77,7 +75,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     }
   }
 
-  protected progressToStep(progress: number): number {
+  protected totalProgressToStep(progress: number): number {
     return Math.floor(progress * this.numColumnsTotal)
   }
 
@@ -93,11 +91,8 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     InteractiveGrid
   >()
 
-  protected readonly timeScaleContainer: HTMLDivElement
-  protected readonly timeScaleCanvas: HTMLCanvasElement
   protected readonly frequencyScaleContainer: HTMLDivElement
   protected readonly frequencyScaleCanvas: HTMLCanvasElement
-  protected timeScale?: Chart
   protected frequencyScale?: Chart
 
   readonly useTransparentScrollbars = false
@@ -191,14 +186,11 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
       this.drawTimeScale()
     })
 
-    this.timeScaleContainer = document.createElement('div')
     this.timeScaleContainer.classList.add(
       'spectrogram-inpainter-scale-container',
       'spectrogram-inpainter-time-scale-container'
     )
     this.container.appendChild(this.timeScaleContainer)
-    this.timeScaleCanvas = document.createElement('canvas')
-    this.timeScaleContainer.appendChild(this.timeScaleCanvas)
 
     this.frequencyScaleContainer = document.createElement('div')
     this.frequencyScaleContainer.classList.add(
@@ -551,86 +543,11 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   static maxTicksLimit: number = MelFrequencyScale.maxTicksLimit
-
-  static readonly commonAxesOptions = {
-    grid: {
-      drawBorder: false,
-      display: false,
-    },
+  protected get scalesFontSize(): number {
+    return Math.min(this.frequencyScaleContainer.clientWidth / 15, 12)
   }
 
-  readonly commonTicksOptions = {
-    color: 'rgba(255, 255, 255, 0.6)',
-    font: (ctx: ScriptableScaleContext) => {
-      return {
-        family: chartsFontFamily,
-        size: Math.min(this.frequencyScaleContainer.clientWidth / 15, 12),
-        style: undefined,
-        lineHeight: undefined,
-        weight: undefined,
-      }
-    },
-    // maxTicksLimit: (ctx) => 30,
-    showLabelBackdrop: true,
-    backdropColor: 'rgba(0, 0, 0, 0.6)',
-    backdropPadding: 2,
-  }
-
-  drawTimeScale(): Chart {
-    if (this.timeScale != null) {
-      this.timeScale.destroy()
-    }
-
-    const chart = new Chart(this.timeScaleCanvas, {
-      type: 'line',
-      data: {
-        datasets: [],
-      },
-      options: {
-        // ensures the canvas fills the entire container
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            display: false,
-            ...SpectrogramInpainterGraphicalViewBase.commonAxesOptions,
-          },
-          x: {
-            ...SpectrogramInpainterGraphicalViewBase.commonAxesOptions,
-
-            axis: 'x',
-            type: 'linear',
-            display: true,
-
-            min: this.getCurrentScrollPositionTopLayer(),
-            max: this.getCurrentScrollPositionTopLayer() + this.numColumnsTop,
-
-            offset: false,
-
-            ticks: {
-              stepSize: 1,
-              align: 'start',
-              callback: function (
-                this,
-                tickValue: number,
-                index: number,
-                ticks: Tick[]
-              ): string {
-                return (
-                  Ticks.formatters.numeric.bind(this)(tickValue, index, ticks) +
-                  's'
-                )
-              },
-              ...this.commonTicksOptions,
-            },
-          },
-        },
-      },
-    })
-    this.timeScale = chart
-    return this.timeScale
-  }
-
-  drawFrequencyScale(
+  protected drawFrequencyScale(
     maxTicksLimit: number = SpectrogramInpainterGraphicalViewBase.maxTicksLimit
   ): Chart {
     if (this.frequencyScale != null) {
@@ -652,10 +569,10 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
         scales: {
           x: {
             display: false,
-            ...SpectrogramInpainterGraphicalViewBase.commonAxesOptions,
+            ...InpainterGraphicalView.commonAxesOptions,
           },
           y: {
-            ...SpectrogramInpainterGraphicalViewBase.commonAxesOptions,
+            ...InpainterGraphicalView.commonAxesOptions,
 
             axis: 'y',
             display: true,
@@ -677,6 +594,22 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     })
     this.frequencyScale = chart
     return this.frequencyScale
+  }
+
+  get ticksOptions(): TickOptions {
+    return {
+      ...super.ticksOptions,
+      callback: function (
+        this,
+        tickValue: number,
+        index: number,
+        ticks: Tick[]
+      ): string {
+        return (
+          Ticks.formatters.numeric.bind(this)(tickValue, index, ticks) + 's'
+        )
+      },
+    }
   }
 
   protected createInteractiveGrid(
@@ -787,9 +720,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
       const codemap = this.inpainter.value.codemap[vqvaeLayer]
       const scaleRatio = interactiveGrid.columns / this.numColumnsTop
       const currentlyPlayingColumn: number =
-        Math.floor(
-          this.playbackManager.transport.progress * codemap[0].length
-        ) -
+        Math.floor(this.playbackManager.totalProgress * codemap[0].length) -
         this.getCurrentScrollPositionTopLayer() * scaleRatio
       if (
         currentlyPlayingColumn < 0 ||

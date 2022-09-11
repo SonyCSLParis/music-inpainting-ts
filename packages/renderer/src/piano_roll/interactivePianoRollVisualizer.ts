@@ -7,11 +7,14 @@ import { urlToNoteSequence } from '@magenta/music/esm/core/midi_io'
 import * as mm_sequences from '@magenta/music/esm/core/sequences'
 
 import { PlayerElement, VisualizerElement } from 'html-midi-player'
+import Color from 'color'
 
-import './Player.scss'
-import { PlaybackManager } from '../playback'
+// import './Player.scss'
 import * as Tone from 'tone'
 import EventEmitter from 'events'
+import MidiSheetPlaybackManager from '../sheetPlayback'
+
+const VITE_SCREENSHOT_MODE = import.meta.env.VITE_SCREENSHOT_MODE != undefined
 
 const svgNamespace = 'http://www.w3.org/2000/svg'
 
@@ -61,29 +64,6 @@ function mapAllInstrumentsToFirstVoice(noteSequence: NoteSequence) {
   return new NoteSequence({ ...noteSequence.toJSON() })
 }
 
-function normalizeVelocity(
-  noteSequence: NoteSequence,
-  targetMeanVelocity: number
-): NoteSequence {
-  const notes = noteSequence.notes
-  const numNotesNonNullVelocity = notes.filter(
-    (note) => note.velocity != null
-  ).length
-  const sumVelocities = notes.reduce(
-    (acc, note) => acc + (note.velocity || 0),
-    0
-  )
-  const meanVelocity = sumVelocities / numNotesNonNullVelocity || 0
-  noteSequence.notes = notes.map((note) => {
-    note.velocity =
-      note.velocity != null
-        ? Math.round((note.velocity * targetMeanVelocity) / meanVelocity)
-        : null
-    return note
-  })
-  return new NoteSequence(noteSequence)
-}
-
 export function pianorollify(
   noteSequence: NoteSequence,
   cropDuration: number = 60,
@@ -92,7 +72,6 @@ export function pianorollify(
   noteSequence = removeDrums(noteSequence)
   noteSequence = mapAllInstrumentsToFirstVoice(noteSequence)
   noteSequence = trimStartSilence(noteSequence)
-  noteSequence = normalizeVelocity(noteSequence, targetMeanVelocity)
   return mm_sequences.trim(noteSequence, 0, cropDuration, true)
 }
 
@@ -114,6 +93,9 @@ export class MonoVoicePlayerElement extends PlayerElement {
 class MonoVoiceVisualizerElement extends VisualizerElement {
   setNoteSequenceSilent(noteSequence: NoteSequence) {
     this.ns = noteSequence
+  }
+  addNoteToNoteSequenceSilent(note: NoteSequence.INote) {
+    this.ns.notes?.push(note)
   }
 
   set src(value: string | null) {
@@ -138,6 +120,7 @@ window.customElements.define(
 
 class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
   static readonly clickableMarginWidth: number = 30
+  protected offsetY: number = 0
 
   constructor(
     sequence: INoteSequence,
@@ -159,6 +142,15 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
       width:
         size.width + 2 * NoteByNotePianoRollSVGVisualizer.clickableMarginWidth,
     }
+
+    if (this.svg != undefined) {
+      this.offsetY = Math.max(
+        0,
+        (this.svg.clientHeight - sizeUpdated.height) / 2
+      )
+      sizeUpdated.height = this.svg.clientHeight
+    }
+
     return sizeUpdated
   }
 
@@ -170,8 +162,11 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     return this.getSize()
   }
 
-  removeNote(note: NoteSequence.Note): void {
-    this.svg.getElementById(this.noteToRectID(note))?.remove()
+  removeNote(note: NoteSequence.Note): boolean {
+    const element = this.svg.getElementById(this.noteToRectID(note))
+    const wasPresent = element != undefined
+    element?.remove()
+    return wasPresent
   }
 
   drawNote(
@@ -188,13 +183,13 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     }
     const rect: SVGRectElement = document.createElementNS(svgNamespace, 'rect')
     rect.classList.add('note')
-    rect.setAttribute('fill', fill)
+    // rect.setAttribute('fill', fill)
     x = x + NoteByNotePianoRollSVGVisualizer.clickableMarginWidth
 
     // Round values to the nearest integer to avoid partially filled pixels.
     rect.setAttribute('x', `${Math.round(x)}`)
     rect.setAttribute('y', `${Math.round(y)}`)
-    rect.setAttribute('width', `${Math.round(w)}`)
+    rect.setAttribute('width', `${Math.max(Math.round(w), 3)}`)
     rect.setAttribute('height', `${Math.round(h)}`)
     dataAttributes.forEach(([key, value]: DataAttribute) => {
       if (value !== undefined) {
@@ -204,8 +199,46 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     cssProperties.forEach(([key, value]: CSSProperty) => {
       rect.style.setProperty(key, value)
     })
+    // const noteElements = Array.from(this.svg.getElementsByTagName('note'))
+    // const indexFirstNoteAfter = noteElements
+    //   .reverse()
+    //   .map((element) => {
+    //     try {
+    //       return ClickableVisualizerElement.locateElement(element)[0]
+    //     } catch {
+    //       return x + 1
+    //     }
+    //   })
+    //   .findIndex((value) => x < value)
     this.svg.appendChild(rect)
+
+    const velocityString = rect.style.getPropertyValue('--midi-velocity')
+    const velocity = parseInt(velocityString != '' ? velocityString : '127')
+    // const velocity = Math.round(Math.random() * 127)
+    const colorRotateAmount = 50
+    const colorHueRotate = colorRotateAmount * (velocity / 127)
+    rect?.setAttribute(
+      'fill',
+      NoteByNotePianoRollSVGVisualizer.defaultNoteColor
+        .hsl()
+        .rotate(-1 * colorRotateAmount + colorHueRotate)
+        .desaturate(0.7 * (1 - velocity / 127))
+        .rgb()
+        .string()
+    )
+
     return rect
+  }
+
+  static defaultNoteColor: Color = Color.rgb(255, 110, 0).hsv()
+
+  protected getNotePosition(
+    note: NoteSequence.INote,
+    noteIndex: number
+  ): { x: number; y: number; w: number; h: number } {
+    const size = super.getNotePosition(note, noteIndex)
+    size.y -= this.offsetY
+    return size
   }
 
   protected draw() {
@@ -230,6 +263,14 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
         ],
       ]
 
+      if (this.svg != null) {
+        // HACK(@tbazin, 2022/09/11): should rather ensure there are no duplicates in
+        // inpainter.noteSequence!
+        const maybeRect = this.svg.getElementById(this.noteToRectID(note))
+        if (maybeRect != null) {
+          continue
+        }
+      }
       const rect = this.drawNote(
         size.x,
         size.y,
@@ -247,7 +288,9 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
   }
 
   noteToRectID(note: NoteSequence.Note): string {
-    return `${note.startTime}-${note.endTime}-${note.pitch}`
+    return `${note.startTime.toFixed(3)}-${note.endTime.toFixed(3)}-${
+      note.pitch
+    }`
   }
 
   getNotePositionPublic(
@@ -282,6 +325,11 @@ export function extractSelectedRegion(
 }
 
 export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
+  static readonly cssClassesPrefix: string = 'midi-visualizer'
+
+  protected inLoopSelectionOperation: boolean = false
+  protected doubleTaptopMarginTimeout: null | NodeJS.Timeout = null
+  initLoopSelectionOperation: boolean
   get Size(): {
     width: number
     height: number
@@ -290,98 +338,260 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     return this.visualizer.Size
   }
 
+  protected getMinMaxPitches(noExtraPadding = false): [number, number] {
+    const MIN_MIDI_PITCH = 0
+    const MAX_MIDI_PITCH = 127
+    if (this.ns == null || this.ns.notes == null) {
+      return [MIN_MIDI_PITCH, MAX_MIDI_PITCH]
+    }
+    if (this._config.minPitch && this._config.maxPitch) {
+      return [this._config.minPitch, this._config.maxPitch]
+    }
+
+    // If the pitches haven't been specified already, figure them out
+    // from the NoteSequence.
+    let minPitch = this._config.minPitch ?? MAX_MIDI_PITCH
+    let maxPitch = this._config.maxPitch ?? MIN_MIDI_PITCH
+    // Find the smallest pitch so that we can scale the drawing correctly.
+    for (const note of this.ns.notes) {
+      minPitch = Math.min(note.pitch ?? MAX_MIDI_PITCH, minPitch)
+      maxPitch = Math.max(note.pitch ?? MIN_MIDI_PITCH, maxPitch)
+    }
+
+    // Add a little bit of padding at the top and the bottom.
+    if (!noExtraPadding) {
+      minPitch -= 2
+      maxPitch += 2
+    }
+    return [minPitch, maxPitch]
+  }
+
   get config(): VisualizerConfig {
+    const [minPitch, maxPitch] = this.getMinMaxPitches()
+    const noteHeight = Math.min(
+      12,
+      Math.floor(this.clientHeight / Math.abs(maxPitch - minPitch) - 1)
+    )
     return {
       ...this._config,
-      noteHeight: Math.round(this.clientHeight / 70),
-      // minPitch: 0,
-      // maxPitch: 128,
+      // noteHeight: Math.round(this.clientHeight / 70),
+      noteHeight: noteHeight,
+      minPitch: minPitch,
+      maxPitch: maxPitch,
     }
   }
-  set config(value: VisualizerConfig): VisualizerConfig {
+  set config(value: VisualizerConfig) {
     this._config = value
     this.initVisualizer()
   }
 
+  async updateZoom(pixelsPerTimestep: number): Promise<void> {
+    this._config.pixelsPerTimeStep = pixelsPerTimestep
+    await this.initVisualizerNow()
+  }
+
+  refresh() {
+    this.refreshStartEndLinesPositions()
+    this.refreshLoopDisplay()
+    this.refreshSelectionOverlay()
+    this.setSelectedRegion()
+    this.refreshGenerationOverlay()
+  }
+
   protected renderTimeout = setTimeout(() => {}, 0)
   protected visualizer: NoteByNotePianoRollSVGVisualizer
+  protected readonly overlaysContainer: SVGElement = document.createElementNS(
+    svgNamespace,
+    'svg'
+  )
 
-  protected readonly playbackManager: PlaybackManager
+  protected readonly playbackManager: MidiSheetPlaybackManager
   protected readonly regenerationCallback: () => void
 
   readonly emitter: EventEmitter
 
   constructor(
     regenerationCallback: () => void,
-    playbackManager: PlaybackManager,
+    playbackManager: MidiSheetPlaybackManager,
     emitter: EventEmitter,
     config?: VisualizerConfig
   ) {
     super()
+
     this.regenerationCallback = regenerationCallback
     this.classList.add('midi-visualizer')
     this.playbackManager = playbackManager
+    this.playbackManager.on('changed-loopStart', (loopEnd) => {
+      this.refreshLoopDisplay()
+    })
+    this.playbackManager.on('changed-loopEnd', (loopEnd) => {
+      this.refreshLoopDisplay()
+    })
     this.emitter = emitter
     if (config != undefined) {
       this._config = config
     }
   }
 
+  protected refreshLoopDisplay(
+    loopStartTotalProgress?: number,
+    loopEndTotalProgress?: number,
+    overlay: SVGRectElement | null = this.loopOverlay
+  ) {
+    if (overlay == null) {
+      return
+    }
+
+    loopStartTotalProgress =
+      loopStartTotalProgress ??
+      this.playbackManager.transport.toTicks(this.playbackManager.loopStart) /
+        this.playbackManager.transport.toTicks(
+          this.playbackManager.totalDuration
+        )
+    loopEndTotalProgress =
+      loopEndTotalProgress ??
+      this.playbackManager.transport.toTicks(this.playbackManager.loopEnd) /
+        this.playbackManager.transport.toTicks(
+          this.playbackManager.totalDuration
+        )
+
+    let resetLoopButtonContainer: HTMLDivElement | null = null
+    try {
+      resetLoopButtonContainer = this.getElementsByClassName(
+        'reset-loop-control'
+      )[0] as HTMLDivElement
+    } catch (e) {
+      console.log('Failed to retrieve reset-loop button due to, ', e)
+    }
+
+    if (loopStartTotalProgress == 0 && loopEndTotalProgress == 1) {
+      overlay.setAttribute('width', '0')
+      this.topMarginLoopSetupContainer?.setAttribute('width', '0')
+
+      this.classList.remove('enabled-loop')
+    } else {
+      const x = this.totalProgressToClientX(loopStartTotalProgress)
+      const width = Math.abs(
+        this.totalProgressToClientX(loopEndTotalProgress) -
+          this.totalProgressToClientX(loopStartTotalProgress)
+      )
+      overlay.setAttribute('x', x.toFixed(10))
+      overlay.setAttribute('width', width.toFixed(10))
+      this.topMarginLoopSetupContainer?.setAttribute(
+        'x',
+        Math.max(0, x - 14).toFixed(10)
+      )
+      this.topMarginLoopSetupContainer?.setAttribute(
+        'width',
+        (width + 28).toFixed(10)
+      )
+
+      if (!this.inLoopSelectionOperation) {
+        this.classList.add('enabled-loop')
+      }
+    }
+  }
+
   protected selectionOverlay: SVGRectElement | null = null
+  protected currentGenerationOverlayContainer: SVGElement | null = null
+  protected currentGenerationGradient: SVGRectElement | null = null
+  protected loopOverlay: SVGSVGElement | null = null
   protected pointerHoverVerticalBar: SVGLineElement | null = null
   protected startEndLines: [SVGLineElement, SVGLineElement] | [null, null] = [
     null,
     null,
   ]
+  protected topMargin: HTMLDivElement | null = null
+  protected topMarginLoopSetupContainer: SVGGElement | null = null
 
   get svgElement(): SVGSVGElement | null {
-    return this.wrapper.getElementsByTagName('svg')[0]
+    const svgNotesContainerClass =
+      ClickableVisualizerElement.cssClassesPrefix + '-notes-container'
+    const elements = this.wrapper.getElementsByClassName(
+      ClickableVisualizerElement.cssClassesPrefix + '-notes-container'
+    )
+    return elements.length > 0 ? (elements[0] as SVGSVGElement) : null
   }
 
-  protected insertStartEndLines() {
-    if (
-      this.svgElement == null ||
-      this.getElementsByClassName('midi-visualizer-startend-lines').length > 0
-    ) {
+  protected insertStartEndLines(): void {
+    const startEndLinesClass =
+      ClickableVisualizerElement.cssClassesPrefix + '-startend-lines'
+    if (this.getElementsByClassName(startEndLinesClass).length > 0) {
       return
     }
 
-    const makeDashedLineFullHeight = (x: number) => {
+    const makeDashedLineFullHeight = () => {
       const dashedLine = document.createElementNS(svgNamespace, 'line')
-      dashedLine.setAttribute('x1', `${Math.round(x)}`)
-      dashedLine.setAttribute('x2', `${Math.round(x)}`)
+      dashedLine.setAttribute('x1', `0`)
+      dashedLine.setAttribute('x2', `0`)
       dashedLine.setAttribute('y1', '0')
       dashedLine.setAttribute('y2', '100%')
       dashedLine.setAttribute('height', '100%')
-      dashedLine.classList.add('midi-visualizer-startend-lines')
+      dashedLine.classList.add(startEndLinesClass)
       return dashedLine
     }
 
-    const startLineOffset =
-      NoteByNotePianoRollSVGVisualizer.clickableMarginWidth
-    const endLineOffset = Math.min(
-      this.progressToClientX(1),
-      this.svgElement.scrollWidth -
-        NoteByNotePianoRollSVGVisualizer.clickableMarginWidth
-    )
-    this.startEndLines = [startLineOffset, endLineOffset]
-      .reverse()
-      .map(makeDashedLineFullHeight) as [SVGLineElement, SVGLineElement]
+    this.startEndLines = [null, null].map(makeDashedLineFullHeight) as [
+      SVGLineElement,
+      SVGLineElement
+    ]
     this.startEndLines.forEach((element) =>
-      this.svgElement?.insertBefore(element, this.svgElement.firstChild)
+      this.overlaysContainer.append(element)
     )
+    this.refreshStartEndLinesPositions()
+  }
+
+  protected refreshStartEndLinesPositions(): void {
+    const xPositionAttributes = ['x1', 'x2']
+    if (this.startEndLines[0] != null) {
+      const startLineOffset =
+        NoteByNotePianoRollSVGVisualizer.clickableMarginWidth
+      xPositionAttributes.forEach((attribute) => {
+        this.startEndLines[0]?.setAttribute(
+          attribute,
+          `${Math.round(startLineOffset)}`
+        )
+      })
+    }
+    if (this.startEndLines[1] != null) {
+      const endLineOffset = Math.min(
+        this.totalProgressToClientX(1),
+        this.overlaysContainer.scrollWidth -
+          NoteByNotePianoRollSVGVisualizer.clickableMarginWidth
+      )
+      xPositionAttributes.forEach((attribute) => {
+        this.startEndLines[1]?.setAttribute(
+          attribute,
+          `${Math.round(endLineOffset)}`
+        )
+      })
+    }
   }
 
   protected playbackPositionCursor: SVGLineElement | null = null
 
-  progressToClientX(progress: number): number {
+  totalProgressToClientX(progress: number): number {
+    if (this.visualizer == null) {
+      throw Error()
+    }
     return (
       NoteByNotePianoRollSVGVisualizer.clickableMarginWidth +
       this.visualizer.Size.widthWithoutMargins * progress
     )
   }
+  timeToClientX(time: number | null): number | null {
+    if (time == null || this.visualizer == null) {
+      return null
+    }
+    const totalDuration = this.noteSequence?.totalTime
+    if (totalDuration == null) {
+      return null
+    }
+    const progress = time / totalDuration || 0
+    return this.totalProgressToClientX(progress)
+  }
 
-  setPlaybackDisplayProgress(progress: number) {
+  setPlaybackDisplayProgress(totalProgress: number) {
     if (
       this.visualizer.Size == null ||
       this.svgElement == null ||
@@ -390,44 +600,59 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       console.log('woops')
       return
     }
-    const nowPlayingPosition = this.progressToClientX(progress)
-    this.playbackPositionCursor.setAttribute(
-      'x1',
-      nowPlayingPosition.toFixed(4)
-    )
-    this.playbackPositionCursor.setAttribute(
-      'x2',
-      nowPlayingPosition.toFixed(4)
-    )
+    const nowPlayingPosition = this.totalProgressToClientX(totalProgress)
+    this.playbackPositionCursor.style.transform = `translateX(${nowPlayingPosition}px)`
+    // this.playbackPositionCursor.setAttribute(
+    //   'x1',
+    //   nowPlayingPosition.toFixed(4)
+    // )
+    // this.playbackPositionCursor.setAttribute(
+    //   'x2',
+    //   nowPlayingPosition.toFixed(4)
+    // )
+
+    const currentTime = totalProgress * this.ns.totalTime
+    for (const note of this.ns?.notes ?? []) {
+      this.svgElement
+        .getElementById(this.visualizer.noteToRectID(note))
+        .classList.toggle(
+          'active',
+          note.startTime <= currentTime && note.endTime > currentTime
+        )
+    }
+
+    // for (const rect of this.svgElement.getElementsByTagName('rect')) {
+    //   const rectX = parseFloat(rect.getAttribute('x'))
+    //   const rectWidth = parseFloat(rect.getAttribute('width'))
+    //   rect.classList.toggle(
+    //     'active',
+    //     rectX <= nowPlayingPosition && rectX + rectWidth > nowPlayingPosition
+    //   )
+    // }
   }
 
   protected insertPlaybackPositionCursor() {
-    if (
-      this.getElementsByClassName('midi-visualizer-playback-position-cursor')
-        .length > 0
-    ) {
+    const playbackPositionCursorClass =
+      ClickableVisualizerElement.cssClassesPrefix + '-playback-position-cursor'
+    if (this.getElementsByClassName(playbackPositionCursorClass).length > 0) {
       return
     }
     this.playbackPositionCursor = document.createElementNS(svgNamespace, 'line')
     this.playbackPositionCursor.setAttribute('x1', '0')
     this.playbackPositionCursor.setAttribute('x2', '0')
-    this.playbackPositionCursor.setAttribute('y1', '0')
+    this.playbackPositionCursor.setAttribute('y1', '3vh')
     this.playbackPositionCursor.setAttribute('y2', '100%')
     this.playbackPositionCursor.setAttribute('width', '4px')
-    this.playbackPositionCursor.setAttribute('height', '100%')
-    this.playbackPositionCursor.classList.add(
-      'midi-visualizer-playback-position-cursor'
-    )
-    this.svgElement?.insertBefore(
-      this.playbackPositionCursor,
-      this.svgElement.firstChild
-    )
+    this.playbackPositionCursor.classList.add(playbackPositionCursorClass)
+    this.overlaysContainer.appendChild(this.playbackPositionCursor)
   }
 
   protected insertPointerHoverVerticalBar() {
     if (
-      this.getElementsByClassName('midi-visualizer-pointer-hover-verticalLine')
-        .length > 0
+      this.getElementsByClassName(
+        ClickableVisualizerElement.cssClassesPrefix +
+          'pointer-hover-verticalLine'
+      ).length > 0
     ) {
       return
     }
@@ -439,18 +664,17 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     this.pointerHoverVerticalBar.setAttribute('y1', '0')
     this.pointerHoverVerticalBar.setAttribute('y2', '100%')
     this.pointerHoverVerticalBar.classList.add(
-      'midi-visualizer-pointer-hover-verticalLine'
+      ClickableVisualizerElement.cssClassesPrefix +
+        '-pointer-hover-verticalLine'
     )
-    this.svgElement?.insertBefore(
-      this.pointerHoverVerticalBar,
-      this.svgElement.firstChild
-    )
+    this.overlaysContainer.appendChild(this.pointerHoverVerticalBar)
   }
 
   protected insertSelectionOverlay() {
     if (
-      this.getElementsByClassName('midi-visualizer-selection-overlay').length >
-      0
+      this.getElementsByClassName(
+        ClickableVisualizerElement.cssClassesPrefix + '-selection-overlay'
+      ).length > 0
     ) {
       return
     }
@@ -458,102 +682,445 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     this.selectionOverlay = document.createElementNS(svgNamespace, 'rect')
     this.selectionOverlay.setAttribute('y', '0')
     this.selectionOverlay.setAttribute('height', '100%')
-    this.selectionOverlay.classList.add('midi-visualizer-selection-overlay')
-    this.svgElement?.insertBefore(
-      this.selectionOverlay,
-      this.svgElement.firstChild
+    this.selectionOverlay.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix + '-selection-overlay'
     )
+    this.overlaysContainer.appendChild(this.selectionOverlay)
+
+    // this.currentGenerationOverlay = document.createElementNS(
+    //   svgNamespace,
+    //   'rect'
+    // )
+    // this.currentGenerationOverlay.setAttribute('y', '0')
+    // this.currentGenerationOverlay.setAttribute('height', '100%')
+    // this.currentGenerationOverlay.classList.add(
+    //   ClickableVisualizerElement.cssClassesPrefix +
+    //     '-current-generation-overlay'
+    // )
+    // this.overlaysContainer.appendChild(this.currentGenerationOverlay)
+    this.currentGenerationOverlayContainer = document.createElementNS(
+      svgNamespace,
+      'svg'
+    )
+    this.currentGenerationOverlayContainer.setAttribute(
+      'preserveAspectRatio',
+      'none'
+    )
+    this.currentGenerationOverlayContainer.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix +
+        '-current-generation-overlay-container'
+    )
+    this.currentGenerationOverlayContainer.setAttribute(
+      'viewBox',
+      '0 0 100 100'
+    )
+    this.currentGenerationOverlayContainer.setAttribute('x', '0')
+    this.currentGenerationOverlayContainer.setAttribute('y', '0')
+    this.currentGenerationOverlayContainer.setAttribute('width', '200')
+    this.currentGenerationOverlayContainer.setAttribute('height', '100%')
+    // this.currentGenerationOverlayContainer.setAttribute('overflow', 'visible')
+    // this.currentGenerationOverlay.classList.add(
+    //   ClickableVisualizerElement.cssClassesPrefix +
+    //     '-current-generation-overlay'
+    // )
+    this.overlaysContainer.appendChild(this.currentGenerationOverlayContainer)
+
+    // this.currentGenerationGradient = document.createElementNS(
+    //   svgNamespace,
+    //   'rect'
+    // )
+    // this.currentGenerationGradient.classList.add(
+    //   ClickableVisualizerElement.cssClassesPrefix +
+    //     '-current-generation-gradient'
+    // )
+    // this.currentGenerationGradient.setAttribute('y', '0')
+    // this.currentGenerationGradient.setAttribute('height', '100%')
+    // this.overlaysContainer.appendChild(this.currentGenerationGradient)
+    const currentGenerationDefs = document.createElementNS(svgNamespace, 'defs')
+
+    function makeFullSize<SVGElementT extends SVGElement>(
+      element: SVGElementT
+    ): SVGElementT {
+      element.setAttribute('x', '0')
+      element.setAttribute('y', '0')
+      element.setAttribute('width', '100%')
+      element.setAttribute('height', '100%')
+      return element
+    }
+
+    function createAndRegisterHorizontalGradientMask(
+      id: string,
+      stopPoints: SVGStopElement[]
+    ): [SVGMaskElement, SVGRectElement] {
+      const gradient = document.createElementNS(svgNamespace, 'linearGradient')
+      Array.from([
+        ['x1', '0%'],
+        ['x2', '100%'],
+        ['y1', '50%'],
+        ['y2', '50%'],
+      ]).forEach(([attribute, value]) => {
+        gradient.setAttribute(attribute, value)
+      })
+      gradient.id = id + '-horizontalTransparencyGradient'
+      Array.from(stopPoints).forEach((stopPoint) => {
+        gradient.appendChild(stopPoint)
+      })
+      const transparencyMask = document.createElementNS(svgNamespace, 'mask')
+      transparencyMask.id = id + '-horizontalTransparencyMask'
+      const transparencyMaskFill = makeFullSize(
+        document.createElementNS(svgNamespace, 'rect')
+      )
+      transparencyMaskFill.setAttribute('fill', `url(#${gradient.id})`)
+      transparencyMask.appendChild(transparencyMaskFill)
+
+      currentGenerationDefs.appendChild(gradient)
+      currentGenerationDefs.appendChild(transparencyMask)
+      return [transparencyMask, transparencyMaskFill]
+    }
+
+    const slidingMaskStopPoints = Array.from(['black', 'white']).map(
+      (color, index) => {
+        const stopPoint = document.createElementNS(svgNamespace, 'stop')
+        stopPoint.setAttribute('offset', index.toString())
+        stopPoint.setAttribute('stop-color', color)
+        return stopPoint
+      }
+    )
+    const [currentGenerationSlidingMask, currentGenerationSlidingMaskFill] =
+      createAndRegisterHorizontalGradientMask(
+        'slidingMask',
+        slidingMaskStopPoints
+      )
+    currentGenerationSlidingMaskFill.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix +
+        '-current-generation-gradient'
+    )
+
+    const addFullWidthTransparencyMask = false
+    if (addFullWidthTransparencyMask) {
+      const fullWidthTransparencyMaskStopPoints = Array.from([
+        ['black', '0%'],
+        ['white', '20%'],
+        ['white', '80%'],
+        ['black', '100%'],
+      ]).map(([color, offset]) => {
+        const stopPoint = document.createElementNS(svgNamespace, 'stop')
+        stopPoint.setAttribute('offset', offset)
+        stopPoint.setAttribute('stop-color', color)
+        return stopPoint
+      })
+      const [fullWidthTransparencyMask] =
+        createAndRegisterHorizontalGradientMask(
+          'fullWidthMask',
+          fullWidthTransparencyMaskStopPoints
+        )
+      fullWidthTransparencyMask
+      this.currentGenerationOverlayContainer.setAttribute(
+        'mask',
+        `url(#${fullWidthTransparencyMask.id})`
+      )
+    }
+
+    this.currentGenerationOverlayContainer.appendChild(currentGenerationDefs)
+
+    const currentGenerationOverlayBackground = makeFullSize(
+      document.createElementNS(svgNamespace, 'rect')
+    )
+    currentGenerationOverlayBackground.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix +
+        '-current-generation-overlay'
+    )
+    this.currentGenerationOverlayContainer.appendChild(
+      currentGenerationOverlayBackground
+    )
+
+    const currentGenerationOverlayGradient = makeFullSize(
+      document.createElementNS(svgNamespace, 'rect')
+    )
+    currentGenerationOverlayGradient.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix +
+        '-current-generation-gradient-fill'
+    )
+    currentGenerationOverlayGradient.setAttribute(
+      'mask',
+      `url(#${currentGenerationSlidingMask.id})`
+    )
+    this.currentGenerationOverlayContainer.appendChild(
+      currentGenerationOverlayGradient
+    )
+  }
+
+  protected insertLoopOverlay() {
+    if (
+      this.getElementsByClassName(
+        ClickableVisualizerElement.cssClassesPrefix + '-loop-overlay'
+      ).length > 0
+    ) {
+      return
+    }
+
+    const topMarginSVGContainer = document.createElementNS(svgNamespace, 'svg')
+    topMarginSVGContainer.setAttribute('x', '0')
+    topMarginSVGContainer.setAttribute('y', '0')
+    topMarginSVGContainer.setAttribute('height', '100%')
+    topMarginSVGContainer.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix + '-top-margin-svg-container'
+    )
+    this.topMargin?.appendChild(topMarginSVGContainer)
+    const invisibleFilling = document.createElementNS(svgNamespace, 'rect')
+    invisibleFilling.setAttribute('x', '0')
+    invisibleFilling.setAttribute('y', '0')
+    invisibleFilling.setAttribute('width', '100%')
+    invisibleFilling.setAttribute('height', '100%')
+    invisibleFilling.setAttribute('fill', 'transparent')
+    invisibleFilling.style.visibility = 'hidden'
+
+    this.topMarginLoopSetupContainer = document.createElementNS(
+      svgNamespace,
+      'svg'
+    )
+    this.topMarginLoopSetupContainer.setAttribute('y', '0')
+    this.topMarginLoopSetupContainer.setAttribute('height', '100%')
+    this.topMarginLoopSetupContainer.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix +
+        '-top-margin-loop-setup-container'
+    )
+    topMarginSVGContainer.appendChild(this.topMarginLoopSetupContainer)
+
+    const loopRegionDisplay = document.createElementNS(svgNamespace, 'rect')
+    loopRegionDisplay.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix +
+        '-top-margin-loop-setup-display'
+    )
+    loopRegionDisplay.setAttribute('x', '14')
+    loopRegionDisplay.setAttribute('y', '0')
+    loopRegionDisplay.setAttribute('width', '100%')
+    loopRegionDisplay.setAttribute('height', '100%')
+    this.topMarginLoopSetupContainer.append(loopRegionDisplay)
+
+    this.loopOverlay = document.createElementNS(svgNamespace, 'svg')
+    this.loopOverlay.setAttribute('y', '0')
+    this.loopOverlay.setAttribute('height', '100%')
+    this.loopOverlay.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix + '-loop-overlay-container'
+    )
+    this.overlaysContainer.appendChild(this.loopOverlay)
+
+    const loopOverlayVisual = document.createElementNS(svgNamespace, 'rect')
+    loopOverlayVisual.setAttribute('x', '0')
+    loopOverlayVisual.setAttribute('y', '0')
+    loopOverlayVisual.setAttribute('height', '100%')
+    loopOverlayVisual.setAttribute('width', '100%')
+    loopOverlayVisual.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix + '-loop-overlay'
+    )
+    const marginsXs = ['0', '100%']
+    const [leftMargins, rightMargins] = marginsXs.map((marginX, index) => {
+      const loopSetupMargin = document.createElementNS(svgNamespace, 'rect')
+      loopSetupMargin.setAttribute('y', '0')
+      loopSetupMargin.setAttribute('height', '100%')
+      loopSetupMargin.setAttribute('x', marginX)
+      loopSetupMargin.setAttribute('width', '3')
+      const loopSetupMarginClass =
+        ClickableVisualizerElement.cssClassesPrefix +
+        '-loop-overlay' +
+        '-margin-' +
+        (index == 0 ? 'left' : 'right')
+      loopSetupMargin.classList.add(loopSetupMarginClass)
+      this.loopOverlay?.appendChild(loopSetupMargin)
+
+      const clickableArea = document.createElementNS(svgNamespace, 'rect')
+      clickableArea.setAttribute('y', '0')
+      clickableArea.setAttribute('height', '100%')
+      clickableArea.setAttribute('x', '0')
+      clickableArea.setAttribute('width', '19')
+      clickableArea.setAttribute('fill', 'transparent')
+      const displayArea = document.createElementNS(svgNamespace, 'rect')
+      displayArea.setAttribute('y', '0')
+      displayArea.setAttribute('height', '100%')
+      displayArea.setAttribute('x', '8')
+      displayArea.setAttribute('width', '3')
+      const groupContainer = document.createElementNS(svgNamespace, 'g')
+      const triangleMarkupContainer = document.createElementNS(
+        svgNamespace,
+        'svg'
+      )
+      const groupContainerClass =
+        ClickableVisualizerElement.cssClassesPrefix +
+        '-loop-overlay' +
+        '-triangle-markup-group-' +
+        (index == 0 ? 'left' : 'right')
+      groupContainer.classList.add(groupContainerClass)
+      groupContainer.appendChild(triangleMarkupContainer)
+      triangleMarkupContainer.setAttribute('viewBox', '0 0 310 320')
+      const triangleMarkup = document.createElementNS(svgNamespace, 'polygon')
+      triangleMarkup.setAttribute('points', '160,10 10,300 310,300')
+      const rotationAngle = index == 0 ? '90' : '-90'
+      triangleMarkup.setAttribute(
+        'transform',
+        `rotate(${rotationAngle}, 160, 115)`
+      )
+      triangleMarkupContainer.setAttribute('x', index == 0 ? '17' : '-32')
+      triangleMarkupContainer.setAttribute('y', '0')
+      triangleMarkupContainer.setAttribute('width', '15px')
+      triangleMarkupContainer.setAttribute('height', '30%')
+      triangleMarkupContainer.setAttribute('preserveAspectRatio', 'none')
+      const triangleMarkupClass =
+        ClickableVisualizerElement.cssClassesPrefix +
+        '-loop-overlay' +
+        '-triangle-markup-' +
+        (index == 0 ? 'left' : 'right')
+      triangleMarkupContainer.classList.add(triangleMarkupClass)
+      triangleMarkupContainer.appendChild(triangleMarkup)
+      this.topMarginLoopSetupContainer?.appendChild(groupContainer)
+
+      this.topMarginLoopSetupContainer?.appendChild(clickableArea)
+      this.topMarginLoopSetupContainer?.appendChild(displayArea)
+      clickableArea.classList.add(loopSetupMarginClass)
+      displayArea.classList.add(loopSetupMarginClass + '-display')
+      return [loopSetupMargin, clickableArea]
+    })
+
+    // this.topMarginLoopSetupContainer.insertBefore(
+    //   invisibleFilling,
+    //   this.topMarginLoopSetupContainer.firstChild
+    // )
+
+    let isDraggingMargin: 'left' | 'right' | null = null
+
+    this.loopOverlay.appendChild(loopOverlayVisual)
+    this.refreshLoopDisplay()
+
+    const topMarginLoopControls = [leftMargins[1], rightMargins[1]]
+    topMarginLoopControls.forEach((element, index) =>
+      element.addEventListener('pointerdown', (ev: PointerEvent) => {
+        if (
+          !(this.inLoopSelectionOperation || this.initLoopSelectionOperation)
+        ) {
+          ev.preventDefault()
+          ev.stopImmediatePropagation()
+          isDraggingMargin = index == 0 ? 'left' : 'right'
+          this.topMargin?.setPointerCapture(ev.pointerId)
+        }
+      })
+    )
+    this.topMargin?.addEventListener('pointerup', (ev: PointerEvent) => {
+      if (isDraggingMargin) {
+        this.inLoopSelectionOperation = false
+        isDraggingMargin = null
+        this.refreshLoopDisplay()
+      }
+    })
+    this.topMargin?.addEventListener('pointerleave', (ev: PointerEvent) => {
+      if (isDraggingMargin) {
+        this.inLoopSelectionOperation = false
+        isDraggingMargin = null
+        this.refreshLoopDisplay()
+      }
+    })
+    this.topMargin?.addEventListener(
+      'pointermove',
+      async (ev: PointerEvent) => {
+        const onPointerMove = () => {
+          this.inLoopSelectionOperation = true
+          this.classList.remove('enabled-loop')
+          if (isDraggingMargin == 'left') {
+            const currentLoopEnd = this.playbackManager.loopEnd
+            const newLoopStart = this.playbackManager.totalProgressToTime(
+              this.offsetXToGlobalProgress(ev.offsetX)
+            )
+            this.setLoopPoints(newLoopStart, currentLoopEnd)
+          } else {
+            const currentLoopStart = this.playbackManager.loopStart
+            const newLoopEnd = this.playbackManager.totalProgressToTime(
+              this.offsetXToGlobalProgress(ev.offsetX)
+            )
+            this.setLoopPoints(currentLoopStart, newLoopEnd)
+          }
+        }
+        if (isDraggingMargin != null) {
+          if (
+            isDraggingMargin != null &&
+            ev.pageX > document.body.clientWidth - 10 &&
+            this.wrapperScrollLeft + this.clientWidth <
+              this.wrapperScrollWidth - 10
+          ) {
+            this.wrapperScrollLeft += 50
+          }
+          if (
+            isDraggingMargin != null &&
+            ev.pageX < 10 &&
+            this.wrapperScrollLeft > 0
+          ) {
+            this.wrapperScrollLeft -= 50
+          }
+          onPointerMove()
+        }
+      }
+    )
+  }
+
+  static async delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   static get observedAttributes() {
     return [
       ...VisualizerElement.observedAttributes,
-      'timestamp_a',
-      'timestamp_b',
-      'timestamp_a_x',
-      'timestamp_b_x',
+      'selection_timestamp_a',
+      'selection_timestamp_b',
+      'current_generation_timestamp_a',
+      'current_generation_timestamp_b',
     ]
   }
 
   attributeChangedCallback(name: string, _oldValue: string, _newValue: string) {
-    if (name === 'timestamp_b_x') {
+    if (name === 'selection_timestamp_b') {
       try {
         this.setSelectedRegion()
+      } catch {}
+    }
+    if (name === 'current_generation_timestamp_b') {
+      try {
+        this.refreshGenerationOverlay()
       } catch {}
     }
     super.attributeChangedCallback(name, _oldValue, _newValue)
   }
 
-  protected _timestamp_A: number = 0
-  protected _timestamp_B: number = 0
+  protected _selectionTimestamp_A: number = 0
+  protected _selectionTimestamp_B: number = 0
 
-  protected get timestamp_A(): number {
-    return this.parseAttributeForce('timestamp_a')
+  // FIXME(@tbazin, 2022/09/01): clean this up!!
+  protected get selectionTimestamp_A(): number | null {
+    return this.parseAttribute('selection_timestamp_a')
   }
-  protected get timestamp_B(): number {
-    return this.parseAttributeForce('timestamp_b')
+  protected get selectionTimestamp_B(): number | null {
+    return this.parseAttribute('selection_timestamp_b')
   }
-  protected get timestamp_A_ticks(): number {
-    return this.parseAttributeForce('timestamp_a_ticks')
+  protected set selectionTimestamp_A(value: number | null) {
+    this.setTimestamp('selection_timestamp_a', value)
   }
-  protected get timestamp_B_ticks(): number {
-    return this.parseAttributeForce('timestamp_b_ticks')
-  }
-  protected set timestamp_A(value: number | null) {
-    this.setOrRemoveAttribute(
-      'timestamp_a',
-      (value = value != null ? value.toFixed(10) : null)
-    )
-    if (
-      value != null &&
-      this.noteSequence?.totalTime != null &&
-      this.noteSequence.ticksPerQuarter != null
-    ) {
-      const timestamp_A_ticks = Math.round(
-        value *
-          (this.noteSequence.tempos[0].qpm / 60) *
-          this.noteSequence.ticksPerQuarter
-      )
-      this.setAttribute('timestamp_a_ticks', timestamp_A_ticks.toString())
-    } else {
-      this.removeAttribute('timestamp_a_ticks')
-    }
-  }
-  protected set timestamp_B(value: number) {
-    this.setOrRemoveAttribute(
-      'timestamp_b',
-      (value = value != null ? value.toFixed(10) : null)
-    )
-    if (
-      value != null &&
-      this.noteSequence?.totalTime != null &&
-      this.noteSequence.ticksPerQuarter != null
-    ) {
-      const timestamp_b_ticks = Math.round(
-        value *
-          (this.noteSequence.tempos[0].qpm / 60) *
-          this.noteSequence.ticksPerQuarter
-      )
-      this.setAttribute('timestamp_b_ticks', timestamp_b_ticks.toString())
-    } else {
-      this.removeAttribute('timestamp_b_ticks')
-    }
-  }
-  protected get timestamp_A_x(): number {
-    return this.parseAttributeForce('timestamp_a_x')
-  }
-  protected get timestamp_B_x(): number {
-    return this.parseAttributeForce('timestamp_b_x')
-  }
-  protected set timestamp_A_x(value: number) {
-    this.setOrRemoveAttribute('timestamp_a_x', `${value?.toFixed(10)}`)
-  }
-  protected set timestamp_B_x(value: number) {
-    this.setOrRemoveAttribute('timestamp_b_x', `${value?.toFixed(10)}`)
+  protected set selectionTimestamp_B(value: number | null) {
+    this.setTimestamp('selection_timestamp_b', value)
   }
 
-  protected _timestamp_A_x: number = 0
-  protected _timestamp_B_x: number = 0
+  get currentGenerationTimestamp_A(): number | null {
+    return this.parseAttribute('current_generation_timestamp_a')
+  }
+  get currentGenerationTimestamp_B(): number | null {
+    return this.parseAttribute('current_generation_timestamp_b')
+  }
+  set currentGenerationTimestamp_A(value: number | null) {
+    this.setTimestamp('current_generation_timestamp_a', value)
+  }
+  set currentGenerationTimestamp_B(value: number | null) {
+    this.setTimestamp('current_generation_timestamp_b', value)
+  }
+
+  protected setTimestamp(target: string, value: number | null): void {
+    this.setOrRemoveAttribute(target, value != null ? value.toFixed(10) : '')
+  }
 
   protected scrollIntoViewIfNeeded(
     scrollIntoView: boolean,
@@ -604,26 +1171,28 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     return parseFloat(value)
   }
 
-  get timestamps(): [number | null, number | null] {
-    const timestamp_left = Math.min(this.timestamp_A, this.timestamp_B)
-    const timestamp_right = Math.max(this.timestamp_A, this.timestamp_B)
-    return [timestamp_left, timestamp_right]
+  protected minMax(
+    a: number | null,
+    b: number | null
+  ): [number | null, number | null] {
+    if (a == null) {
+      return [null, null]
+    }
+    if (b == null) {
+      return [this.selectionTimestamp_A, null]
+    }
+    const min = Math.min(a, b)
+    const max = Math.max(a, b)
+    return [min, max]
   }
-  get timestamps_ticks(): [number | null, number | null] {
-    const timestamp_left = Math.min(
-      this.timestamp_A_ticks,
-      this.timestamp_B_ticks
-    )
-    const timestamp_right = Math.max(
-      this.timestamp_A_ticks,
-      this.timestamp_B_ticks
-    )
-    return [timestamp_left, timestamp_right]
+  get selectionTimestamps(): [number | null, number | null] {
+    return this.minMax(this.selectionTimestamp_A, this.selectionTimestamp_B)
   }
-  get timestamps_x(): [number | null, number | null] {
-    const timestamp_left = Math.min(this.timestamp_A_x, this.timestamp_B_x)
-    const timestamp_right = Math.max(this.timestamp_A_x, this.timestamp_B_x)
-    return [timestamp_left, timestamp_right]
+  get currentGenerationTimestamps(): [number | null, number | null] {
+    return this.minMax(
+      this.currentGenerationTimestamp_A,
+      this.currentGenerationTimestamp_B
+    )
   }
 
   protected inSelectionInteraction: boolean = false
@@ -633,22 +1202,222 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
   }
 
   protected async initVisualizerNow(): Promise<void> {
-    await super.initVisualizerNow()
-    if (this.ns != null && this.svgElement != null) {
+    this.initTimeout = null
+    if (!this.domInitialized) {
+      return
+    }
+    if (this.src) {
+      this.ns = null
+      this.ns = await urlToNoteSequence(this.src)
+    }
+
+    if (!this.ns) {
+      return
+    }
+
+    if (this.visualizer != null && this.svgElement != null) {
+      this.svgElement.innerHTML = ''
       this.visualizer = new NoteByNotePianoRollSVGVisualizer(
         this.ns,
         this.svgElement,
         this.config
       )
-    }
-    this.registerSVGEventListeners()
+      this.refresh()
+    } else {
+      this.wrapper.classList.add('piano-roll-visualizer')
+      const svg = document.createElementNS(svgNamespace, 'svg')
+      svg.classList.add(
+        ClickableVisualizerElement.cssClassesPrefix + '-notes-container'
+      )
+      this.wrapper.appendChild(svg)
 
-    this.insertPointerHoverVerticalBar()
-    this.insertStartEndLines()
-    this.insertSelectionOverlay()
-    this.insertPlaybackPositionCursor()
-    // this.registerDropHandlers()
-    this.emitter.emit('ready')
+      this.visualizer = new NoteByNotePianoRollSVGVisualizer(
+        this.ns,
+        svg,
+        this.config
+      )
+      this.overlaysContainer.classList.add(
+        ClickableVisualizerElement.cssClassesPrefix + '-overlays-container'
+      )
+      // should insert before notes container to avoid visual occlusion
+      this.wrapper.insertBefore(this.overlaysContainer, this.svgElement)
+
+      this.registerSVGEventListeners()
+
+      this.insertPointerHoverVerticalBar()
+      this.insertStartEndLines()
+      this.insertSelectionOverlay()
+      this.insertPlaybackPositionCursor()
+
+      this.insertTimeControlTopMargin()
+      this.insertLoopOverlay()
+      // this.registerDropHandlers()
+      this.emitter.emit('ready')
+    }
+  }
+
+  protected get wrapperScrollWidth(): number {
+    return this.getElementsByClassName('simplebar-content-wrapper')[0]
+      .scrollWidth
+  }
+  protected get wrapperScrollLeft(): number {
+    return this.getElementsByClassName('simplebar-content-wrapper')[0]
+      .scrollLeft
+  }
+  protected set wrapperScrollLeft(newScrollLeft: number) {
+    this.getElementsByClassName('simplebar-content-wrapper')[0].scrollLeft =
+      newScrollLeft
+  }
+
+  protected insertTimeControlTopMargin() {
+    const topMarginClass =
+      ClickableVisualizerElement.cssClassesPrefix + '-top-margin'
+    if (this.getElementsByClassName(topMarginClass).length > 0) {
+      return
+    }
+
+    this.topMargin = document.createElement('div')
+    this.topMargin.classList.add(topMarginClass)
+    this.wrapper.appendChild(this.topMargin)
+
+    const seekTimelineElement = document.createElement('div')
+    seekTimelineElement.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix + '-seek-timeline'
+    )
+    this.topMargin.appendChild(seekTimelineElement)
+
+    const loopSetupTimelineElement = document.createElement('div')
+    loopSetupTimelineElement.classList.add(
+      ClickableVisualizerElement.cssClassesPrefix + '-loop-setup-timeline'
+    )
+    this.topMargin.appendChild(loopSetupTimelineElement)
+
+    // this.topMargin.addEventListener('dblclick', (ev: MouseEvent) => {
+    //   this.resetLoopPoints()
+    // })
+    seekTimelineElement.addEventListener('pointerdown', (ev: MouseEvent) => {
+      // if (this.doubleTaptopMarginTimeout == null) {
+      //   this.doubleTaptopMarginTimeout = setTimeout(() => {
+      //     this.doubleTaptopMarginTimeout = null
+      //   }, 200)
+      // } else {
+      this.seekCallback(ev)
+      // this.doubleTaptopMarginTimeout = null
+      // }
+    })
+    this.topMargin.addEventListener('pointerdown', (ev: PointerEvent) => {
+      if (this.topMargin == null) {
+        return
+      }
+      if (ev.target == loopSetupTimelineElement) {
+        this.resetLoopPoints()
+        this.topMargin?.removeAttribute('loopStartCandidate')
+        this.initLoopSelectionOperation = true
+        this.inLoopSelectionOperation = false
+        this.topMargin.setAttribute('loopStartCandidate', ev.offsetX.toFixed(4))
+        document.body.setPointerCapture(ev.pointerId)
+      }
+    })
+    // document.body.addEventListener('pointerleave', (ev: PointerEvent) => {
+    //   if (this.initLoopSelectionOperation || this.inLoopSelectionOperation) {
+    //     this.resetLoopPoints()
+    //     this.initLoopSelectionOperation = false
+    //     this.inLoopSelectionOperation = false
+    //     this.topMargin?.removeAttribute('loopStartCandidate')
+    //   }
+    // })
+    document.body.addEventListener('pointermove', (ev: PointerEvent) => {
+      if (this.topMargin == null) {
+        return
+      }
+
+      if (
+        this.initLoopSelectionOperation &&
+        this.topMargin.hasAttribute('loopStartCandidate')
+      ) {
+        this.initLoopSelectionOperation = false
+        this.inLoopSelectionOperation = true
+      }
+      if (
+        this.inLoopSelectionOperation &&
+        this.topMargin.hasAttribute('loopStartCandidate')
+      ) {
+        if (
+          ev.pageX > document.body.clientWidth - 10 &&
+          this.wrapperScrollLeft + this.clientWidth <
+            this.wrapperScrollWidth - 10
+        ) {
+          this.wrapperScrollLeft += 50
+        }
+        if (ev.pageX < 10 && this.wrapperScrollLeft > 0) {
+          this.wrapperScrollLeft -= 50
+        }
+        this.resetLoopPoints()
+        const offsetXStart = parseFloat(
+          this.topMargin.getAttribute('loopStartCandidate') as string
+        )
+        const totalProgressStart = this.offsetXToGlobalProgress(
+          offsetXStart
+        ) as number
+        const totalProgressEnd = this.offsetXToGlobalProgress(
+          ev.pageX + this.wrapperScrollLeft
+        ) as number
+        this.refreshLoopDisplay(
+          Math.min(totalProgressStart, totalProgressEnd),
+          Math.max(totalProgressStart, totalProgressEnd)
+        )
+      }
+    })
+    // this.topMargin.addEventListener('pointerleave', (ev: PointerEvent) => {
+    //   this.initLoopSelectionOperation = false
+    //   if (this.topMargin == null) {
+    //     return
+    //   }
+    //   this.topMargin.removeAttribute('loopStartCandidate')
+    //   this.refreshLoopDisplay()
+    //   this.inLoopSelectionOperation = false
+    // })
+    document.body.addEventListener('pointerup', (ev: PointerEvent) => {
+      if (this.topMargin == null) {
+        return
+      }
+      if (
+        this.initLoopSelectionOperation &&
+        this.topMargin.hasAttribute('loopStartCandidate')
+      ) {
+        this.initLoopSelectionOperation = false
+        this.topMargin.removeAttribute('loopStartCandidate')
+        return
+      }
+      if (
+        this.inLoopSelectionOperation &&
+        this.topMargin.hasAttribute('loopStartCandidate')
+      ) {
+        this.setLoopPointsCallback(ev.pageX + this.wrapperScrollLeft)
+        this.classList.add('enabled-loop')
+        this.topMargin.removeAttribute('loopStartCandidate')
+        this.inLoopSelectionOperation = false
+      }
+    })
+    this.inLoopSelectionOperation = false
+
+    if (this.getElementsByTagName('reset-loop-control').length == 0) {
+      const resetLoopButtonContainer = document.createElement('div')
+      resetLoopButtonContainer.classList.add(
+        'reset-loop-control',
+        'control-item'
+      )
+      this.appendChild(resetLoopButtonContainer)
+      const resetLoopButton = document.createElement('div')
+      resetLoopButtonContainer.appendChild(resetLoopButton)
+      const resetLoopButtonIcon = document.createElement('i')
+      resetLoopButton.appendChild(resetLoopButtonIcon)
+
+      resetLoopButtonContainer.addEventListener('pointerdown', (ev) => {
+        ev.stopPropagation()
+        this.resetLoopPoints()
+      })
+    }
   }
 
   protected registerDropHandlers() {
@@ -684,7 +1453,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     })
   }
 
-  protected offsetXToProgress(offsetX: number): number | null {
+  protected offsetXToGlobalProgress(offsetX: number): number | null {
     if (this.svgElement == null || this.visualizer.Size == null) {
       return null
     }
@@ -693,54 +1462,82 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       this.visualizer.Size.widthWithoutMargins
     return Math.max(0, Math.min(1, progress))
   }
-  protected pointerEventToProgress(ev: PointerEvent): number | null {
-    return this.offsetXToProgress(ev.offsetX)
+  protected pointerEventToGlobalProgress(
+    ev: PointerEvent | MouseEvent
+  ): number | null {
+    return this.offsetXToGlobalProgress(ev.offsetX)
   }
-  protected pointerEventToTime(ev: PointerEvent): number | null {
+  protected pointerEventToTime(ev: PointerEvent | MouseEvent): number | null {
     if (this.svgElement == null) {
       return null
     }
     const duration = this.noteSequence?.totalTime
-    const progress = this.pointerEventToProgress(ev)
+    const progress = this.pointerEventToGlobalProgress(ev)
     if (duration == null || progress == null) {
       return null
     }
     return duration * progress
   }
 
-  protected seekCallback = (ev: PointerEvent) => {
-    const clickProgress = this.pointerEventToProgress(ev)
+  protected seekCallback = (ev: PointerEvent | MouseEvent) => {
+    const clickProgress = this.pointerEventToGlobalProgress(ev)
     if (clickProgress == null) {
       return
     }
     this.setPlaybackDisplayProgress(clickProgress)
     this.playbackManager.transport.seconds =
-      new Tone.TimeClass(
-        this.playbackManager.context,
-        this.playbackManager.transport.loopEnd
-      ).toSeconds() * clickProgress
+      this.playbackManager.transport.toSeconds(
+        this.playbackManager.totalDuration
+      ) * clickProgress
   }
 
-  // protected setLoopPoints = (ev: PointerEvent) => {
-  //   const clickProgressStart = this.offsetXToProgress(
-  //     parseFloat(this.wrapper.getAttribute('loopStartCandidate'))
-  //   )
-  //   const clickProgress = this.pointerEventToProgress(ev)
-  //   if (clickProgress == null) {
-  //     return
-  //   }
-  //   this.setPlaybackDisplayProgress(clickProgress)
-  //   this.playbackManager.transport.loopStart =
-  //     new Tone.TimeClass(
-  //       this.playbackManager.context,
-  //       this.playbackManager.transport.loopEnd
-  //     ).toSeconds() * clickProgress
-  //   this.playbackManager.transport.loopEnd =
-  //     new Tone.TimeClass(
-  //       this.playbackManager.context,
-  //       this.playbackManager.transport.loopEnd
-  //     ).toSeconds() * clickProgress
-  // }
+  protected setLoopPoints(
+    loopStart: Tone.Unit.Time,
+    loopEnd: Tone.Unit.Time
+  ): boolean {
+    loopStart = this.playbackManager.transport.toSeconds(loopStart)
+    loopEnd = this.playbackManager.transport.toSeconds(loopEnd)
+    let isValidLoop = loopEnd - loopStart > 0.1
+    if (isValidLoop) {
+      this.playbackManager.loopStart = loopStart
+      this.playbackManager.loopEnd = loopEnd
+    }
+    this.getElementsByClassName('reset-loop-control')[0].classList.toggle(
+      'disabled-loop',
+      !isValidLoop
+    )
+  }
+
+  protected resetLoopPoints(): void {
+    this.setLoopPoints(0, this.playbackManager.totalDuration)
+    this.refreshLoopDisplay()
+  }
+
+  protected setLoopPointsCallback = (offsetX: number) => {
+    const clickGlobalProgress_A = this.offsetXToGlobalProgress(
+      parseFloat(this.topMargin.getAttribute('loopStartCandidate'))
+    )
+    const clickGlobalProgress_B = this.offsetXToGlobalProgress(offsetX)
+    if (clickGlobalProgress_A == null || clickGlobalProgress_B == null) {
+      return
+    }
+    // this.setPlaybackDisplayProgress(clickProgress)
+    const candidateLoopCue_A =
+      this.playbackManager.transport.toSeconds(
+        this.playbackManager.totalDuration
+      ) * clickGlobalProgress_A
+    const candidateLoopCue_B =
+      this.playbackManager.transport.toSeconds(
+        this.playbackManager.totalDuration
+      ) * clickGlobalProgress_B
+    const hasUpdatedLoop = this.setLoopPoints(
+      Math.min(candidateLoopCue_A, candidateLoopCue_B),
+      Math.max(candidateLoopCue_A, candidateLoopCue_B)
+    )
+    if (!hasUpdatedLoop) {
+      this.refreshLoopDisplay()
+    }
+  }
 
   protected _lastPointermoveClientX: number | null = null
   get lastPointermoveClientX(): number | null {
@@ -759,41 +1556,36 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       if (clickTime == null) {
         return
       }
+      ev.preventDefault()
+      ev.stopPropagation()
       if (!ev.shiftKey) {
-        ev.preventDefault()
-        ev.stopPropagation()
-        this.timestamp_B = null
+        this.selectionTimestamp_B = null
         this.resetSelectedRegion()
         try {
           this.setSelectedRegion()
         } catch {}
         this.selectionOverlay.setAttribute('width', '0')
-        this.timestamp_A = clickTime
-        const x = this.svgElement.scrollLeft + ev.offsetX
-        this.timestamp_A_x = x
+        this.selectionTimestamp_A = clickTime
+        this.selectionTimestamp_B = clickTime
         this.startingSelectionInteraction = true
       } else {
         this.seekCallback(ev)
       }
     })
-    this.wrapper.addEventListener('pointerdown', (ev: PointerEvent) => {
-      this.wrapper.setAttribute('loopStartCandidate', ev.clientX.toFixed(4))
-      this.seekCallback(ev)
-    })
-    this.wrapper.addEventListener('pointermove', (ev: PointerEvent) => {
-      if (this.wrapper.hasAttribute('loopStartCandidate')) {
-        // this.setLoopPoints(ev)
-      }
-    })
-    this.wrapper.addEventListener('pointerleave', (ev: PointerEvent) => {
-      this.wrapper.removeAttribute('loopStartCandidate')
-    })
-    this.wrapper.addEventListener('pointerup', (ev: PointerEvent) => {
-      this.wrapper.removeAttribute('loopStartCandidate')
-    })
+    // this.svgElement.addEventListener('
     this.svgElement.addEventListener('pointermove', (ev: PointerEvent) => {
       this._lastPointermoveClientX = ev.clientX
       this.setCursorHoverPosition(ev.offsetX)
+    })
+    this.svgElement.addEventListener('pointerleave', (ev: PointerEvent) => {
+      if (this.pointerHoverVerticalBar != null) {
+        this.pointerHoverVerticalBar.style.visibility = 'hidden'
+      }
+    })
+    this.svgElement.addEventListener('pointerenter', (ev: PointerEvent) => {
+      if (this.pointerHoverVerticalBar != null) {
+        this.pointerHoverVerticalBar.style.visibility = 'visible'
+      }
     })
     this.svgElement.addEventListener('pointermove', (ev: PointerEvent) => {
       if (this.selectionOverlay == null || this.svgElement == null) {
@@ -813,28 +1605,156 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       if (clickTime == null) {
         return
       }
-      this.timestamp_B = clickTime
-      const x = this.svgElement.scrollLeft + ev.offsetX
-      this.timestamp_B_x = x
-      this.selectionOverlay.setAttribute(
-        'x',
-        Math.min(this.timestamp_A_x, this.timestamp_B_x).toString()
-      )
-      this.selectionOverlay.setAttribute(
-        'width',
-        Math.abs(this.timestamp_B_x - this.timestamp_A_x).toString()
-      )
+      this.selectionTimestamp_B = clickTime
+      // if (
+      //   this.selectionTimestamp_A != null &&
+      //   this.selectionTimestamp_B != null &&
+      //   this.selectionTimestamps[1] != null
+      // ) {
+      //   const [, timestampRight] = this.minMax(
+      //     this.selectionTimestamp_A,
+      //     this.selectionTimestamp_B
+      //   ) as [number, number]
+      //   const [_, updatedTimestampRight, firstNoteAfterRegionIndex] =
+      //     this.resizeSelectedRegionEnd(timestampRight)
+      //   if (
+      //     this.selectionTimestamp_A < this.selectionTimestamp_B &&
+      //     firstNoteAfterRegionIndex != 0
+      //   ) {
+      //     this.selectionTimestamp_B = updatedTimestampRight
+      //     this.selectionTimestamp_B -= 0.000001
+      //   } else {
+      //     this.selectionTimestamp_A = updatedTimestampRight
+      //     this.selectionTimestamp_A -= 0.000001
+      //     if (firstNoteAfterRegionIndex != 0) {
+      //       this.selectionTimestamp_B += 0.000001
+      //     }
+      //   }
+      // }
+      this.refreshSelectionOverlay()
     })
     this.svgElement.addEventListener('pointerup', () => {
-      if (this.inSelectionInteraction) {
+      if (VITE_SCREENSHOT_MODE) {
+        return
+      }
+      if (this.inSelectionInteraction && this.selectionIsValid) {
+        this.copySelectionOverlayToRegenerationOverlay()
         this.regenerationCallback()
       }
       this.resetSelectedRegion()
     })
     this.svgElement.addEventListener('pointerleave', () => {
+      if (VITE_SCREENSHOT_MODE) {
+        return
+      }
       this._lastPointermoveClientX = null
       this.resetSelectedRegion()
     })
+  }
+
+  protected resizeSelectedRegionEnd(
+    regionEndQuarters: number
+  ): [number, number, number] {
+    if (this.noteSequence == null || this.noteSequence.notes == null) {
+      return [regionEndQuarters, regionEndQuarters, -1]
+    }
+    const sortedNotes = this.noteSequence.notes
+      .filter((note) => note.startTime != undefined)
+      .sort((a, b) => a.startTime ?? 0 - (b.startTime ?? 0))
+    const firstIndexAfterRegion = sortedNotes.findIndex(
+      (note) => note.startTime != null && note.startTime > regionEndQuarters
+    )
+    if (firstIndexAfterRegion > 0) {
+      const startTimeOfLastNoteInRegion =
+        sortedNotes[firstIndexAfterRegion - 1].startTime
+      return [
+        startTimeOfLastNoteInRegion as number,
+        sortedNotes[firstIndexAfterRegion].startTime as number,
+        firstIndexAfterRegion,
+      ]
+    } else if (firstIndexAfterRegion == 0) {
+      return [
+        regionEndQuarters,
+        sortedNotes[firstIndexAfterRegion].startTime as number,
+        firstIndexAfterRegion,
+      ]
+    } else {
+      return [regionEndQuarters, regionEndQuarters, firstIndexAfterRegion]
+    }
+  }
+
+  protected get selectionIsValid(): boolean {
+    // the PIA API fails on too short selections
+    if (
+      this.selectionTimestamp_A == null ||
+      this.selectionTimestamp_B == null
+    ) {
+      return false
+    }
+    const selectionIsLongEnough =
+      (Math.abs(this.selectionTimestamp_B - this.selectionTimestamp_A) * 60) /
+        this.ns.tempos[0].qpm >
+      0.2
+    return selectionIsLongEnough
+  }
+
+  protected refreshSelectionOverlay(): void {
+    if (this.selectionOverlay == null) {
+      return
+    }
+    if (
+      this.selectionTimestamp_A == null ||
+      this.selectionTimestamp_B == null
+    ) {
+      this.selectionOverlay.setAttribute('x', '0')
+      this.selectionOverlay.setAttribute('width', '0')
+      return
+    }
+
+    this.selectionOverlay.classList.toggle(
+      'invalid-selection',
+      !this.selectionIsValid
+    )
+    const [x_left, x_right] = this.selectionTimestamps.map(
+      this.timeToClientX.bind(this)
+    ) as [number, number]
+    this.selectionOverlay.setAttribute('x', x_left.toString())
+    this.selectionOverlay.setAttribute(
+      'width',
+      Math.abs(x_right - x_left).toString()
+    )
+  }
+
+  protected copySelectionOverlayToRegenerationOverlay() {
+    this.currentGenerationTimestamp_A = this.selectionTimestamp_A
+    this.currentGenerationTimestamp_B = this.selectionTimestamp_B
+  }
+  protected refreshGenerationOverlay(): void {
+    if (this.currentGenerationOverlayContainer == null) {
+      return
+    }
+    const [x_A, x_B] = this.currentGenerationTimestamps.map(
+      this.timeToClientX.bind(this)
+    )
+    if (x_A == null || x_B == null) {
+      this.currentGenerationOverlayContainer.setAttribute('x', '0')
+      this.currentGenerationOverlayContainer.setAttribute('width', '0')
+    } else {
+      const x = (x_A - 7).toString()
+      const width = Math.abs(x_B - x_A) + 14
+      this.currentGenerationOverlayContainer.setAttribute('x', x)
+      this.currentGenerationOverlayContainer.setAttribute(
+        'width',
+        width.toString()
+      )
+      this.currentGenerationOverlayContainer.style.animationDuration = `${
+        Math.sqrt(width) / 5
+      }s`
+      // this.currentGenerationGradient.setAttribute(
+      //   'width',
+      //   Math.min(width / 10, 20).toFixed()
+      // )
+    }
   }
 
   setCursorHoverPosition(offsetX: number) {
@@ -850,8 +1770,8 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
   protected resetSelectedRegion() {
     this.inSelectionInteraction = false
     this.startingSelectionInteraction = false
-    this.timestamp_A_x = null
-    this.timestamp_B_x = null
+    this.selectionTimestamp_A = null
+    this.selectionTimestamp_B = null
     this.selectionOverlay?.setAttribute('width', '0')
   }
   protected setSelectedRegion(
@@ -868,31 +1788,84 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       if (this.svgElement == null || this.svgElement.children == null) {
         return
       }
-      const selectionClass = candidateSelection
-        ? 'candidate-selection'
-        : 'selected'
+      const selectionClasses = candidateSelection
+        ? ['candidate-selection']
+        : ['selected']
+      if (!this.selectionIsValid) {
+        selectionClasses.push('invalid-selection')
+      }
 
       const noteElements = Array.from(
         this.svgElement.getElementsByClassName('note')
       )
       noteElements.forEach((element) => {
-        const classesToRemove = (
-          !candidateSelection ? ['candidate-selection'] : []
-        ).concat([selectionClass])
+        const classesToRemove = [
+          'candidate-selection',
+          'invalid-selection',
+          'selected',
+        ]
         element.classList.remove(...classesToRemove)
       })
-      noteElements.forEach((element) => {
-        let [x, width]: [number | null, number | null] = [null, null]
-        try {
-          ;[x, width] = ClickableVisualizerElement.locateElement(element)
-        } catch {
-          return
+
+      const [currentGeneration_left_x, currentGeneration_right_x] =
+        this.currentGenerationTimestamps.map(this.timeToClientX.bind(this))
+      const currentlyGenerating =
+        currentGeneration_left_x != null && currentGeneration_right_x != null
+
+      const sortedNoteElements = (
+        noteElements
+          .map(((element) => {
+            try {
+              return [
+                element,
+                ClickableVisualizerElement.locateElement(element)[0],
+              ]
+            } catch {
+              return null
+            }
+          }) as (element: Element) => [Element, number] | null)
+          .filter((value) => value != null) as [Element, number][]
+      ).sort(([, x_A], [, x_B]) => x_A - x_B)
+
+      if (currentlyGenerating) {
+        const startIndex = sortedNoteElements.findIndex(
+          ([, x]) =>
+            x >= currentGeneration_left_x && x < currentGeneration_right_x
+        )
+        if (startIndex >= 0) {
+          for (let i = startIndex; i < sortedNoteElements.length; i++) {
+            const [elem, x] = sortedNoteElements[i]
+            if (x > currentGeneration_right_x) {
+              break
+            }
+            elem.classList.add('recently-generated')
+          }
         }
-        const [timestamp_left_x, timestamp_right_x] =
-          timestamps ?? this.timestamps_x
-        const isInSelection = x > timestamp_left_x && x <= timestamp_right_x
-        element.classList.toggle(selectionClass, isInSelection)
-      })
+      }
+
+      const [selectionTimestamp_left_x, selectionTimestamp_right_x] =
+        timestamps ??
+        this.selectionTimestamps.map(this.timeToClientX.bind(this))
+      if (
+        selectionTimestamp_left_x != null &&
+        selectionTimestamp_right_x != null
+      ) {
+        const startIndex = sortedNoteElements.findIndex(
+          ([, x]) =>
+            x >= selectionTimestamp_left_x && x < selectionTimestamp_right_x
+        )
+        if (startIndex >= 0) {
+          for (let i = startIndex; i < sortedNoteElements.length; i++) {
+            const [elem, x] = sortedNoteElements[i]
+            if (x > selectionTimestamp_right_x) {
+              break
+            }
+            if (x >= selectionTimestamp_left_x) {
+              elem.classList.add(...selectionClasses)
+            }
+          }
+        }
+      }
     }, 1)
   }
 
@@ -917,10 +1890,11 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       ['isDrum', note.isDrum === true],
       ['pitch', note.pitch],
     ]
+    const velocity = note.velocity != undefined ? note.velocity : 127
     const cssProperties: CSSProperty[] = [
       [
         '--midi-velocity',
-        String(note.velocity !== undefined ? note.velocity : 127),
+        String(note.velocity != undefined ? note.velocity : 127),
       ],
     ]
     const { x, y, w, h } = this.visualizer.getNotePositionPublic(note, 0)

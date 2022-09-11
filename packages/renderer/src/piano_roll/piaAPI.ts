@@ -1,5 +1,4 @@
 import { NoteSequence, INoteSequence } from '@magenta/music/es6/protobuf'
-import { Note } from '@tonaljs/tonal'
 
 export interface PiaNoteData {
   type: 'note' // must always add this field
@@ -23,7 +22,7 @@ export function convertPiaNoteToNoteSequenceNote(
 }
 
 // parse note in NoteSequence format to the format returned by the PIA API
-function convertNoteSequenceNoteToPiaNoteObject(
+export function convertNoteSequenceNoteToPiaNoteObject(
   note: NoteSequence.INote,
   defaultVelocity: number = 70
 ): PiaNoteData | null {
@@ -82,7 +81,7 @@ interface CuePoints {
 
 interface PiaHyperParameters {
   // these values are not relevant outside of Ableton Live,
-  // you can safely keep these defaults
+  // you can safely keep the defaults of `0`
   id: number
   clip_id: number
   detail_clip_id: number
@@ -110,32 +109,37 @@ const piaDefaultSettings: PiaHyperParameters = {
   id: 0,
   clip_id: 0,
   detail_clip_id: 0,
-  note_density: 0.1,
-  tempo: 120,
+  note_density: 1,
+  tempo: 60,
   top_p: 0.949999988079071,
   superconditioning: 1,
 }
 
 export function noteSequenceToPiaJSON(
   noteSequence: INoteSequence,
-  clipStart: number,
-  clipEnd: number
+  regionStart: number,
+  regionEnd: number,
+  clipEnd?: number
 ): PiaData {
   const DEFAULT_DURATION = 60
-  const regionStart = clipStart
-  const regionEnd = clipEnd
+  clipEnd = clipEnd ?? noteSequence.totalTime ?? DEFAULT_DURATION
 
   // format loaded noteSequence to PIA input format
   const notes_piaInput = convertNoteSequenceNotesToPiaInputNotes(
     noteSequence.notes
   )
 
+  let timeOfLastNote = 0
+  for (const note of noteSequence.notes ?? []) {
+    timeOfLastNote = Math.max(timeOfLastNote, note.startTime ?? 0)
+  }
+
   // setup PIA API request data
   const piaInputData: PiaData = {
     ...piaDefaultSettings,
     case: 'start',
     clip_start: 0,
-    clip_end: noteSequence.totalTime ?? DEFAULT_DURATION,
+    clip_end: Math.max(timeOfLastNote, regionEnd),
     selected_region: {
       start: regionStart,
       end: regionEnd,

@@ -1,6 +1,6 @@
 import log from 'loglevel'
 
-import { TypedEmitter } from 'tiny-typed-emitter'
+import { ListenerSignature, TypedEmitter } from 'tiny-typed-emitter'
 import { UndoManager, UndoableEdit } from 'typed-undo'
 
 export const enum apiCommand {
@@ -11,13 +11,42 @@ export const enum apiCommand {
   Generate = 'generate',
 }
 
-interface CanChangeListeners<T> {
-  change: (value: T, previousValue?: T) => void
-  busy: () => void
-  ready: () => void
+// via https://github.com/whatwg/fetch/issues/905#issuecomment-491970649
+// Creates an AbortSignal that aborts if any of the provided AbortSignals is triggered
+function anySignal(...abortSignals: AbortSignal[]): AbortSignal {
+  const controller = new AbortController()
+
+  function onAbort() {
+    controller.abort()
+
+    // Cleanup
+    for (const signal of abortSignals) {
+      signal.removeEventListener('abort', onAbort)
+    }
+  }
+
+  for (const signal of abortSignals) {
+    if (signal.aborted) {
+      onAbort()
+      break
+    }
+    signal.addEventListener('abort', onAbort)
+  }
+
+  return controller.signal
 }
 
-class CanChange<T> extends TypedEmitter<CanChangeListeners<T>> {
+export interface CanChangeListeners<T, AtomicAddT = unknown> {
+  change: (value: T, previousValue?: T) => void
+  silentChange: (value: T, previousValue?: T) => void
+  busy: () => void
+  ready: () => void
+  atomicAdd: (value: AtomicAddT, ...args: any) => void
+}
+
+class CanChange<T, AtomicAddT = unknown> extends TypedEmitter<
+  CanChangeListeners<T, AtomicAddT>
+> {
   protected _value: T | undefined = undefined
   get value(): T | never {
     if (this._value == undefined) {
@@ -36,8 +65,9 @@ class CanChange<T> extends TypedEmitter<CanChangeListeners<T>> {
 
 export abstract class Inpainter<
   DataT = unknown,
-  AdditionalAPICommands extends string = never
-> extends CanChange<DataT> {
+  AdditionalAPICommands extends string = never,
+  AtomicAddT = unknown
+> extends CanChange<DataT, AtomicAddT> {
   constructor(defaultApiAddress: URL) {
     super()
     this.defaultApiAddress = defaultApiAddress
@@ -75,6 +105,7 @@ export abstract class Inpainter<
   protected async fetch(
     input: RequestInfo,
     init?: RequestInit,
+    additionalAbortSignals: AbortSignal[] = [],
     timeout: number = this.defaultTimeout,
     attemptedAction?: string,
     exponentialBackoffDelay: number = this.defaultExponentialBackoffDelay
@@ -83,15 +114,19 @@ export abstract class Inpainter<
       init = {}
     }
     let abortTimeout: ReturnType<typeof setTimeout> | null = null
+    let timeoutAbortController: AbortController | null = null
 
     if (timeout != null && timeout > 0) {
-      const abortController = new AbortController()
+      timeoutAbortController = new AbortController()
       abortTimeout = setTimeout(() => {
         log.debug('Timeout exceeded, aborting request')
-        abortController.abort()
+        timeoutAbortController?.abort()
       }, timeout)
 
-      init.signal = abortController.signal
+      init.signal = anySignal(
+        timeoutAbortController.signal,
+        ...additionalAbortSignals
+      )
     }
 
     try {
@@ -103,6 +138,12 @@ export abstract class Inpainter<
         return response
       }
     } catch (error: unknown) {
+      if (additionalAbortSignals.find((signal) => signal.aborted)) {
+        clearTimeout(abortTimeout)
+        log.error(error)
+        return
+      }
+
       if (exponentialBackoffDelay <= this.maxExponentialBackoffDelay) {
         log.error(error)
         log.error(
@@ -113,6 +154,7 @@ export abstract class Inpainter<
         return this.fetch(
           input,
           init,
+          additionalAbortSignals,
           timeout,
           attemptedAction,
           2 * exponentialBackoffDelay
@@ -151,7 +193,7 @@ export abstract class Inpainter<
   // TODO(@tbazin, 2022/05): this is to set values in response to
   //   interactive API commands, to maintain a coherent state for undoableEdits
   //   but this feels hackish, could this be cleaned-up?
-  protected setValueInteractive(newValue: DataT, silent: boolean): void {
+  protected setValueInteractive(newValue: DataT): void {
     this._value = newValue
   }
 
@@ -312,23 +354,26 @@ export abstract class Inpainter<
   ): Promise<this>
 }
 
-class UndoableInpainterEdit<DataT> extends UndoableEdit {
-  private readonly oldValue: DataT
-  private newValue: DataT
-  private readonly applyValue: (value: DataT) => void
+export class UndoableInpainterEdit<DataT> extends UndoableEdit {
+  protected oldValue: DataT
+  protected newValue: DataT
+  protected readonly applyValue: (value: DataT) => void
   protected readonly canBeMerged: boolean
+  readonly type: string | undefined
 
   public constructor(
     oldValue: DataT,
     newValue: DataT,
     applyValue: (value: DataT) => void,
-    canBeMerged: boolean
+    canBeMerged: boolean,
+    type?: string
   ) {
     super()
     this.oldValue = oldValue
     this.newValue = newValue
     this.applyValue = applyValue
     this.canBeMerged = canBeMerged
+    this.type = type
   }
 
   public undo(): void {
@@ -343,9 +388,9 @@ class UndoableInpainterEdit<DataT> extends UndoableEdit {
     return this.oldValue !== this.newValue
   }
 
-  public merge(edit: UndoableInpainterEdit<DataT>): boolean {
-    if (edit.canBeMerged) {
-      this.newValue = edit.newValue
+  public merge(newEdit: UndoableInpainterEdit<DataT>): boolean {
+    if (newEdit.canBeMerged) {
+      this.newValue = newEdit.newValue
       return true
     }
     return false
@@ -356,39 +401,75 @@ class UndoableInpainterEdit<DataT> extends UndoableEdit {
   }
 }
 
-export class PopUndoManager extends UndoManager {
-  pop() {
-    if (this.edits.length > 0) {
-      this.edits.pop()
+export class PopUndoManager<DataT> extends UndoManager {
+  add(edit: UndoableInpainterEdit<DataT>) {
+    super.add(edit)
+    if (edit.type != null && edit.type == 'clear' && this.position == 1) {
+      this.position = 0
+      this.pop()
     }
+  }
+
+  pop() {
+    // if (this.edits.length > 0) {
+    this.edits.length = this.position
+    // this.position = Math.max(this.position - 1, 0)
+    this.listener()
+    // }
   }
 }
 
 export abstract class UndoableInpainter<
-  DataT = unknown,
-  AdditionalAPICommands extends string = never
-> extends Inpainter<DataT, AdditionalAPICommands> {
+  DataT extends { type?: string | null } = { type?: string | null },
+  AdditionalAPICommands extends string = never,
+  AtomicAddT = unknown,
+  UndoableInpainterEditT extends UndoableInpainterEdit<DataT> = UndoableInpainterEdit<DataT>
+> extends Inpainter<DataT, AdditionalAPICommands, AtomicAddT> {
   readonly undoManager: UndoManager
+  protected readonly undoableEditFactory: {
+    new (
+      oldValue: DataT,
+      newValue: DataT,
+      applyValue: (value: DataT) => void,
+      canBeMerged: boolean,
+      type?: string
+    ): UndoableInpainterEditT
+  }
 
   protected createUndoableEdit(
     previousValue: DataT,
     newValue: DataT,
-    canBeMerged: boolean
-  ): UndoableInpainterEdit<DataT> {
-    return new UndoableInpainterEdit(
+    canBeMerged: boolean,
+    type?: string
+  ): UndoableInpainterEditT {
+    return new this.undoableEditFactory(
       previousValue,
       newValue,
       (data: DataT) => {
-        this.onUndo()
         this.value = data
+        this.onUndo()
       },
-      canBeMerged
+      canBeMerged,
+      type
     )
   }
 
-  constructor(defaultApiAddress: URL, undoManager: UndoManager) {
+  constructor(
+    defaultApiAddress: URL,
+    undoManager: UndoManager,
+    undoableEditFactory: {
+      new (
+        oldValue: DataT,
+        newValue: DataT,
+        applyValue: (value: DataT) => void,
+        canBeMerged: boolean,
+        type?: string
+      ): UndoableInpainterEditT
+    }
+  ) {
     super(defaultApiAddress)
     this.undoManager = undoManager
+    this.undoableEditFactory = undoableEditFactory
   }
 
   protected onUndo(): void {
@@ -397,20 +478,29 @@ export abstract class UndoableInpainter<
 
   protected setValueInteractive(
     newValue: DataT,
-    silent: boolean,
-    canBeMergedEdits: boolean = false
+    silent: boolean = true,
+    canBeMergedEdits: boolean = false,
+    type?: string | null
   ): void {
+    newValue.type = type
     const previousValue = this._value
     if (!silent) {
       this.value = newValue
     } else {
-      super.setValueInteractive(newValue, false)
+      super.setValueInteractive(newValue)
     }
-    if (previousValue != newValue) {
-      if (previousValue != undefined && newValue != undefined) {
-        this.undoManager.add(
-          this.createUndoableEdit(previousValue, newValue, canBeMergedEdits)
-        )
+    if (type !== null) {
+      if (previousValue != newValue) {
+        if (previousValue != undefined && newValue != undefined) {
+          this.undoManager.add(
+            this.createUndoableEdit(
+              previousValue,
+              newValue,
+              canBeMergedEdits,
+              type
+            )
+          )
+        }
       }
     }
   }

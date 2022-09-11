@@ -5,7 +5,7 @@ import log from 'loglevel'
 import { Midi, Track } from '@tonejs/midi'
 import { Note as MidiNote } from '@tonejs/midi/src/Note'
 
-import * as Instruments from './instruments'
+import * as Instruments from '../instruments/instruments'
 import * as MidiOut from './midiOut'
 import * as Chord from './chord'
 import { BPMControl } from './numberControl'
@@ -17,11 +17,9 @@ import {
 import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
 import { ControlChange } from '@tonejs/midi/src/ControlChange'
 import { PiaInpainter } from './piano_roll/pianoRollInpainter'
-import { PianoRollInpainterGraphicalView } from './piano_roll/pianoRollInpainterGraphicalView'
-import { ToneEvent } from 'tone'
 import { sequenceProtoToMidi } from '@magenta/music/esm/core/midi_io'
 
-type NoteWithMIDIChannel = {
+interface NoteWithMIDIChannel {
   name: string
   time: string
   timeTicks: number
@@ -34,11 +32,9 @@ type NoteWithMIDIChannel = {
 class InpaintablePart<TODOREMOVETHIS> extends Tone.Part<NoteWithMIDIChannel> {
   clearRegion(startTicks: number, endTicks: number): void {
     const events = [...this._events]
-    let numCleared = 0
     events.forEach((e: Tone.ToneEvent<NoteWithMIDIChannel>) => {
       if (e.value.timeTicks >= startTicks && e.value.timeTicks < endTicks) {
         this.remove(`${e.startOffset}i`)
-        numCleared += 1
       }
     })
   }
@@ -56,20 +52,72 @@ export default class MidiSheetPlaybackManager<
   protected playbackLookahead: number = 0.1
   protected interactiveLookahead: number = 0.05
 
-  protected _loopEnd: Tone.Unit.Time | null = null
+  protected _loopEnd: Tone.Unit.Time = 0
 
-  public get loopEnd(): Tone.Unit.Time | null {
+  public get loopEnd(): Tone.Unit.Time {
     return this._loopEnd
   }
-  public set loopEnd(loopEnd: Tone.Unit.Time | null) {
+  public set loopEnd(loopEnd: Tone.Unit.Time) {
     if (this.loopEnd == loopEnd) {
       return
     }
     this._loopEnd = loopEnd
-    this.transport.loop = loopEnd != null
-    if (loopEnd != null) {
-      this.transport.loopEnd = loopEnd
+    this.transport.loopEnd = loopEnd
+    this.emit('changed-loopEnd', this.loopEnd)
+  }
+  protected _loopStart: Tone.Unit.Time = 0
+
+  public get loopStart(): Tone.Unit.Time {
+    return this._loopStart
+  }
+  public set loopStart(loopStart: Tone.Unit.Time) {
+    if (this.loopStart == loopStart) {
+      return
     }
+    this._loopStart = loopStart
+    this.transport.loopStart = loopStart
+    this.emit('changed-loopStart', this.loopStart)
+  }
+
+  protected _totalDuration: Tone.Unit.Time = 0
+  get totalDuration(): Tone.Unit.Time {
+    return this._totalDuration
+  }
+  set totalDuration(totalDuration: Tone.Unit.Time) {
+    if (totalDuration == this.totalDuration) {
+      return
+    }
+    if (this.transport.toSeconds(totalDuration) < 0) {
+      throw Error('Invalid duration (negative)')
+    }
+    const durationTicks = this.transport.toTicks(totalDuration)
+    this._totalDuration = totalDuration
+
+    this.allParts.forEach((part) => {
+      part.loopEnd = this.totalDuration
+    })
+
+    if (this.loopStart != null) {
+      const loopStartTicks = this.transport.toTicks(this.loopStart)
+      if (loopStartTicks > durationTicks) {
+        this.loopStart = 0
+      }
+    }
+    if (this.loopEnd != null) {
+      const loopEndTicks = this.transport.toTicks(this.loopEnd)
+      if (loopEndTicks > durationTicks) {
+        this.loopEnd = this.totalDuration
+      }
+    }
+  }
+
+  get allParts() {
+    return [
+      ...this.getPlayingMidiParts().values(),
+      ...this.getPlayingControlChanges().values(),
+      ...this.getNextMidiParts().values(),
+      ...this.getNextControlChanges().values(),
+    ]
   }
 
   // TODO(@tbazin): set-up chords instrument simply as an additional MIDI channel
@@ -99,8 +147,11 @@ export default class MidiSheetPlaybackManager<
       this.transport.PPQ = this.inpainter.PPQ
     }
     if (this.inpainter.forceDuration_ticks != null) {
+      this._totalDuration = `${this.inpainter.forceDuration_ticks}i`
       this.loopEnd = `${this.inpainter.forceDuration_ticks}i`
     }
+    this.transport.loop = true
+
     this.bpmControl = bpmControl
     this.useChordsInstrument = useChordsInstrument
     this.transport.bpm.value = this.bpmControl.value
@@ -133,6 +184,13 @@ export default class MidiSheetPlaybackManager<
     //     part.clearRegion(ticksStart, ticksEnd)
     //   )
     // })
+
+    this.inpainter.on(
+      'atomicAdd',
+      (noteSequenceNote, midiNote, midiChannel, PPQ) => {
+        this.addNote(midiNote, PPQ, midiChannel)
+      }
+    )
   }
 
   protected clearRegion(inpaintingRegionTicks: [number, number]) {
@@ -142,12 +200,34 @@ export default class MidiSheetPlaybackManager<
     controlChanges.forEach((part) => part.clearRegion(...inpaintingRegionTicks))
   }
 
+  protected addNote(
+    note: MidiNote,
+    originalPPQ: number,
+    midiChannel: number = 1
+  ) {
+    const playingParts = this.getPlayingMidiParts()
+    const playingControlChanges = this.getPlayingControlChanges()
+    this.scheduleNoteToInstrument(
+      note,
+      midiChannel,
+      playingParts,
+      playingControlChanges,
+      originalPPQ,
+      undefined,
+      true
+    )
+  }
+
   protected onInpainterChange(data: {
     midi: Midi
     inpaintingRegionTicks?: [number, number]
     newNotes?: object
     durationTicks?: number
+    type?: string
   }): void {
+    if (data.type != null && data.type == 'validate') {
+      return
+    }
     // FIXME(@tbazin, 2022/07/31): Fix this!! breaks NONOTO looping
     const totalDurationTicks =
       this.inpainter.forceDuration_ticks != null
@@ -168,15 +248,18 @@ export default class MidiSheetPlaybackManager<
       this.clearRegion(inpaintingRegionTicks)
     }
     if (data.newNotes != undefined && inpaintingRegionTicks != undefined) {
-      data.newNotes
       this.loadMidi(
         new Midi(sequenceProtoToMidi(data.newNotes)),
         undefined,
         true
       )
     } else {
-      this.loopEnd = `${totalDurationTicks}i`
-      this.loadMidi(data.midi, inpaintingRegionTicks)
+      this.totalDuration = `${totalDurationTicks}i`
+      this.loadMidi(
+        data.midi,
+        inpaintingRegionTicks,
+        data.newNotes != undefined || inpaintingRegionTicks != undefined
+      )
     }
   }
 
@@ -379,8 +462,14 @@ export default class MidiSheetPlaybackManager<
     })
   }
 
-  protected scheduleTrackToInstrument(
-    midiTrack: Track,
+  protected scheduleNoteToInstrument(
+    note: {
+      name: string | number
+      ticks: number
+      velocity: number
+      duration: number
+      durationTicks: number
+    },
     midiChannel = 1,
     parts: Map<number, InpaintablePart<NoteWithMIDIChannel>>,
     controlChanges: Map<number, InpaintablePart<ControlChange>>,
@@ -388,26 +477,35 @@ export default class MidiSheetPlaybackManager<
     inpaintingRegion?: [number, number],
     doNotClearExisting?: boolean
   ): void {
-    const notes: MidiNote[] = midiTrack.notes
-    let notesWithChannel: NoteWithMIDIChannel[] = notes.map((note) => {
-      const noteJson = note.toJSON()
-      const timeTicks = Math.round(
-        (noteJson.ticks / originalPPQ) * this.transport.PPQ
+    const noteJson = note
+    const timeTicks = Math.round(
+      (noteJson.ticks / originalPPQ) * this.transport.PPQ
+    )
+    const durationTicks = Math.round(
+      (noteJson.durationTicks / originalPPQ) * this.transport.PPQ
+    )
+    const noteWithChannel: NoteWithMIDIChannel = {
+      name: noteJson.name,
+      time: `${timeTicks}i`,
+      timeTicks: timeTicks,
+      duration: `${durationTicks}i`,
+      durationTicks: durationTicks,
+      velocity: noteJson.velocity,
+      midiChannel: midiChannel,
+      originalTimeTicks: noteJson.ticks,
+    }
+    if (this.transport.toSeconds(note.duration) < 0) {
+      return
+    }
+    if (
+      inpaintingRegion != null &&
+      !(
+        noteWithChannel.timeTicks >= inpaintingRegion[0] &&
+        noteWithChannel.timeTicks < inpaintingRegion[1]
       )
-      const durationTicks = Math.round(
-        (noteJson.durationTicks / originalPPQ) * this.transport.PPQ
-      )
-      return {
-        name: noteJson.name,
-        time: `${timeTicks}i`,
-        timeTicks: timeTicks,
-        duration: `${durationTicks}i`,
-        durationTicks: durationTicks,
-        velocity: noteJson.velocity,
-        midiChannel: midiChannel,
-        originalTimeTicks: noteJson.ticks,
-      }
-    })
+    ) {
+      return
+    }
 
     // const copySkippedNotesToPartEnd = (
     //   part: Tone.Part,
@@ -427,7 +525,7 @@ export default class MidiSheetPlaybackManager<
         (time, note: NoteWithMIDIChannel) => {
           this.playNote(time, note)
         },
-        notesWithChannel
+        [noteWithChannel]
       )
       // copySkippedNotesToPartEnd(part, notesWithChannel)
       part.mute = true
@@ -435,37 +533,29 @@ export default class MidiSheetPlaybackManager<
       // @HACK(@tbazin): offsetting the lookAhead to ensure perfect synchronization when
       // using Ableton Link, the downside is that it skips the first few notes,
       // one possible solution would be to copy them back at the part's end
-      part.start(0, this.transport.context.lookAhead) // schedule events on the Tone timeline
+      part.start(0, 0) //this.transport.context.lookAhead) // schedule events on the Tone timeline
       parts.set(midiChannel, part)
+
+      part.loop = true
+      part.loopStart = 0
+      part.loopEnd = this.totalDuration
     } else {
       part.mute = true
       part.mute = false // TODO: check this
       if (doNotClearExisting || inpaintingRegion != null) {
         // part.clearRegion(...inpaintingRegion)
       } else {
-        part.clear()
+        // part.clear()
       }
+      part.add(noteWithChannel)
 
-      if (inpaintingRegion != null) {
-        notesWithChannel = notesWithChannel.filter(
-          (e) =>
-            e.timeTicks >= inpaintingRegion[0] &&
-            e.timeTicks < inpaintingRegion[1]
-        )
-      }
-
-      notesWithChannel.forEach((noteEvent) => {
-        part.add(noteEvent)
-      })
       // copySkippedNotesToPartEnd(part, notesWithChannel)
     }
-    part.start(0, this.transport.context.lookAhead) // schedule events on the Tone timeline
-    if (this.loopEnd != null) {
-      part.loop = true
-      part.loopEnd = this.loopEnd
-    } else {
-      part.loop = false
-    }
+    // part.start(0, 0) // this.transport.context.lookAhead) // schedule events on the Tone timeline
+
+    // part.loop = true
+    // part.loopStart = 0
+    // part.loopEnd = this.totalDuration
     return
 
     // schedule the pedal
@@ -505,13 +595,9 @@ export default class MidiSheetPlaybackManager<
   protected loadMidi(
     midi: Midi,
     inpaintingRegion?: [number, number],
-    doNotClearExisting?: boolean
+    doNotClearExisting?: boolean,
+    namesPerTrack?: string[][]
   ): void {
-    if (!this.transport.loop) {
-      this.transport.loop = true
-      this.transport.loopStart = 0
-    }
-
     // assumes constant BPM or defaults to 120BPM if no tempo information available
     const BPM = midi.header.tempos.length > 0 ? midi.header.tempos[0].bpm : 120
     if (!midi.header.timeSignatures[0]) {
@@ -527,22 +613,32 @@ export default class MidiSheetPlaybackManager<
     // Required for Tone.Time conversions to properly work
     // this.transport.timeSignature = midi.header.timeSignatures[0].timeSignature
 
+    if (!doNotClearExisting) {
+      this.getPlayingMidiParts().forEach((part) => part.clear())
+      this.getPlayingControlChanges().forEach((part) => part.clear())
+    }
+
     const playingParts = this.getPlayingMidiParts()
     const playingControlChanges = this.getPlayingControlChanges()
     // const nextParts = this.getNextMidiParts()
     // const nextControlChanges = this.getNextControlChanges()
-    midi.tracks.forEach((track, index) => {
+    midi.tracks.forEach((track, trackIndex) => {
       // midiChannels start at 1
-      const midiChannel = index + 1
-      this.scheduleTrackToInstrument(
-        track,
-        midiChannel,
-        playingParts,
-        playingControlChanges,
-        midi.header.ppq,
-        inpaintingRegion,
-        doNotClearExisting
-      )
+      const midiChannel = trackIndex + 1
+      track.notes.forEach((note, noteIndex) => {
+        if (namesPerTrack != null) {
+          // note.displayID = namesPerTrack[trackIndex][noteIndex]
+        }
+        this.scheduleNoteToInstrument(
+          note,
+          midiChannel,
+          playingParts,
+          playingControlChanges,
+          midi.header.ppq,
+          inpaintingRegion,
+          doNotClearExisting
+        )
+      })
       // if (true || !playingParts.has(midiChannel)) {
       //   console.log('creating playing part')
       //   this.scheduleTrackToInstrument(

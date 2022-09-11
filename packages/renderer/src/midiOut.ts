@@ -2,7 +2,7 @@ import { MidiOutput } from './midi_io/midiOutput'
 import { WebMidi, Output } from 'webmidi'
 
 import log from 'loglevel'
-import * as Instruments from './instruments'
+import * as Instruments from '../instruments/instruments'
 import * as ControlLabels from './controlLabels'
 
 import Nexus from './nexusColored'
@@ -26,7 +26,8 @@ export async function getMidiOutputListener(): Promise<MidiOutput> {
 
 export async function render(
   playbackManager: MidiSheetPlaybackManager,
-  insertActivityDisplay = false
+  insertActivityDisplay = false,
+  isAdvancedControl = true
 ): Promise<void> {
   if (midiOutSelect != null) {
     // TODO(@tbazin, 2022/02/25): could break, should use a semaphore-like setup here, but
@@ -40,7 +41,9 @@ export async function render(
     document.createElement('div')
   midiOutputSetupGridspanElement.id = 'midi-output-setup-gridspan'
   midiOutputSetupGridspanElement.classList.add('gridspan')
-  midiOutputSetupGridspanElement.classList.add('advanced')
+  if (isAdvancedControl) {
+    midiOutputSetupGridspanElement.classList.add('advanced')
+  }
   bottomControlsGridElement.appendChild(midiOutputSetupGridspanElement)
 
   try {
@@ -73,13 +76,13 @@ export async function render(
   midiOutputDeviceSelectElement.classList.add('control-item', 'advanced')
   midiOutputSetupContainerElement.appendChild(midiOutputDeviceSelectElement)
 
-  ControlLabels.createLabel(
-    midiOutputDeviceSelectElement,
-    'midi-output-device-select-label',
-    true,
-    undefined,
-    midiOutputSetupContainerElement
-  )
+  // ControlLabels.createLabel(
+  //   midiOutputDeviceSelectElement,
+  //   'midi-output-device-select-label',
+  //   true,
+  //   undefined,
+  //   midiOutputSetupContainerElement
+  // )
 
   const disabledOutputId = 'Disabled'
 

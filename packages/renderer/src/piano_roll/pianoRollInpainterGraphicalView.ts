@@ -12,17 +12,16 @@ import { VariableValue } from '../cycleSelect'
 import { ScrollLockSimpleBar } from '../utils/simplebar'
 import { PiaInpainter, PianoRollData } from './pianoRollInpainter'
 import { Time } from 'tone/build/esm/core/type/Units'
-import { PlayerElement } from 'html-midi-player'
 import {
   ClickableVisualizerElement,
-  extractSelectedRegion,
   MonoVoicePlayerElement,
 } from './interactivePianoRollVisualizer'
 import { MidiInpainter } from '../sheet/sheetInpainter'
-import { element } from 'nexusui/dist/types/util/transform'
-import type { NoteSequence } from '@magenta/music'
 import { EventEmitter } from 'events'
 import screenfull from 'screenfull'
+import { CartesianScaleOptions, TickOptions } from 'chart.js'
+
+import { NoteSequence } from '@magenta/music/esm/protobuf'
 
 class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   PianoRollData,
@@ -47,37 +46,150 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
       granularitySelect,
       displayUpdateRate
     )
+    this.inpainter.on(
+      'busy',
+      (
+        regionStartQuarters?: number,
+        regionEndQuarters?: number,
+        displayRegionEndQuarter?: number
+      ) => {
+        if (
+          this.visualizer != null &&
+          regionStartQuarters != null &&
+          regionEndQuarters != null
+        ) {
+          this.visualizer.currentGenerationTimestamp_A = regionStartQuarters
+          this.visualizer.currentGenerationTimestamp_B =
+            displayRegionEndQuarter ?? regionEndQuarters
+        }
+      }
+    )
     this.container.classList.add('piano-roll-inpainter')
     this.interfaceContainer.classList.add(
       'piano-roll-inpainter-stacking-container'
     )
     this.visualizerEmitter.on('ready', () => this.emit('ready'))
+
+    this.inpainter.on(
+      'atomicAdd',
+      (
+        note: NoteSequence.Note,
+        midiNote,
+        midiChannel,
+        PPQ,
+        scrollIntoView: boolean = false,
+        reveal: boolean = true
+      ) => {
+        this.eraseGrowingNote(note)
+        this.drawNewNote(note, scrollIntoView, reveal)
+      }
+    )
+
+    this.inpainter.on('grow-note', (note: NoteSequence.Note) =>
+      this.startGrowingNote(note)
+    )
+    this.inpainter.on('clear-grow-note', (note: NoteSequence.Note) =>
+      this.eraseGrowingNote(note)
+    )
+  }
+
+  protected startGrowingNote(note: NoteSequence.Note): void {
+    note.endTime = note.startTime
+    let rect = this.drawNewNote(note, true, false)
+    if (rect != null) {
+      rect.classList.add('growing')
+    }
+  }
+  protected eraseGrowingNote(note: NoteSequence.Note): boolean | undefined {
+    const copy = new NoteSequence.Note(note)
+    copy.endTime = copy.startTime
+    return this.visualizer?.visualizer?.removeNote(copy)
+  }
+
+  protected drawNewNote(
+    note: NoteSequence.Note,
+    scrollIntoView = false,
+    reveal = true
+  ): SVGRectElement | null | undefined {
+    // HACK(@tbazin, 2022/09/08): remove this manual, inline update
+    let hasOverflown = false
+    hasOverflown =
+      note.pitch < (this.visualizer?.config?.minPitch ?? 127) ||
+      note.pitch > (this.visualizer?.config?.maxPitch ?? 0)
+
+    if (reveal) {
+      this.visualizer?.addNoteToNoteSequenceSilent(note)
+    }
+    let rect = this.visualizer?.drawNote(note)
+    if (reveal) {
+      rect?.classList.add('hideNote')
+      this.triggerReflow()
+      rect?.classList.remove('hideNote')
+    }
+    rect?.classList.add('new-note')
+
+    if (
+      !hasOverflown &&
+      rect != undefined &&
+      this.visualizer?.svgElement != null
+    ) {
+      const top = rect.y.animVal.value
+      const bottom = rect.y.animVal.value + rect.height.animVal.value
+      const right = rect.x.animVal.value + rect.width.animVal.value
+      if (
+        top <= 0 ||
+        bottom > this.visualizer.svgElement.height.baseVal.value ||
+        right > this.visualizer.Size.widthWithoutMargins
+      ) {
+        hasOverflown = true
+      }
+    }
+
+    if (hasOverflown) {
+      this.visualizer?.reload()
+    }
+    // if (rect != null && rect.id != null) {
+    //   rect = document.getElementById(rect.id)
+    // }
+
+    if (scrollIntoView) {
+      rect?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      })
+    }
+    return rect
   }
 
   protected get canTriggerInpaint(): boolean {
     return (
       this.visualizer != null &&
-      this.visualizer.timestamps[0] != null &&
-      this.visualizer.timestamps[1] != null &&
-      this.visualizer.timestamps[1] - this.visualizer.timestamps[0] > 0
+      this.visualizer.selectionTimestamps[0] != null &&
+      this.visualizer.selectionTimestamps[1] != null &&
+      this.visualizer.selectionTimestamps[1] -
+        this.visualizer.selectionTimestamps[0] >
+        0
     )
   }
 
   protected async regenerationCallback(): Promise<void> {
     if (
       this.visualizer == null ||
-      !this.visualizer.timestamps.every((timestamp) => timestamp != null)
+      !this.visualizer.selectionTimestamps.every(
+        (timestamp) => timestamp != null
+      ) ||
+      // TODO(@tbazin, 2022/08/10): setup a looser way of handling concurrent requests?
+      // \-- for now this at least ensures a coherent state
+      this.container.classList.contains('busy')
     ) {
       return
     }
-    const inpaintingRegion = this.visualizer.timestamps.map(
+    const inpaintingRegion = this.visualizer.selectionTimestamps.map(
       (timestampSeconds) =>
         timestampSeconds / this.inpainter.value.noteSequence.totalTime
     )
-    this.inpainter._apiRequest(
-      ...this.visualizer.timestamps,
-      this.visualizer.timestamps_ticks
-    )
+    this.inpainter.inpaintRegion(...this.visualizer.selectionTimestamps)
   }
 
   useTransparentScrollbars: boolean = false
@@ -93,6 +205,7 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   render() {
+    // HACK(@tbazin, 2022/09/01)
     try {
       this._render()
     } catch {
@@ -105,14 +218,34 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     return this._pixelsPerTimeStep
   }
   set pixelsPerTimeStep(pixelsPerTimeStep: number) {
+    // const currentScrollRatio =
+    //   this.scrollableElement.scrollLeft / this.scrollableElement.scrollWidth
+    const currentTimestepCenter =
+      (this.scrollableElement.scrollLeft +
+        this.scrollableElement.clientWidth / 2) /
+      this.pixelsPerTimeStep
     this._pixelsPerTimeStep = Math.max(10, pixelsPerTimeStep)
     if (this.visualizer != null) {
-      this.visualizer.config = {
-        ...this.visualizer.config,
-        pixelsPerTimeStep: this.pixelsPerTimeStep,
-      }
+      this.visualizer.updateZoom(this.pixelsPerTimeStep).then(() => {
+        this.scrollbar?.recalculate()
+        const newScrollLeft = Math.max(
+          0,
+          currentTimestepCenter * this.pixelsPerTimeStep -
+            this.scrollableElement.clientWidth / 2
+        )
+        this.scrollableElement.scroll({
+          left: newScrollLeft,
+          // behavior: 'smooth',
+        })
+        // this.refreshRecordingNoteGrowthRate()
+      })
     }
   }
+
+  // protected refreshRecordingNoteGrowthRate() {
+  //   const pixelsPerSecond = this.scrollableElement.clientWidth / this.inpainter.noteSequence.totalTime
+  //   this.style.
+  // }
 
   renderZoomControls(containerElement: HTMLElement): void {
     const zoomOutButton = document.createElement('div')
@@ -132,12 +265,12 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     zoomOutButton.addEventListener('click', () => {
       this.pixelsPerTimeStep -= 2
       this.render()
-      log.info(`OSMD zoom level now: ${this.pixelsPerTimeStep}`)
+      log.info(`Zoom level now: ${this.pixelsPerTimeStep} pixelsPerTimeStep`)
     })
     zoomInButton.addEventListener('click', () => {
       this.pixelsPerTimeStep += 2
       this.render()
-      log.info(`OSMD zoom level now: ${this.pixelsPerTimeStep}`)
+      log.info(`Zoom level now: ${this.pixelsPerTimeStep} pixelsPerTimeStep`)
     })
   }
 
@@ -145,15 +278,15 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     const fullscreenButton = document.createElement('div')
     fullscreenButton.classList.add('fullscreen-toggle')
     containerElement.appendChild(fullscreenButton)
-    const zoomOutButtonIcon = document.createElement('i')
-    zoomOutButtonIcon.classList.add(
+    const fullscreenButtonIcon = document.createElement('i')
+    fullscreenButtonIcon.classList.add(
       'fa-solid',
       screenfull.isFullscreen ? 'fa-minimize' : 'fa-maximize'
     )
-    fullscreenButton.appendChild(zoomOutButtonIcon)
+    fullscreenButton.appendChild(fullscreenButtonIcon)
     const toggleClass = () => {
-      zoomOutButtonIcon.classList.remove('fa-minimize', 'fa-maximize')
-      zoomOutButtonIcon.classList.add(
+      fullscreenButtonIcon.classList.remove('fa-minimize', 'fa-maximize')
+      fullscreenButtonIcon.classList.add(
         screenfull.isFullscreen ? 'fa-minimize' : 'fa-maximize'
       )
     }
@@ -184,6 +317,14 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
       )
       this.visualizer.classList.add('midi-visualizer')
       this.interfaceContainer.appendChild(this.visualizer)
+      this.visualizer.emitter.on('ready', () => {
+        if (this.visualizer != null && this.visualizer.topMargin != null) {
+          if (this.visualizer.topMargin.contains(this.timeScaleContainer)) {
+            return
+          }
+          // this.visualizer.topMargin.appendChild(this.timeScaleContainer)
+        }
+      })
     }
     this.visualizer.noteSequence = this.inpainter.noteSequence
 
@@ -200,6 +341,10 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
       return
     }
     this.abortDrawing()
+    // HACK(@tbazin, 2022/08/10): this seems hackish to need to do this,
+    // should probably improve the (silent) update mechanism in PiaInpainter
+    // but, for now, it at least ensures that the displayed state is coherent
+    this.visualizer.setNoteSequenceSilent(this.inpainter.noteSequence)
     this.visualizer.reload()
   }
 
@@ -280,16 +425,22 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   protected targetScrollRatio: number = 1 / 4
 
   protected onInpainterChange(data: PianoRollData): void {
+    if (data.type != null && data.type == 'validate') {
+      return
+    }
     if (data.newNotes != null) {
       // intermediary update with new batch of notes from the API,
       // do not perform a full update
-      this.drawNewNotes(data.newNotes.notes).then(() => {
+      this.drawNewNotes(data.newNotes.notes).finally(() => {
         if (!data.partialUpdate) {
+          this.emit('ready')
+          // HACK(@tbazin, 2022/08/10): feels hackish to trigger 'ready' manually here
           this.inpainter.emit('ready')
         }
       })
     } else {
       if (data.removeNotes != null) {
+        this.visualizer?.setNoteSequenceSilent(data.noteSequence)
         data.removeNotes.forEach((note) =>
           this.visualizer?.visualizer.removeNote(note)
         )
@@ -316,8 +467,8 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     throw new Error('Method not implemented.')
   }
 
-  protected setCurrentlyPlayingPositionDisplay(progress: number): void {
-    this.visualizer?.setPlaybackDisplayProgress(progress)
+  protected setCurrentlyPlayingPositionDisplay(totalProgress: number): void {
+    this.visualizer?.setPlaybackDisplayProgress(totalProgress)
   }
 
   protected triggerReflow(): void {
@@ -326,7 +477,9 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   protected scrollTo(progress: number): void {
-    this.scrollToPosition(this.visualizer?.progressToClientX(progress) ?? 0)
+    this.scrollToPosition(
+      this.visualizer?.totalProgressToClientX(progress) ?? 0
+    )
     if (this.visualizer?.lastPointermoveClientX != null) {
       this.visualizer?.setCursorHoverPosition(
         this.scrollableElement.scrollLeft +
@@ -350,7 +503,7 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   async getSheetAsPNG(): Promise<Blob | null> {
-    if (this.graphicElement == null) {
+    if (this.graphicElement == null || typeof OffscreenCanvas == 'undefined') {
       return null
     }
 
@@ -371,6 +524,26 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     await canvg.render()
     const blob = await canvas.convertToBlob()
     return blob
+  }
+
+  get ticksOptions(): Partial<TickOptions> {
+    return {
+      ...super.ticksOptions,
+      showLabelBackdrop: false,
+      color: 'black',
+      padding: -4,
+      stepSize: 4,
+    }
+  }
+
+  get timeScaleOptions(): Partial<CartesianScaleOptions> {
+    return {
+      ...super.timeScaleOptions,
+    }
+  }
+
+  protected get scalesFontSize(): number {
+    return this.visualizer?.Size.height / 30 ?? 12
   }
 }
 

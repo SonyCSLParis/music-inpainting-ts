@@ -2,13 +2,24 @@ import { EventEmitter } from 'events'
 import * as Tone from 'tone'
 import log from 'loglevel'
 import $ from 'jquery'
-import { debounce } from 'chart.js/helpers'
+import { debounce, throttled } from 'chart.js/helpers'
 
 import { PlaybackManager } from '../playback'
 import { Inpainter } from './inpainter'
 
 import { VariableValue } from '../cycleSelect'
 import { ScrollLockSimpleBar } from '../utils/simplebar'
+import {
+  CartesianScaleOptions,
+  Chart,
+  ScriptableScaleContext,
+  Tick,
+  TickOptions,
+  Ticks,
+} from 'chart.js'
+
+const chartsFontFamily = "'Fira-Sans'"
+Chart.defaults.font.family = chartsFontFamily
 
 export abstract class InpainterGraphicalView<
   DataT = unknown,
@@ -204,6 +215,12 @@ export abstract class InpainterGraphicalView<
       this.container.classList.remove('initializing')
       this.registerCallback()
     })
+
+    this.timeScaleContainer.classList.add(
+      'inpainter-scale-container',
+      'inpainter-time-scale-container'
+    )
+    this.timeScaleContainer.appendChild(this.timeScaleCanvas)
   }
 
   protected registerDropHandlers() {
@@ -245,7 +262,8 @@ export abstract class InpainterGraphicalView<
   protected registerRefreshOnResizeListener(): void {
     window.addEventListener(
       'resize',
-      debounce(() => this.refresh(), this.resizeTimeoutDuration)
+      // () => this.refresh()
+      throttled(() => this.refresh(), this.resizeTimeoutDuration)
     )
   }
 
@@ -299,11 +317,10 @@ export abstract class InpainterGraphicalView<
   protected readonly nowPlayingDisplayCallbacks: ((
     progress?: number
   ) => void)[] = [
-    // scroll display to current step if necessary
-    // (): void => this.scrollTo(this.playbackManager.transport.progress),
-    (progress?: number): void => {
-      progress = progress ?? this.playbackManager.transport.progress
-      this.setCurrentlyPlayingPositionDisplay(progress)
+    (totalProgress?: number): void => {
+      this.setCurrentlyPlayingPositionDisplay(
+        totalProgress ?? this.playbackManager.totalProgress
+      )
     },
   ]
 
@@ -333,13 +350,13 @@ export abstract class InpainterGraphicalView<
     this.scrollTo(0)
   }
 
-  protected scrollTo(progress: number): void {
-    this.scrollToStep(this.progressToStep(progress))
+  protected scrollTo(totalProgress: number): void {
+    this.scrollToStep(this.totalProgressToStep(totalProgress))
   }
 
-  protected abstract progressToStep(progress: number): number
+  protected abstract totalProgressToStep(totalProgress: number): number
   get currentlyPlayingStep(): number {
-    return this.progressToStep(this.playbackManager.transport.progress)
+    return this.totalProgressToStep(this.playbackManager.totalProgress)
   }
 
   protected scrollToPosition(targetPosition_px: number): void {
@@ -399,7 +416,7 @@ export abstract class InpainterGraphicalView<
     } catch (e) {
       // reached last container box
       // FIXME make and catch specific error
-      const lastStepIndex = this.progressToStep(1) - 1
+      const lastStepIndex = this.totalProgressToStep(1) - 1
       const lastStepPosition = this.getTimecontainerPosition(lastStepIndex)
       log.debug(
         `Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`
@@ -424,7 +441,7 @@ export abstract class InpainterGraphicalView<
     const scrollCallback = (time: Tone.Unit.Time) => {
       const draw = this.playbackManager.transport.context.draw
       draw.schedule(
-        (): void => this.scrollTo(this.playbackManager.transport.progress),
+        (): void => this.scrollTo(this.playbackManager.totalProgress),
         this.playbackManager.transport.toSeconds(time)
       )
     }
@@ -434,12 +451,12 @@ export abstract class InpainterGraphicalView<
     ).start(0)
 
     const drawCallback = (time: Tone.Unit.Time) => {
-      const progress = this.playbackManager.transport.progress
+      const totalProgress = this.playbackManager.totalProgress
       const draw = this.playbackManager.transport.context.draw
       this.nowPlayingDisplayCallbacks.forEach((callback) =>
         draw.schedule(() => {
           if (document.visibilityState == 'visible') {
-            callback(progress)
+            callback(totalProgress)
           }
         }, this.playbackManager.transport.toSeconds(time))
       )
@@ -481,6 +498,99 @@ export abstract class InpainterGraphicalView<
 
   toggleScrollLock(axis: 'x' | 'y', force?: boolean): void {
     this.scrollbar?.toggleScrollLock(axis, force)
+  }
+
+  protected get totalDurationAt120BPMSeconds() {
+    return (
+      this.playbackManager.transport.toTicks(
+        this.playbackManager.totalDuration
+      ) /
+      (this.playbackManager.transport.PPQ * 2)
+    )
+  }
+
+  protected abstract get scalesFontSize(): number
+
+  static readonly commonAxesOptions = {
+    grid: {
+      drawBorder: false,
+      display: false,
+    },
+  }
+
+  static readonly commonTicksOptions: Partial<TickOptions> = {
+    color: 'rgba(255, 255, 255, 0.6)',
+    // maxTicksLimit: (ctx) => 30,
+    showLabelBackdrop: true,
+    backdropColor: 'rgba(0, 0, 0, 0.6)',
+    backdropPadding: 2,
+  }
+
+  get timeScaleOptions(): Partial<CartesianScaleOptions> {
+    return {}
+  }
+
+  get ticksOptions(): Partial<TickOptions> {
+    return {
+      font: (ctx: ScriptableScaleContext) => {
+        return {
+          family: chartsFontFamily,
+          size: this.scalesFontSize,
+        }
+      },
+    }
+  }
+
+  protected readonly timeScaleContainer: HTMLDivElement =
+    document.createElement('div')
+  protected readonly timeScaleCanvas: HTMLCanvasElement =
+    document.createElement('canvas')
+  protected timeScale?: Chart
+
+  protected drawTimeScale(): Chart {
+    if (this.timeScale != null) {
+      this.timeScale.destroy()
+    }
+
+    const chart = new Chart(this.timeScaleCanvas, {
+      type: 'line',
+      data: {
+        datasets: [],
+      },
+      options: {
+        responsive: true,
+        // ensures the canvas fills the entire container
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            display: false,
+            ...InpainterGraphicalView.commonAxesOptions,
+          },
+          x: {
+            ...InpainterGraphicalView.commonAxesOptions,
+
+            axis: 'x',
+            type: 'linear',
+            display: true,
+
+            min: 0, // this.getCurrentScrollPositionTopLayer(),
+            max: this.totalDurationAt120BPMSeconds, // this.getCurrentScrollPositionTopLayer() + this.numColumnsTop,
+
+            offset: false,
+
+            ticks: {
+              stepSize: 1,
+              align: 'start',
+              ...InpainterGraphicalView.commonTicksOptions,
+              ...this.ticksOptions,
+            },
+            ...this.timeScaleOptions,
+          },
+        },
+      },
+    })
+    this.timeScale = chart
+    return this.timeScale
   }
 }
 
