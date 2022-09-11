@@ -77,13 +77,26 @@ body {
 .inpainter:not(.piano-roll-inpainter).busy {
   > :not(.loading-spinner-container):not(.simplebar-track) {
     // emulate modal overlay, highlighting the loading indicator
-    // TODO(@tbazin, 2022/02/18): fix NOTONO scrollbar still disabled by this
+    // FIXME(@tbazin, 2022/02/18): fix NOTONO scrollbar still disabled by this
+    //  -> this is because the :not() based selection is improper, should target specific objects
     opacity: 0.6;
     filter: blur(2.5px);
     & * {
       cursor: wait !important;
       pointer-events: none !important;
     }
+  }
+}
+.piano-roll-inpainter.busy {
+  .midi-visualizer {
+    background-color: color.scale(black, $lightness: +10%);
+    // filter: brightness(0.9);
+    cursor: wait;
+  }
+  .midi-visualizer-notes-container {
+    // emulate modal overlay, highlighting the loading indicator
+    // filter: blur(0.5px);
+    pointer-events: none !important;
   }
 }
 .piano-roll-inpainter.busy {
@@ -429,4 +442,8 @@ select {
 
 .disable-mouse {
   pointer-events: none;
+}
+
+.inpainter.transparent-scrollbar .simplebar-track {
+  opacity: 0.7;
 }

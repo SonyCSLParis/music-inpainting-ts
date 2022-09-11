@@ -266,6 +266,7 @@ export class ToneMidiInput extends EventEmitter {
         }
       }
     }
+    this.emit('change-device', this.deviceId)
   }
 
   static checkMidiChannelsSetsEqual(

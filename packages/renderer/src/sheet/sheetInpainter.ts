@@ -102,6 +102,7 @@ export class SheetInpainter extends MidiInpainter<
         body: maybeBody,
         headers: maybeHeaders,
       },
+      [],
       timeout
     )
 

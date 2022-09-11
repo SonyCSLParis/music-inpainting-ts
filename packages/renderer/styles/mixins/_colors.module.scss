@@ -347,7 +347,7 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   );
   $simplebar-scrollbar-color-transparent: color.scale(
     $simplebar-scrollbar-color,
-    $alpha: 0%
+    $alpha: -15%
   );
 
   .simplebar-track {
@@ -374,13 +374,13 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   }
 
   .transparent-scrollbar .simplebar-track {
-    &,
-    &::before {
-      background-color: $simplebar-track-color-transparent;
-    }
-    &::before {
-      color: $simplebar-scrollbar-color-transparent;
-    }
+    // &,
+    // &::before {
+    //   background-color: $simplebar-track-color-transparent;
+    // }
+    // &::before {
+    //   color: $simplebar-scrollbar-color-transparent;
+    // }
   }
 
   .simplebar-scrollbar {
@@ -408,26 +408,11 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
     }
   }
 
-  // TODO(@tbazin, 2022/04/20): refactor priority of simplebar color definitions
-  // to enable factorizing this
-  .transparent-scrollbar .simplebar-track,
+  // // TODO(@tbazin, 2022/04/20): refactor priority of simplebar color definitions
+  // // to enable factorizing this
   .simplebar-track {
     &.scroll-lock::before {
       color: $active-control;
-    }
-  }
-
-  .transparent-scrollbar .simplebar-scrollbar {
-    background-color: $simplebar-scrollbar-color-transparent;
-    @media (hover: hover) {
-      // no hover effects on touch screens since the effect remains active
-      // until the user effectively touches another zone on the viewport
-      &:hover {
-        background-color: color.scale(
-          $simplebar-scrollbar-color-transparent,
-          $lightness: 5%
-        );
-      }
     }
   }
 
@@ -587,7 +572,8 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
     }
   }
   .zoom-control,
-  .fullscreen-control {
+  .fullscreen-control,
+  .reset-loop-control {
     background-color: color.change(color.invert($body), $alpha: 0.1);
     > * {
       background-color: color.change(color.invert($body), $alpha: 0.4);

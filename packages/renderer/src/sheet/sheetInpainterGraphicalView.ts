@@ -638,10 +638,13 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
 
   protected setCurrentlyPlayingPositionDisplay(progress: number): void {
     const transport = this.playbackManager.transport
+    const startOffset = transport.toSeconds(transport.loopStart)
+    const loopDuration =
+      transport.toSeconds(transport.loopEnd) -
+      transport.toSeconds(transport.loopStart)
     const timePosition = Math.floor(
-      (progress +
-        transport.context.lookAhead / transport.toSeconds(transport.loopEnd)) *
-        this.sequenceDuration_quarters
+      startOffset +
+        (progress + transport.context.lookAhead / loopDuration) * loopDuration
     )
 
     Array.from(
@@ -663,7 +666,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     } catch (e) {
       // reached last container box
       // FIXME make and catch specific error
-      const lastStepIndex = this.progressToStep(1) - 1
+      const lastStepIndex = this.totalProgressToStep(1) - 1
       const lastStepPosition = this.getTimecontainerPosition(lastStepIndex)
       log.debug(
         `Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`
@@ -703,7 +706,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     return this.sheet.GraphicSheet.MeasureList.length * 4
   }
 
-  protected progressToStep(progress: number): number {
+  protected totalProgressToStep(progress: number): number {
     return Math.floor(progress * this.sequenceDurationQuarters)
   }
 
@@ -741,7 +744,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   async getSheetAsPNG(): Promise<Blob | null> {
-    if (this.graphicElement == null) {
+    if (this.graphicElement == null || typeof OffscreenCanvas == 'undefined') {
       return null
     }
     const canvas = new OffscreenCanvas(

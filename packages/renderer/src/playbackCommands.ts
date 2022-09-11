@@ -42,7 +42,6 @@ export function render(
 
   function setPlayingClass(isPlaying: boolean) {
     // Update Play/Stop CSS classes
-    unsetSpinningClass()
     if (isPlaying) {
       playButtonInterface.classList.add(...playingClasses)
       playButtonInterface.classList.remove(...stoppedClasses)
@@ -68,9 +67,6 @@ export function render(
   function unsetWaitingClass() {
     // Remove rotating 'wait' icon
     playButtonInterface.classList.remove(waitingClass)
-  }
-  function unsetSpinningClass() {
-    // Remove rotating 'wait' icon
     playButtonInterface.classList.remove(spinningClass)
   }
   // Initialize playback display
@@ -97,8 +93,15 @@ export function render(
   playbackManager.transport.on('stop', () => {
     setPlayingClass(false)
   })
+  playbackManager.on('enabled', () => {
+    unsetWaitingClass()
+    setPlayingClass(playbackManager.transport.state == 'started')
+  })
 
   document.addEventListener('keydown', (event) => {
+    if (event.repeat) {
+      return
+    }
     const keyName = event.key
     switch (keyName) {
       case 'Spacebar':

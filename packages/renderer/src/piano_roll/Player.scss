@@ -1,5 +1,7 @@
 @use 'sass:color';
 @use 'sass:math';
+
+@import '../../styles/mixins/imports';
 $off-white-color: #faebd7;
 $hot-orange-color: #ff6e00;
 $ipswich-pine-color: #e3a95e;
@@ -14,21 +16,112 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 }
 
 .midi-visualizer-pointer-hover-verticalLine {
-  visibility: hidden;
-  stroke: black;
-  opacity: 0.2;
+  // visibility: hidden;
+  stroke: white;
+  opacity: 0;
+  width: 3px;
+}
+.piano-roll-visualizer:hover .midi-visualizer-pointer-hover-verticalLine {
+  opacity: 0.3;
 }
 .midi-visualizer-playback-position-cursor {
   stroke: red;
+  stroke-width: 2;
   opacity: 0.4;
 }
 .midi-visualizer svg:hover .midi-visualizer-pointer-hover-verticalLine {
   visibility: visible;
 }
-.midi-visualizer-selection-overlay {
-  fill: black;
+.midi-visualizer-selection-overlay,
+.midi-visualizer-current-generation-overlay,
+.midi-visualizer-current-generation-gradient,
+.midi-visualizer-loop-overlay-container,
+.midi-visualizer-top-margin-loop-setup-container {
   z-index: 1;
   opacity: 0.8;
+
+  .midi-visualizer-loop-overlay {
+    z-index: -1;
+    // pointer-events: visible;
+  }
+  .midi-visualizer-loop-overlay-margin-right {
+    x: calc(100% - 3px);
+    cursor: e-resize;
+  }
+  .midi-visualizer-loop-overlay-margin-left {
+    cursor: w-resize;
+  }
+}
+.midi-visualizer-selection-overlay {
+  fill: white;
+  opacity: 0.2;
+  filter: blur(7px);
+  animation: pulsing 3s ease-in-out infinite alternate;
+  &.invalid-selection {
+    fill: red;
+  }
+}
+.midi-visualizer-current-generation-overlay-container {
+  width: 50%;
+  filter: blur(7px);
+  * {
+    animation-duration: inherit;
+  }
+}
+.midi-visualizer-current-generation-overlay {
+  fill: silver;
+  opacity: 0.6;
+  filter: blur(10px);
+  animation: pulsing 3s ease-in-out infinite alternate;
+}
+.midi-visualizer-current-generation-gradient-fill {
+  fill: white;
+  opacity: 0.8;
+  filter: blur(10px);
+  -webkit-mask-composite: source-out;
+}
+.inpainter.busy {
+  .midi-visualizer-current-generation-gradient {
+    filter: blur(1px);
+    width: 10px;
+    animation: sliding 2s linear infinite;
+    animation-duration: inherit;
+  }
+}
+.midi-visualizer-current-generation-overlay-container {
+  display: none;
+}
+.piano-roll-inpainter.busy {
+  .midi-visualizer-current-generation-overlay-container {
+    display: block;
+  }
+}
+@keyframes pulsing {
+  to {
+    opacity: 0.2;
+  }
+}
+@keyframes width-expanding {
+  to {
+    width: 0;
+  }
+}
+@keyframes sliding {
+  from {
+    transform: translate3d(-20%, 0, 0);
+  }
+  to {
+    transform: translate3d(120%, 0, 0);
+  }
+}
+
+.midi-visualizer-loop-overlay {
+  position: relative;
+  fill: lightblue;
+  stroke: lightskyblue;
+  opacity: 0.3;
+  stroke-width: 3px;
+  stroke-dasharray: 10;
 }
 
 .midi-visualizer {
@@ -42,34 +135,96 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 
 @keyframes pulseHue {
   from {
-    filter: brightness(1.5) hue-rotate(200deg);
+    filter: brightness(1.3) hue-rotate(200deg);
   }
   to {
-    filter: brightness(1.5) hue-rotate(260deg);
+    filter: brightness(1.3) hue-rotate(260deg);
   }
 }
 
+:root {
+  --midi-velocity: 70;
+  --midi-velocity-percent: 80%;
+}
+
 .midi-visualizer svg rect.note {
+  $midi-velocity-percent: 80%;
   z-index: 10;
-  &.selected {
-    // &.new-note {
-    animation: 2s pulseHue linear infinite;
-  }
+
+  transform-origin: 50% 50%;
+  transform-box: fill-box;
+
   &.candidate-selection {
     stroke-dasharray: 4;
-    // filter: none;
-    // animation: none;
-    // fill: skyblue;
-    fill: color.scale(palegreen, $alpha: -20%);
+    stroke: white;
   }
-  &.new-note {
-    stroke: black;
+
+  stroke-width: 2;
+  stroke: color.scale(black, $lightness: -80%);
+
+  $velocity-scale-factor: calc((var(--midi-velocity, 70) - 70) / 57);
+  // $velocity-scale-factor-blur: calc(
+  //   1 - (1 - (var(--midi-velocity, 70) / 127)) * 0.3
+  // );
+  // $filter-absolute-factor: calc(
+  //   0.9 + 0.1 * (1 / 2 - (var(--midi-velocity) / 127))
+  // );
+  $filter-percent-factor: calc(75%);
+  // $color-rotate-factor: 60deg;
+  $color-rotate-amount: 45deg;
+  $color-rotate: calc(
+    $color-rotate-amount *
+      (
+        calc((var(--midi-velocity, 70) - 70) / 127) // *
+        // ((1 / 2) - calc(var(--midi-velocity, 70) / 140))
+      )
+  );
+  fill-opacity: calc(0.9 + $velocity-scale-factor * 0.3);
+  stroke-opacity: calc(0.9 + $velocity-scale-factor * 0.2);
+
+  // filter: hue-rotate(calc(-1 * $color-rotate-amount + $color-rotate));
+  // invert($midi-velocity-percent);
+  &:not(.selected):not([data-instrument='1']) {
+    fill: lightgrey;
   }
+  &.active {
+    opacity: 1;
+    // fill: color.scale($hot-orange-color, $alpha: -30%);
+    stroke: sandybrown;
+  }
+
   &.selected {
-    stroke: pink;
+    stroke: darkgray;
+    filter: brightness(1.3) hue-rotate(210deg);
+    // animation: 2s pulseHue steps(10) infinite alternate;
+    &.invalid-selection {
+      stroke: black;
+    }
+    fill: color.scale($hot-orange-color, $alpha: -20%);
   }
-  &[data-instrument='1']:not(.selected) {
-    fill: lightpink;
+
+  &.hideNote {
+    opacity: 0;
+    width: 0;
+    transform: translateX(10px);
+  }
+  transition-property: opacity, width, transform;
+  transition-duration: 0.4s;
+  transition-timing-function: ease-in-out;
+
+  &.growing {
+    // HACK(@tbazin, 2022/09/10): hardcoded value here
+    $piano-roll-total-duration: 60s;
+    $visual-slow-down-amount: 0s;
+    animation: growing
+      calc($piano-roll-total-duration + $visual-slow-down-amount) linear
+      forwards;
+  }
+
+  @keyframes growing {
+    to {
+      width: 100%;
+    }
   }
 }
 
@@ -107,6 +262,7 @@ $midi-visualizer-margins-color: color.scale(black, $lightness: +15%);
 $midi-visualizer-top-margin-length: 6vh;
 $midi-visualizer-bottom-margin-length: 1vh;
 $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
+$midi-visualizer-background-color: color.scale(black, $lightness: +10%);
 .midi-visualizer {
   .midi-visualizer-startend-lines {
     fill: url(#verticalGradient);
@@ -127,12 +283,8 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
   background-color: $midi-visualizer-background-color;
   height: 100%;
   width: 100vw;
-  svg {
-    // position: absolute;
-    height: calc(
-      100% - #{$midi-visualizer-top-margin-length +
-        $midi-visualizer-bottom-margin-length}
-    ) !important;
+  svg:not(.midi-visualizer-overlays-container) {
+    height: 100% !important;
   }
 }
 .midi-visualizer {
@@ -142,8 +294,14 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
     height: 100% !important;
   }
 }
+.midi-visualizer-overlays-container {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
 .midi-visualizer .piano-roll-visualizer {
-  overflow: visible;
+  overflow-x: visible;
+  overflow-y: hidden;
   width: fit-content;
   &,
   svg {
@@ -152,52 +310,145 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
 }
 
 .piano-roll-visualizer {
-  &::before,
+  .midi-visualizer-top-margin,
   &::after {
-    position: sticky;
-    right: 0;
-    display: block;
-    content: '';
-
-    width: auto;
+    width: 100%;
   }
-  &::before {
+  .midi-visualizer-top-margin {
     top: 0;
     height: calc($midi-visualizer-top-margin-length);
-    cursor: s-resize;
-    background: linear-gradient(
-      0deg,
-      transparent 0%,
-      color.scale($midi-visualizer-margins-color, $lightness: +90%) 20%,
-      $midi-visualizer-margins-color 100%
-    );
-  }
-  &::after {
-    bottom: 0;
-    height: calc($midi-visualizer-bottom-margin-length);
-    pointer-events: none;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      color.scale($midi-visualizer-margins-color, $lightness: +90%) 20%,
-      $midi-visualizer-margins-color 100%
-    );
-  }
-}
+    position: relative;
 
-.midi-visualizer svg * {
+    // background: linear-gradient(
+    //   0deg,
+    //   transparent 0%,
+    //   color.scale($midi-visualizer-margins-color, $lightness: +90%) 20%,
+    //   $midi-visualizer-margins-color 100%
+    // );
+    background-color: color.scale(
+      $midi-visualizer-background-color,
+      $alpha: -30%
+    );
+    display: inline-grid;
+    grid-template-rows: 50% 50%;
+
+    color: black;
+    backdrop-filter: blur(0.3px);
+    .midi-visualizer-loop-setup-timeline {
+      $loop-setup-timeline-background-color: color.scale(
+        darkgray,
+        $lightness: -50%,
+        $alpha: -50%
+      );
+      background-color: $loop-setup-timeline-background-color;
+      grid-row: 1;
+      grid-column: 1;
+      cursor: col-resize;
+      &::before {
+        color: color.scale(
+          $loop-setup-timeline-background-color,
+          $lightness: +50%,
+          $alpha: -50%
+        );
+        content: 'Loop';
+      }
+      border-bottom: black solid thin;
+    }
+    .midi-visualizer-seek-timeline {
+      $seek-timeline-background-color: color.scale(darkgray, $alpha: -60%);
+      background-color: $seek-timeline-background-color;
+      grid-row: 2;
+      grid-column: 1;
+      cursor: s-resize;
+      &::before {
+        color: color.scale(
+          $seek-timeline-background-color,
+          $lightness: +50%,
+          $alpha: -50%
+        );
+        content: 'Seek';
+      }
+    }
+    .midi-visualizer-seek-timeline,
+    .midi-visualizer-loop-setup-timeline {
+      &::before {
+        left: 10px;
+        font-size: calc($midi-visualizer-top-margin-length / 3);
+        transform: translateY(20%);
+        position: fixed;
+      }
+    }
+
+    .midi-visualizer-top-margin-svg-container {
+      width: 100%;
+      height: 100%;
+      grid-row: 1 / 3;
+      grid-column: 1;
+      background-color: transparent;
+      pointer-events: none;
+      .midi-visualizer-top-margin-loop-setup-container {
+        .midi-visualizer-loop-overlay-margin-left,
+        .midi-visualizer-loop-overlay-margin-right {
+          height: 50% !important;
+          width: 29px;
+        }
+        .midi-visualizer-loop-overlay-margin-left {
+          x: 0;
+        }
+        .midi-visualizer-loop-overlay-margin-right-display,
+        .midi-visualizer-loop-overlay-margin-left-display {
+          width: 3px;
+          transform: translateX(0px);
+        }
+        .midi-visualizer-loop-overlay-triangle-markup-left,
+        .midi-visualizer-loop-overlay-triangle-markup-right {
+          pointer-events: none;
+        }
+        .midi-visualizer-loop-overlay-margin-left-display,
+        .midi-visualizer-loop-overlay-triangle-markup-left {
+          x: 14px;
+          pointer-events: none;
+        }
+        .midi-visualizer-loop-overlay-margin-right {
+          x: calc(100% - 29px);
+        }
+        .midi-visualizer-loop-overlay-margin-right-display {
+          x: calc(100% - 17px);
+          pointer-events: none;
+        }
+        .midi-visualizer-loop-overlay-triangle-markup-group-right {
+          transform: translateX(100%);
+          polygon {
+            stroke: white;
+          }
+        }
+      }
+      .midi-visualizer-top-margin-loop-setup-display {
+        width: calc(100% - 29px);
+        fill: color.scale($arabian-sand-color, $alpha: -30%);
+        pointer-events: none;
+      }
+    }
+  }
+  // &::after {
+  //   content: '';
+  //   bottom: 0;
+  //   height: calc($midi-visualizer-bottom-margin-length);
+  //   pointer-events: none;
+  //   background: linear-gradient(
+  //     180deg,
+  //     transparent 0%,
+  //     color.scale($midi-visualizer-margins-color, $lightness: +90%) 20%,
+  //     $midi-visualizer-margins-color 100%
+  //   );
+  // }
+}
+.midi-visualizer-top-margin-loop-setup-container {
   pointer-events: none;
 }
-.midi-visualizer svg rect.note {
-  stroke-width: 2;
-  fill: color.scale($hot-orange-color, $alpha: -50%);
-  stroke: color.scale(black, $lightness: +15%);
-  stroke-opacity: calc(1 - (1 - (var(--midi-velocity) / 127)) * 0.3);
-}
-.midi-visualizer svg rect.note.active {
-  opacity: 1;
-  fill: color.scale($hot-orange-color, $alpha: -30%);
-  stroke: yellow;
+.midi-visualizer.midi-visualizer.enabled-loop
+  .midi-visualizer-top-margin-loop-setup-container {
+  pointer-events: visiblePainted;
 }
 
 .inpainter.piano-roll-inpainter,
@@ -237,18 +488,88 @@ $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
 }
 
 body.pianoto {
-  #app-title-container {
-    grid-template-columns: 1fr;
+  // #app-title-container {
+  //   grid-template-columns: 1fr;
+  // }
+  // #undo-button-container,
+  // #redo-button-container {
+  //   display: none !important;
+  //   visibility: hidden !important;
+  // }
+  // .application-header {
+  //   grid-template-columns: 15% 1fr 15%;
+  // }
+  // .header-logo {
+  //   display: flex;
+  // }
+}
+
+.piano-roll-inpainter {
+  .midi-visualizer-top-margin {
+    // margin-bottom: 1.5vh;
   }
-  #undo-button-container,
-  #redo-button-container {
-    display: none !important;
-    visibility: hidden !important;
+  .inpainter-time-scale-container {
+    overflow: visible;
+    pointer-events: none;
+
+    width: auto;
+    height: 100%;
+    top: 0;
+    left: 0;
+    margin: 0 21px;
+    canvas {
+      position: relative;
+      top: 0;
+      left: 0;
+      height: 100%;
+      // padding-bottom: 1vh;
+    }
   }
-  .application-header {
-    grid-template-columns: 15% 1fr 15%;
+}
+
+.piano-roll-visualizer {
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: 6vh auto;
+  .midi-visualizer-overlays-container {
+    grid-row: 1 / 3;
+    grid-column: 1;
   }
-  .header-logo {
-    display: flex;
+  .midi-visualizer-top-margin {
+    grid-row: 1;
+    grid-column: 1;
   }
+  .midi-visualizer-notes-container {
+    grid-row: 2;
+    grid-column: 1;
+  }
+}
+
+.reset-loop-control {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  height: 2em;
+  width: 2em;
+  div i {
+    font-size: 1.8em;
+    line-height: 1.1em;
+  }
+  i {
+    @include fa-icon-solid($fa-var-repeat);
+  }
+  div {
+    width: 100%;
+    height: 100%;
+  }
+
+  filter: grayscale(1);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.midi-visualizer.enabled-loop .reset-loop-control {
+  opacity: 1;
+  pointer-events: all;
+  filter: none;
 }

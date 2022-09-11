@@ -48,6 +48,8 @@ const applicationModeToAPIResourceName: Map<ApplicationMode, string> = new Map([
 const VITE_COMPILE_ELECTRON: boolean =
   import.meta.env.VITE_COMPILE_ELECTRON != undefined
 const VITE_APP_TITLE: string | undefined = import.meta.env.VITE_APP_TITLE
+const VITE_HIDE_IRCAM_LOGO: boolean =
+  import.meta.env.VITE_HIDE_IRCAM_LOGO != undefined
 const VITE_REMOTE_INPAINTING_API_ADDRESS: string | undefined = import.meta.env
   .VITE_REMOTE_INPAINTING_API_ADDRESS
 const VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: string | undefined =
@@ -97,6 +99,9 @@ const globalConfiguration: applicationConfiguration = {
 globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] =
   globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] ||
   VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX
+
+globalConfiguration['display_ircam_logo'] =
+  globalConfiguration['display_ircam_logo'] && !VITE_HIDE_IRCAM_LOGO
 
 globalConfiguration['inpainting_api_address'] =
   VITE_REMOTE_INPAINTING_API_ADDRESS
@@ -252,7 +257,7 @@ export class SplashScreen {
     this.container.appendChild(headerContainer)
     Header.render(headerContainer, {
       display_sony_logo: true,
-      display_ircam_logo: true,
+      display_ircam_logo: true && !VITE_HIDE_IRCAM_LOGO,
       app_name:
         VITE_APP_TITLE != null ? VITE_APP_TITLE.toLowerCase() : 'notono',
     })

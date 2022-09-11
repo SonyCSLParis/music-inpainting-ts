@@ -79,9 +79,11 @@ export abstract class DownloadButton<
   protected readonly inpainter: InpainterT
   protected readonly inpainterGraphicalView: InpainterGraphicalViewT
 
-  protected abstract _refreshCallback: () => Promise<void>
-  protected readonly refreshCallback: () => Promise<void> = async () => {
-    this._refreshCallback()
+  protected abstract _refreshCallback: (data: DataT) => Promise<void>
+  protected readonly refreshCallback: (data: DataT) => Promise<void> = async (
+    data: DataT
+  ) => {
+    this._refreshCallback(data)
   }
 
   protected registerUpdateCallback(): void {
@@ -373,6 +375,7 @@ export class SheetDownloadButton extends DownloadButton<
   SheetInpainterGraphicalView
 > {
   protected registerUpdateCallback(): void {
+    // TODO(@tbazin, 2022/08/10): potentially `this`-unbound callback, check this
     this.inpainterGraphicalView.on('ready', this.refreshCallback)
   }
   protected removeUpdateCallback(): void {
@@ -396,14 +399,22 @@ export class PianotoDownloadButton extends DownloadButton<
   PiaInpainter,
   PianoRollInpainterGraphicalView
 > {
-  protected registerUpdateCallback(): void {
-    this.inpainterGraphicalView.on('ready', this.refreshCallback)
-  }
-  protected removeUpdateCallback(): void {
-    this.inpainterGraphicalView.removeListener('ready', this.refreshCallback)
-  }
+  // protected registerUpdateCallback(): void {
+  //   // HACK(@tbazin, 2022/08/10): listening to ready on inpainterGraphicalView
+  //   // ensures that the
+  //   // this.inpainterGraphicalView.on('ready', () => this.refreshCallback())
+  //   this.inpainter.on('ch', () => this.refreshCallback())
+  // }
+  // protected removeUpdateCallback(): void {
+  //   this.inpainterGraphicalView.removeListener('ready', () =>
+  //     this.refreshCallback()
+  //   )
+  // }
 
-  protected _refreshCallback = async () => {
+  protected _refreshCallback = async (data: PianoRollData) => {
+    if (data.partialUpdate || data.removeNotes) {
+      return
+    }
     const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
     if (sheetPNGBlob != null) {
       this.imageContent = sheetPNGBlob
