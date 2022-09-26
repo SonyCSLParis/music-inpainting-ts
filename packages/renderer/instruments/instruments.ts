@@ -72,28 +72,36 @@ export async function initializeInstruments(): Promise<void> {
       mute: true,
     },
   })
-  const pianoVelocities = 1
+  const pianoVelocities = 4
   log.info(
     `Loading Tone Piano with ${pianoVelocities} velocit${
       pianoVelocities > 1 ? 'ies' : 'y'
     }`
   )
   piano = new Piano({
-    // release: false,
-    pedal: true,
-    velocities: 1,
-    release: true,
+    velocities: pianoVelocities,
 
-    volume: {
-      pedal: -20,
-      strings: 0,
-      keybed: -5,
-      harmonics: 0,
-    },
+    // volume: {
+    //   // pedal: -20,
+    //   // strings: -10,
+    //   // keybed: -20,
+    //   // harmonics: -10,
+    // },
   })
   if (VITE_AUTOLOAD_SAMPLES) {
     await piano.load()
-    currentInstrument = piano.connect(limiter)
+    if (useEffects) {
+      const reverb = await effects
+      currentInstrument = piano.connect(
+        reverb //.connect(
+        // new Tone.Gain(-15, 'decibels').toDestination() //.connect(limiter)
+        // )
+      )
+    } else {
+      const gainReduction = new Tone.Gain(-15, 'decibels').toDestination()
+      piano.connect(gainReduction)
+    }
+
     return
   } else {
     currentInstrument = polySynth.connect(limiter)
@@ -378,11 +386,11 @@ console.log(import.meta.hot)
 if (import.meta.hot) {
   import.meta.hot.accept(
     ['./presets.ts', './effects.ts'],
-    ([newPresets, newEffects]) => {
+    async ([newPresets, newEffects]) => {
       // if (newPolySynth != undefined && !newPolySynth.disposed) {
       //   newPolySynth.dispose()
       // }
-      const localEffects = newEffects?.effects ?? effects
+      const localEffects = (await newEffects?.effects) ?? effects
 
       if (newPresets) {
         const newPolySynth = new Tone.PolySynth(newPresets.steelPan)

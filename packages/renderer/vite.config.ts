@@ -1,8 +1,7 @@
 /* eslint-env node */
 
 import { chrome } from '../../.electron-vendors.cache.json'
-import path, { join } from 'path'
-import { builtinModules } from 'module'
+import { join } from 'path'
 import { HtmlTagDescriptor, IndexHtmlTransformHook, UserConfig } from 'vite'
 
 const PACKAGE_ROOT = __dirname
@@ -15,7 +14,7 @@ const VITE_COMPILE_WEB = process.env.VITE_COMPILE_WEB != undefined
 const VITE_APP_TITLE =
   process.env.VITE_APP_TITLE != undefined
     ? process.env.VITE_APP_TITLE
-    : 'VITE_APP'
+    : 'music-inpainting.ts'
 
 function makeOpenGraphData(): HtmlTagDescriptor[] {
   let tags: Map<string, string>
@@ -101,14 +100,17 @@ const indexHtmlTransformHook: IndexHtmlTransformHook = (html, ctx) => {
     /<title>(.*?)<\/title>/,
     `<title>${VITE_APP_TITLE}</title>`
   )
-  const faviconTag = {
-    tag: 'link',
-    attrs: {
-      rel: 'shortcut icon',
-      href: new URL('favicon.ico', VITE_DEPLOYMENT_URL).href,
-    },
+  const tags: HtmlTagDescriptor[] = [...makeOpenGraphData()]
+  if (VITE_COMPILE_WEB && VITE_DEPLOYMENT_URL != undefined) {
+    const faviconTag = {
+      tag: 'link',
+      attrs: {
+        rel: 'shortcut icon',
+        href: new URL('favicon.ico', VITE_DEPLOYMENT_URL).href,
+      },
+    }
+    tags.push(faviconTag)
   }
-  const tags: HtmlTagDescriptor[] = [faviconTag, ...makeOpenGraphData()]
   return { html: html, tags: tags }
 }
 

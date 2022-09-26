@@ -1,6 +1,6 @@
-@use "mixins/measures";
-@use "mixins/interfaces";
-@use "mixins/colors.module";
+@use 'mixins/measures';
+@use 'mixins/interfaces';
+@use 'mixins/colors.module';
 @import 'mixins/imports';
 
 .application-header {
@@ -23,7 +23,7 @@
 
 body.electron-hiddenInset-window-controls .application-header {
   // small padding for Electron frame-less window-controls on MacOS
-  padding: 40px 0 15px;
+  padding: 25px 0 15px;
   min-height: unset;
 }
 
@@ -106,10 +106,10 @@ $logo-margin-width: min(20%, 25px);
   font-size: min(8vw, 10vh, 1.8em);
   font-weight: 900;
 
-  text-transform: uppercase;
-
   // visual cue for resampling-on-click functionality
   cursor: pointer;
+
+  max-width: 100%;
 }
 
 body.anonymous-mode {
@@ -155,7 +155,21 @@ $logo-width-full: min(30vw, 16vh, 120px);
 .header-logo {
   display: none;
 }
+body.splash-screen #app-title {
+  font-size: 5vw;
+  &:after {
+    font-size: 3vw;
+    font-style: italic;
+    content: 'created by Théis Bazin';
+  }
+}
 @media screen and (min-width: 700px) and (min-height: 500px) {
+  body.splash-screen #app-title {
+    font-size: 3.5vw;
+    &:after {
+      font-size: small;
+    }
+  }
   #app-title-container {
     max-width: 500px;
   }

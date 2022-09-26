@@ -49,7 +49,7 @@ export default class MidiSheetPlaybackManager<
   readonly bpmControl: BPMControl
   protected supportsMidi = false
 
-  protected playbackLookahead: number = 0.1
+  protected playbackLookahead: number = 0.15
   protected interactiveLookahead: number = 0.05
 
   protected _loopEnd: Tone.Unit.Time = 0
@@ -137,10 +137,13 @@ export default class MidiSheetPlaybackManager<
     this._playNote = playNote
   }
 
+  protected forceDuration?: Tone.Unit.Time
+
   constructor(
     inpainter: InpainterT,
     bpmControl: BPMControl,
-    useChordsInstrument = false
+    useChordsInstrument = false,
+    forceDuration_notation?: string
   ) {
     super(inpainter)
     if (this.inpainter.PPQ != null) {
@@ -149,6 +152,11 @@ export default class MidiSheetPlaybackManager<
     if (this.inpainter.forceDuration_ticks != null) {
       this._totalDuration = `${this.inpainter.forceDuration_ticks}i`
       this.loopEnd = `${this.inpainter.forceDuration_ticks}i`
+    } else if (forceDuration_notation != null) {
+      // FIXME(@tbazin, 2022/09/22): clean this up!!
+      this.forceDuration = forceDuration_notation
+      this._totalDuration = this.forceDuration
+      this.loopEnd = this.forceDuration
     }
     this.transport.loop = true
 
@@ -229,14 +237,15 @@ export default class MidiSheetPlaybackManager<
       return
     }
     // FIXME(@tbazin, 2022/07/31): Fix this!! breaks NONOTO looping
-    const totalDurationTicks =
+    const totalDuration =
       this.inpainter.forceDuration_ticks != null
-        ? this.inpainter.forceDuration_ticks
-        : Math.round(
+        ? `${this.inpainter.forceDuration_ticks}i`
+        : this.forceDuration != null
+        ? this.forceDuration
+        : `${Math.round(
             (data.midi.durationTicks / data.midi.header.ppq) *
               this.transport.PPQ
-          )
-
+          )}i`
     let inpaintingRegionTicks: [number, number] | undefined = undefined
     if (data.inpaintingRegionTicks != null) {
       inpaintingRegionTicks = data.inpaintingRegionTicks?.map(
@@ -254,7 +263,7 @@ export default class MidiSheetPlaybackManager<
         true
       )
     } else {
-      this.totalDuration = `${totalDurationTicks}i`
+      this.totalDuration = totalDuration
       this.loadMidi(
         data.midi,
         inpaintingRegionTicks,
@@ -298,12 +307,14 @@ export default class MidiSheetPlaybackManager<
       const currentMidiOutput = await MidiOut.getOutput()
       if (currentMidiOutput) {
         this.playNote = (time: number, event: NoteWithMIDIChannel) => {
-          currentMidiOutput.playNote(event.name, {
+          currentMidiOutput.channels[event.midiChannel].playNote(event.name, {
             // https://github.com/Tonejs/Tone.js/issues/805#issuecomment-955812985
-            time: '+' + ((time - this.transport.now()) * 1000).toFixed(),
+            time: `+${
+              (this.transport.toSeconds(time) - this.transport.immediate()) *
+              1000
+            }`,
             duration:
-              this.transport.toSeconds(`${event.durationTicks}i`) * 1000,
-            channels: event.midiChannel,
+              this.transport.toSeconds(`${event.durationTicks}i`) * 1000 - 30,
           })
         }
         usesMidiOutput = true

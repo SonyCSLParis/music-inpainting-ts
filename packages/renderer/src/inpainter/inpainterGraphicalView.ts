@@ -31,6 +31,23 @@ export abstract class InpainterGraphicalView<
 
   abstract get isRendered(): boolean
 
+  protected errorTimeout?: NodeJS.Timeout = undefined
+  protected flashError(): void {
+    if (this.errorTimeout != undefined) {
+      clearTimeout(this.errorTimeout)
+    }
+    this.container.classList.remove('error')
+    this.container.clientWidth // trigger reflow
+    this.container.classList.add('error')
+    this.errorTimeout = setTimeout(() => {
+      this.container.classList.remove('error')
+    }, 2000)
+  }
+
+  protected onInpainterError(message?: string): void {
+    // TODO(@tbazin, 2022/09/22): display error message, e.g. via the Notification API
+    this.flashError()
+  }
   protected onInpainterBusy(): void {
     this.disableChanges()
   }
@@ -175,6 +192,7 @@ export abstract class InpainterGraphicalView<
     this.inpainter.on('busy', () => this.onInpainterBusy())
     this.inpainter.on('ready', () => this.onInpainterReady())
     this.inpainter.on('change', (data) => this.onInpainterChange(data))
+    this.inpainter.on('error', () => this.onInpainterError())
 
     this.container = container
     this.container.classList.add('inpainter')
@@ -485,6 +503,7 @@ export abstract class InpainterGraphicalView<
             continue
           }
           console.log(`... file[${i}].name = ` + file.name)
+          this.inpainter.emit('load-file-programmatic')
           await this.inpainter.loadFile(file, this.queryParameters, false)
         }
       }

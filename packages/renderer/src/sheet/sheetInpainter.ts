@@ -1,3 +1,4 @@
+import * as Tone from 'tone'
 import { Midi } from '@tonejs/midi'
 import { UndoableInpainter } from '../inpainter/inpainter'
 
@@ -118,7 +119,7 @@ export class SheetInpainter extends MidiInpainter<
     const sheetString: string = jsonContent['sheet']
     let sheetXML = this.parser.parseFromString(sheetString, 'text/xml')
     sheetXML = this.removeMusicXMLHeaderNodes(sheetXML)
-    return this.updateSheet(sheetXML)
+    return this.updateSheet(sheetXML, false)
   }
 
   protected async updateSheet(
@@ -136,6 +137,7 @@ export class SheetInpainter extends MidiInpainter<
     queryParameters: string[],
     silent: boolean = true
   ): Promise<this> {
+    super.loadFile(xmlSheetFile, queryParameters, silent)
     this.emit('busy')
     const xmlSheetString = await xmlSheetFile.text()
     const newSheet = this.parser.parseFromString(xmlSheetString, 'text/xml')

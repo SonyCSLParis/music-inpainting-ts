@@ -1,4 +1,5 @@
-const VITE_APP_TITLE = process.env.VITE_APP_TITLE ?? 'NONOTO/NOTONO'
+// FIXME(@tbazin, 2022/09/24): use 'music-inpainting.ts' default
+const VITE_APP_TITLE = process.env.VITE_APP_TITLE ?? 'music-inpainting.ts'
 let VITE_APP_VERSION = process.env.VITE_APP_VERSION
 
 if (VITE_APP_VERSION == undefined) {

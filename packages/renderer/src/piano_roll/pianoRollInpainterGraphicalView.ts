@@ -91,6 +91,40 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     this.inpainter.on('clear-grow-note', (note: NoteSequence.Note) =>
       this.eraseGrowingNote(note)
     )
+
+    this.inpainter.on(
+      'move',
+      (selection: NoteSequence.Note[], offsetQuarters: number) => {
+        if (this.visualizer == undefined) {
+          return
+        }
+        const noMargin = true
+        const offsetX = this.visualizer?.timeToClientX(offsetQuarters, noMargin)
+        if (offsetX == undefined) {
+          return
+        }
+        for (const note of selection) {
+          const maybeNoteElementID =
+            this.visualizer?.visualizer.noteToRectID(note)
+          if (maybeNoteElementID == undefined) {
+            continue
+          }
+          const maybeNoteElement = document.getElementById(maybeNoteElementID)
+          if (maybeNoteElement == undefined) {
+            continue
+          }
+          const maybeX = maybeNoteElement.getAttribute('x')
+          if (maybeX == undefined) {
+            continue
+          }
+          const currentX = parseInt(maybeX)
+          maybeNoteElement.setAttribute(
+            'x',
+            `${Math.round(currentX + offsetX)}`
+          )
+        }
+      }
+    )
   }
 
   protected startGrowingNote(note: NoteSequence.Note): void {
@@ -139,7 +173,7 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
       if (
         top <= 0 ||
         bottom > this.visualizer.svgElement.height.baseVal.value ||
-        right > this.visualizer.Size.widthWithoutMargins
+        right > this.visualizer.Size.width
       ) {
         hasOverflown = true
       }

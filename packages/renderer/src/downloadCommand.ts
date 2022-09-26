@@ -144,7 +144,6 @@ export abstract class DownloadButton<
 
     if (VITE_COMPILE_ELECTRON) {
       // add support for native Drag and Drop
-      // FIXME(@tbazin, 2021/11/10): Fix DownloadButton drag-out for MIDI
       this.interfaceContainer.addEventListener(
         'dragstart',
         this.onDragStartElectron
@@ -387,9 +386,11 @@ export class SheetDownloadButton extends DownloadButton<
       type: 'text/xml',
     })
     this._content = sheetBlob
-    const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
-    if (sheetPNGBlob != null) {
-      this.imageContent = sheetPNGBlob
+    if (VITE_COMPILE_ELECTRON) {
+      const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
+      if (sheetPNGBlob != null) {
+        this.imageContent = sheetPNGBlob
+      }
     }
     this.targetURL = URL.createObjectURL(sheetBlob)
   }
@@ -415,9 +416,11 @@ export class PianotoDownloadButton extends DownloadButton<
     if (data.partialUpdate || data.removeNotes) {
       return
     }
-    const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
-    if (sheetPNGBlob != null) {
-      this.imageContent = sheetPNGBlob
+    if (VITE_COMPILE_ELECTRON) {
+      const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
+      if (sheetPNGBlob != null) {
+        this.imageContent = sheetPNGBlob
+      }
     }
     const blob = new Blob([this.inpainter.value.midi.toArray()])
     this._content = blob

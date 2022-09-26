@@ -15,7 +15,7 @@ export interface MinimalPlaybackManager {
 
 abstract class TonePlaybackManager extends EventEmitter {
   protected playbackLookahead = 0.15
-  protected interactiveLookahead = 0.15
+  protected interactiveLookahead = 0.1
 
   protected enabled = true
 
@@ -126,10 +126,16 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
     this.transport.start()
   }
 
+  // Start playback immediately at the beginning of the song
+  // TODO(theis): check if really necessary
+  protected startPlaybackNowWithLatencyCompensation(): void {
+    this.transport.start(undefined, `0:${this.latencyCompensation_beats}`)
+  }
+
   // TODO(theis): can this be replaced with super.start()?
-  async synchronizedStartCallback(): Promise<void> {
+  synchronizedStartCallback: () => Promise<void> = async () => {
     await Tone.getContext().resume()
-    this.startPlaybackNowFromBeginning()
+    this.startPlaybackNowWithLatencyCompensation()
   }
 
   // Start playback either immediately or in sync with Link if Link is enabled
@@ -139,18 +145,44 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
       await super.play()
     } else {
       // wait for Link-socket to give downbeat signal
-      this.linkClient.once('downbeat', () => {
-        void this.synchronizedStartCallback()
-      })
+      await this.startOnNextDownbeat()
     }
+  }
+
+  protected currentDownbeatCallback: (() => Promise<void>) | null = null
+
+  // Listens for the next 'downbeat' event from the Ableton Link Client and
+  // starts then.
+  // Note: we make sure to clean-up the potential leftover listeners
+  protected async startOnNextDownbeat(): Promise<void> {
+    if (this.linkClient == undefined) {
+      throw new Error(
+        'This method should only be called with Ableton Link enabled'
+      )
+    }
+    return new Promise<void>((resolve) => {
+      if (this.currentDownbeatCallback != null) {
+        this.linkClient?.removeListener(
+          'downbeat',
+          this.currentDownbeatCallback
+        )
+      }
+      this.currentDownbeatCallback = () =>
+        this.synchronizedStartCallback().then(resolve)
+      setTimeout(() => {
+        if (this.currentDownbeatCallback != null) {
+          this.linkClient?.removeListener(
+            'downbeat',
+            this.currentDownbeatCallback
+          )
+        }
+      }, 10000)
+      this.linkClient?.once('downbeat', this.currentDownbeatCallback)
+    })
   }
 
   // Start playback either immediately or in sync with Link if Link is enabled
   async stop() {
-    if (this.linkClient != null && this.linkClient.isEnabled) {
-      log.info('LINK: Cancelling previously scheduled playback start')
-      this.linkClient.removeAllListeners('downbeat')
-    }
     await super.stop()
   }
 
@@ -167,11 +199,11 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
   protected onPhaseUpdate(phase: number): void {
     // Set the position in the current measure to the provided phase
     // TODO(theis): should we use the `link.quantum` value?
-    const phaseShift =
-      (this.transport.bpm.value / 60) *
-      (<number>this.interactiveLookahead / 1000)
-    this.transport.position =
-      this.getCurrentMeasure() + ':' + (phase + phaseShift).toString()
+    // Shift the playback head by the lookahead for latency compensation
+
+    this.transport.position = `${this.getCurrentMeasure()}:${
+      phase + this.latencyCompensation_beats
+    }`
   }
 
   registerLinkClient(linkClient: AbletonLinkClient) {
@@ -196,7 +228,7 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
   protected scheduleAutomaticResync(): Tone.Loop {
     const automaticSynchronizationLoop = new Tone.Loop(() => {
       this.requestLinkPhaseUpdate()
-    }, '2n').start(0.1)
+    }, '2n').start('4n')
     automaticSynchronizationLoop.humanize = 0.02
     return automaticSynchronizationLoop
   }
@@ -205,6 +237,15 @@ abstract class SynchronizedPlaybackManager extends TonePlaybackManager {
     super()
     this.automaticSynchronizationLoop = this.scheduleAutomaticResync()
   }
+
+  get latencyCompensation_beats(): number {
+    const phaseCorrection_beats =
+      (this.transport.bpm.value / 60) *
+      (this.transport.context.lookAhead + this.midiLatencyCompensation * 100)
+    return phaseCorrection_beats
+  }
+
+  midiLatencyCompensation: number = 0
 }
 
 export abstract class PlaybackManager<

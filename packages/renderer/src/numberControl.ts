@@ -62,7 +62,11 @@ export class NumberControl extends EventEmitter {
     return document.getElementById(this.id)
   }
 
-  render(useSimpleSlider = false, elementWidth: number): this {
+  render(
+    elementWidth: number,
+    useSimpleSlider = false,
+    elementHeight: number = 40
+  ): this {
     const containerElement = document.createElement('div')
     containerElement.id = this.id
     containerElement.classList.add('control-item')
@@ -95,21 +99,30 @@ export class NumberControl extends EventEmitter {
         Math.round(elementWidth).toString() + 'px'
       this._controller.element.style.padding = '0'
     } else {
-      const bpmSliderElement = document.createElement('div')
-      bpmSliderElement.id = this.id
-      containerElement.appendChild(bpmSliderElement)
+      const sliderContainer = document.createElement('div')
+      sliderContainer.id = this.id
+      containerElement.appendChild(sliderContainer)
 
-      this._controller = new Nexus.Slider(bpmSliderElement, {
-        size: [100, 40],
+      this._controller = new Nexus.Slider(sliderContainer, {
+        size: [elementWidth, elementHeight],
         mode: 'absolute',
         min: this.range[0],
         max: this.range[1],
         step: (this.range[1] - this.range[0]) / 10,
         value: this.initialValue,
       })
+      this._controller.bar.classList.add('nexus-slider-bar')
+      this._controller.fillbar.classList.add('nexus-slider-fillbar')
+      this._controller.knob.classList.add('nexus-slider-knob')
     }
 
     this._controller.on('change', this.onchange)
+    this._controller.on('change', (value) => {
+      this._controller?.element.classList.toggle(
+        'modified-value',
+        value != this.initialValue
+      )
+    })
     return this
   }
 
@@ -178,6 +191,83 @@ export class BPMControl extends NumberControl {
   // otherwise return value is `undefined`
   get value(): number {
     return super.value
+  }
+}
+
+export class PlaybackRateControl extends BPMControl {
+  protected static defaultRange: [number, number] = [0.8, 1.2]
+  protected static defaultInitialValue = 1
+
+  protected readonly defaultTempo: number
+
+  constructor(
+    containerElement: HTMLElement,
+    id: string,
+    range: [number, number] = PlaybackRateControl.defaultRange,
+    initialValue: number = PlaybackRateControl.defaultInitialValue,
+    onchange: (newValue: number) => void = (playbackRate: number): void => {
+      this.emit('interface-tempo-changed', this.makeTempo(playbackRate))
+    },
+    defaultTempo: number = 120
+  ) {
+    super(containerElement, id, range, initialValue, onchange)
+    this.defaultTempo = defaultTempo
+  }
+
+  protected _checkRange(range: [number, number]): void {
+    if (!(0 < range[0] && range[0] < range[1] && range[1] < 2)) {
+      throw Error(`Invalid playback rates range`)
+    }
+  }
+
+  // ensure the new BPM is in the accepted range
+  // this works because the accepted range is at least strictly one octave wide
+  set value(playbackRateFactor: number) {
+    playbackRateFactor = Math.max(
+      Math.min(playbackRateFactor, this.range[1]),
+      this.range[0]
+    )
+    this._controller.value = playbackRateFactor
+  }
+
+  // see https://stackoverflow.com/a/28951055:
+  // must also subclass getter if subclassing setter,
+  // otherwise return value is `undefined`
+  get value(): number {
+    return this.makeTempo(super.value)
+  }
+
+  protected makeTempo(playbackRate: number): number {
+    return this.defaultTempo * playbackRate ** 2
+  }
+
+  render(
+    elementWidth: number,
+    useSimpleSlider: boolean | undefined,
+    elementHeight: number = 40
+  ): this {
+    super.render(elementWidth, useSimpleSlider, elementHeight)
+    this._controller?.interactionTarget.classList.add('playback-rate-control')
+    this._controller?.interactionTarget.addEventListener('dblclick', () => {
+      this.value = PlaybackRateControl.defaultInitialValue
+    })
+
+    const centerLine = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'line'
+    )
+    this._controller?.interactionTarget.insertBefore(
+      centerLine,
+      this._controller?.interactionTarget.firstChild
+    )
+    centerLine.setAttribute('x1', '50%')
+    centerLine.setAttribute('x2', '50%')
+    centerLine.setAttribute('y1', '0%')
+    centerLine.setAttribute('y2', '100%')
+    centerLine.setAttribute('stroke-width', '1.5')
+    centerLine.setAttribute('stroke', 'currentColor')
+
+    return this
   }
 }
 
