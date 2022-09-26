@@ -1,9 +1,14 @@
 import $ from 'jquery'
 import log from 'loglevel'
+log.setLevel(log.levels.DEBUG)
 
-import { UndoableInpainter } from './inpainter/inpainter'
+import {
+  PopUndoManager,
+  UndoableInpainter,
+  UndoableInpainterEdit,
+} from './inpainter/inpainter'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
-import { SheetInpainter } from './sheet/sheetInpainter'
+import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
 import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
 import {
   SpectrogramInpainter,
@@ -13,6 +18,9 @@ import {
   AudioVQVAELayerDimensions,
 } from './spectrogram/spectrogramInpainter'
 import { SpectrogramInpainterGraphicalView } from './spectrogram/spectrogramInpainterGraphicalView'
+import { PiaInpainter, PianoRollData } from './piano_roll/pianoRollInpainter'
+import { PianoRollInpainterGraphicalView } from './piano_roll/pianoRollInpainterGraphicalView'
+
 import { NexusSelect } from 'nexusui'
 import Nexus, {
   NexusSelectWithShuffle,
@@ -21,13 +29,18 @@ import Nexus, {
 
 import * as Header from './header'
 
-import * as PlaybackCommands from './playbackCommands'
+import { PlaybackCommands } from './playbackCommands'
+import { FixedRecorder, MidiRecorder, MyCallback } from './piano_roll/record'
 import { PlaybackManager } from './playback'
 import MidiSheetPlaybackManager from './sheetPlayback'
 import { MultiChannelSpectrogramPlaybackManager as SpectrogramPlaybackManager } from './spectrogramPlayback'
 
-import * as Instruments from './instruments'
-import { BPMControl, renderPitchRootAndOctaveControl } from './numberControl'
+import * as Instruments from '../instruments/instruments'
+import {
+  BPMControl,
+  PlaybackRateControl,
+  renderPitchRootAndOctaveControl,
+} from './numberControl'
 import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
 import { getAbletonLinkClientClass } from './ableton_link/linkClient'
 import * as LinkClientCommands from './ableton_link/linkClientCommands'
@@ -35,6 +48,7 @@ import {
   DownloadButton,
   filename as filenameType,
   NotonoDownloadButton,
+  PianotoDownloadButton,
   SheetDownloadButton,
 } from './downloadCommand'
 
@@ -66,8 +80,11 @@ import '../styles/overlays.scss'
 
 import '../styles/osmd.scss'
 import '../styles/spectrogram.scss'
+import './piano_roll/Player.scss'
 import '../styles/disableMouse.scss'
 
+const VITE_DUMMY_GENERATE = import.meta.env.VITE_DUMMY_GENERATE != undefined
+const VITE_AUTOSTART = import.meta.env.VITE_AUTOSTART != undefined
 const VITE_AUTOLOAD_SAMPLES = import.meta.env.VITE_AUTOLOAD_SAMPLES != undefined
 const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
@@ -80,20 +97,24 @@ if (VITE_COMPILE_ELECTRON) {
 
 import defaultConfiguration from '../../common/default_config.json'
 import { setBackgroundColorElectron, getTitleBarDisplay } from './utils/display'
-import { UndoManager } from 'typed-undo'
+import { UndoableEdit, UndoManager } from 'typed-undo'
 import { IOSMDOptions } from 'opensheetmusicdisplay'
 
 let inpainter: UndoableInpainter
-let sheetInpainter: SheetInpainter
-let spectrogramInpainter: SpectrogramInpainter
+let sheetInpainter: SheetInpainter | null = null
+let piaInpainter: PiaInpainter | null = null
+let spectrogramInpainter: SpectrogramInpainter | null = null
 let inpainterGraphicalView: InpainterGraphicalView
 let spectrogramInpainterGraphicalView:
   | SpectrogramInpainterGraphicalView
   | undefined = undefined
 let sheetInpainterGraphicalView: SheetInpainterGraphicalView | undefined =
   undefined
+let piaInpainterGraphicalView: PianoRollInpainterGraphicalView | undefined =
+  undefined
 let playbackManager: PlaybackManager
 let sheetPlaybackManager: MidiSheetPlaybackManager
+let piaPlaybackManager: MidiSheetPlaybackManager
 let spectrogramPlaybackManager: SpectrogramPlaybackManager
 let bpmControl: BPMControl
 let instrumentConstraintSelect: NexusSelectWithShuffle
@@ -102,16 +123,25 @@ let octaveConstraintControl: NexusSelect
 let downloadButton: DownloadButton
 let linkClient: AbletonLinkClient
 let helpTour: MyShepherdTour
+let midiFileSelect: MidiFileSelector | null = null
 
-function render(
+let readyToPlayPromises: Promise<void>[] = []
+
+async function render(
   configuration: applicationConfiguration = defaultConfiguration
-): void {
-  if (document.getElementById('header')) {
-    // do nothing if the app has already been rendered
-    return
+): Promise<void> {
+  if (configuration['osmd'] || configuration['piano_roll']) {
+    readyToPlayPromises.push(Instruments.initializeInstruments())
   }
 
-  document.body.classList.add('running', 'advanced-controls-disabled')
+  const app = document.getElementById('app')
+  if (app != null) {
+    // clean-up potentially left-over initialization,
+    // which can occur e.g. in a background refresh on mobile
+    app.innerHTML = ''
+  }
+
+  document.body.classList.add('running')
 
   if (VITE_COMPILE_ELECTRON) {
     document.body.classList.add('electron')
@@ -128,6 +158,11 @@ function render(
 
   if (configuration['osmd']) {
     document.body.classList.add('nonoto')
+  }
+  if (configuration['piano_roll']) {
+    document.body.classList.add('pianoto')
+  }
+  if (configuration['osmd'] || configuration['piano_roll']) {
     // document.body.setAttribute('theme', 'millenial-pink')
     // void setBackgroundColorElectron(
     //   colors.millenial_pink_panes_background_color
@@ -193,14 +228,60 @@ function render(
     if (bottomControlsGridElement == null) {
       throw Error('Bottom controls panel not created')
     }
-    const bottomControlsExpandTabElement = document.createElement('div')
-    bottomControlsExpandTabElement.id = 'bottom-controls-expand'
-    bottomControlsExpandTabElement.classList.add('expand-tab')
-    bottomControlsGridElement.appendChild(bottomControlsExpandTabElement)
-    bottomControlsExpandTabElement.addEventListener('click', function () {
-      document.body.classList.toggle('advanced-controls-disabled')
+    const bottomControlsExpandTabContainer = document.createElement('div')
+    bottomControlsExpandTabContainer.classList.add('expand-tab-container')
+    const bottomControlsExpandTabDisplay = document.createElement('div')
+    bottomControlsExpandTabDisplay.classList.add('expand-tab-display')
+    bottomControlsExpandTabContainer.appendChild(bottomControlsExpandTabDisplay)
+    const bottomControlsExpandTabLeftButton = document.createElement('div')
+    bottomControlsExpandTabLeftButton.classList.add('expand-tab-left-button')
+    bottomControlsExpandTabContainer.appendChild(
+      bottomControlsExpandTabLeftButton
+    )
+    const bottomControlsExpandTabRightButton = document.createElement('div')
+    bottomControlsExpandTabRightButton.classList.add('expand-tab-right-button')
+    bottomControlsExpandTabContainer.appendChild(
+      bottomControlsExpandTabRightButton
+    )
+    bottomControlsGridElement.appendChild(bottomControlsExpandTabContainer)
+
+    const expandTabRightButton = () => {
+      if (document.body.classList.contains('advanced-controls')) {
+        // collapse directly to hidden controls
+        document.body.classList.remove('advanced-controls')
+        document.body.classList.add('controls-hidden')
+      } else if (document.body.classList.contains('controls-hidden')) {
+        // simple, one-level expand
+        document.body.classList.remove('controls-hidden')
+      } else {
+        document.body.classList.add('advanced-controls')
+      }
       inpainterGraphicalView.refresh()
-    })
+      inpainterGraphicalView.refresh()
+    }
+    const expandTabLeftButton = () => {
+      if (document.body.classList.contains('controls-hidden')) {
+        // no controls, expand directly to advanced
+        document.body.classList.remove('controls-hidden')
+        document.body.classList.add('advanced-controls')
+      } else if (document.body.classList.contains('advanced-controls')) {
+        document.body.classList.remove('advanced-controls')
+      } else {
+        // collapse controls
+        document.body.classList.add('controls-hidden')
+      }
+      inpainterGraphicalView.refresh()
+      inpainterGraphicalView.refresh()
+    }
+
+    bottomControlsExpandTabLeftButton.addEventListener(
+      'click',
+      expandTabLeftButton
+    )
+    bottomControlsExpandTabRightButton.addEventListener(
+      'click',
+      expandTabRightButton
+    )
 
     const playbackCommandsGridspan = document.createElement('div')
     playbackCommandsGridspan.id = 'playback-commands-gridspan'
@@ -233,16 +314,24 @@ function render(
       bottomControlsGridElement.appendChild(editToolsGridspanElement)
     }
 
-    if (configuration['osmd']) {
+    if (configuration['osmd'] || configuration['piano_roll']) {
       const useSimpleSlider = !configuration['insert_advanced_controls']
       const bpmControlGridspanElement = document.createElement('div')
       bpmControlGridspanElement.id = 'bpm-control-gridspan'
       bpmControlGridspanElement.classList.add('gridspan')
       bottomControlsGridElement.appendChild(bpmControlGridspanElement)
-
-      bpmControl = new BPMControl(bpmControlGridspanElement, 'bpm-control')
-      bpmControl.render(useSimpleSlider, 200)
-      bpmControl.value = 80
+      if (configuration['osmd']) {
+        bpmControl = new BPMControl(bpmControlGridspanElement, 'bpm-control')
+        bpmControl.render(200, useSimpleSlider)
+        bpmControl.value = 90
+      } else if (configuration['piano_roll']) {
+        bpmControl = new PlaybackRateControl(
+          bpmControlGridspanElement,
+          'playback-rate-control'
+        )
+        bpmControl.render(70, true, 25)
+        bpmControl.value = 1
+      }
     }
   }
 
@@ -315,7 +404,10 @@ function render(
     const downloadCommandsGridspan = document.createElement('div')
     downloadCommandsGridspan.id = 'download-button-gridspan'
     downloadCommandsGridspan.classList.add('gridspan')
-    downloadCommandsGridspan.classList.toggle('advanced', true)
+    downloadCommandsGridspan.classList.toggle(
+      'advanced',
+      !configuration['piano_roll']
+    )
     bottomControlsGridElement.appendChild(downloadCommandsGridspan)
 
     if (configuration['osmd']) {
@@ -338,12 +430,18 @@ function render(
       mainPanel.appendChild(sheetContainer)
 
       const undoManager = new UndoManager()
-      sheetInpainter = new SheetInpainter(inpaintingApiAddress, undoManager)
+      sheetInpainter = new SheetInpainter(
+        inpaintingApiAddress,
+        undoManager,
+        UndoableInpainterEdit<SheetData>
+      )
       inpainter = sheetInpainter
 
       sheetPlaybackManager = new MidiSheetPlaybackManager(
         sheetInpainter,
-        bpmControl
+        bpmControl,
+        false,
+        '0:16:0'
       )
       playbackManager = sheetPlaybackManager
 
@@ -361,6 +459,13 @@ function render(
         configuration['annotation_types'],
         allowOnlyOneFermata
       )
+      const inpainterGraphicalViewReady = new Promise<void>((resolve) => {
+        sheetInpainterGraphicalView.once('ready', () => {
+          resolve()
+        })
+      })
+      readyToPlayPromises.push(inpainterGraphicalViewReady)
+
       inpainterGraphicalView = sheetInpainterGraphicalView
 
       if (configuration['use_chords_instrument']) {
@@ -377,6 +482,65 @@ function render(
       downloadButton = new SheetDownloadButton(
         sheetInpainter,
         sheetInpainterGraphicalView,
+        downloadCommandsGridspan,
+        defaultFilename
+      )
+    } else if (configuration['piano_roll']) {
+      const piaContainer = document.createElement('div')
+      piaContainer.id = 'pia-container'
+      mainPanel.appendChild(piaContainer)
+
+      const piaHyperParametersControlsContainer = document.createElement('div')
+      piaHyperParametersControlsContainer.classList.add('gridspan')
+      piaHyperParametersControlsContainer.classList.add('advanced')
+      bottomControlsGridElement?.append(piaHyperParametersControlsContainer)
+
+      const undoManager = new PopUndoManager<PianoRollData>()
+      const DURATION_SECONDS_AT_120BPM = 60
+      const piaAPIManager = new PiaAPIManager()
+      piaAPIManager.renderHyperparameterControls(
+        piaHyperParametersControlsContainer,
+        35
+      )
+      piaInpainter = new PiaInpainter(
+        piaAPIManager,
+        inpaintingApiAddress,
+        undoManager,
+        DURATION_SECONDS_AT_120BPM * 2 * PiaInpainter.PPQ
+      )
+      inpainter = piaInpainter
+
+      piaPlaybackManager = new MidiSheetPlaybackManager(
+        piaInpainter,
+        bpmControl,
+        false
+      )
+      playbackManager = piaPlaybackManager
+
+      const granularitySelect = new VariableValue<never>()
+      piaInpainterGraphicalView = new PianoRollInpainterGraphicalView(
+        piaInpainter,
+        piaPlaybackManager,
+        piaContainer,
+        granularitySelect,
+        0.01
+      )
+      const inpainterGraphicalViewReady = new Promise<void>((resolve) => {
+        piaInpainterGraphicalView.once('ready', () => {
+          resolve()
+        })
+      })
+      // readyToPlayPromises.push(inpainterGraphicalViewReady)
+
+      inpainterGraphicalView = piaInpainterGraphicalView
+
+      const defaultFilename: filenameType = {
+        name: 'pia',
+        extension: '.mid',
+      }
+      downloadButton = new PianotoDownloadButton(
+        piaInpainter,
+        piaInpainterGraphicalView,
         downloadCommandsGridspan,
         defaultFilename
       )
@@ -526,6 +690,7 @@ function render(
       )
       const onshiftKey = (e: KeyboardEvent) => {
         if (
+          e.repeat ||
           spectrogramInpainterGraphicalView == undefined ||
           spectrogramInpainterGraphicalView.interacting
         ) {
@@ -601,7 +766,7 @@ function render(
       ControlLabels.createLabel(
         bottomControlsGridElement,
         'download-button-label',
-        true,
+        false,
         'download-button-label-with-native-drag',
         downloadButton.container
       )
@@ -609,7 +774,7 @@ function render(
       ControlLabels.createLabel(
         bottomControlsGridElement,
         'download-button-label',
-        true,
+        false,
         undefined,
         downloadButton.container
       )
@@ -618,9 +783,9 @@ function render(
     // bind interactive event listeners to header elements
     const appTitleElement = document.getElementById('app-title')
     appTitleElement.addEventListener('click', () => {
-      if (!inpainterGraphicalView.disabled) {
-        void sampleNewData()
-      }
+      // if (!inpainterGraphicalView.disabled) {
+      void sampleNewData()
+      // }
     })
     const safeUndoCallback = () => {
       if (inpainter.undoManager.canUndo()) {
@@ -655,6 +820,9 @@ function render(
     inpainter.undoManager.setListener(refreshUndoRedoEnabledInterfaceViews)
     refreshUndoRedoEnabledInterfaceViews()
     document.body.addEventListener('keydown', (event) => {
+      if (event.repeat) {
+        return
+      }
       if (!event.ctrlKey && !event.shiftKey) {
         if (event.metaKey && event.code == 'KeyZ') {
           event.preventDefault()
@@ -672,145 +840,245 @@ function render(
     const playbackCommandsGridspan = document.getElementById(
       'playback-commands-gridspan'
     )
-    PlaybackCommands.render(playbackCommandsGridspan, playbackManager)
+    if (playbackCommandsGridspan == null) {
+      throw Error('Playback commands container not initialized')
+    }
+    const playbackComands = new PlaybackCommands(
+      playbackCommandsGridspan,
+      playbackManager
+    ).render()
+    // TODO(@tbazin, 2022/08/10): readyToPlay not detected properly on Firefox Mobile,
+    //disabling this for now
+    if (readyToPlayPromises.length > 0) {
+      // disabling play/pause interface until there is some data to be played
+      playbackComands.setWaitingClass()
+      Promise.all(readyToPlayPromises)
+        .then(() => {
+          log.info('Ready to play!')
+          // enable play/pause interface
+          playbackComands.unsetWaitingClass()
+          playbackComands.refreshInterface()
+        })
+        .catch((reason) => {
+          playbackComands.setBrokenIcon()
+          log.error('Could not initialize playback due to: ', reason)
+          alert('Error: Could not initialize playback due to: ' + reason)
+          new Notification(
+            'Error: Could not initialize playback due to: ',
+            reason
+          )
+        })
+    }
+  }
 
-    // disabling play/pause interface until there is some data to be played
-    playbackCommandsGridspan.classList.add('disabled-gridspan')
-    inpainterGraphicalView.once('ready', () => {
-      // enable play/pause interface
-      playbackCommandsGridspan.classList.remove('disabled-gridspan')
+  if (
+    configuration['piano_roll'] &&
+    piaInpainter != null &&
+    piaInpainterGraphicalView != null
+  ) {
+    const bottomControlsGridElement = document.getElementById('bottom-controls')
+    if (bottomControlsGridElement == null) {
+      throw Error()
+    }
+    const midiFileSelectGridspanElement = document.createElement('div')
+    midiFileSelectGridspanElement.id = 'midi-file-select-gridspan'
+    midiFileSelectGridspanElement.classList.add('gridspan')
+    bottomControlsGridElement.appendChild(midiFileSelectGridspanElement)
+
+    const midiFileSelectContainerElement = document.createElement('div')
+    midiFileSelectContainerElement.classList.add('control-item')
+    midiFileSelectGridspanElement.appendChild(midiFileSelectContainerElement)
+    midiFileSelect = new MidiFileSelector(midiFileSelectContainerElement)
+    midiFileSelect.render()
+    midiFileSelect.on('change', async (state: { value: string }) => {
+      const newURL = MidiFileSelector.midiFiles.get(state.value)
+      if (newURL == null) {
+        piaInpainter?.clear()
+      } else if (newURL == TemplateCommands.BlankTemplate) {
+        piaInpainter?.clear()
+      } else if (newURL == TemplateCommands.OpenFile) {
+        const file = await midiFileSelect?.triggerOpenFile()
+        if (file != undefined) {
+          piaInpainter?.loadFile(file, [], false)
+        }
+      } else {
+        piaInpainter?.loadFromUrl(newURL)
+      }
+    })
+    ControlLabels.createLabel(
+      midiFileSelectContainerElement,
+      'midi-file-select-label',
+      false,
+      undefined,
+      midiFileSelectGridspanElement
+    )
+
+    piaInpainter.on('clear', () => {
+      if (midiFileSelect != null && midiFileSelect.element != null) {
+        midiFileSelect.resetOptions()
+        midiFileSelect.element.selectedIndex = 0
+      }
+    })
+    piaInpainter.on('load-file-programmatic', () => {
+      if (midiFileSelect != null && midiFileSelect.element != null) {
+        midiFileSelect.setCustomOptionDisplay()
+      }
+    })
+
+    const recordCommandsGridspanElement = document.createElement('div')
+    recordCommandsGridspanElement.id = 'record-commands-gridspan'
+    recordCommandsGridspanElement.classList.add('gridspan')
+    bottomControlsGridElement.appendChild(recordCommandsGridspanElement)
+
+    const recorderCallback = new MyCallback(piaInpainter)
+    const recorder = new FixedRecorder(
+      { startRecordingAtFirstNote: true },
+      recorderCallback
+    )
+    recorder.inpainter = piaInpainter
+    console.log(recorder.startRecordingAtFirstNote)
+    const midiRecorder = new MidiRecorder(
+      recorder,
+      piaInpainter,
+      piaInpainterGraphicalView,
+      playbackManager
+    )
+    midiRecorder.render(recordCommandsGridspanElement)
+  }
+
+  function registerDisableInstrumentsOnMidiEnabled<
+    T extends Instruments.leadInstrument
+  >(instrumentSelect: Instruments.InstrumentSelect<T>) {
+    void import('./midiOut').then((midiOutModule) => {
+      const instrumentsControlGridspanElement = document.getElementById(
+        'instruments-control-gridspan'
+      )
+      void midiOutModule.getMidiOutputListener().then((midiOutputListener) => {
+        midiOutputListener.on('device-changed', () => {
+          const isUsingMIDIOutput = midiOutputListener.isActive
+          instrumentsControlGridspanElement?.classList.toggle(
+            'disabled-gridspan',
+            isUsingMIDIOutput
+          )
+          if (isUsingMIDIOutput) {
+            // disable in-app rendering when MIDI output is enabled
+            instrumentSelect.value = null
+          } else if (!isUsingMIDIOutput) {
+            // re-enable in-app rendering when MIDI output is disabled
+            instrumentSelect.restorePreviousValue()
+          }
+        })
+      })
     })
   }
 
-  if (configuration['osmd']) {
-    {
-      const bottomControlsGridElement =
-        document.getElementById('bottom-controls')
-      const instrumentsControlGridspanElement = document.createElement('div')
-      instrumentsControlGridspanElement.id = 'instruments-control-gridspan'
-      instrumentsControlGridspanElement.classList.add('gridspan')
-      bottomControlsGridElement.appendChild(instrumentsControlGridspanElement)
+  let instrumentSelect: Instruments.InstrumentSelect<never> | null = null
+  if (false && (configuration['osmd'] || configuration['piano_roll'])) {
+    const bottomControlsGridElement = document.getElementById('bottom-controls')
+    const instrumentsControlGridspanElement = document.createElement('div')
+    instrumentsControlGridspanElement.id = 'instruments-control-gridspan'
+    instrumentsControlGridspanElement.classList.add('gridspan')
+    bottomControlsGridElement.appendChild(instrumentsControlGridspanElement)
 
-      const instrumentsGridElement = document.createElement('div')
-      instrumentsGridElement.id = 'instruments-grid'
-      instrumentsGridElement.classList.add('gridspan')
-      instrumentsControlGridspanElement.appendChild(instrumentsGridElement)
+    const instrumentsGridElement = document.createElement('div')
+    instrumentsGridElement.id = 'instruments-grid'
+    instrumentsGridElement.classList.add('gridspan')
+    instrumentsControlGridspanElement.appendChild(instrumentsGridElement)
 
+    ControlLabels.createLabel(
+      instrumentsGridElement,
+      'instruments-grid-label',
+      false,
+      undefined,
+      instrumentsControlGridspanElement
+    )
+
+    Instruments.initializeInstruments().then(() => {
+      return
+
+      let initialInstrumentOptions: Instruments.leadInstrument[] = [
+        'PolySynth',
+        'SteelPan',
+      ]
+      if (VITE_AUTOLOAD_SAMPLES) {
+        initialInstrumentOptions = ['Piano', ...initialInstrumentOptions]
+      }
+      instrumentSelect = new Instruments.InstrumentSelect(
+        initialInstrumentOptions,
+        initialInstrumentOptions[0]
+      )
+      const instrumentSelectView = new Instruments.InstrumentSelectView(
+        instrumentSelect
+      )
+      instrumentSelectView.refresh()
+      instrumentSelectView.id = 'lead-instrument-select-container'
+      instrumentSelectView.classList.add(
+        'control-item',
+        'main-instrument-select'
+      )
+      instrumentsGridElement.appendChild(instrumentSelectView)
       ControlLabels.createLabel(
         instrumentsGridElement,
-        'instruments-grid-label',
+        'lead-instrument-select-label',
         false,
         undefined,
-        instrumentsControlGridspanElement
+        instrumentsGridElement
       )
 
-      Instruments.initializeInstruments().then(() => {
-        let initialInstrumentOptions: Instruments.leadInstrument[] = [
-          'PolySynth',
-          'SteelPan',
-        ]
-        if (VITE_AUTOLOAD_SAMPLES) {
-          initialInstrumentOptions = ['Piano', ...initialInstrumentOptions]
-        }
-        const instrumentSelect = new Instruments.InstrumentSelect(
-          initialInstrumentOptions,
-          initialInstrumentOptions[0]
+      let chordsInstrumentSelect: Instruments.ChordsInstrumentSelect<Instruments.chordsInstrument> | null =
+        null
+      if (configuration['use_chords_instrument']) {
+        chordsInstrumentSelect = new Instruments.ChordsInstrumentSelect(
+          ['PolySynth'],
+          'PolySynth'
         )
-        const instrumentSelectView = new Instruments.InstrumentSelectView(
-          instrumentSelect
+        const chordsInstrumentSelectView = new Instruments.InstrumentSelectView(
+          chordsInstrumentSelect
         )
-        instrumentSelectView.refresh()
-        instrumentSelectView.id = 'lead-instrument-select-container'
-        instrumentSelectView.classList.add(
+        chordsInstrumentSelectView.id = 'chords-instrument-select-container'
+        chordsInstrumentSelectView.classList.add(
           'control-item',
-          'main-instrument-select'
+          'chords-instrument-select'
         )
+        instrumentsGridElement.appendChild(chordsInstrumentSelectView)
         instrumentsGridElement.appendChild(instrumentSelectView)
         ControlLabels.createLabel(
           instrumentsGridElement,
-          'lead-instrument-select-label',
+          'chords-instrument-select-label',
           false,
           undefined,
           instrumentsGridElement
         )
+        registerDisableInstrumentsOnMidiEnabled(chordsInstrumentSelect)
+      }
 
-        function registerDisableInstrumentsOnMidiEnabled<
-          T extends Instruments.leadInstrument
-        >(instrumentSelect: Instruments.InstrumentSelect<T>) {
-          void import('./midiOut').then((midiOutModule) => {
-            void midiOutModule
-              .getMidiOutputListener()
-              .then((midiOutputListener) => {
-                midiOutputListener.on('device-changed', () => {
-                  const isUsingMIDIOutput = midiOutputListener.isActive
-                  instrumentsControlGridspanElement.classList.toggle(
-                    'disabled-gridspan',
-                    isUsingMIDIOutput
-                  )
-                  if (isUsingMIDIOutput) {
-                    // disable in-app rendering when MIDI output is enabled
-                    instrumentSelect.value = null
-                  } else if (!isUsingMIDIOutput) {
-                    // re-enable in-app rendering when MIDI output is disabled
-                    instrumentSelect.restorePreviousValue()
-                  }
-                })
-              })
-          })
-        }
-
-        import('./midiOut')
-          .then((midiOutModule) => {
-            midiOutModule
-              .render(sheetInpainterGraphicalView.playbackManager)
-              .then(() =>
-                registerDisableInstrumentsOnMidiEnabled(instrumentSelect)
-              )
-              .catch((e) => {
-                throw e
-              })
+      if (!VITE_AUTOLOAD_SAMPLES) {
+        Instruments.renderDownloadButton(
+          instrumentsGridElement,
+          instrumentSelect,
+          chordsInstrumentSelect
+        )
+      }
+    })
+  }
+  if (configuration['osmd'] || configuration['piano_roll']) {
+    import('./midiOut')
+      .then((midiOutModule) => {
+        midiOutModule
+          .render(sheetPlaybackManager ?? piaPlaybackManager, false)
+          .then(() => {
+            if (instrumentSelect != null) {
+              registerDisableInstrumentsOnMidiEnabled(instrumentSelect)
+            }
           })
           .catch((e) => {
             throw e
           })
-
-        let chordsInstrumentSelect: Instruments.ChordsInstrumentSelect<Instruments.chordsInstrument> | null =
-          null
-        if (configuration['use_chords_instrument']) {
-          chordsInstrumentSelect = new Instruments.ChordsInstrumentSelect(
-            ['PolySynth'],
-            'PolySynth'
-          )
-          const chordsInstrumentSelectView =
-            new Instruments.InstrumentSelectView(chordsInstrumentSelect)
-          chordsInstrumentSelectView.id = 'chords-instrument-select-container'
-          chordsInstrumentSelectView.classList.add(
-            'control-item',
-            'chords-instrument-select'
-          )
-          instrumentsGridElement.appendChild(chordsInstrumentSelectView)
-          instrumentsGridElement.appendChild(instrumentSelectView)
-          ControlLabels.createLabel(
-            instrumentsGridElement,
-            'chords-instrument-select-label',
-            false,
-            undefined,
-            instrumentsGridElement
-          )
-          registerDisableInstrumentsOnMidiEnabled(chordsInstrumentSelect)
-        }
-
-        if (!VITE_AUTOLOAD_SAMPLES) {
-          Instruments.renderDownloadButton(
-            instrumentsGridElement,
-            instrumentSelect,
-            chordsInstrumentSelect
-          )
-        }
       })
-    }
+      .catch((e) => {
+        throw e
+      })
   }
-
   {
     // Insert LINK client controls
     const useAdvancedControls = true
@@ -833,7 +1101,7 @@ function render(
           LinkClientCommands.render(
             abletonLinkSettingsGridspan,
             linkClient,
-            sheetInpainterGraphicalView.playbackManager
+            sheetPlaybackManager ?? piaPlaybackManager
           )
         },
         (err) => log.error(err)
@@ -844,24 +1112,49 @@ function render(
   {
     if (
       configuration['insert_advanced_controls'] &&
-      configuration['spectrogram']
+      (configuration['spectrogram'] || configuration['piano_roll'])
     ) {
-      void import('./midiIn').then((midiInModule) => {
+      import('./midiIn').then(async (midiInModule) => {
         log.debug('Rendering Midi Input controls')
-        void midiInModule.render()
+        await midiInModule.render()
+        const inputListener = await midiInModule.getMidiInputListener()
+        console.log(inputListener?.deviceId)
       })
     }
   }
 
-  if (configuration['osmd'] && sheetInpainterGraphicalView != undefined) {
+  if (
+    (configuration['osmd'] && sheetInpainterGraphicalView != undefined) ||
+    (configuration['piano_roll'] && piaInpainterGraphicalView != undefined)
+  ) {
     {
       // Insert zoom controls
       const zoomControlsGridElement = document.createElement('div')
       zoomControlsGridElement.classList.add('zoom-control', 'control-item')
       // zoomControlsGridElement.classList.add('two-columns');
+      // const mainPanel = document.getElementById('main-panel')
+      inpainterGraphicalView.container.appendChild(zoomControlsGridElement)
+      inpainterGraphicalView.renderZoomControls(zoomControlsGridElement)
+    }
+  }
+  if (
+    !VITE_COMPILE_ELECTRON &&
+    ((configuration['osmd'] && sheetInpainterGraphicalView != undefined) ||
+      (configuration['piano_roll'] && piaInpainterGraphicalView != undefined))
+  ) {
+    {
+      // Insert zoom controls
+      const fullscreenControlContainerElement = document.createElement('div')
+      fullscreenControlContainerElement.classList.add(
+        'fullscreen-control',
+        'control-item'
+      )
+      // zoomControlsGridElement.classList.add('two-columns');
       const mainPanel = document.getElementById('main-panel')
-      mainPanel.appendChild(zoomControlsGridElement)
-      sheetInpainterGraphicalView.renderZoomControls(zoomControlsGridElement)
+      mainPanel.appendChild(fullscreenControlContainerElement)
+      inpainterGraphicalView.renderFullscreenControl(
+        fullscreenControlContainerElement
+      )
     }
   }
 
@@ -883,26 +1176,49 @@ function render(
           sheetInpainterGraphicalView,
           REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
         )
+      } else if (
+        configuration['piano_roll'] &&
+        piaInpainterGraphicalView != null
+      ) {
+        // TODO
+        // helpTour = new NonotoTour(
+        //   [configuration['main_language']],
+        //   piaInpainterGraphicalView,
+        //   REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
+        // )
       } else {
         // FIXME(@tbazin, 2021/10/14): else branch should not be required,
         // alternatives should be detected automatically
         throw new Error('Unsupported configuration')
       }
-      const mainPanel = document.getElementById('main-panel')
-      const helpIcon = helpTour.renderIcon(mainPanel)
-      helpIcon.classList.add('disabled')
-      inpainterGraphicalView.once('ready', () => {
-        helpIcon.classList.remove('disabled')
-      })
+      if (helpTour != null) {
+        const mainPanel = document.getElementById('main-panel')
+        const helpIcon = helpTour.renderIcon(mainPanel)
+        helpIcon.classList.add('disabled')
+        inpainterGraphicalView.once('ready', () => {
+          helpIcon.classList.remove('disabled')
+        })
+      }
     }
   }
 
-  async function sampleNewData(): Promise<void> {
-    const DUMMY_GENERATE = false
+  async function sampleNewData(silent = false): Promise<void> {
+    const DUMMY_GENERATE = VITE_DUMMY_GENERATE
     try {
       if (!DUMMY_GENERATE) {
-        await inpainter.generate(inpainterGraphicalView.queryParameters)
+        if (midiFileSelect != null) {
+          midiFileSelect.element.selectedIndex =
+            midiFileSelect._options.findIndex(
+              (v) => v == MidiFileSelector.blankTemplate
+            )
+          piaInpainter?.clear(silent)
+        } else {
+          await inpainter.generate(inpainterGraphicalView.queryParameters)
+        }
       } else {
+        if (midiFileSelect != null) {
+          midiFileSelect.selectedIndex = 1
+        }
         const silentInpainterUpdate = false
         await inpainter.dummyGenerate(
           inpainterGraphicalView.queryParameters,
@@ -915,16 +1231,16 @@ function render(
     log.info('Retrieved new media from server')
   }
 
-  $(() => {
+  $(async () => {
     inpainterGraphicalView.once('ready', () => {
       inpainterGraphicalView.callToAction()
     })
-    void sampleNewData()
+    await sampleNewData(true)
   })
 }
 
 {
-  new SplashScreen(render)
+  const splashScreen = new SplashScreen(render, VITE_AUTOSTART)
 }
 
 {
@@ -953,7 +1269,13 @@ function render(
 // manual calls to hot.invalidate(),
 // which would be required here to rebuild the app's helpTour on help.json content update
 import helpContentsJSON from '../static/localizations/help.json'
-import { ipcRendererInterface } from '../../preload/src/ipcRendererInterface'
+import {
+  MidiFileSelector,
+  TemplateCommands,
+} from './piano_roll/midiFilesSelector'
+import { Recorder } from '@magenta/music/esm/core/recorder'
+import { PiaAPIManager } from './piano_roll/piaAPI'
+import { stringify } from 'querystring'
 if (import.meta.hot) {
   let helpContents = helpContentsJSON
 }

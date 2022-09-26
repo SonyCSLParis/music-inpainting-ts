@@ -23,7 +23,7 @@ import { ScrollLockSimpleBar } from '../utils/simplebar'
 class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   SheetData,
   SheetInpainter,
-  MidiSheetPlaybackManager,
+  MidiSheetPlaybackManager<SheetInpainter>,
   number
 > {
   get isRendered(): boolean {
@@ -637,12 +637,16 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   protected setCurrentlyPlayingPositionDisplay(progress: number): void {
-    const transport = this.playbackManager.transport
-    const timePosition = Math.floor(
-      (progress +
-        transport.context.lookAhead / transport.toSeconds(transport.loopEnd)) *
-        this.sequenceDuration_quarters
-    )
+    // const transport = this.playbackManager.transport
+    // const startOffset = transport.toSeconds(transport.loopStart)
+    // const loopDuration =
+    //   transport.toSeconds(transport.loopEnd) -
+    //   transport.toSeconds(transport.loopStart)
+    // const timePosition = Math.floor(
+    //   startOffset +
+    //     (progress + transport.context.lookAhead / loopDuration) * loopDuration
+    // )
+    const timePosition = this.totalProgressToStep(progress)
 
     Array.from(
       this.overlaysContainer.getElementsByClassName('notebox playing')
@@ -663,7 +667,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     } catch (e) {
       // reached last container box
       // FIXME make and catch specific error
-      const lastStepIndex = this.progressToStep(1) - 1
+      const lastStepIndex = this.totalProgressToStep(1) - 1
       const lastStepPosition = this.getTimecontainerPosition(lastStepIndex)
       log.debug(
         `Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`
@@ -703,7 +707,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     return this.sheet.GraphicSheet.MeasureList.length * 4
   }
 
-  protected progressToStep(progress: number): number {
+  protected totalProgressToStep(progress: number): number {
     return Math.floor(progress * this.sequenceDurationQuarters)
   }
 
@@ -740,31 +744,8 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     }
   }
 
-  async dropHandler(e: DragEvent): Promise<void> {
-    // Prevent default behavior (Prevent file from being opened)
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.dataTransfer == null) {
-      return
-    }
-
-    if (e.dataTransfer.items) {
-      // Use DataTransferItemList interface to access the file(s)
-      for (let i = 0; i < e.dataTransfer.items.length; i++) {
-        // If dropped items aren't files, reject them
-        if (e.dataTransfer.items[i].kind === 'file') {
-          const sheetFile = e.dataTransfer.items[i].getAsFile()
-          if (sheetFile == null) {
-            continue
-          }
-          await this.inpainter.loadFile(sheetFile)
-        }
-      }
-    }
-  }
-
   async getSheetAsPNG(): Promise<Blob | null> {
-    if (this.graphicElement == null) {
+    if (this.graphicElement == null || typeof OffscreenCanvas == 'undefined') {
       return null
     }
     const canvas = new OffscreenCanvas(

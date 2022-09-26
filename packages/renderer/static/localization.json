@@ -9,6 +9,10 @@
       "en": "Tempo"
     },
 
+    "playback-rate-control-label": {
+      "en": "Speed"
+    },
+
     "pitch-control-label": {
       "en": "Pitch"
     },
@@ -56,6 +60,10 @@
     "play-button-label": {
       "de": "Partitur abspielen",
       "en": "Playback"
+    },
+
+    "record-button-label": {
+      "en": "Record"
     },
 
     "edit-tools-gridspan-label": {
@@ -123,6 +131,20 @@
 
     "ableton-link-client-downbeat-display-label": {
       "en": "Downbeat"
+    },
+
+    "midi-file-select-label": {
+      "en": "Template"
+    },
+
+    "pia-hyperparameters-controls-top_p-control-label": {
+      "en": "Freedom"
+    },
+    "pia-hyperparameters-controls-superconditioning-control-label": {
+      "en": "Coherence"
+    },
+    "pia-hyperparameters-controls-gridspan-label": {
+      "en": "Settings"
     }
   },
 

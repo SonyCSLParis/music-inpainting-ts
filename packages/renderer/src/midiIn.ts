@@ -146,7 +146,7 @@ export async function render(useChordsInstrument = false): Promise<void> {
     [0, 16],
     0
   )
-  midiInChannelSelect.render(false, 60)
+  midiInChannelSelect.render(60)
   midiInChannelSelect.controller?.on(
     'change',
     makeMidiInChannelOnchange(midiInChannelSelect.controller)

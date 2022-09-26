@@ -1,10 +1,16 @@
 // Module to create native browser windows
 import { BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
+import log from 'loglevel'
 import type { LinkServerElectron } from './ableton_link/linkServer.electron'
 
 const VITE_INTEGRATE_ABLETON_LINK =
   import.meta.env.VITE_INTEGRATE_ABLETON_LINK != undefined
+
+log.info(
+  'Env variable VITE_INTEGRATE_ABLETON_LINK is ',
+  VITE_INTEGRATE_ABLETON_LINK
+)
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -12,7 +18,6 @@ const openWindows = new Map<number, BrowserWindow>()
 
 import defaultConfiguration from '../../common/default_config.json'
 import customConfiguration from '../../../config.json'
-import log from 'loglevel'
 const globalConfiguration = { ...defaultConfiguration, ...customConfiguration }
 
 // FIXME(@tbazin, 2021/10/28): avoid using a global like this
@@ -92,6 +97,13 @@ export async function createWindow(): Promise<void> {
   })
 
   openWindows.set(windowID, browserWindow)
+
+  // Force exit mode for html5 fullscreen api
+  browserWindow.on('leave-full-screen', (event) => {
+    if (document != undefined) {
+      document.webkitExitFullscreen()
+    }
+  })
 }
 
 export function existsWindow(): boolean {

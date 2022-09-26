@@ -4,6 +4,8 @@ import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
 import { Buffer } from 'buffer'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
 import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
+import { PiaInpainter, PianoRollData } from './piano_roll/pianoRollInpainter'
+import { PianoRollInpainterGraphicalView } from './piano_roll/pianoRollInpainterGraphicalView'
 
 const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
@@ -77,9 +79,11 @@ export abstract class DownloadButton<
   protected readonly inpainter: InpainterT
   protected readonly inpainterGraphicalView: InpainterGraphicalViewT
 
-  protected abstract _refreshCallback: () => Promise<void>
-  protected readonly refreshCallback: () => Promise<void> = async () => {
-    this._refreshCallback()
+  protected abstract _refreshCallback: (data: DataT) => Promise<void>
+  protected readonly refreshCallback: (data: DataT) => Promise<void> = async (
+    data: DataT
+  ) => {
+    this._refreshCallback(data)
   }
 
   protected registerUpdateCallback(): void {
@@ -140,7 +144,6 @@ export abstract class DownloadButton<
 
     if (VITE_COMPILE_ELECTRON) {
       // add support for native Drag and Drop
-      // FIXME(@tbazin, 2021/11/10): Fix DownloadButton drag-out for MIDI
       this.interfaceContainer.addEventListener(
         'dragstart',
         this.onDragStartElectron
@@ -371,6 +374,7 @@ export class SheetDownloadButton extends DownloadButton<
   SheetInpainterGraphicalView
 > {
   protected registerUpdateCallback(): void {
+    // TODO(@tbazin, 2022/08/10): potentially `this`-unbound callback, check this
     this.inpainterGraphicalView.on('ready', this.refreshCallback)
   }
   protected removeUpdateCallback(): void {
@@ -382,10 +386,44 @@ export class SheetDownloadButton extends DownloadButton<
       type: 'text/xml',
     })
     this._content = sheetBlob
-    const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
-    if (sheetPNGBlob != null) {
-      this.imageContent = sheetPNGBlob
+    if (VITE_COMPILE_ELECTRON) {
+      const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
+      if (sheetPNGBlob != null) {
+        this.imageContent = sheetPNGBlob
+      }
     }
     this.targetURL = URL.createObjectURL(sheetBlob)
+  }
+}
+export class PianotoDownloadButton extends DownloadButton<
+  PianoRollData,
+  PiaInpainter,
+  PianoRollInpainterGraphicalView
+> {
+  // protected registerUpdateCallback(): void {
+  //   // HACK(@tbazin, 2022/08/10): listening to ready on inpainterGraphicalView
+  //   // ensures that the
+  //   // this.inpainterGraphicalView.on('ready', () => this.refreshCallback())
+  //   this.inpainter.on('ch', () => this.refreshCallback())
+  // }
+  // protected removeUpdateCallback(): void {
+  //   this.inpainterGraphicalView.removeListener('ready', () =>
+  //     this.refreshCallback()
+  //   )
+  // }
+
+  protected _refreshCallback = async (data: PianoRollData) => {
+    if (data.partialUpdate || data.removeNotes) {
+      return
+    }
+    if (VITE_COMPILE_ELECTRON) {
+      const sheetPNGBlob = await this.inpainterGraphicalView.getSheetAsPNG()
+      if (sheetPNGBlob != null) {
+        this.imageContent = sheetPNGBlob
+      }
+    }
+    const blob = new Blob([this.inpainter.value.midi.toArray()])
+    this._content = blob
+    this.targetURL = URL.createObjectURL(blob)
   }
 }

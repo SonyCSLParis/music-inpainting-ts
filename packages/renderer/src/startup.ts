@@ -19,18 +19,23 @@ import customConfiguration from '../../../config.json'
 import '../styles/startupSplash.scss'
 import { setBackgroundColorElectron } from './utils/display'
 import colors from '../styles/mixins/_colors.module.scss'
+import { unmute } from './utils/unmute'
 
 export type applicationConfiguration = typeof defaultConfiguration
+
+console.log(import.meta.env)
 
 // TODO(@tbazin, 2021/11/04): merge all symbolic modes
 // and auto-detect sheet layout in app
 enum ApplicationMode {
+  Pia = 'pia',
   Chorale = 'chorale',
   Leadsheet = 'leadsheet',
   Folk = 'folk',
   Spectrogram = 'spectrogram',
 }
 const allApplicationModes = [
+  ApplicationMode.Pia,
   ApplicationMode.Chorale,
   ApplicationMode.Leadsheet,
   ApplicationMode.Folk,
@@ -38,6 +43,7 @@ const allApplicationModes = [
 ]
 
 const applicationModeToAPIResourceName: Map<ApplicationMode, string> = new Map([
+  [ApplicationMode.Pia, 'pia/'],
   [ApplicationMode.Chorale, 'deepbach/'],
   [ApplicationMode.Spectrogram, 'notono/'],
 ])
@@ -45,6 +51,8 @@ const applicationModeToAPIResourceName: Map<ApplicationMode, string> = new Map([
 const VITE_COMPILE_ELECTRON: boolean =
   import.meta.env.VITE_COMPILE_ELECTRON != undefined
 const VITE_APP_TITLE: string | undefined = import.meta.env.VITE_APP_TITLE
+const VITE_HIDE_IRCAM_LOGO: boolean =
+  import.meta.env.VITE_HIDE_IRCAM_LOGO != undefined
 const VITE_REMOTE_INPAINTING_API_ADDRESS: string | undefined = import.meta.env
   .VITE_REMOTE_INPAINTING_API_ADDRESS
 const VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: string | undefined =
@@ -72,7 +80,7 @@ function parseAvailableApplicationModes(
       .replace(' ', '')
       .split(',')
     return applicationModesUnvalidated
-      .filter((value) => allApplicationModes.contains(value))
+      .filter((value) => (allApplicationModes as string[]).contains(value))
       .map((value) => value as ApplicationMode)
   }
 }
@@ -91,43 +99,53 @@ const globalConfiguration: applicationConfiguration = {
   ...customConfiguration,
 }
 
+const startupSplashAppTitle = VITE_APP_TITLE ?? defaultConfiguration['app_name']
+
 globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] =
   globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] ||
   VITE_SPLASH_SCREEN_INSERT_EULA_AGREEMENT_CHECKBOX
+
+globalConfiguration['display_ircam_logo'] =
+  globalConfiguration['display_ircam_logo'] && !VITE_HIDE_IRCAM_LOGO
 
 globalConfiguration['inpainting_api_address'] =
   VITE_REMOTE_INPAINTING_API_ADDRESS
 
 // TODO(theis) don't create modes like this (goes against 12 Factor App principles)
 // should have truly orthogonal configuration options
-const osmdConfiguration = cloneJSON(globalConfiguration)
-osmdConfiguration['osmd'] = true
-osmdConfiguration['app_name'] = 'nonoto'
-osmdConfiguration['spectrogram'] = false
+const nonotoConfiguration = cloneJSON(globalConfiguration)
+nonotoConfiguration['osmd'] = true
+nonotoConfiguration['app_name'] = 'NONOTO'
+nonotoConfiguration['spectrogram'] = false
 
-const choraleConfiguration = cloneJSON(osmdConfiguration)
-choraleConfiguration['use_chords_instrument'] = false
-choraleConfiguration['annotation_types'] = ['fermata']
+const pianotoConfiguration = cloneJSON(globalConfiguration)
+pianotoConfiguration['osmd'] = false
+pianotoConfiguration['spectrogram'] = false
+pianotoConfiguration['piano_roll'] = true
+pianotoConfiguration['app_name'] = 'PIANOTO'
 
-const leadsheetConfiguration = cloneJSON(osmdConfiguration)
-leadsheetConfiguration['use_chords_instrument'] = true
-leadsheetConfiguration['annotation_types'] = ['chord_selector']
+const nonotoDeepbachConfiguration = cloneJSON(nonotoConfiguration)
+nonotoDeepbachConfiguration['use_chords_instrument'] = false
+nonotoDeepbachConfiguration['annotation_types'] = ['fermata']
 
-const folkConfiguration = cloneJSON(osmdConfiguration)
-folkConfiguration['use_chords_instrument'] = false
-folkConfiguration['annotation_types'] = []
-folkConfiguration['granularities_quarters'] = [1, 4, 8, 16]
+const nonotoLeadsheetConfiguration = cloneJSON(nonotoConfiguration)
+nonotoLeadsheetConfiguration['use_chords_instrument'] = true
+nonotoLeadsheetConfiguration['annotation_types'] = ['chord_selector']
 
-const spectrogramConfiguration = cloneJSON(globalConfiguration)
-spectrogramConfiguration['osmd'] = false
-spectrogramConfiguration['spectrogram'] = true
-spectrogramConfiguration['app_name'] = 'notono'
-spectrogramConfiguration['display_ircam_logo'] = true
+const nonotoFolkConfiguration = cloneJSON(nonotoConfiguration)
+nonotoFolkConfiguration['use_chords_instrument'] = false
+nonotoFolkConfiguration['annotation_types'] = []
+nonotoFolkConfiguration['granularities_quarters'] = [1, 4, 8, 16]
+
+const notonoConfiguration = cloneJSON(globalConfiguration)
+notonoConfiguration['osmd'] = false
+notonoConfiguration['spectrogram'] = true
+notonoConfiguration['app_name'] = 'NOTONO'
 
 if (VITE_ENABLE_ANONYMOUS_MODE) {
-  spectrogramConfiguration['app_name'] = 'VQ-Inpainting'
-  spectrogramConfiguration['display_sony_logo'] = false
-  spectrogramConfiguration['display_ircam_logo'] = false
+  notonoConfiguration['app_name'] = 'VQ-Inpainting'
+  notonoConfiguration['display_sony_logo'] = false
+  notonoConfiguration['display_ircam_logo'] = false
   document.body.classList.add('anonymous-mode')
 }
 
@@ -155,6 +173,8 @@ if (VITE_COMPILE_ELECTRON) {
 
 export class SplashScreen {
   readonly renderPage: (configuration: applicationConfiguration) => void
+
+  startButton: NexusTextButton | null = null
 
   readonly container: HTMLElement
   readonly scrollContainer: HTMLElement
@@ -216,7 +236,10 @@ export class SplashScreen {
     return [eulaAcceptToggle, scrollbar, eulaContainer]
   }
 
-  constructor(renderPage: (configuration: applicationConfiguration) => void) {
+  constructor(
+    renderPage: (configuration: applicationConfiguration) => void,
+    autostart = false
+  ) {
     this.insertEulaAccept =
       globalConfiguration['splash_screen']['insert_eula_agreement_checkbox']
     document.body.classList.add('splash-screen')
@@ -239,12 +262,12 @@ export class SplashScreen {
     this.container.appendChild(headerContainer)
     Header.render(headerContainer, {
       display_sony_logo: true,
-      display_ircam_logo: true,
-      app_name:
-        VITE_APP_TITLE != null ? VITE_APP_TITLE.toLowerCase() : 'notono',
+      display_ircam_logo: true && !VITE_HIDE_IRCAM_LOGO,
+      app_name: startupSplashAppTitle,
     })
 
     this.insertCustomAPIAdressInput =
+      VITE_REMOTE_INPAINTING_API_ADDRESS == undefined ||
       !VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT
     if (this.insertCustomAPIAdressInput) {
       const serverConfigurationContainerElement = document.createElement('div')
@@ -257,17 +280,8 @@ export class SplashScreen {
         serverConfigurationElement
       )
 
-      this.useHostedAPIToggle = new BooleanValue(true)
-      const useHostedAPIToggleViewContainer = document.createElement('div')
-      useHostedAPIToggleViewContainer.id = 'use_remote_api-toggle'
-      serverConfigurationElement.appendChild(useHostedAPIToggleViewContainer)
-      const useHostedAPIToggleView =
-        new CycleSelectEnableDisableFontAwesomeView(this.useHostedAPIToggle)
-      useHostedAPIToggleViewContainer.appendChild(useHostedAPIToggleView)
-
       const serverAddressContainer = document.createElement('div')
       serverAddressContainer.id = 'server-address-container'
-      serverConfigurationElement.appendChild(serverAddressContainer)
 
       this.serverAddressInput = document.createElement('input')
       this.serverAddressInput.type = 'url'
@@ -281,17 +295,30 @@ export class SplashScreen {
         this.checkServerAddress()
       })
 
-      this.useHostedAPIToggle.on('change', (state: boolean | null) => {
-        if (state == null) {
-          return
-        }
-        serverAddressContainer.classList.toggle('hidden', state)
-        if (state != null && !state) {
-          this.checkServerAddress(this.getCurrentConfiguration(), true)
-          this.serverAddressInput?.focus()
-        }
-      })
-      this.useHostedAPIToggle.emitChanged()
+      if (VITE_REMOTE_INPAINTING_API_ADDRESS != undefined) {
+        this.useHostedAPIToggle = new BooleanValue(true)
+        const useHostedAPIToggleViewContainer = document.createElement('div')
+        useHostedAPIToggleViewContainer.id = 'use_remote_api-toggle'
+        serverConfigurationElement.appendChild(useHostedAPIToggleViewContainer)
+        const useHostedAPIToggleView =
+          new CycleSelectEnableDisableFontAwesomeView(this.useHostedAPIToggle)
+        useHostedAPIToggleViewContainer.appendChild(useHostedAPIToggleView)
+
+        this.useHostedAPIToggle.on('change', (state: boolean | null) => {
+          if (state == null) {
+            return
+          }
+          serverAddressContainer.classList.toggle('hidden', state)
+          if (state != null && !state) {
+            this.checkServerAddress(this.getCurrentConfiguration(), true)
+            this.serverAddressInput?.focus()
+          } else {
+            this.serverAddressInput?.classList.remove('wrong-input-setting')
+          }
+        })
+      }
+
+      serverConfigurationElement.appendChild(serverAddressContainer)
     }
 
     const modeConfigurationContainerElement = document.createElement('div')
@@ -327,10 +354,11 @@ export class SplashScreen {
     const applicationModeButtons = new Map<ApplicationMode, NexusTextButton>()
 
     const applicationModeButtonsLabel: Record<ApplicationMode, string> = {
-      chorale: 'DeepBach',
-      leadsheet: 'Leadsheets',
-      folk: 'Folk songs',
-      spectrogram: 'Spectrogram',
+      pia: 'PIANOTO',
+      chorale: 'NONOTO',
+      spectrogram: 'NOTONO',
+      folk: 'NONOTO (Folk songs)',
+      leadsheet: 'NONOTO (DeepSheet)',
     }
 
     const createApplicationModeButton = (
@@ -416,32 +444,52 @@ export class SplashScreen {
       disclaimerElement.innerHTML =
         localizations['splash-screen-disclaimer']['en']
     }
+
+    if (autostart) {
+      this.pressStart()
+    }
+  }
+  protected pressStart(): void {
+    const startButtonElement = document.getElementById('start-button')
+    startButtonElement?.dispatchEvent(new PointerEvent('pointerup'))
   }
 
   protected getCurrentConfiguration(): applicationConfiguration {
     const applicationModeSelectElement = <HTMLSelectElement>(
       document.getElementById('application-mode-select')
     )
-    const applicationMode =
-      applicationModeSelectElement.value as ApplicationMode
+    let applicationMode = applicationModeSelectElement.value
+    if (
+      (applicationMode == undefined || applicationMode == '') &&
+      availableApplicationModes.length == 1
+    ) {
+      // HACK(@tbazin, 2022/09/15): attempt at a workaround for the Chrome Mobile soft reload bug
+      // that leads to the app not being able to start when the tab is reload after being left in the
+      // background for a while, in which case, strangely, `applicationModeSelectElement.value == ''`
+      applicationMode = availableApplicationModes[0]
+    }
     let configuration: applicationConfiguration
     switch (applicationMode) {
       case 'chorale':
-        configuration = choraleConfiguration
+        configuration = nonotoDeepbachConfiguration
         break
       case 'leadsheet':
-        configuration = leadsheetConfiguration
+        configuration = nonotoLeadsheetConfiguration
+        break
+      case 'pia':
+        configuration = pianotoConfiguration
         break
       case 'folk':
-        configuration = folkConfiguration
+        configuration = nonotoFolkConfiguration
         break
       case 'spectrogram':
-        configuration = spectrogramConfiguration
+        configuration = notonoConfiguration
         break
     }
 
-    if (!this.useHostedAPI) {
+    if (!this.useHostedAPI && this.serverAddressInput != null) {
       if (this.serverAddressInput.value.length > 0) {
+        // TODO(@tbazin, 2022/09/24): auto add final '/' to endpoint address
         configuration['inpainting_api_address'] = this.serverAddressInput.value
       }
     } else {
@@ -455,26 +503,39 @@ export class SplashScreen {
     return configuration
   }
 
-  // TODO(theis, 2021/05/18): check that the address points to a valid API server,
-  // through a custom ping-like call
-  async checkServerAddress(
-    configuration?: applicationConfiguration,
-    forceRetriggerVisualAnimation: boolean = false
-  ): Promise<boolean> {
-    let address: string
+  protected getServerAddress(configuration?: applicationConfiguration): string {
+    let address: string | undefined = undefined
     if (
       configuration != null &&
       (configuration['disable_inpainting_api_parameters_input'] ||
-        this.serverAddressInput == null)
+        this.serverAddressInput == null) &&
+      configuration['inpainting_api_address'] != undefined
     ) {
       address = configuration['inpainting_api_address']
     } else {
+      if (this.serverAddressInput == null) {
+        throw new Error()
+      }
       address =
         this.serverAddressInput.value.length > 0
           ? this.serverAddressInput.value
           : this.serverAddressInput.placeholder
-    }
 
+      // add trailing slash
+      address += address.endsWith('/') ? '' : '/'
+    }
+    return address
+  }
+
+  // TODO(theis, 2021/05/18): check that the address points to a valid API server,
+  // through a custom ping-like call
+  async checkServerAddress(
+    address?: string,
+    forceRetriggerVisualAnimation: boolean = false
+  ): Promise<boolean> {
+    if (address == undefined) {
+      address = this.getServerAddress()
+    }
     // taken from https://stackoverflow.com/a/43467144
     let url: URL | null = null
     let isValidURL: boolean = false
@@ -494,7 +555,20 @@ export class SplashScreen {
         })
         serverIsAvailable = true
       } catch (_) {}
+      if (!serverIsAvailable) {
+        try {
+          const response = await fetch(new URL('', url), {
+            method: 'post',
+            mode: 'no-cors',
+          })
+          console.log('hello')
+          serverIsAvailable = response.ok
+        } catch (reason) {
+          console.log(reason)
+        }
+      }
     }
+    console.log(serverIsAvailable)
     this.shakeServerAddressInput(
       serverIsAvailable,
       forceRetriggerVisualAnimation
@@ -517,7 +591,6 @@ export class SplashScreen {
     )
   }
 
-  // TODO(theis, 2021/05/18): add a shake effect on error
   protected async checkConfiguration(
     configuration: applicationConfiguration,
     forceRetriggerVisualAnimation: boolean = false
@@ -525,7 +598,7 @@ export class SplashScreen {
     return (
       this.useHostedAPI ||
       (await this.checkServerAddress(
-        configuration,
+        this.getServerAddress(configuration),
         forceRetriggerVisualAnimation
       ))
     )
@@ -541,7 +614,7 @@ export class SplashScreen {
     startButtonElement.classList.add('control-item')
     configurationWindow.appendChild(startButtonElement)
 
-    new Nexus.TextButton('#start-button', {
+    this.startButton = new Nexus.TextButton('#start-button', {
       size: [150, 50],
       state: false,
       text: 'Start',
@@ -549,6 +622,8 @@ export class SplashScreen {
 
     const startCallback = async (): Promise<void> => {
       await Tone.start()
+      const context = Tone.context.rawContext
+      unmute(context, true)
 
       await this.disposeAndStart()
     }
@@ -572,6 +647,12 @@ export class SplashScreen {
       },
       true
     )
+
+    if (this.useHostedAPIToggle == undefined) {
+      this.checkServerAddress()
+    } else {
+      this.useHostedAPIToggle.emitChanged()
+    }
   }
 
   protected async verifyCaptcha(recaptchaResponse: string): Promise<boolean> {

@@ -1,3 +1,4 @@
+import * as Tone from 'tone'
 import { Midi } from '@tonejs/midi'
 import { UndoableInpainter } from '../inpainter/inpainter'
 
@@ -6,7 +7,12 @@ export interface SheetData {
   midi: Midi
 }
 
-export class SheetInpainter extends UndoableInpainter<
+export abstract class MidiInpainter<
+  DataT extends { midi: Midi },
+  AdditionalAPICommands extends string = never
+> extends UndoableInpainter<DataT, AdditionalAPICommands> {}
+
+export class SheetInpainter extends MidiInpainter<
   SheetData,
   'copy' | 'musicxml-to-midi'
 > {
@@ -97,6 +103,7 @@ export class SheetInpainter extends UndoableInpainter<
         body: maybeBody,
         headers: maybeHeaders,
       },
+      [],
       timeout
     )
 
@@ -112,7 +119,7 @@ export class SheetInpainter extends UndoableInpainter<
     const sheetString: string = jsonContent['sheet']
     let sheetXML = this.parser.parseFromString(sheetString, 'text/xml')
     sheetXML = this.removeMusicXMLHeaderNodes(sheetXML)
-    return this.updateSheet(sheetXML)
+    return this.updateSheet(sheetXML, false)
   }
 
   protected async updateSheet(
@@ -125,7 +132,12 @@ export class SheetInpainter extends UndoableInpainter<
     return newData
   }
 
-  async loadFile(xmlSheetFile: File, silent: boolean = true): Promise<this> {
+  async loadFile(
+    xmlSheetFile: File,
+    queryParameters: string[],
+    silent: boolean = true
+  ): Promise<this> {
+    super.loadFile(xmlSheetFile, queryParameters, silent)
     this.emit('busy')
     const xmlSheetString = await xmlSheetFile.text()
     const newSheet = this.parser.parseFromString(xmlSheetString, 'text/xml')

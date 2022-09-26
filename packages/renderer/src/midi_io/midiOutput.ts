@@ -3,6 +3,7 @@ import { getMidiInputListener } from '../midiIn'
 
 import { EventEmitter } from 'events'
 import { WebMidi, Output } from 'webmidi'
+import { ToneMidiInput } from './midiInput'
 
 export class MidiOutput extends EventEmitter {
   /**
@@ -67,9 +68,7 @@ export class MidiOutput extends EventEmitter {
   constructor(deviceId: string | 'all' = 'all') {
     super()
 
-    void getMidiInputListener().then((midiInputListener) => {
-      this._midiInputListener = midiInputListener
-    })
+    this.midiInputListener = new ToneMidiInput(null)
 
     this._deviceId = deviceId
 
@@ -200,9 +199,5 @@ export class MidiOutput extends EventEmitter {
   // a midiInputListener that is bound to listen to the device used for output
   // used for tracking generated MIDI events through a feedback loop
   // can be used for visual feedback
-  protected _midiInputListener: ChannelBasedMidiInput
-
-  get midiInputListener(): ChannelBasedMidiInput {
-    return this._midiInputListener
-  }
+  readonly midiInputListener: ToneMidiInput
 }

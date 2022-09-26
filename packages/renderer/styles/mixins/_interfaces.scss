@@ -12,6 +12,7 @@ $roundedSquareBox-border-width: 2px;
 
 @mixin hiddenControl {
   filter: blur(2px) opacity(0.3) grayscale(0.25);
+  &,
   * {
     pointer-events: none;
   }

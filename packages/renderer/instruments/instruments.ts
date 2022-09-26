@@ -1,7 +1,9 @@
 import log from 'loglevel'
 import * as Tone from 'tone'
 import { Piano } from '@tonejs/piano'
-import { SampleLibrary } from './dependencies/Tonejs-Instruments'
+import { SampleLibrary } from '../src/dependencies/Tonejs-Instruments'
+import * as presets from './presets'
+import { limiter, effects } from './effects'
 
 import type {
   Instrument,
@@ -14,8 +16,8 @@ import {
   NullableVariableValue,
   VariableValue,
   createIconElements,
-} from './cycleSelect'
-import * as ControlLabels from './controlLabels'
+} from '../src/cycleSelect'
+import * as ControlLabels from '../src/controlLabels'
 
 type ToneInstrument = Instrument<InstrumentOptions>
 type InstrumentOrPiano = ToneInstrument | Piano
@@ -29,7 +31,31 @@ let currentInstrument: InstrumentOrPiano
 let instrumentFactories: Record<string, () => InstrumentOrPiano>
 let silentInstrument: ToneInstrument
 export function getCurrentInstrument(midiChannel = 0): InstrumentOrPiano {
-  return currentInstrument
+  return piano
+}
+
+export function keyDown(note: string, velocity: NormalRange) {
+  const instrument = getCurrentInstrument()
+  if ('keyDown' in instrument) {
+    instrument.keyDown({
+      note: note,
+      velocity: velocity,
+    })
+  } else {
+    instrument.triggerAttack(note, undefined, velocity)
+  }
+}
+
+export function keyUp(note: string, velocity: number) {
+  const instrument = getCurrentInstrument()
+  if ('keyUp' in instrument) {
+    instrument.keyUp({
+      note: note,
+      velocity: velocity,
+    })
+  } else {
+    instrument.triggerRelease(note, undefined, velocity)
+  }
 }
 
 let chordsInstrumentFactories: Record<string, () => InstrumentOrPiano>
@@ -38,19 +64,49 @@ export function getCurrentChordsInstrument(): InstrumentOrPiano | null {
   return currentChordsInstrument
 }
 
+let polySynth = new Tone.PolySynth({ voice: Tone.Synth, maxPolyphony: 64 })
+const useEffects = true
 export async function initializeInstruments(): Promise<void> {
-  const useEffects = false
-  const limiter = new Tone.Limiter().toDestination()
-  const chorus = new Tone.Chorus(5, 2, 0.5).connect(limiter)
-  const reverb = new Tone.Reverb().connect(chorus)
-
   silentInstrument = new Tone.Synth().set({
     oscillator: {
       mute: true,
     },
   })
+  const pianoVelocities = 4
+  log.info(
+    `Loading Tone Piano with ${pianoVelocities} velocit${
+      pianoVelocities > 1 ? 'ies' : 'y'
+    }`
+  )
+  piano = new Piano({
+    velocities: pianoVelocities,
 
-  const polySynth = new Tone.PolySynth({ voice: Tone.Synth, maxPolyphony: 64 })
+    // volume: {
+    //   // pedal: -20,
+    //   // strings: -10,
+    //   // keybed: -20,
+    //   // harmonics: -10,
+    // },
+  })
+  if (VITE_AUTOLOAD_SAMPLES) {
+    await piano.load()
+    if (useEffects) {
+      const reverb = await effects
+      currentInstrument = piano.connect(
+        reverb //.connect(
+        // new Tone.Gain(-15, 'decibels').toDestination() //.connect(limiter)
+        // )
+      )
+    } else {
+      const gainReduction = new Tone.Gain(-15, 'decibels').toDestination()
+      piano.connect(gainReduction)
+    }
+
+    return
+  } else {
+    currentInstrument = polySynth.connect(limiter)
+  }
+
   const polySynth_chords = new Tone.PolySynth({
     voice: Tone.Synth,
     maxPolyphony: 64,
@@ -58,18 +114,38 @@ export async function initializeInstruments(): Promise<void> {
   const polySynths = [polySynth, polySynth_chords]
   polySynths.forEach((polySynth) => {
     polySynth.set({
+      //   oscillator: {
+      //     type: 'triangle1',
+      //   },
+      //   envelope: {
+      //     attack: 0.05, // default: 0.005
+      //     decay: 0.1, // default: 0.1
+      //     sustain: 0.3, //default: 0.3
+      //     release: 0.2, // default: 1},
+      //   },
+      //   portamento: 0.05,
+      // })
+      portamento: 0.2,
       oscillator: {
-        type: 'triangle1',
+        type: 'sawtooth',
       },
       envelope: {
-        attack: 0.05, // default: 0.005
-        decay: 0.1, // default: 0.1
-        sustain: 0.3, //default: 0.3
-        release: 0.2, // default: 1},
+        attack: 0.03,
+        decay: 0.1,
+        sustain: 0.2,
+        release: 0.02,
       },
-      portamento: 0.05,
     })
   })
+
+  const polySynth_alien = new Tone.PolySynth(presets.alienChorus)
+  const polySynth_dropPulse = new Tone.PolySynth(presets.dropPulse)
+  const polySynth_delicateWindPart = new Tone.PolySynth(
+    presets.delicateWindPart
+  )
+  const polySynth_kalimba = new Tone.PolySynth(presets.kalimba)
+  const polySynth_electricCello = new Tone.PolySynth(presets.electricCello)
+  polySynth = polySynth_electricCello
 
   polySynth_chords.set({
     oscillator: {
@@ -77,37 +153,16 @@ export async function initializeInstruments(): Promise<void> {
     },
   })
 
-  const steelPan = new Tone.PolySynth(Tone.Synth).set({
-    oscillator: {
-      type: 'fatsawtooth17',
-      // partials: [0.2, 1, 0, 0.5, 0.1],
-      spread: 40,
-      count: 3,
-    },
-    envelope: {
-      attack: 0.001,
-      decay: 1,
-      sustain: 0,
-      release: 0.5,
-    },
-    portamento: 0.05,
-  })
+  const steelPan = new Tone.PolySynth(presets.steelPan)
 
   const softSynths: ToneInstrument[] = [polySynth, polySynth_chords, steelPan]
   if (useEffects) {
-    reverb
-      .generate()
-      .then(() => {
-        softSynths.forEach((instrument) => {
-          instrument.connect(reverb)
-        })
-      })
-      .catch((reason) => {
-        throw new EvalError(reason)
-      })
+    softSynths.forEach((instrument) => {
+      instrument.connect(effects)
+    })
   } else {
     softSynths.forEach((instrument) => {
-      instrument.toDestination()
+      instrument.connect(limiter)
     })
   }
 
@@ -154,28 +209,6 @@ export async function initializeInstruments(): Promise<void> {
     },
   }
 
-  const pianoVelocities = 1
-  log.info(
-    `Loading Tone Piano with ${pianoVelocities} velocit${
-      pianoVelocities > 1 ? 'ies' : 'y'
-    }`
-  )
-  piano = new Piano({
-    release: true,
-    pedal: true,
-    velocities: 1,
-
-    volume: {
-      pedal: -20,
-      strings: -5,
-      keybed: -10,
-      harmonics: -5,
-    },
-  })
-  if (VITE_AUTOLOAD_SAMPLES) {
-    await piano.load()
-  }
-
   Array.from([instrumentFactories, chordsInstrumentFactories]).forEach(
     (factories) => {
       factories['Piano'] = () => {
@@ -195,6 +228,8 @@ export type leadInstrument = typeof leadInstrumentNames[number]
 import PianoIconURL from '../static/icons/049-piano.svg'
 import SynthIconURL from '../static/icons/019-synthesizer.svg'
 import TimpaniIconURL from '../static/icons/007-timpani.svg'
+import { Limiter, PolySynth } from 'tone'
+import { NormalRange } from 'tone/build/esm/core/type/Units'
 const instrumentsIcons = new Map<leadInstrument | null, string>([
   ['Piano', PianoIconURL],
   ['PolySynth', SynthIconURL],
@@ -335,11 +370,44 @@ export class InstrumentSelectView extends CycleSelectViewWithDisable<leadInstrum
     this.classList.add('playbackInstrumentSelect')
   }
 }
-customElements.define('instrument-select', InstrumentSelectView)
+if (customElements.get('instrument-select') == undefined) {
+  customElements.define('instrument-select', InstrumentSelectView)
+}
 
 export function mute(mute: boolean, useChordsInstrument = false) {
   if (mute) {
     currentInstrument = silentInstrument
     currentChordsInstrument = silentInstrument
   }
+}
+
+console.log(import.meta.hot)
+// let newPolySynth: Tone.PolySynth | undefined = undefined
+if (import.meta.hot) {
+  import.meta.hot.accept(
+    ['./presets.ts', './effects.ts'],
+    async ([newPresets, newEffects]) => {
+      // if (newPolySynth != undefined && !newPolySynth.disposed) {
+      //   newPolySynth.dispose()
+      // }
+      const localEffects = (await newEffects?.effects) ?? effects
+
+      if (newPresets) {
+        const newPolySynth = new Tone.PolySynth(newPresets.steelPan)
+        polySynth = newPolySynth
+        currentInstrument = newPolySynth
+        if (Tone.Transport.state == 'started') {
+          const position = Tone.Transport.position
+          Tone.Transport.pause()
+          Tone.Transport.start('+0.2', position)
+        }
+      }
+      if (useEffects) {
+        currentInstrument.disconnect()
+        currentInstrument.connect(localEffects)
+      } else {
+        currentInstrument.connect(newEffects?.limiter ?? limiter)
+      }
+    }
+  )
 }

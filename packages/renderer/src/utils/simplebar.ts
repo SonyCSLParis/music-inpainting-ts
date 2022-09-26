@@ -42,7 +42,7 @@ class TouchEnabledSimpleBar extends SimpleBar {
     }
     target.addEventListener(
       'touchstart',
-      function (e) {
+      (e) => {
         // required to trigger an update of the mouse position stored by simplebar,
         // emulates moving the mouse onto the scrollbar THEN clicking,
         // otherwise simplebar uses the last clicked/swiped position, usually outside of the
@@ -54,21 +54,21 @@ class TouchEnabledSimpleBar extends SimpleBar {
     )
     target.addEventListener(
       'touchmove',
-      function (e) {
+      (e) => {
         mapTouchEvents(e, 'mousemove')
       },
       addEventListenerOptions
     )
     target.addEventListener(
       'touchend',
-      function (e) {
+      (e) => {
         mapTouchEvents(e, 'mouseup')
       },
       addEventListenerOptions
     )
     target.addEventListener(
       'touchcancel',
-      function (e) {
+      (e) => {
         mapTouchEvents(e, 'mouseup')
       },
       addEventListenerOptions
@@ -109,7 +109,7 @@ export class ScrollLockSimpleBar extends TouchEnabledSimpleBar {
     if (scrollTracks.length > 0) {
       return Array.from(scrollTracks)
     } else {
-      throw new EvalError('No scroll-element not found')
+      throw new EvalError('No scroll-element found')
     }
   }
 
@@ -130,8 +130,8 @@ export class ScrollLockSimpleBar extends TouchEnabledSimpleBar {
     //   in order to detect clicks on the before pseudo-element and toggle
     //   scroll-lock, this breaks if clickOnTrack is enabled
     this.scrollTracks.forEach((element) =>
-      element.addEventListener('click', function (this: HTMLElement): void {
-        this.classList.toggle(ScrollLockSimpleBar.scrollLockClass)
+      element.addEventListener('click', () => {
+        element.classList.toggle(ScrollLockSimpleBar.scrollLockClass)
       })
     )
   }

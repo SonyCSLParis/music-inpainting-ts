@@ -2,13 +2,24 @@ import { EventEmitter } from 'events'
 import * as Tone from 'tone'
 import log from 'loglevel'
 import $ from 'jquery'
-import { debounce } from 'chart.js/helpers'
+import { debounce, throttled } from 'chart.js/helpers'
 
 import { PlaybackManager } from '../playback'
 import { Inpainter } from './inpainter'
 
 import { VariableValue } from '../cycleSelect'
 import { ScrollLockSimpleBar } from '../utils/simplebar'
+import {
+  CartesianScaleOptions,
+  Chart,
+  ScriptableScaleContext,
+  Tick,
+  TickOptions,
+  Ticks,
+} from 'chart.js'
+
+const chartsFontFamily = "'Fira-Sans'"
+Chart.defaults.font.family = chartsFontFamily
 
 export abstract class InpainterGraphicalView<
   DataT = unknown,
@@ -20,6 +31,23 @@ export abstract class InpainterGraphicalView<
 
   abstract get isRendered(): boolean
 
+  protected errorTimeout?: NodeJS.Timeout = undefined
+  protected flashError(): void {
+    if (this.errorTimeout != undefined) {
+      clearTimeout(this.errorTimeout)
+    }
+    this.container.classList.remove('error')
+    this.container.clientWidth // trigger reflow
+    this.container.classList.add('error')
+    this.errorTimeout = setTimeout(() => {
+      this.container.classList.remove('error')
+    }, 2000)
+  }
+
+  protected onInpainterError(message?: string): void {
+    // TODO(@tbazin, 2022/09/22): display error message, e.g. via the Notification API
+    this.flashError()
+  }
   protected onInpainterBusy(): void {
     this.disableChanges()
   }
@@ -164,6 +192,7 @@ export abstract class InpainterGraphicalView<
     this.inpainter.on('busy', () => this.onInpainterBusy())
     this.inpainter.on('ready', () => this.onInpainterReady())
     this.inpainter.on('change', (data) => this.onInpainterChange(data))
+    this.inpainter.on('error', () => this.onInpainterError())
 
     this.container = container
     this.container.classList.add('inpainter')
@@ -182,20 +211,7 @@ export abstract class InpainterGraphicalView<
     this.scheduleDisplayLoop()
 
     this.toggleTransparentScrollbars()
-
-    this.container.addEventListener('drop', (e) => {
-      e.preventDefault()
-      this.container.classList.remove('in-dragdrop-operation')
-      void this.dropHandler(e)
-    })
-    this.container.addEventListener('dragenter', (e) => {
-      e.preventDefault()
-      this.container.classList.add('in-dragdrop-operation')
-    })
-    this.container.addEventListener('dragleave', (e) => {
-      e.preventDefault()
-      this.container.classList.remove('in-dragdrop-operation')
-    })
+    this.registerDropHandlers()
 
     this.playbackManager = playbackManager
     this.playbackManager.transport.on('start', () => {
@@ -215,6 +231,39 @@ export abstract class InpainterGraphicalView<
     this.once('ready', () => {
       this.disabled = false
       this.container.classList.remove('initializing')
+      this.registerCallback()
+    })
+
+    this.timeScaleContainer.classList.add(
+      'inpainter-scale-container',
+      'inpainter-time-scale-container'
+    )
+    this.timeScaleContainer.appendChild(this.timeScaleCanvas)
+  }
+
+  protected registerDropHandlers() {
+    this.container.addEventListener('drop', (e) => {
+      e.preventDefault()
+      this.container.classList.remove('in-dragdrop-operation')
+      void this.dropHandler(e)
+    })
+    this.container.addEventListener('dragenter', (e) => {
+      e.preventDefault()
+      this.container.classList.add('in-dragdrop-operation')
+    })
+    this.container.addEventListener('dragleave', (e) => {
+      if (
+        e.currentTarget != null &&
+        e.relatedTarget != null &&
+        (e.currentTarget as HTMLElement).contains(
+          // see https://stackoverflow.com/a/54271161
+          e.relatedTarget as HTMLElement
+        )
+      ) {
+        return
+      }
+      e.preventDefault()
+      this.container.classList.remove('in-dragdrop-operation')
     })
   }
 
@@ -231,20 +280,65 @@ export abstract class InpainterGraphicalView<
   protected registerRefreshOnResizeListener(): void {
     window.addEventListener(
       'resize',
-      debounce(() => this.refresh(), this.resizeTimeoutDuration)
+      // () => this.refresh()
+      throttled(() => this.refresh(), this.resizeTimeoutDuration)
     )
+  }
+
+  get interactionTarget(): HTMLElement {
+    return this.interfaceContainer
+  }
+  abstract get canTriggerInpaint(): boolean
+
+  protected abstract regenerationCallback(): Promise<void>
+
+  protected registerReleaseCallback = () => {
+    // call the actual callback on pointer release to allow for click and drag
+    document.addEventListener(
+      'pointerup',
+      () => {
+        if (this.canTriggerInpaint) {
+          this.regenerationCallback.bind(this)()
+        }
+      },
+      { once: true } // eventListener removed after being called
+    )
+  }
+
+  protected onInteractionStart = () => {
+    if (!this.disabled) {
+      if (this.scrollbar != null) {
+        this.scrollbar.toggleScrollLock('x', true)
+      }
+      this.registerReleaseCallback()
+    }
+  }
+
+  protected registerCallback(): void {
+    // TODO(@tbazin, 2022/08/01): potential memory leak
+    if (this.interactionTarget != null) {
+      this.interactionTarget.removeEventListener(
+        'pointerdown',
+        this.onInteractionStart
+      )
+      this.interactionTarget.addEventListener(
+        'pointerdown',
+        this.onInteractionStart
+      )
+    }
   }
 
   // set currently playing interface position by progress ratio
   protected abstract setCurrentlyPlayingPositionDisplay(progress: number): void
 
   protected scrollbar: ScrollLockSimpleBar | null = null
-  protected readonly nowPlayingDisplayCallbacks: (() => void)[] = [
-    // scroll display to current step if necessary
-    // (): void => this.scrollTo(this.playbackManager.transport.progress),
-    (): void => {
-      const transport = this.playbackManager.transport
-      this.setCurrentlyPlayingPositionDisplay(transport.progress)
+  protected readonly nowPlayingDisplayCallbacks: ((
+    progress?: number
+  ) => void)[] = [
+    (totalProgress?: number): void => {
+      this.setCurrentlyPlayingPositionDisplay(
+        totalProgress ?? this.playbackManager.totalProgress
+      )
     },
   ]
 
@@ -259,11 +353,13 @@ export abstract class InpainterGraphicalView<
     return this.container.getElementsByClassName('simplebar-content-wrapper')[0]
   }
 
-  protected getDisplayCenterPosition_px(): number {
+  protected targetScrollRatio: number = 1 / 2
+
+  protected getTargetScrollPosition_px(): number {
     // return the current position within the sheet display
     const visibleWidth: number = this.scrollableElement.clientWidth
     const centerPosition: number =
-      this.scrollableElement.scrollLeft + visibleWidth / 2
+      this.scrollableElement.scrollLeft + visibleWidth * this.targetScrollRatio
 
     return centerPosition
   }
@@ -272,13 +368,13 @@ export abstract class InpainterGraphicalView<
     this.scrollTo(0)
   }
 
-  protected scrollTo(progress: number): void {
-    this.scrollToStep(this.progressToStep(progress))
+  protected scrollTo(totalProgress: number): void {
+    this.scrollToStep(this.totalProgressToStep(totalProgress))
   }
 
-  protected abstract progressToStep(progress: number): number
+  protected abstract totalProgressToStep(totalProgress: number): number
   get currentlyPlayingStep(): number {
-    return this.progressToStep(this.playbackManager.transport.progress)
+    return this.totalProgressToStep(this.playbackManager.totalProgress)
   }
 
   protected scrollToPosition(targetPosition_px: number): void {
@@ -286,9 +382,10 @@ export abstract class InpainterGraphicalView<
       return
     }
     const currentDisplayWidth_px: number = this.scrollableElement.clientWidth
-    const newScrollLeft_px = targetPosition_px - currentDisplayWidth_px / 2
+    const newScrollLeft_px =
+      targetPosition_px - currentDisplayWidth_px * this.targetScrollRatio
 
-    const currentCenterPosition_px: number = this.getDisplayCenterPosition_px()
+    const currentCenterPosition_px: number = this.getTargetScrollPosition_px()
     if (currentCenterPosition_px > targetPosition_px) {
       // scrolling to a previous position: instant scroll
       $(this.scrollableElement).stop(true, false)
@@ -337,7 +434,7 @@ export abstract class InpainterGraphicalView<
     } catch (e) {
       // reached last container box
       // FIXME make and catch specific error
-      const lastStepIndex = this.progressToStep(1) - 1
+      const lastStepIndex = this.totalProgressToStep(1) - 1
       const lastStepPosition = this.getTimecontainerPosition(lastStepIndex)
       log.debug(
         `Moving to end, lastStepPosition: [${lastStepPosition.left}, ${lastStepPosition.right}]`
@@ -362,7 +459,7 @@ export abstract class InpainterGraphicalView<
     const scrollCallback = (time: Tone.Unit.Time) => {
       const draw = this.playbackManager.transport.context.draw
       draw.schedule(
-        (): void => this.scrollTo(this.playbackManager.transport.progress),
+        (): void => this.scrollTo(this.playbackManager.totalProgress),
         this.playbackManager.transport.toSeconds(time)
       )
     }
@@ -372,11 +469,12 @@ export abstract class InpainterGraphicalView<
     ).start(0)
 
     const drawCallback = (time: Tone.Unit.Time) => {
+      const totalProgress = this.playbackManager.totalProgress
       const draw = this.playbackManager.transport.context.draw
       this.nowPlayingDisplayCallbacks.forEach((callback) =>
         draw.schedule(() => {
           if (document.visibilityState == 'visible') {
-            callback()
+            callback(totalProgress)
           }
         }, this.playbackManager.transport.toSeconds(time))
       )
@@ -387,15 +485,135 @@ export abstract class InpainterGraphicalView<
     ).start(0)
   }
 
-  protected abstract dropHandler(e: DragEvent): void
+  async dropHandler(e: DragEvent): Promise<void> {
+    if (e.dataTransfer == null) {
+      return
+    }
+
+    if (e.dataTransfer.items) {
+      // Prevent default behavior (Prevent file from being opened)
+      e.preventDefault()
+      e.stopPropagation()
+      // Use DataTransferItemList interface to access the file(s)
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
+        // If dropped items aren't files, reject them
+        if (e.dataTransfer.items[i].kind === 'file') {
+          const file = e.dataTransfer.items[i].getAsFile()
+          if (file == null) {
+            continue
+          }
+          console.log(`... file[${i}].name = ` + file.name)
+          this.inpainter.emit('load-file-programmatic')
+          await this.inpainter.loadFile(file, this.queryParameters, false)
+        }
+      }
+    } else {
+      // Use DataTransfer interface to access the file(s)
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
+        console.log(`... file[${i}].name = ` + e.dataTransfer.files[i].name)
+      }
+    }
+  }
 
   toggleScrollLock(axis: 'x' | 'y', force?: boolean): void {
     this.scrollbar?.toggleScrollLock(axis, force)
   }
+
+  protected get totalDurationAt120BPMSeconds() {
+    return (
+      this.playbackManager.transport.toTicks(
+        this.playbackManager.totalDuration
+      ) /
+      (this.playbackManager.transport.PPQ * 2)
+    )
+  }
+
+  protected abstract get scalesFontSize(): number
+
+  static readonly commonAxesOptions = {
+    grid: {
+      drawBorder: false,
+      display: false,
+    },
+  }
+
+  static readonly commonTicksOptions: Partial<TickOptions> = {
+    color: 'rgba(255, 255, 255, 0.6)',
+    // maxTicksLimit: (ctx) => 30,
+    showLabelBackdrop: true,
+    backdropColor: 'rgba(0, 0, 0, 0.6)',
+    backdropPadding: 2,
+  }
+
+  get timeScaleOptions(): Partial<CartesianScaleOptions> {
+    return {}
+  }
+
+  get ticksOptions(): Partial<TickOptions> {
+    return {
+      font: (ctx: ScriptableScaleContext) => {
+        return {
+          family: chartsFontFamily,
+          size: this.scalesFontSize,
+        }
+      },
+    }
+  }
+
+  protected readonly timeScaleContainer: HTMLDivElement =
+    document.createElement('div')
+  protected readonly timeScaleCanvas: HTMLCanvasElement =
+    document.createElement('canvas')
+  protected timeScale?: Chart
+
+  protected drawTimeScale(): Chart {
+    if (this.timeScale != null) {
+      this.timeScale.destroy()
+    }
+
+    const chart = new Chart(this.timeScaleCanvas, {
+      type: 'line',
+      data: {
+        datasets: [],
+      },
+      options: {
+        responsive: true,
+        // ensures the canvas fills the entire container
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            display: false,
+            ...InpainterGraphicalView.commonAxesOptions,
+          },
+          x: {
+            ...InpainterGraphicalView.commonAxesOptions,
+
+            axis: 'x',
+            type: 'linear',
+            display: true,
+
+            min: 0, // this.getCurrentScrollPositionTopLayer(),
+            max: this.totalDurationAt120BPMSeconds, // this.getCurrentScrollPositionTopLayer() + this.numColumnsTop,
+
+            offset: false,
+
+            ticks: {
+              stepSize: 1,
+              align: 'start',
+              ...InpainterGraphicalView.commonTicksOptions,
+              ...this.ticksOptions,
+            },
+            ...this.timeScaleOptions,
+          },
+        },
+      },
+    })
+    this.timeScale = chart
+    return this.timeScale
+  }
 }
 
 // Mixins
-
 type GConstructor<T> = new (...args: any[]) => T
 type InterfaceConstructor = GConstructor<{
   readonly container: HTMLElement

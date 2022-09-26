@@ -1,7 +1,10 @@
-import { UndoManager } from 'typed-undo'
+import { UndoableEdit, UndoManager } from 'typed-undo'
 import { Unit as ToneUnit } from 'tone'
 
-import { UndoableInpainter } from '../inpainter/inpainter'
+import {
+  UndoableInpainter,
+  UndoableInpainterEdit,
+} from '../inpainter/inpainter'
 
 export type Codemap = number[][]
 export type InpaintingMask = boolean[][]
@@ -65,7 +68,11 @@ export class SpectrogramInpainter extends UndoableInpainter<
     // TODO(theis, 2021/08/26): retrieve this value from the API
     layerDimensions: Map<VqvaeLayer, AudioVQVAELayerDimensions>
   ) {
-    super(defaultApiAddress, undoManager)
+    super(
+      defaultApiAddress,
+      undoManager,
+      UndoableInpainterEdit<NotonoData<VqvaeLayer>>
+    )
     this.layerDimensions = layerDimensions
   }
 
@@ -95,6 +102,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
       {
         method: 'GET',
       },
+      [],
       timeout,
       'get audio sample'
     )
@@ -128,6 +136,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
         //   ContentType: 'application/json',
         // },
       },
+      [],
       timeout,
       'convert codemaps to audio'
     )
@@ -175,6 +184,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
         //   ContentType: 'application/json',
         // },
       },
+      [],
       timeout,
       'convert codemaps to spectrogram image'
     )
@@ -183,6 +193,15 @@ export class SpectrogramInpainter extends UndoableInpainter<
     } else {
       return null
     }
+  }
+
+  async loadFile(
+    file: File | Blob,
+    queryParameters: string[],
+    silent: boolean = false
+  ): Promise<this> {
+    super.loadFile(file, queryParameters, silent)
+    return this.sendAudio(file as Blob, queryParameters)
   }
 
   async sendAudio(
@@ -250,6 +269,7 @@ export class SpectrogramInpainter extends UndoableInpainter<
                 }
               : {},
         },
+        [],
         timeout,
         'perform inpainting operation'
       )

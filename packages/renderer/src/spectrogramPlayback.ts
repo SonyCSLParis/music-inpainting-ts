@@ -58,6 +58,10 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
     return [this.sampler_A, this.sampler_B]
   }
 
+  get totalDuration(): Tone.Unit.Time {
+    return this.currentBuffer().duration
+  }
+
   protected crossFadeDuration: Tone.Unit.Time = '1'
   // look-ahead duration to retrieve the state of the crossfade after potential fading operations
   protected crossFadeOffset: Tone.Unit.Time = '+1.1'

@@ -1,3 +1,5 @@
 {
-
+  "splash_screen": {
+    "insert_eula_agreement_checkbox": false
+  }
 }
