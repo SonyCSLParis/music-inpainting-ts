@@ -74,6 +74,13 @@ body {
   z-index: 0;
 }
 
+body.hidden-cursor {
+  &,
+  * {
+    cursor: none !important;
+  }
+}
+
 .inpainter:not(.piano-roll-inpainter).busy {
   > :not(.loading-spinner-container):not(.simplebar-track) {
     // emulate modal overlay, highlighting the loading indicator
@@ -99,9 +106,10 @@ body {
     pointer-events: none !important;
   }
 }
-.piano-roll-inpainter.busy {
+
+.inpainter.busy {
   .loading-spinner {
-    opacity: 0.4;
+    opacity: 1;
   }
 }
 
@@ -284,12 +292,11 @@ img {
   transition: all 0.3s ease-in-out;
   filter: drop-shadow(0px 0px 3px black);
 }
-.busy .loading-spinner {
-  opacity: 1;
-}
 
 $trapezoid-perspective-transform: perspective(10px) rotateX(8deg);
 $inverse-trapezoid-perspective-transform: perspective(10px) rotateX(-8deg);
+$inverse-trapezoid-perspective-transform-left: perspective(10px) rotateX(-8deg);
+$inverse-trapezoid-perspective-transform-right: perspective(-10px) rotate(20deg);
 
 #bottom-controls {
   display: grid;
@@ -307,71 +314,108 @@ $inverse-trapezoid-perspective-transform: perspective(10px) rotateX(-8deg);
   box-shadow: 0px -1px 3px 0px rgba(0, 0, 0, 0.21);
 
   text-align: center;
+}
 
-  .expand-tab {
+.expand-tab-container {
+  .expand-tab-display {
+    width: 100%;
+    height: 100%;
     position: absolute;
-    cursor: pointer;
-    width: 40%;
-    height: measures.$expand-tab-height;
-    top: calc(0px - #{measures.$expand-tab-height});
-    overflow: hidden;
-
-    &::before {
-      position: absolute;
-      top: 0;
-      height: 100%;
-      content: '⬇';
-      transform: $inverse-trapezoid-perspective-transform;
-    }
-
-    font-size: x-large;
-    display: flex;
-    align-content: center;
-    justify-content: center;
-    transition-property: top, height, font-size;
-    transition-duration: 0.1s;
-    animation-timing-function: ease-in;
-    left: 50%;
-    z-index: -1;
-    border-radius: 5px 5px 0 0;
-
+    left: 0;
+    top: -10%;
     // translateZ is used to ensure the content is behind the parent container
     // this is required since the parent container creates a stacking context
     // furthermore the Z-axis translation should happen before the trapezoid transform,
     // otherwise it messes up the perspective
-    transform: translateZ(-1000px) translate(-50%, 0)
-      $trapezoid-perspective-transform;
+    transform: $trapezoid-perspective-transform;
+  }
 
-    @media (hover: hover) {
-      // enable show on hover if device supports hovering;
-      height: calc(3 * #{measures.$expand-tab-height} / 4);
-      top: calc(0px - 3 *#{measures.$expand-tab-height} / 4);
+  transform: translateZ(-100px) translate(-50%, 0);
+  position: absolute;
+  cursor: pointer;
+  width: 40%;
+
+  height: measures.$expand-tab-container-height;
+  top: calc(0px - #{measures.$expand-tab-container-height});
+  overflow-x: visible;
+  font-family: monospace;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: 1fr 1fr;
+  .expand-tab-left-button,
+  .expand-tab-right-button {
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    &::before {
+      position: relative;
+      top: 3%;
     }
-
     &:hover {
-      height: measures.$expand-tab-height;
-      top: calc(0px - #{measures.$expand-tab-height});
+      filter: brightness(1.3);
+      font-size: larger;
     }
+  }
+  .expand-tab-left-button {
+    border-right: thin solid;
+    @include fa-icon-solid($fa-var-angle-down);
+  }
+  .expand-tab-right-button {
+    border-left: thin solid;
+    @include fa-icon-solid($fa-var-angle-up);
+  }
+
+  font-size: x-large;
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  transition-property: top, height, font-size;
+  transition-duration: 0.1s;
+  animation-timing-function: ease-in;
+  left: 50%;
+  z-index: -1;
+  border-radius: 5px 5px 0 0;
+
+  @media (hover: hover) {
+    // enable show on hover if device supports hovering;
+    height: calc(3 * #{measures.$expand-tab-container-height} / 4);
+    top: calc(0px - 3 *#{measures.$expand-tab-container-height} / 4);
+  }
+
+  &:hover {
+    height: measures.$expand-tab-container-height;
+    top: calc(0px - #{measures.$expand-tab-container-height});
+  }
+}
+body.controls-hidden {
+  .expand-tab-left-button {
+    @include fa-icon-solid($fa-var-angles-up);
+  }
+}
+body.advanced-controls {
+  .expand-tab-right-button {
+    @include fa-icon-solid($fa-var-angles-down);
   }
 }
 
 body.help-tour-on {
-  .expand-tab {
+  .expand-tab-container {
     // disable advanced controls expansion tab when browsing the help menu,
     // we automatically expand all controls to show the help
     visibility: hidden;
   }
 }
 
-body.advanced-controls-disabled:not(.force-advanced-controls) {
+body.controls-hidden:not(.force-advanced-controls) {
   #bottom-controls {
-    .expand-tab {
-      &::before {
-        content: '⬆';
-      }
+    padding: 0;
+    .control-item,
+    .control-label {
+      display: none;
     }
   }
-
+}
+body:not(.advanced-controls) {
   .advanced {
     &,
     .control-item,
@@ -446,4 +490,66 @@ select {
 
 .inpainter.transparent-scrollbar .simplebar-track {
   opacity: 0.7;
+}
+
+.inpainter.error {
+  .loading-spinner-container {
+    @include fa-icon-solid($fa-var-bomb);
+    &:before {
+      color: #a13636;
+      animation: small-shake 1.5s linear 0.1s infinite,
+        flash 2s normal 0.2s forwards;
+      display: block;
+    }
+  }
+}
+
+@keyframes small-shake {
+  0% {
+    transform: rotate(-6deg);
+  }
+  4% {
+    transform: rotate(6deg);
+  }
+  8%,
+  24% {
+    transform: rotate(-9deg);
+  }
+  12%,
+  28% {
+    transform: rotate(9deg);
+  }
+  16% {
+    transform: rotate(-13deg);
+  }
+  20% {
+    transform: rotate(13deg);
+  }
+  32% {
+    transform: rotate(-3deg);
+  }
+  36% {
+    transform: rotate(3deg);
+  }
+  40%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes flash {
+  0% {
+    opacity: 0%;
+    visibility: visible;
+  }
+  10% {
+    opacity: 100%;
+  }
+  99% {
+    opacity: 0%;
+  }
+  100% {
+    opacity: 0%;
+    visibility: hidden;
+  }
 }

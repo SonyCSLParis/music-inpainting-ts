@@ -9,6 +9,10 @@
       "en": "Tempo"
     },
 
+    "playback-rate-control-label": {
+      "en": "Speed"
+    },
+
     "pitch-control-label": {
       "en": "Pitch"
     },
@@ -131,6 +135,16 @@
 
     "midi-file-select-label": {
       "en": "Template"
+    },
+
+    "pia-hyperparameters-controls-top_p-control-label": {
+      "en": "Freedom"
+    },
+    "pia-hyperparameters-controls-superconditioning-control-label": {
+      "en": "Coherence"
+    },
+    "pia-hyperparameters-controls-gridspan-label": {
+      "en": "Settings"
     }
   },
 

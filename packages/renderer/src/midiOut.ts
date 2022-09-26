@@ -8,8 +8,12 @@ import * as ControlLabels from './controlLabels'
 import Nexus from './nexusColored'
 import MidiSheetPlaybackManager from './sheetPlayback'
 import { NexusSelect } from 'nexusui'
+import Select from 'nexusui/dist/types/interfaces/select'
+import { ToneMidiInput } from './midi_io/midiInput'
+import { NoteOffEvent } from '@tonejs/midi/dist/Note'
+import { channel } from 'diagnostics_channel'
 
-let globalMidiOutputListener: MidiOutput = null
+let globalMidiOutputListener: MidiOutput | null = null
 let midiOutSelect: NexusSelect | null = null
 
 export function getMidiOutSelect(): NexusSelect | null {
@@ -96,6 +100,9 @@ export async function render(
     size: [150, 50],
     options: await makeOptions(),
   })
+  if (midiOutSelect == null) {
+    throw new Error()
+  }
 
   async function updateOptions(): Promise<void> {
     const currentOutput = midiOutSelect.value
@@ -120,7 +127,7 @@ export async function render(
   midiOutputListener.on('connect', () => void updateOptions())
   midiOutputListener.on('disconnect', () => void updateOptions())
 
-  async function midiOutOnChange(this: typeof midiOutSelect): Promise<void> {
+  async function midiOutOnChange(this: Select): Promise<void> {
     const previousOutput = midiOutputListener.deviceId
 
     await midiOutputListener.setDevice(this.value.toLowerCase())
@@ -130,11 +137,20 @@ export async function render(
     playbackManager.toggleLowLatency(midiOutputListener.isActive)
     Instruments.mute(midiOutputListener.isActive)
 
+    await playbackManager.refreshPlayNoteCallback()
+    if (midiOutputListener.isActive) {
+      const output = await getOutput()
+      const loopbackInput = midiOutputListener.midiInputListener
+      const midiLatency = await measureMidiLatency(output, loopbackInput)
+      if (midiLatency != null) {
+        playbackManager.midiLatencyCompensation = midiLatency
+      }
+      console.log('midiLatency: ', midiLatency)
+    }
     midiOutputSetupGridspanElement.classList.toggle(
       'midi-enabled',
       midiOutputListener.isActive
     )
-    await playbackManager.refreshPlayNoteCallback()
   }
 
   midiOutSelect.on('change', () => void midiOutOnChange.bind(midiOutSelect)())
@@ -159,6 +175,44 @@ export async function render(
         midiOutDisplayButton.click()
       })
     })
+  }
+
+  async function measureMidiLatency(
+    midiOutput: Output,
+    midiInputLoopback: ToneMidiInput,
+    repetitions: number = 1000
+  ): Promise<number | null> {
+    const emitted: number[] = []
+    const received: number[] = []
+
+    const repetitionsArray = Array.from(Array(repetitions)).fill(0)
+    for (const repetitionIndex of repetitionsArray) {
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          const listener = (e) => {
+            if (e.note == 'E3') {
+              received.push(Date.now())
+              resolve()
+            }
+          }
+          midiInputLoopback.once('keyUp', listener)
+          emitted.push(Date.now())
+          midiOutput.sendNoteOff('E3', { channels: 16 })
+        }, 3)
+      })
+    }
+
+    if (emitted.length != received.length) {
+      console.log('missing events!')
+      return null
+    }
+    const latencies = received.map(
+      (receivedTime, index) => receivedTime - emitted[index]
+    )
+    const averageLatency =
+      latencies.reduce((acc, latency) => acc + latency, 0) / latencies.length
+    const averageLatency_seconds = averageLatency / 1000
+    return averageLatency_seconds
   }
 
   return

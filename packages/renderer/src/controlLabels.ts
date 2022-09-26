@@ -26,16 +26,11 @@ export function createLabel(
     )
   }
   labelElement.innerHTML = controlLabel
-  labelElement.classList.toggle(
-    'advanced',
-    controlElement.classList.contains('advanced') || isAdvancedControl
-  )
 
   if (containerElement == undefined) {
     const defaultContainerId = 'bottom-controls'
-    const maybeBottomControlsElement = document.getElementById(
-      defaultContainerId
-    )
+    const maybeBottomControlsElement =
+      document.getElementById(defaultContainerId)
     if (maybeBottomControlsElement == null) {
       throw new EvalError(
         `No container element provided and the of ${defaultContainerId} does not exist on the DOM`

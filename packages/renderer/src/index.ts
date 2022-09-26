@@ -2,9 +2,13 @@ import $ from 'jquery'
 import log from 'loglevel'
 log.setLevel(log.levels.DEBUG)
 
-import { PopUndoManager, UndoableInpainter } from './inpainter/inpainter'
+import {
+  PopUndoManager,
+  UndoableInpainter,
+  UndoableInpainterEdit,
+} from './inpainter/inpainter'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
-import { SheetInpainter } from './sheet/sheetInpainter'
+import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
 import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
 import {
   SpectrogramInpainter,
@@ -25,14 +29,18 @@ import Nexus, {
 
 import * as Header from './header'
 
-import * as PlaybackCommands from './playbackCommands'
+import { PlaybackCommands } from './playbackCommands'
 import { FixedRecorder, MidiRecorder, MyCallback } from './piano_roll/record'
 import { PlaybackManager } from './playback'
 import MidiSheetPlaybackManager from './sheetPlayback'
 import { MultiChannelSpectrogramPlaybackManager as SpectrogramPlaybackManager } from './spectrogramPlayback'
 
 import * as Instruments from '../instruments/instruments'
-import { BPMControl, renderPitchRootAndOctaveControl } from './numberControl'
+import {
+  BPMControl,
+  PlaybackRateControl,
+  renderPitchRootAndOctaveControl,
+} from './numberControl'
 import { AbletonLinkClient } from './ableton_link/linkClient.abstract'
 import { getAbletonLinkClientClass } from './ableton_link/linkClient'
 import * as LinkClientCommands from './ableton_link/linkClientCommands'
@@ -89,7 +97,7 @@ if (VITE_COMPILE_ELECTRON) {
 
 import defaultConfiguration from '../../common/default_config.json'
 import { setBackgroundColorElectron, getTitleBarDisplay } from './utils/display'
-import { UndoManager } from 'typed-undo'
+import { UndoableEdit, UndoManager } from 'typed-undo'
 import { IOSMDOptions } from 'opensheetmusicdisplay'
 
 let inpainter: UndoableInpainter
@@ -134,9 +142,6 @@ async function render(
   }
 
   document.body.classList.add('running')
-  if (!configuration['piano_roll']) {
-    document.body.classList.add('advanced-controls-disabled')
-  }
 
   if (VITE_COMPILE_ELECTRON) {
     document.body.classList.add('electron')
@@ -223,14 +228,60 @@ async function render(
     if (bottomControlsGridElement == null) {
       throw Error('Bottom controls panel not created')
     }
-    const bottomControlsExpandTabElement = document.createElement('div')
-    bottomControlsExpandTabElement.id = 'bottom-controls-expand'
-    bottomControlsExpandTabElement.classList.add('expand-tab')
-    bottomControlsGridElement.appendChild(bottomControlsExpandTabElement)
-    bottomControlsExpandTabElement.addEventListener('click', function () {
-      document.body.classList.toggle('advanced-controls-disabled')
+    const bottomControlsExpandTabContainer = document.createElement('div')
+    bottomControlsExpandTabContainer.classList.add('expand-tab-container')
+    const bottomControlsExpandTabDisplay = document.createElement('div')
+    bottomControlsExpandTabDisplay.classList.add('expand-tab-display')
+    bottomControlsExpandTabContainer.appendChild(bottomControlsExpandTabDisplay)
+    const bottomControlsExpandTabLeftButton = document.createElement('div')
+    bottomControlsExpandTabLeftButton.classList.add('expand-tab-left-button')
+    bottomControlsExpandTabContainer.appendChild(
+      bottomControlsExpandTabLeftButton
+    )
+    const bottomControlsExpandTabRightButton = document.createElement('div')
+    bottomControlsExpandTabRightButton.classList.add('expand-tab-right-button')
+    bottomControlsExpandTabContainer.appendChild(
+      bottomControlsExpandTabRightButton
+    )
+    bottomControlsGridElement.appendChild(bottomControlsExpandTabContainer)
+
+    const expandTabRightButton = () => {
+      if (document.body.classList.contains('advanced-controls')) {
+        // collapse directly to hidden controls
+        document.body.classList.remove('advanced-controls')
+        document.body.classList.add('controls-hidden')
+      } else if (document.body.classList.contains('controls-hidden')) {
+        // simple, one-level expand
+        document.body.classList.remove('controls-hidden')
+      } else {
+        document.body.classList.add('advanced-controls')
+      }
       inpainterGraphicalView.refresh()
-    })
+      inpainterGraphicalView.refresh()
+    }
+    const expandTabLeftButton = () => {
+      if (document.body.classList.contains('controls-hidden')) {
+        // no controls, expand directly to advanced
+        document.body.classList.remove('controls-hidden')
+        document.body.classList.add('advanced-controls')
+      } else if (document.body.classList.contains('advanced-controls')) {
+        document.body.classList.remove('advanced-controls')
+      } else {
+        // collapse controls
+        document.body.classList.add('controls-hidden')
+      }
+      inpainterGraphicalView.refresh()
+      inpainterGraphicalView.refresh()
+    }
+
+    bottomControlsExpandTabLeftButton.addEventListener(
+      'click',
+      expandTabLeftButton
+    )
+    bottomControlsExpandTabRightButton.addEventListener(
+      'click',
+      expandTabRightButton
+    )
 
     const playbackCommandsGridspan = document.createElement('div')
     playbackCommandsGridspan.id = 'playback-commands-gridspan'
@@ -269,10 +320,18 @@ async function render(
       bpmControlGridspanElement.id = 'bpm-control-gridspan'
       bpmControlGridspanElement.classList.add('gridspan')
       bottomControlsGridElement.appendChild(bpmControlGridspanElement)
-
-      bpmControl = new BPMControl(bpmControlGridspanElement, 'bpm-control')
-      bpmControl.render(useSimpleSlider, 200)
-      bpmControl.value = 120
+      if (configuration['osmd']) {
+        bpmControl = new BPMControl(bpmControlGridspanElement, 'bpm-control')
+        bpmControl.render(200, useSimpleSlider)
+        bpmControl.value = 90
+      } else if (configuration['piano_roll']) {
+        bpmControl = new PlaybackRateControl(
+          bpmControlGridspanElement,
+          'playback-rate-control'
+        )
+        bpmControl.render(70, true, 25)
+        bpmControl.value = 1
+      }
     }
   }
 
@@ -345,7 +404,10 @@ async function render(
     const downloadCommandsGridspan = document.createElement('div')
     downloadCommandsGridspan.id = 'download-button-gridspan'
     downloadCommandsGridspan.classList.add('gridspan')
-    downloadCommandsGridspan.classList.toggle('advanced', true)
+    downloadCommandsGridspan.classList.toggle(
+      'advanced',
+      !configuration['piano_roll']
+    )
     bottomControlsGridElement.appendChild(downloadCommandsGridspan)
 
     if (configuration['osmd']) {
@@ -368,7 +430,11 @@ async function render(
       mainPanel.appendChild(sheetContainer)
 
       const undoManager = new UndoManager()
-      sheetInpainter = new SheetInpainter(inpaintingApiAddress, undoManager)
+      sheetInpainter = new SheetInpainter(
+        inpaintingApiAddress,
+        undoManager,
+        UndoableInpainterEdit<SheetData>
+      )
       inpainter = sheetInpainter
 
       sheetPlaybackManager = new MidiSheetPlaybackManager(
@@ -424,12 +490,23 @@ async function render(
       piaContainer.id = 'pia-container'
       mainPanel.appendChild(piaContainer)
 
+      const piaHyperParametersControlsContainer = document.createElement('div')
+      piaHyperParametersControlsContainer.classList.add('gridspan')
+      piaHyperParametersControlsContainer.classList.add('advanced')
+      bottomControlsGridElement?.append(piaHyperParametersControlsContainer)
+
       const undoManager = new PopUndoManager<PianoRollData>()
-      const DURATION = 120 * PiaInpainter.PPQ // 1 minute at 120BPM
+      const DURATION_SECONDS_AT_120BPM = 60
+      const piaAPIManager = new PiaAPIManager()
+      piaAPIManager.renderHyperparameterControls(
+        piaHyperParametersControlsContainer,
+        35
+      )
       piaInpainter = new PiaInpainter(
+        piaAPIManager,
         inpaintingApiAddress,
         undoManager,
-        DURATION
+        DURATION_SECONDS_AT_120BPM * 2 * PiaInpainter.PPQ
       )
       inpainter = piaInpainter
 
@@ -453,7 +530,7 @@ async function render(
           resolve()
         })
       })
-      readyToPlayPromises.push(inpainterGraphicalViewReady)
+      // readyToPlayPromises.push(inpainterGraphicalViewReady)
 
       inpainterGraphicalView = piaInpainterGraphicalView
 
@@ -689,7 +766,7 @@ async function render(
       ControlLabels.createLabel(
         bottomControlsGridElement,
         'download-button-label',
-        true,
+        false,
         'download-button-label-with-native-drag',
         downloadButton.container
       )
@@ -697,7 +774,7 @@ async function render(
       ControlLabels.createLabel(
         bottomControlsGridElement,
         'download-button-label',
-        true,
+        false,
         undefined,
         downloadButton.container
       )
@@ -766,16 +843,31 @@ async function render(
     if (playbackCommandsGridspan == null) {
       throw Error('Playback commands container not initialized')
     }
-    PlaybackCommands.render(playbackCommandsGridspan, playbackManager)
+    const playbackComands = new PlaybackCommands(
+      playbackCommandsGridspan,
+      playbackManager
+    ).render()
     // TODO(@tbazin, 2022/08/10): readyToPlay not detected properly on Firefox Mobile,
     //disabling this for now
-    if (false && readyToPlayPromises.length > 0) {
+    if (readyToPlayPromises.length > 0) {
       // disabling play/pause interface until there is some data to be played
-      playbackCommandsGridspan?.classList.add('disabled-gridspan')
-      Promise.all(readyToPlayPromises).then(() => {
-        // enable play/pause interface
-        playbackCommandsGridspan?.classList.remove('disabled-gridspan')
-      })
+      playbackComands.setWaitingClass()
+      Promise.all(readyToPlayPromises)
+        .then(() => {
+          log.info('Ready to play!')
+          // enable play/pause interface
+          playbackComands.unsetWaitingClass()
+          playbackComands.refreshInterface()
+        })
+        .catch((reason) => {
+          playbackComands.setBrokenIcon()
+          log.error('Could not initialize playback due to: ', reason)
+          alert('Error: Could not initialize playback due to: ' + reason)
+          new Notification(
+            'Error: Could not initialize playback due to: ',
+            reason
+          )
+        })
     }
   }
 
@@ -794,13 +886,21 @@ async function render(
     bottomControlsGridElement.appendChild(midiFileSelectGridspanElement)
 
     const midiFileSelectContainerElement = document.createElement('div')
+    midiFileSelectContainerElement.classList.add('control-item')
     midiFileSelectGridspanElement.appendChild(midiFileSelectContainerElement)
     midiFileSelect = new MidiFileSelector(midiFileSelectContainerElement)
     midiFileSelect.render()
-    midiFileSelect.on('change', (state: { value: string }) => {
+    midiFileSelect.on('change', async (state: { value: string }) => {
       const newURL = MidiFileSelector.midiFiles.get(state.value)
       if (newURL == null) {
         piaInpainter?.clear()
+      } else if (newURL == TemplateCommands.BlankTemplate) {
+        piaInpainter?.clear()
+      } else if (newURL == TemplateCommands.OpenFile) {
+        const file = await midiFileSelect?.triggerOpenFile()
+        if (file != undefined) {
+          piaInpainter?.loadFile(file, [], false)
+        }
       } else {
         piaInpainter?.loadFromUrl(newURL)
       }
@@ -812,6 +912,18 @@ async function render(
       undefined,
       midiFileSelectGridspanElement
     )
+
+    piaInpainter.on('clear', () => {
+      if (midiFileSelect != null && midiFileSelect.element != null) {
+        midiFileSelect.resetOptions()
+        midiFileSelect.element.selectedIndex = 0
+      }
+    })
+    piaInpainter.on('load-file-programmatic', () => {
+      if (midiFileSelect != null && midiFileSelect.element != null) {
+        midiFileSelect.setCustomOptionDisplay()
+      }
+    })
 
     const recordCommandsGridspanElement = document.createElement('div')
     recordCommandsGridspanElement.id = 'record-commands-gridspan'
@@ -1002,9 +1114,11 @@ async function render(
       configuration['insert_advanced_controls'] &&
       (configuration['spectrogram'] || configuration['piano_roll'])
     ) {
-      void import('./midiIn').then((midiInModule) => {
+      import('./midiIn').then(async (midiInModule) => {
         log.debug('Rendering Midi Input controls')
-        void midiInModule.render()
+        await midiInModule.render()
+        const inputListener = await midiInModule.getMidiInputListener()
+        console.log(inputListener?.deviceId)
       })
     }
   }
@@ -1102,6 +1216,9 @@ async function render(
           await inpainter.generate(inpainterGraphicalView.queryParameters)
         }
       } else {
+        if (midiFileSelect != null) {
+          midiFileSelect.selectedIndex = 1
+        }
         const silentInpainterUpdate = false
         await inpainter.dummyGenerate(
           inpainterGraphicalView.queryParameters,
@@ -1152,8 +1269,13 @@ async function render(
 // manual calls to hot.invalidate(),
 // which would be required here to rebuild the app's helpTour on help.json content update
 import helpContentsJSON from '../static/localizations/help.json'
-import { MidiFileSelector } from './piano_roll/midiFilesSelector'
+import {
+  MidiFileSelector,
+  TemplateCommands,
+} from './piano_roll/midiFilesSelector'
 import { Recorder } from '@magenta/music/esm/core/recorder'
+import { PiaAPIManager } from './piano_roll/piaAPI'
+import { stringify } from 'querystring'
 if (import.meta.hot) {
   let helpContents = helpContentsJSON
 }

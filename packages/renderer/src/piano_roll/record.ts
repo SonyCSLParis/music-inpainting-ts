@@ -146,6 +146,7 @@ export class MidiRecorder {
   async render(parent: HTMLElement) {
     this.parent = parent
     this.parent.classList.add('disabled-gridspan')
+    this.parent.classList.add('advanced')
 
     const midiInputListener = await MidiIn.getMidiInputListener()
     if (midiInputListener == null) {

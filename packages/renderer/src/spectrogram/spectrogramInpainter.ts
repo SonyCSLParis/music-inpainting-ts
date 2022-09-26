@@ -195,7 +195,12 @@ export class SpectrogramInpainter extends UndoableInpainter<
     }
   }
 
-  async loadFile(file: File | Blob, queryParameters: string[]): Promise<this> {
+  async loadFile(
+    file: File | Blob,
+    queryParameters: string[],
+    silent: boolean = false
+  ): Promise<this> {
+    super.loadFile(file, queryParameters, silent)
     return this.sendAudio(file as Blob, queryParameters)
   }
 

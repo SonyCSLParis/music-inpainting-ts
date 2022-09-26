@@ -56,7 +56,9 @@ function mapAllInstrumentsToFirstVoice(noteSequence: NoteSequence) {
     .mergeInstruments(noteSequence)
     .notes.map((note) => {
       note.instrument = 0
-      note.program = 0
+      // HACK(@tbazin, 2022/09/13): *not* overriding the loaded `program` value
+      //    allows to maintain the generated notes displays in loaded files
+      note.program = note.program == 1 ? 1 : 0
       return note
     })
 
@@ -72,7 +74,21 @@ export function pianorollify(
   noteSequence = removeDrums(noteSequence)
   noteSequence = mapAllInstrumentsToFirstVoice(noteSequence)
   noteSequence = trimStartSilence(noteSequence)
+  // noteSequence = clipMidiPitchesRanges(noteSequence)
   return mm_sequences.trim(noteSequence, 0, cropDuration, true)
+}
+
+function clipMidiPitchesRanges(
+  noteSequence: NoteSequence,
+  minPitch = 21,
+  maxPitch = 108
+) {
+  const notesInValidMIDIPitchRange = noteSequence.notes.filter(
+    (note) => note.pitch >= minPitch && note.pitch <= maxPitch
+  )
+
+  noteSequence.notes = notesInValidMIDIPitchRange
+  return new NoteSequence({ ...noteSequence.toJSON() })
 }
 
 export class MonoVoicePlayerElement extends PlayerElement {
@@ -212,6 +228,17 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     //   .findIndex((value) => x < value)
     this.svg.appendChild(rect)
 
+    const isGeneratedNoteIndex = dataAttributes.findIndex(
+      ([key, value]) => key == 'program'
+    )
+    const isGeneratedNote =
+      isGeneratedNoteIndex >= 0
+        ? dataAttributes[isGeneratedNoteIndex][1] == 1
+        : false
+    const baseColor = isGeneratedNote
+      ? NoteByNotePianoRollSVGVisualizer.baseGeneratedNoteColor
+      : NoteByNotePianoRollSVGVisualizer.baseLoadedNoteColor
+
     const velocityString = rect.style.getPropertyValue('--midi-velocity')
     const velocity = parseInt(velocityString != '' ? velocityString : '127')
     // const velocity = Math.round(Math.random() * 127)
@@ -219,7 +246,7 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     const colorHueRotate = colorRotateAmount * (velocity / 127)
     rect?.setAttribute(
       'fill',
-      NoteByNotePianoRollSVGVisualizer.defaultNoteColor
+      baseColor
         .hsl()
         .rotate(-1 * colorRotateAmount + colorHueRotate)
         .desaturate(0.7 * (1 - velocity / 127))
@@ -230,7 +257,12 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     return rect
   }
 
-  static defaultNoteColor: Color = Color.rgb(255, 110, 0).hsv()
+  static readonly baseGeneratedNoteColor: Color = Color.rgb(255, 110, 0)
+    .hsv()
+    .desaturate(0.05)
+  static readonly baseLoadedNoteColor: Color = Color.rgb(0, 110, 255)
+    .hsv()
+    .desaturate(0.6)
 
   protected getNotePosition(
     note: NoteSequence.INote,
@@ -570,16 +602,16 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
 
   protected playbackPositionCursor: SVGLineElement | null = null
 
-  totalProgressToClientX(progress: number): number {
+  totalProgressToClientX(progress: number, noMargin = false): number {
     if (this.visualizer == null) {
       throw Error()
     }
     return (
-      NoteByNotePianoRollSVGVisualizer.clickableMarginWidth +
+      (noMargin ? 0 : NoteByNotePianoRollSVGVisualizer.clickableMarginWidth) +
       this.visualizer.Size.widthWithoutMargins * progress
     )
   }
-  timeToClientX(time: number | null): number | null {
+  timeToClientX(time: number | null, noMargin = false): number | null {
     if (time == null || this.visualizer == null) {
       return null
     }
@@ -588,7 +620,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       return null
     }
     const progress = time / totalDuration || 0
-    return this.totalProgressToClientX(progress)
+    return this.totalProgressToClientX(progress, noMargin)
   }
 
   setPlaybackDisplayProgress(totalProgress: number) {
@@ -1633,7 +1665,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       // }
       this.refreshSelectionOverlay()
     })
-    this.svgElement.addEventListener('pointerup', () => {
+    this.svgElement.addEventListener('pointerup', (e: PointerEvent) => {
       if (VITE_SCREENSHOT_MODE) {
         return
       }
@@ -1715,8 +1747,8 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       'invalid-selection',
       !this.selectionIsValid
     )
-    const [x_left, x_right] = this.selectionTimestamps.map(
-      this.timeToClientX.bind(this)
+    const [x_left, x_right] = this.selectionTimestamps.map((timestamp) =>
+      this.timeToClientX(timestamp)
     ) as [number, number]
     this.selectionOverlay.setAttribute('x', x_left.toString())
     this.selectionOverlay.setAttribute(
@@ -1733,8 +1765,8 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     if (this.currentGenerationOverlayContainer == null) {
       return
     }
-    const [x_A, x_B] = this.currentGenerationTimestamps.map(
-      this.timeToClientX.bind(this)
+    const [x_A, x_B] = this.currentGenerationTimestamps.map((timestamp) =>
+      this.timeToClientX(timestamp)
     )
     if (x_A == null || x_B == null) {
       this.currentGenerationOverlayContainer.setAttribute('x', '0')
@@ -1808,7 +1840,9 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       })
 
       const [currentGeneration_left_x, currentGeneration_right_x] =
-        this.currentGenerationTimestamps.map(this.timeToClientX.bind(this))
+        this.currentGenerationTimestamps.map((timestamp) =>
+          this.timeToClientX(timestamp)
+        )
       const currentlyGenerating =
         currentGeneration_left_x != null && currentGeneration_right_x != null
 
@@ -1845,7 +1879,9 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
 
       const [selectionTimestamp_left_x, selectionTimestamp_right_x] =
         timestamps ??
-        this.selectionTimestamps.map(this.timeToClientX.bind(this))
+        this.selectionTimestamps.map((timestamp) =>
+          this.timeToClientX(timestamp)
+        )
       if (
         selectionTimestamp_left_x != null &&
         selectionTimestamp_right_x != null

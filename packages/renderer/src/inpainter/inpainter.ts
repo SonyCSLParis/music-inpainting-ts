@@ -86,6 +86,7 @@ export abstract class Inpainter<
     error: unknown,
     attempted_action = 'perform network request'
   ): never {
+    this.emit('error')
     throw new Error(
       'Failed to ' +
         attempted_action +
@@ -102,6 +103,7 @@ export abstract class Inpainter<
   protected defaultExponentialBackoffDelay: number = 60
   protected maxExponentialBackoffDelay: number = 1024
 
+  protected abortTimeout?: ReturnType<typeof setTimeout>
   protected async fetch(
     input: RequestInfo,
     init?: RequestInit,
@@ -113,12 +115,14 @@ export abstract class Inpainter<
     if (init == undefined) {
       init = {}
     }
-    let abortTimeout: ReturnType<typeof setTimeout> | null = null
     let timeoutAbortController: AbortController | null = null
 
     if (timeout != null && timeout > 0) {
       timeoutAbortController = new AbortController()
-      abortTimeout = setTimeout(() => {
+      if (this.abortTimeout != undefined) {
+        clearTimeout(this.abortTimeout)
+      }
+      this.abortTimeout = setTimeout(() => {
         log.debug('Timeout exceeded, aborting request')
         timeoutAbortController?.abort()
       }, timeout)
@@ -131,15 +135,15 @@ export abstract class Inpainter<
 
     try {
       const response = await fetch(input, init)
-      if (abortTimeout != null) {
-        clearTimeout(abortTimeout)
+      if (this.abortTimeout != null) {
+        clearTimeout(this.abortTimeout)
       }
       if (response.ok) {
         return response
       }
     } catch (error: unknown) {
       if (additionalAbortSignals.find((signal) => signal.aborted)) {
-        clearTimeout(abortTimeout)
+        clearTimeout(this.abortTimeout)
         log.error(error)
         return
       }
@@ -193,7 +197,7 @@ export abstract class Inpainter<
   // TODO(@tbazin, 2022/05): this is to set values in response to
   //   interactive API commands, to maintain a coherent state for undoableEdits
   //   but this feels hackish, could this be cleaned-up?
-  protected setValueInteractive(newValue: DataT): void {
+  protected setValueInteractive(newValue: DataT, silent?: boolean): void {
     this._value = newValue
   }
 
@@ -347,11 +351,14 @@ export abstract class Inpainter<
     )
   }
 
-  abstract loadFile(
-    file: File,
+  async loadFile(
+    file: File | Blob,
     queryParameters: string[],
     silent: boolean
-  ): Promise<this>
+  ): Promise<this> {
+    this.emit('load-file')
+    return this
+  }
 }
 
 export class UndoableInpainterEdit<DataT> extends UndoableEdit {
@@ -377,11 +384,21 @@ export class UndoableInpainterEdit<DataT> extends UndoableEdit {
   }
 
   public undo(): void {
-    this.applyValue(this.oldValue)
+    // HACK(@tbazin, 2022/09/11): super dirty hack to ensure undo/redos are properly applied
+    const oldValueWithoutType = {
+      ...this.oldValue,
+      type: undefined,
+    }
+    this.applyValue(oldValueWithoutType)
   }
 
   public redo(): void {
-    this.applyValue(this.newValue)
+    // HACK(@tbazin, 2022/09/11): super dirty hack to ensure undo/redos are properly applied
+    const newValueWithoutType = {
+      ...this.newValue,
+      type: undefined,
+    }
+    this.applyValue(newValueWithoutType)
   }
 
   public isSignificant(): boolean {

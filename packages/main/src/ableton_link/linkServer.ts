@@ -34,6 +34,7 @@ export abstract class LinkServer<CommunicationTargetT> extends AbletonLink {
     }
     this.init()
     this.attachListeners()
+    console.log('hello server created')
   }
 
   // protected get linkEnable(): boolean {

@@ -184,8 +184,8 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 
   // filter: hue-rotate(calc(-1 * $color-rotate-amount + $color-rotate));
   // invert($midi-velocity-percent);
-  &:not(.selected):not([data-instrument='1']) {
-    fill: lightgrey;
+  &:not(.selected)[data-program='0'] {
+    // filter: grayscale(0.5);
   }
   &.active {
     opacity: 1;
@@ -259,7 +259,7 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 
 /* Custom visualizer style */
 $midi-visualizer-margins-color: color.scale(black, $lightness: +15%);
-$midi-visualizer-top-margin-length: 6vh;
+$midi-visualizer-top-margin-length: max(6vh, 40px);
 $midi-visualizer-bottom-margin-length: 1vh;
 $midi-visualizer-background-color: color.scale(darkgray, $lightness: +90%);
 $midi-visualizer-background-color: color.scale(black, $lightness: +10%);

@@ -5,6 +5,9 @@ import {
   UndoableInpainter,
   UndoableInpainterEdit,
 } from '../inpainter/inpainter'
+import { PiaAPIManager, PiaData, PiaNoteData } from './piaAPI'
+
+import SonyCslLogoNoTextUrl from '../../static/icons/logos/sonycsl-logo-no_text.svg'
 
 // import { ValueStart, ValueEnd } from './ButtonsTimer'
 import {
@@ -18,13 +21,6 @@ import {
 } from '@magenta/music/esm/core/midi_io'
 import * as mm_sequences from '@magenta/music/esm/core/sequences'
 
-import {
-  convertNoteSequenceNoteToPiaNoteObject,
-  convertPiaNoteToNoteSequenceNote,
-  noteSequenceToPiaJSON,
-  PiaData,
-  PiaNoteData,
-} from './piaAPI'
 import { UndoManager } from 'typed-undo'
 import { Note } from '@tonejs/midi/dist/Note'
 import { Midi as TonalMidi } from '@tonaljs/tonal'
@@ -61,6 +57,8 @@ export class PiaInpainter extends UndoableInpainter<
   NoteSequence.Note,
   UndoablePiaEdit
 > {
+  readonly apiManager: PiaAPIManager
+
   protected createUndoableEdit(
     previousValue: PianoRollData,
     newValue: PianoRollData,
@@ -89,11 +87,13 @@ export class PiaInpainter extends UndoableInpainter<
   }
 
   constructor(
+    apiManager: PiaAPIManager,
     defaultApiAddress: URL,
     undoManager: UndoManager,
     forceDuration_ticks?: number
   ) {
     super(defaultApiAddress, undoManager, UndoablePiaEdit)
+    this.apiManager = apiManager
     this.forceDuration_ticks = forceDuration_ticks
   }
 
@@ -112,10 +112,10 @@ export class PiaInpainter extends UndoableInpainter<
 
   protected onUndo(): void {
     if (this.isInRequest) {
-      if (this.undoManager.canUndo()) {
-        // FIXME(@tbazin, 2022/09/02)
-        this.undoManager.pop()
-      }
+      // if (this.undoManager.canUndo()) {
+      //   // FIXME(@tbazin, 2022/09/02)
+      //   this.undoManager.pop()
+      // }
       if (
         this.undoManager.edits.length == 1 &&
         this.undoManager.edits[0].type == 'clear-region'
@@ -187,6 +187,23 @@ export class PiaInpainter extends UndoableInpainter<
     }
   }
 
+  protected moveSelectionToTime(
+    selection: NoteSequence.Note[],
+    newTimeOfFirstEvent: number
+  ): void {
+    const timeOfFirstEvent = Math.min(
+      ...selection
+        .filter((note) => note.startTime != undefined)
+        .map((note) => note.startTime)
+    )
+    const offset = newTimeOfFirstEvent - timeOfFirstEvent
+    // const movedNotes = selection.map(note => {return {
+    //   ...note,
+    //   startTime: note.startTime + offset
+    // }})
+    this.emit('move', selection, offset)
+  }
+
   protected async inpaintRegion(
     regionStartQuarters: number,
     regionEndQuarters: number
@@ -225,9 +242,12 @@ export class PiaInpainter extends UndoableInpainter<
     this.clearRegion(regionTicks, selectedRegion)
 
     if (initialNotesAfterRegion.length > 0) {
-      regionEndQuarters = Math.min(regionEndQuarters, regionStartQuarters + 0.2)
+      regionEndQuarters = Math.min(
+        regionEndQuarters,
+        regionStartQuarters + (0.2 * this.noteSequence.ticksPerQuarter) / 192
+      )
     }
-    const piaInputData_json = noteSequenceToPiaJSON(
+    const piaInputData_json = this.apiManager.noteSequenceToPiaJSON(
       this.noteSequence,
       regionStartQuarters,
       regionEndQuarters
@@ -323,7 +343,10 @@ export class PiaInpainter extends UndoableInpainter<
       response: Response | undefined
     ) => {
       if (response == undefined) {
-        return
+        throw new Error('Response is undefined')
+      }
+      if (!response.ok) {
+        throw new Error('API Request failed with error: ', response.statusText)
       }
       const responseJSON = await response.json()
       const newNotesPia: PiaNoteData[] | undefined = responseJSON.notes_region
@@ -331,8 +354,13 @@ export class PiaInpainter extends UndoableInpainter<
         throw Error('API Error')
       }
       let incomingNotes = newNotesPia
-        .map(convertPiaNoteToNoteSequenceNote)
-        .map((note) => ({ ...note, instrument: 1 }))
+        .map((note) => this.apiManager.convertPiaNoteToNoteSequenceNote(note))
+        .map((note) => ({
+          ...note,
+          instrument: 0,
+          // HACK(@tbazin, 2022/09/13): distinguish generated notes from loaded ones by setting program to 1
+          program: 1,
+        }))
       if (isFirstRequest) {
         // HACK(@tbazin, 2022/09/02): patches a weird behaviour in the PIA API
         isFirstRequest = false
@@ -382,6 +410,10 @@ export class PiaInpainter extends UndoableInpainter<
       .catch((reason) => {
         log.error(reason)
         this.abortCurrentRequests(true)
+        if (this.undoManager.canUndo()) {
+          this.undoManager.undo()
+          this.undoManager.pop()
+        }
         this.emit('ready')
         return this.noteSequence
       })
@@ -404,7 +436,8 @@ export class PiaInpainter extends UndoableInpainter<
       ...currentNoteSequence.toJSON(),
     })
     this.updateNoteSequence(newNoteSequence, undefined, true, true)
-    const piaNoteData = convertNoteSequenceNoteToPiaNoteObject(note)
+    const piaNoteData =
+      this.apiManager.convertNoteSequenceNoteToPiaNoteObject(note)
     const ticks = Math.round(
       (piaNoteData.time / 60) *
         this.noteSequence.ticksPerQuarter *
@@ -501,7 +534,7 @@ export class PiaInpainter extends UndoableInpainter<
   }
 
   protected get valueAsJSONData(): Record<string, any> {
-    return noteSequenceToPiaJSON(
+    return this.apiManager.noteSequenceToPiaJSON(
       this.value.noteSequence,
       0,
       this.value.noteSequence.totalTime ?? 0
@@ -671,6 +704,7 @@ export class PiaInpainter extends UndoableInpainter<
     queryParameters: string[],
     silent: boolean = true
   ): Promise<this> {
+    super.loadFile(midiFile, queryParameters, silent)
     this.abortCurrentRequests()
     this.emit('busy')
     let midiInit = new Midi(await midiFile.arrayBuffer())
@@ -731,6 +765,7 @@ export class PiaInpainter extends UndoableInpainter<
 
   clear(noEdit = false) {
     this.emit('busy')
+    this.emit('clear')
     this.abortCurrentRequests()
     this.updateNoteSequence(
       this.makeEmptyNoteSequence(),

@@ -637,15 +637,16 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   }
 
   protected setCurrentlyPlayingPositionDisplay(progress: number): void {
-    const transport = this.playbackManager.transport
-    const startOffset = transport.toSeconds(transport.loopStart)
-    const loopDuration =
-      transport.toSeconds(transport.loopEnd) -
-      transport.toSeconds(transport.loopStart)
-    const timePosition = Math.floor(
-      startOffset +
-        (progress + transport.context.lookAhead / loopDuration) * loopDuration
-    )
+    // const transport = this.playbackManager.transport
+    // const startOffset = transport.toSeconds(transport.loopStart)
+    // const loopDuration =
+    //   transport.toSeconds(transport.loopEnd) -
+    //   transport.toSeconds(transport.loopStart)
+    // const timePosition = Math.floor(
+    //   startOffset +
+    //     (progress + transport.context.lookAhead / loopDuration) * loopDuration
+    // )
+    const timePosition = this.totalProgressToStep(progress)
 
     Array.from(
       this.overlaysContainer.getElementsByClassName('notebox playing')
