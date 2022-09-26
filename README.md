@@ -3,7 +3,7 @@
 # Interactive Music Inpainting for the Web
 
 This repository holds the source code for the web-based, AI-assisted interactive music creation apps developed by Théis Bazin at Sony CSL Paris.
-These apps are all based on *inpainting*, that is, the use of AI-models to transform images, sounds or sheets in a *local* fashion: just tell the model which zones of the media you'd like to transform (because you don't it or because you'd like to see a variation of it!) and it will regenerate it for you.
+These apps are all based on *inpainting*, that is, the use of AI-models to transform images, sounds or sheets in a *local* fashion: just tell the model which zones of the media you'd like to transform (because you don't like it or because you'd like to see a variation of it!) and it will regenerate it for you.
 
 Thanks to the very intuitive and user-friendly interactions offered by inpainting, these apps do not require users to perform cumbersome micro-level edits and work nicely on mobile as well.
 
