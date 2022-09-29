@@ -32,22 +32,6 @@ function restrictCallbackToInitialEventListenerTarget<T extends Event>(
   }
 }
 
-async function setupSystemIntegrationForLinksOpening() {
-  if (COMPILE_ELECTRON) {
-    const shell = window.electronShell
-    //open links externally by default
-    $(document).on(
-      'click',
-      'a[href^="http"]',
-      function (this: HTMLAnchorElement, event) {
-        event.preventDefault()
-        void shell.openExternal(this.href)
-      }
-    )
-  }
-}
-void setupSystemIntegrationForLinksOpening()
-
 export function render(
   containerElement: HTMLElement,
   configuration: Record<string, unknown>,
