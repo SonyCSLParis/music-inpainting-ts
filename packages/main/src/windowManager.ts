@@ -103,6 +103,14 @@ export async function createWindow(): Promise<void> {
   })
 
   openWindows.set(windowID, browserWindow)
+
+  browserWindow.webContents.setWindowOpenHandler(
+    (handlerDetails: HandlerDetails) => {
+      // open links externally
+      shell.openExternal(handlerDetails.url)
+      return { action: 'deny' }
+    }
+  )
 }
 
 export function existsWindow(): boolean {
