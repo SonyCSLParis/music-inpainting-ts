@@ -56,10 +56,17 @@
     }
     select,
     input,
-    .nexusTextButton {
+    .nexus-text-button {
       width: max-content !important;
-      // max-width: 10vw;
       height: max-content !important;
+    }
+  }
+  #start-button[nexus-ui] {
+    width: 50% !important;
+    min-width: fit-content;
+    height: 100% !important;
+    div {
+      width: 100% !important;
     }
   }
 }

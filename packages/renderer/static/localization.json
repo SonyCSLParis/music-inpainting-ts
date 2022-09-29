@@ -1,6 +1,17 @@
 {
-  "splash-screen-disclaimer": {
-    "en": "Works best under recent versions of Google Chrome."
+  "splash-screen": {
+    "disclaimer": {
+      "en": "Works best under recent versions of Google Chrome."
+    }
+  },
+
+  "header": {
+    "signature": {
+      "en": "Created by Théis&nbsp;Bazin <a target='_blank' rel='author noopener noreferrer' title='twitter.com/theisbazin' href='https://twitter.com/theisbazin'><i class='fa-brands fa-square-twitter'></i>&nbsp;@theisbazin</a><br>Based on AI models and ideas by Gaëtan&nbsp;Hadjeres <a target='_blank' rel='noopener noreferrer' title='twitter.com/gaetan_hadjeres' href='https://twitter.com/gaetan_hadjeres'><i class='fa-brands fa-square-twitter'></i>&nbsp;@gaetan_hadjeres</a>"
+    },
+    "github": {
+      "en": "Source code and trained models available on <a target='_blank' rel='noopener noreferrer' title='github.com/SonyCSLParis/music-inpainting-ts' href='https://github.com/SonyCSLParis/music-inpainting-ts'><i class='fa-brands fa-square-github'></i>&nbsp;GitHub</a>"
+    }
   },
 
   "control-labels": {
