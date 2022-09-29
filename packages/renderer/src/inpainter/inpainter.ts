@@ -99,7 +99,7 @@ export abstract class Inpainter<
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
-  protected defaultTimeout: number = 5000
+  protected defaultTimeout: number = 10000
   protected defaultExponentialBackoffDelay: number = 60
   protected maxExponentialBackoffDelay: number = 1024
 
@@ -110,7 +110,7 @@ export abstract class Inpainter<
     additionalAbortSignals: AbortSignal[] = [],
     timeout: number = this.defaultTimeout,
     attemptedAction?: string,
-    exponentialBackoffDelay: number = this.defaultExponentialBackoffDelay
+    exponentialBackoffDelay: number | null = this.defaultExponentialBackoffDelay
   ): Promise<Response | undefined> {
     if (init == undefined) {
       init = {}
@@ -148,7 +148,10 @@ export abstract class Inpainter<
         return
       }
 
-      if (exponentialBackoffDelay <= this.maxExponentialBackoffDelay) {
+      if (
+        exponentialBackoffDelay != null &&
+        exponentialBackoffDelay <= this.maxExponentialBackoffDelay
+      ) {
         log.error(error)
         log.error(
           'Fetch error, retrying with exponential timeout ' +
@@ -164,6 +167,7 @@ export abstract class Inpainter<
           2 * exponentialBackoffDelay
         )
       } else {
+        clearTimeout(this.abortTimeout)
         this.handleFetchError(error, attemptedAction)
       }
     }
