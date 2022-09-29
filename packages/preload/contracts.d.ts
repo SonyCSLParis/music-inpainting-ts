@@ -6,7 +6,6 @@ interface Exposed {
   readonly ipcRendererInterface: Readonly<
     typeof import('./src/ipcRendererInterface').ipcRendererInterface
   >
-  // readonly electronShell: Readonly<typeof import('electron').shell>
   readonly global: typeof globalThis
   electronWindowId: number
 }
