@@ -6,6 +6,9 @@
   <!-- Fixes 300ms delay on touch + reduce size on mobile for better display -->
   <meta content="width=device-width, maximum-scale=0.86, initial-scale=0.86, maximum-scale=0.86, user-scalable=no" name="viewport">
   <title>Vite App</title>
+
+  <!-- Preload fonts, otherwise the Chart.js scales display wrong on first load -->
+  <link rel="preload" href="static/fonts/Fira_Sans/FiraSans-Regular.ttf" as="font" crossorigin="anonymous" />
 </head>
 <body>
 <div id="app"></div>
