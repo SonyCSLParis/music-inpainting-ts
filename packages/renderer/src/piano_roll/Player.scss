@@ -18,16 +18,16 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 .midi-visualizer-pointer-hover-verticalLine {
   // visibility: hidden;
   stroke: white;
-  opacity: 0;
+  stroke-opacity: 0;
   width: 3px;
 }
 .piano-roll-visualizer:hover .midi-visualizer-pointer-hover-verticalLine {
-  opacity: 0.3;
+  stroke-opacity: 0.3;
 }
 .midi-visualizer-playback-position-cursor {
   stroke: red;
   stroke-width: 2;
-  opacity: 0.4;
+  stroke-opacity: 0.4;
 }
 .midi-visualizer svg:hover .midi-visualizer-pointer-hover-verticalLine {
   visibility: visible;
@@ -38,25 +38,35 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 .midi-visualizer-loop-overlay-container,
 .midi-visualizer-top-margin-loop-setup-container {
   z-index: 1;
-  opacity: 0.8;
+  fill-opacity: 0.8;
 
   .midi-visualizer-loop-overlay {
     z-index: -1;
     // pointer-events: visible;
   }
-  .midi-visualizer-loop-overlay-margin-right {
-    x: calc(100% - 3px);
-    cursor: e-resize;
+
+  .midi-visualizer-loop-overlay-player-overlay-margin {
+    fill: lightcyan;
+    fill: lightskyblue;
+    fill-opacity: 0.6;
+    width: 3;
   }
-  .midi-visualizer-loop-overlay-margin-left {
-    cursor: w-resize;
+  .midi-visualizer-loop-overlay-player-overlay-margin,
+  .midi-visualizer-loop-overlay-setup-handle {
+    &.left-margin {
+      cursor: w-resize;
+    }
+    &.right-margin {
+      x: calc(100% - 3px);
+      cursor: e-resize;
+    }
   }
 }
 .midi-visualizer-selection-overlay {
   fill: white;
-  opacity: 0.2;
+  fill-opacity: 0.2;
   filter: blur(7px);
-  animation: pulsing 3s ease-in-out infinite alternate;
+  // animation: pulsing 3s ease-in-out infinite alternate;
   &.invalid-selection {
     fill: red;
   }
@@ -70,13 +80,13 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 }
 .midi-visualizer-current-generation-overlay {
   fill: silver;
-  opacity: 0.6;
+  fill-opacity: 0.6;
   filter: blur(10px);
   animation: pulsing 3s ease-in-out infinite alternate;
 }
 .midi-visualizer-current-generation-gradient-fill {
   fill: white;
-  opacity: 0.8;
+  fill-opacity: 0.8;
   filter: blur(10px);
   -webkit-mask-composite: source-out;
 }
@@ -118,10 +128,7 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 .midi-visualizer-loop-overlay {
   position: relative;
   fill: lightblue;
-  stroke: lightskyblue;
-  opacity: 0.3;
-  stroke-width: 3px;
-  stroke-dasharray: 10;
+  fill-opacity: 0.3;
 }
 
 .midi-visualizer {
@@ -129,8 +136,8 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 }
 
 .midi-visualizer svg rect.note {
-  rx: 1.5;
-  ry: 1.5;
+  rx: 1.5px;
+  ry: 1.5px;
 }
 
 @keyframes pulseHue {
@@ -387,36 +394,35 @@ $midi-visualizer-background-color: color.scale(black, $lightness: +10%);
       background-color: transparent;
       pointer-events: none;
       .midi-visualizer-top-margin-loop-setup-container {
-        .midi-visualizer-loop-overlay-margin-left,
-        .midi-visualizer-loop-overlay-margin-right {
+        .midi-visualizer-loop-overlay-setup-handle {
           height: 50% !important;
           width: 29px;
+          &.left-margin {
+            x: 0;
+          }
         }
-        .midi-visualizer-loop-overlay-margin-left {
-          x: 0;
-        }
-        .midi-visualizer-loop-overlay-margin-right-display,
-        .midi-visualizer-loop-overlay-margin-left-display {
+        .midi-visualizer-loop-overlay-setup-handle-display {
           width: 3px;
           transform: translateX(0px);
         }
-        .midi-visualizer-loop-overlay-triangle-markup-left,
-        .midi-visualizer-loop-overlay-triangle-markup-right {
+        .midi-visualizer-loop-overlay-triangle-markup {
           pointer-events: none;
         }
-        .midi-visualizer-loop-overlay-margin-left-display,
-        .midi-visualizer-loop-overlay-triangle-markup-left {
-          x: 14px;
-          pointer-events: none;
+        .midi-visualizer-loop-overlay-setup-handle-display,
+        .midi-visualizer-loop-overlay-triangle-markup {
+          &.left-margin {
+            x: 14px;
+            pointer-events: none;
+          }
         }
-        .midi-visualizer-loop-overlay-margin-right {
+        .midi-visualizer-loop-overlay-setup-handle.right-margin {
           x: calc(100% - 29px);
         }
-        .midi-visualizer-loop-overlay-margin-right-display {
+        .midi-visualizer-loop-overlay-setup-handle-display.right-margin {
           x: calc(100% - 17px);
           pointer-events: none;
         }
-        .midi-visualizer-loop-overlay-triangle-markup-group-right {
+        .midi-visualizer-loop-overlay-triangle-markup-group.right-margin {
           transform: translateX(100%);
           polygon {
             stroke: white;
@@ -488,7 +494,7 @@ $midi-visualizer-background-color: color.scale(black, $lightness: +10%);
 }
 
 body.pianoto {
-  // #app-title-container {
+  // #header-center-element {
   //   grid-template-columns: 1fr;
   // }
   // #undo-button-container,

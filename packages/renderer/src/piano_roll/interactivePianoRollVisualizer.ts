@@ -942,27 +942,62 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     this.overlaysContainer.appendChild(this.loopOverlay)
 
     const loopOverlayVisual = document.createElementNS(svgNamespace, 'rect')
-    loopOverlayVisual.setAttribute('x', '0')
+    loopOverlayVisual.setAttribute('x', '3')
     loopOverlayVisual.setAttribute('y', '0')
     loopOverlayVisual.setAttribute('height', '100%')
-    loopOverlayVisual.setAttribute('width', '100%')
+    loopOverlayVisual.setAttribute('width', 'calc(100% - 6px)')
     loopOverlayVisual.classList.add(
       ClickableVisualizerElement.cssClassesPrefix + '-loop-overlay'
     )
     const marginsXs = ['0', '100%']
-    const [leftMargins, rightMargins] = marginsXs.map((marginX, index) => {
-      const loopSetupMargin = document.createElementNS(svgNamespace, 'rect')
-      loopSetupMargin.setAttribute('y', '0')
-      loopSetupMargin.setAttribute('height', '100%')
-      loopSetupMargin.setAttribute('x', marginX)
-      loopSetupMargin.setAttribute('width', '3')
-      const loopSetupMarginClass =
+    const makeLoopSetupMarginClasses: (
+      side: 'right' | 'left',
+      type: 'player-overlay-margin' | 'setup-handle' | 'setup-handle-display'
+    ) => string[] = (
+      side: 'right' | 'left',
+      type: 'player-overlay-margin' | 'setup-handle' | 'setup-handle-display'
+    ) => {
+      return [
+        ClickableVisualizerElement.cssClassesPrefix + '-loop-overlay-' + type,
+        side + '-margin',
+      ]
+    }
+    const makeTriangleMarkupClasses: (side: 'right' | 'left') => string[] = (
+      side: 'right' | 'left'
+    ) => {
+      return [
         ClickableVisualizerElement.cssClassesPrefix +
-        '-loop-overlay' +
-        '-margin-' +
-        (index == 0 ? 'left' : 'right')
-      loopSetupMargin.classList.add(loopSetupMarginClass)
-      this.loopOverlay?.appendChild(loopSetupMargin)
+          '-loop-overlay' +
+          '-triangle-markup',
+        side + '-margin',
+      ]
+    }
+    const [leftMargins, rightMargins] = marginsXs.map((marginX, index) => {
+      const marginSide = index == 0 ? 'left' : 'right'
+      const loopSetupPlayerOverlayMarginClasses = makeLoopSetupMarginClasses(
+        marginSide,
+        'player-overlay-margin'
+      )
+      const loopSetupHandleMarginClasses = makeLoopSetupMarginClasses(
+        marginSide,
+        'setup-handle'
+      )
+      const loopSetupHandleDisplayMarginClasses = makeLoopSetupMarginClasses(
+        marginSide,
+        'setup-handle-display'
+      )
+
+      const loopSetupPlayerOverlayMargin = document.createElementNS(
+        svgNamespace,
+        'rect'
+      )
+      loopSetupPlayerOverlayMargin.setAttribute('y', '0')
+      loopSetupPlayerOverlayMargin.setAttribute('height', '100%')
+      loopSetupPlayerOverlayMargin.setAttribute('width', '3')
+      loopSetupPlayerOverlayMargin.classList.add(
+        ...loopSetupPlayerOverlayMarginClasses
+      )
+      this.loopOverlay?.appendChild(loopSetupPlayerOverlayMargin)
 
       const clickableArea = document.createElementNS(svgNamespace, 'rect')
       clickableArea.setAttribute('y', '0')
@@ -983,9 +1018,9 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       const groupContainerClass =
         ClickableVisualizerElement.cssClassesPrefix +
         '-loop-overlay' +
-        '-triangle-markup-group-' +
-        (index == 0 ? 'left' : 'right')
+        '-triangle-markup-group'
       groupContainer.classList.add(groupContainerClass)
+      groupContainer.classList.add((index == 0 ? 'left' : 'right') + '-margin')
       groupContainer.appendChild(triangleMarkupContainer)
       triangleMarkupContainer.setAttribute('viewBox', '0 0 310 320')
       const triangleMarkup = document.createElementNS(svgNamespace, 'polygon')
@@ -1000,20 +1035,18 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       triangleMarkupContainer.setAttribute('width', '15px')
       triangleMarkupContainer.setAttribute('height', '30%')
       triangleMarkupContainer.setAttribute('preserveAspectRatio', 'none')
-      const triangleMarkupClass =
-        ClickableVisualizerElement.cssClassesPrefix +
-        '-loop-overlay' +
-        '-triangle-markup-' +
-        (index == 0 ? 'left' : 'right')
-      triangleMarkupContainer.classList.add(triangleMarkupClass)
+
+      const triangleMarkupClasses = makeTriangleMarkupClasses(marginSide)
+      triangleMarkupContainer.classList.add(...triangleMarkupClasses)
+
       triangleMarkupContainer.appendChild(triangleMarkup)
       this.topMarginLoopSetupContainer?.appendChild(groupContainer)
 
       this.topMarginLoopSetupContainer?.appendChild(clickableArea)
       this.topMarginLoopSetupContainer?.appendChild(displayArea)
-      clickableArea.classList.add(loopSetupMarginClass)
-      displayArea.classList.add(loopSetupMarginClass + '-display')
-      return [loopSetupMargin, clickableArea]
+      clickableArea.classList.add(...loopSetupHandleMarginClasses)
+      displayArea.classList.add(...loopSetupHandleDisplayMarginClasses)
+      return [loopSetupPlayerOverlayMargin, clickableArea]
     })
 
     // this.topMarginLoopSetupContainer.insertBefore(
