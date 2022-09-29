@@ -252,8 +252,6 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     return this._pixelsPerTimeStep
   }
   set pixelsPerTimeStep(pixelsPerTimeStep: number) {
-    // const currentScrollRatio =
-    //   this.scrollableElement.scrollLeft / this.scrollableElement.scrollWidth
     const currentTimestepCenter =
       (this.scrollableElement.scrollLeft +
         this.scrollableElement.clientWidth / 2) /
