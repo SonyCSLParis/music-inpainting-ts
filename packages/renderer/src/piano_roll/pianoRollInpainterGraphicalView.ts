@@ -31,6 +31,7 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
 > {
   protected player: MonoVoicePlayerElement | null = null
   protected visualizer: ClickableVisualizerElement | null = null
+  protected targetScrollRatio: number = 1 / 4
 
   constructor(
     inpainter: PiaInpainter,
@@ -453,8 +454,6 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     this.drawNewNotesPromises.push(displayNotes)
     return displayNotes
   }
-
-  protected targetScrollRatio: number = 1 / 4
 
   protected onInpainterChange(data: PianoRollData): void {
     if (data.type != null && data.type == 'validate') {
