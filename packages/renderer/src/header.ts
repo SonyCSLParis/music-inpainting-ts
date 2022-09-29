@@ -10,6 +10,8 @@ import {
 import colors from '../styles/mixins/_colors.module.scss'
 import { setColors } from './nexusColored'
 
+import localization from '../static/localization.json'
+
 import SonyCslLogoURL from '../static/icons/logos/sonycsl-logo.svg'
 import SonyCslLogoNoTextUrl from '../static/icons/logos/sonycsl-logo-no_text.svg'
 import IRCAMLogoURL from '../static/icons/logos/logoircam_noir.png'
@@ -48,7 +50,8 @@ void setupSystemIntegrationForLinksOpening()
 
 export function render(
   containerElement: HTMLElement,
-  configuration: Record<string, unknown>
+  configuration: Record<string, unknown>,
+  insertSignatureInAppTitle: boolean = false
 ): void {
   containerElement.addEventListener(
     'dblclick',
@@ -60,12 +63,12 @@ export function render(
     const cslLogoLinkElement = document.createElement('a')
     cslLogoLinkElement.id = 'csl-logo'
     cslLogoLinkElement.classList.add('header-logo', 'header-logo-left')
-    // cslLogoLinkElement.href = "https://www.sonycsl.co.jp/";
-    //
-    // // open in new tab
-    // cslLogoLinkElement.target = '_blank';
-    // // securely open tab, cf. https://stackoverflow.com/a/15551842
-    // cslLogoLinkElement.rel = "noopener noreferrer";
+    cslLogoLinkElement.title = 'Sony CSL Music Team'
+    cslLogoLinkElement.href = 'https://cslmusicteam.sony.fr'
+    // open in new tab
+    cslLogoLinkElement.target = '_blank'
+    // securely open tab, cf. https://stackoverflow.com/a/15551842
+    cslLogoLinkElement.rel = 'noopener noreferrer'
 
     containerElement.appendChild(cslLogoLinkElement)
 
@@ -81,23 +84,15 @@ export function render(
     CslSmallLogoElement.src = SonyCslLogoNoTextUrl
     CslSmallLogoElement.alt = 'Sony CSL Logo'
     cslLogoContainerElement.appendChild(CslSmallLogoElement)
-
-    // TODO(theis): remove this hack, add a proper fullscreen icon
-    cslLogoContainerElement.style.cursor = 'pointer'
-    cslLogoContainerElement.addEventListener('click', () => {
-      if (screenfull.isEnabled) {
-        void screenfull.toggle()
-      }
-    })
   }
 
-  const appTitleContainerElement = document.createElement('div')
-  appTitleContainerElement.addEventListener(
+  const headerCenterElement = document.createElement('div')
+  headerCenterElement.addEventListener(
     'dblclick',
     restrictCallbackToInitialEventListenerTarget(toggleMaximizeWindowElectron)
   )
-  appTitleContainerElement.id = 'app-title-container'
-  containerElement.appendChild(appTitleContainerElement)
+  headerCenterElement.id = 'header-center-element'
+  containerElement.appendChild(headerCenterElement)
 
   const undoButtonContainer = document.createElement('div')
   undoButtonContainer.id = 'undo-button-container'
@@ -105,9 +100,19 @@ export function render(
   const undoButtonInterface = document.createElement('i')
   undoButtonInterface.id = 'undo-button'
   undoButtonContainer.appendChild(undoButtonInterface)
-  const nameElement = document.createElement('div')
-  nameElement.id = 'app-title'
-  nameElement.innerText = <string>configuration['app_name']
+  const appTitleGridElement = document.createElement('div')
+  appTitleGridElement.id = 'app-title-container'
+  const appTitleElement = document.createElement('div')
+  appTitleElement.innerText = configuration['app_name'] as string
+  appTitleElement.id = 'app-title'
+  appTitleGridElement.appendChild(appTitleElement)
+  if (insertSignatureInAppTitle) {
+    const signatureElement = document.createElement('div')
+    signatureElement.innerHTML = localization['header']['signature']['en']
+    signatureElement.classList.add('signature')
+    appTitleGridElement.appendChild(signatureElement)
+  }
+
   const redoButtonContainer = document.createElement('div')
   redoButtonContainer.classList.add('control-item')
   redoButtonContainer.id = 'redo-button-container'
@@ -115,14 +120,20 @@ export function render(
   redoButtonInterface.id = 'redo-button'
   redoButtonContainer.appendChild(redoButtonInterface)
 
-  appTitleContainerElement.appendChild(undoButtonContainer)
-  appTitleContainerElement.appendChild(nameElement)
-  appTitleContainerElement.appendChild(redoButtonContainer)
+  headerCenterElement.appendChild(undoButtonContainer)
+  headerCenterElement.appendChild(appTitleGridElement)
+  headerCenterElement.appendChild(redoButtonContainer)
 
   if (configuration['display_ircam_logo']) {
     const ircamLogoLinkElement = document.createElement('a')
     ircamLogoLinkElement.id = 'ircam-logo'
     ircamLogoLinkElement.classList.add('header-logo', 'header-logo-right')
+    ircamLogoLinkElement.title = 'IRCAM'
+    ircamLogoLinkElement.href = 'https://www.ircam.fr'
+    // open in new tab
+    ircamLogoLinkElement.target = '_blank'
+    // securely open tab, cf. https://stackoverflow.com/a/15551842
+    ircamLogoLinkElement.rel = 'noopener noreferrer'
 
     containerElement.appendChild(ircamLogoLinkElement)
 
@@ -169,7 +180,7 @@ function setTheme(theme: string) {
   document.body.setAttribute('theme', theme)
   if (themeToElectronBackgroundColor.has(theme)) {
     void setBackgroundColorElectron(
-      <string>themeToElectronBackgroundColor.get(theme)
+      themeToElectronBackgroundColor.get(theme) as string
     )
   }
 

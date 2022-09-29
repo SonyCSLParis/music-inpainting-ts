@@ -160,7 +160,8 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   }
 
   body,
-  #app {
+  #app,
+  a {
     color: $text;
   }
 
@@ -220,10 +221,23 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   }
 
   #configuration-selection-container {
-    background-color: color.scale(
-      $panes,
-      $lightness: $overlay-lightness-factor * 15%
-    );
+    .configuration-selection-footer {
+      border-top-color: color.scale($panes-border, $alpha: -40%);
+    }
+    .application-header {
+      border-bottom-color: color.scale($panes-border, $alpha: -40%);
+      border-top-color: color.scale(
+        $panes,
+        $lightness: $overlay-lightness-factor * 15%
+      );
+    }
+    &,
+    .application-header {
+      background-color: color.scale(
+        $panes,
+        $lightness: $overlay-lightness-factor * 15%
+      );
+    }
     border: solid thin $panes-border;
 
     input {
@@ -574,7 +588,7 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   .zoom-control,
   .fullscreen-control,
   .reset-loop-control {
-    background-color: color.change(color.invert($body), $alpha: 0.1);
+    background-color: color.change(color.invert($body), $alpha: 0.4);
     > * {
       background-color: color.change(color.invert($body), $alpha: 0.4);
       &:hover {

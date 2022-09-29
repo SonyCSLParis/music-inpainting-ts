@@ -25,8 +25,6 @@ import { PiaInpainter } from './piano_roll/pianoRollInpainter'
 
 export type applicationConfiguration = typeof defaultConfiguration
 
-console.log(import.meta.env)
-
 // TODO(@tbazin, 2021/11/04): merge all symbolic modes
 // and auto-detect sheet layout in app
 enum ApplicationMode {
@@ -268,14 +266,18 @@ export class SplashScreen {
     const headerContainer = document.createElement('div')
     headerContainer.classList.add('application-header', 'no-undo-redo')
     this.container.appendChild(headerContainer)
-    Header.render(headerContainer, {
-      display_sony_logo: true,
-      display_ircam_logo: true && !VITE_HIDE_IRCAM_LOGO,
-      app_name: startupSplashAppTitle,
-    })
+    const insertSignatureInAppTitle = true
+    Header.render(
+      headerContainer,
+      {
+        display_sony_logo: true,
+        display_ircam_logo: true && !VITE_HIDE_IRCAM_LOGO,
+        app_name: startupSplashAppTitle,
+      },
+      insertSignatureInAppTitle
+    )
 
     this.insertCustomAPIAdressInput =
-      VITE_REMOTE_INPAINTING_API_ADDRESS == undefined ||
       !VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT
     if (this.insertCustomAPIAdressInput) {
       const serverConfigurationContainerElement = document.createElement('div')
@@ -455,11 +457,19 @@ export class SplashScreen {
     if (!VITE_COMPILE_ELECTRON) {
       // insert disclaimer
       const disclaimerElement = document.createElement('div')
-      disclaimerElement.id = 'splash-screen-disclaimer'
+      disclaimerElement.classList.add('disclaimer')
       this.container.appendChild(disclaimerElement)
       disclaimerElement.innerHTML =
-        localization['splash-screen-disclaimer']['en']
+        localization['splash-screen']['disclaimer']['en']
     }
+
+    const footerElement = document.createElement('div')
+    footerElement.classList.add('configuration-selection-footer')
+    this.container.appendChild(footerElement)
+    const githubElement = document.createElement('div')
+    githubElement.innerHTML = localization['header']['github']['en']
+    githubElement.classList.add('github-link')
+    footerElement.appendChild(githubElement)
 
     if (autostart) {
       this.pressStart()
@@ -674,10 +684,7 @@ export class SplashScreen {
 
     const startButtonElement = document.createElement('div')
     startButtonElement.id = 'start-button'
-    startButtonElement.classList.add(
-      'control-item',
-      'nexus-no-auto-fit-content-size'
-    )
+    startButtonElement.classList.add('control-item')
     configurationWindow.appendChild(startButtonElement)
 
     this.startButton = new Nexus.TextButton('#start-button', {

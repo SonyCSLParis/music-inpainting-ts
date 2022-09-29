@@ -23,8 +23,6 @@ body.running #configuration-selection-container {
   grid-row-gap: 1.5vh;
   justify-items: center;
 
-  padding: 1.5vmin 0 1.5vmin 0;
-
   margin-left: auto;
   margin-right: auto;
 
@@ -54,6 +52,7 @@ body.running #configuration-selection-container {
     &::before {
       text-transform: none;
       font-size: smaller;
+      font-weight: lighter;
     }
   }
   div {
@@ -70,6 +69,57 @@ body.running #configuration-selection-container {
   &.no-server-config #server-address-input {
     visibility: hidden;
   }
+
+  .configuration-selection-footer {
+    padding: 1em 0;
+    border-top-width: thin;
+    border-top-style: solid;
+    .github-link {
+      max-width: 80%;
+      font-size: x-small;
+      font-weight: lighter;
+      display: block;
+    }
+  }
+
+  .disclaimer {
+    font-size: small;
+    font-weight: lighter;
+  }
+
+  .signature a {
+    margin: 0 1em;
+  }
+  .github-link a {
+    margin: 0 0.3em;
+  }
+
+  .application-header {
+    position: sticky;
+
+    border-top-width: 1.6vmin;
+    top: 0;
+    z-index: 11;
+    padding-bottom: 0.25em;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-top-style: solid;
+  }
+}
+#configuration-selection-container {
+  .simplebar-track {
+    opacity: 0.6;
+    border-radius: 5px;
+  }
+  .simplebar-vertical {
+    height: 60%;
+    top: 20%;
+    right: 2px;
+  }
+  .simplebar-horizontal {
+    width: 80%;
+    left: 10%;
+  }
 }
 
 .centeredXY {
@@ -81,7 +131,7 @@ body.running #configuration-selection-container {
 
 #use_remote_api-toggle::before {
   font-size: smaller;
-  content: 'Use hosted remote API (leave on by default)';
+  content: 'Use hosted Inpainting API (keep this on by default)';
 }
 
 #server-configuration-container {
@@ -95,15 +145,16 @@ body.running #configuration-selection-container {
   transition: filter 0.1s ease-in-out;
   width: 100%;
   &::before {
-    content: 'Self-hosted API address';
+    content: 'Inpainting API address';
   }
 }
 
 #server-configuration {
   display: grid;
 
-  & input {
+  input {
     width: 60% !important;
+    max-width: 20rem;
     height: 2rem;
   }
 
@@ -120,14 +171,11 @@ body.running #configuration-selection-container {
 
   #mode-configuration {
     display: grid;
+    white-space: break-spaces;
     grid-auto-flow: column;
     grid-auto-columns: 1fr;
     max-width: 75vw;
 
-    @media screen and (max-width: 500px) {
-      grid-auto-flow: row;
-      margin: auto;
-    }
     > div {
       margin: 0 1vw;
     }
@@ -139,22 +187,95 @@ body.running #configuration-selection-container {
       height: inherit !important;
       font-size: 0.9rem !important;
     }
+
+    .mode-configuration-button-text {
+      &::before,
+      &::after {
+        display: none;
+        overflow: hidden;
+      }
+    }
+
+    @media screen and (min-width: 250px) {
+      .mode-configuration-button-text {
+        &::before,
+        &::after {
+          display: inline;
+        }
+      }
+    }
+    // screen and (max-width: 300px) and (min-width: 200px) {
+    #pianoto-configuration-button {
+      .mode-configuration-button-text::before {
+        content: '🎹  ';
+      }
+      .mode-configuration-button-text::after {
+        content: '  🎹';
+      }
+    }
+    #notono-configuration-button {
+      .mode-configuration-button-text::before {
+        content: '🔊  ';
+      }
+      .mode-configuration-button-text::after {
+        content: '  🔊';
+      }
+    }
+    #nonoto-configuration-button {
+      .mode-configuration-button-text::before {
+        content: '🎼  ';
+      }
+      .mode-configuration-button-text::after {
+        content: '  🎼';
+      }
+    }
   }
 }
 
 #start-button {
-  width: 100% !important;
+  width: 50% !important;
+  min-width: fit-content;
   height: 100% !important;
-  div {
-    width: 100% !important;
-  }
+  text-transform: uppercase;
+  font-weight: bold;
+
   * {
     font-size: 1.4rem !important;
+  }
+
+  --fa-animation-duration: 1s;
+  --fa-fade-opacity: 0.9;
+}
+
+#configuration-selection.api-status-check {
+  cursor: wait;
+  * {
+    pointer-events: none;
+  }
+
+  #start-button {
+    div {
+      pointer-events: none;
+    }
+    text-transform: none;
+  }
+}
+
+@media screen and (max-width: 650px) {
+  #mode-configuration-container #mode-configuration {
+    grid-auto-flow: row;
+    margin: auto;
+  }
+  #start-button {
+    width: 65% !important;
   }
 }
 
 #application-mode-select {
   display: none;
+}
+.nexus-text-button {
+  border-radius: 2px;
 }
 
 #eula-container {

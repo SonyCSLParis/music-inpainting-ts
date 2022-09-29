@@ -26,6 +26,11 @@ body {
   }
 }
 
+a {
+  white-space: nowrap;
+  font-weight: bold;
+}
+
 body.splash-screen {
   -webkit-app-region: drag;
   #configuration-selection {
