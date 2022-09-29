@@ -3,6 +3,7 @@
 // clicking on the start button
 import * as Tone from 'tone'
 import SimpleBar from 'simplebar'
+import log from 'loglevel'
 
 import Nexus from './nexusColored'
 import { NexusTextButton } from 'nexusui'
@@ -12,7 +13,7 @@ import {
   CycleSelectEnableDisableFontAwesomeView,
 } from './cycleSelect'
 
-import localizations from '../static/localization.json'
+import localization from '../static/localization.json'
 import defaultConfiguration from '../../common/default_config.json'
 import customConfiguration from '../../../config.json'
 
@@ -20,6 +21,7 @@ import '../styles/startupSplash.scss'
 import { setBackgroundColorElectron } from './utils/display'
 import colors from '../styles/mixins/_colors.module.scss'
 import { unmute } from './utils/unmute'
+import { PiaInpainter } from './piano_roll/pianoRollInpainter'
 
 export type applicationConfiguration = typeof defaultConfiguration
 
@@ -28,33 +30,37 @@ console.log(import.meta.env)
 // TODO(@tbazin, 2021/11/04): merge all symbolic modes
 // and auto-detect sheet layout in app
 enum ApplicationMode {
-  Pia = 'pia',
-  Chorale = 'chorale',
-  Leadsheet = 'leadsheet',
-  Folk = 'folk',
-  Spectrogram = 'spectrogram',
+  Pianoto = 'pianoto',
+  Nonoto = 'nonoto',
+  NonotoLeadsheets = 'nonoto-leadsheet',
+  NonotoFolkSongs = 'nonoto-folk-song',
+  Notono = 'notono',
 }
 const allApplicationModes = [
-  ApplicationMode.Pia,
-  ApplicationMode.Chorale,
-  ApplicationMode.Leadsheet,
-  ApplicationMode.Folk,
-  ApplicationMode.Spectrogram,
+  ApplicationMode.Pianoto,
+  ApplicationMode.Nonoto,
+  ApplicationMode.NonotoLeadsheets,
+  ApplicationMode.NonotoFolkSongs,
+  ApplicationMode.Notono,
 ]
 
-const applicationModeToAPIResourceName: Map<ApplicationMode, string> = new Map([
-  [ApplicationMode.Pia, 'pia/'],
-  [ApplicationMode.Chorale, 'deepbach/'],
-  [ApplicationMode.Spectrogram, 'notono/'],
-])
+const applicationModeToAPIEndpointRoute: Map<ApplicationMode, string> = new Map(
+  [
+    [ApplicationMode.Pianoto, 'pia/'],
+    [ApplicationMode.Nonoto, 'deepbach/'],
+    [ApplicationMode.Notono, 'notono/'],
+  ]
+)
 
 const VITE_COMPILE_ELECTRON: boolean =
   import.meta.env.VITE_COMPILE_ELECTRON != undefined
 const VITE_APP_TITLE: string | undefined = import.meta.env.VITE_APP_TITLE
 const VITE_HIDE_IRCAM_LOGO: boolean =
   import.meta.env.VITE_HIDE_IRCAM_LOGO != undefined
-const VITE_REMOTE_INPAINTING_API_ADDRESS: string | undefined = import.meta.env
-  .VITE_REMOTE_INPAINTING_API_ADDRESS
+const VITE_REMOTE_INPAINTING_API_ADDRESS_BASE: string | undefined = import.meta
+  .env.VITE_REMOTE_INPAINTING_API_ADDRESS_BASE
+const VITE_PIA_INPAINTING_API_ADDRESS: string | undefined = import.meta.env
+  .VITE_PIA_INPAINTING_API_ADDRESS
 const VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: string | undefined =
   import.meta.env.VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
 const VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT: boolean =
@@ -67,8 +73,9 @@ const VITE_ENABLE_ANONYMOUS_MODE: boolean =
 const isDevelopment: boolean = process.env.NODE_ENV !== 'production'
 
 const defaultApplicationModes: ApplicationMode[] = [
-  ApplicationMode.Chorale,
-  ApplicationMode.Spectrogram,
+  ApplicationMode.Pianoto,
+  ApplicationMode.Nonoto,
+  ApplicationMode.Notono,
 ]
 function parseAvailableApplicationModes(
   applicationModes: string | undefined
@@ -108,8 +115,8 @@ globalConfiguration['splash_screen']['insert_eula_agreement_checkbox'] =
 globalConfiguration['display_ircam_logo'] =
   globalConfiguration['display_ircam_logo'] && !VITE_HIDE_IRCAM_LOGO
 
-globalConfiguration['inpainting_api_address'] =
-  VITE_REMOTE_INPAINTING_API_ADDRESS
+globalConfiguration['inpainting_api_address_base'] =
+  VITE_REMOTE_INPAINTING_API_ADDRESS_BASE
 
 // TODO(theis) don't create modes like this (goes against 12 Factor App principles)
 // should have truly orthogonal configuration options
@@ -122,6 +129,7 @@ const pianotoConfiguration = cloneJSON(globalConfiguration)
 pianotoConfiguration['osmd'] = false
 pianotoConfiguration['spectrogram'] = false
 pianotoConfiguration['piano_roll'] = true
+pianotoConfiguration['inpainting_api_address'] = VITE_PIA_INPAINTING_API_ADDRESS
 pianotoConfiguration['app_name'] = 'PIANOTO'
 
 const nonotoDeepbachConfiguration = cloneJSON(nonotoConfiguration)
@@ -292,10 +300,14 @@ export class SplashScreen {
       serverAddressContainer.appendChild(this.serverAddressInput)
 
       this.serverAddressInput.addEventListener('input', () => {
-        this.checkServerAddress()
+        this.serverAddressInput?.classList.remove('wrong-input-setting')
+        this.serverAddressInput?.scrollIntoView({ block: 'center' })
       })
 
-      if (VITE_REMOTE_INPAINTING_API_ADDRESS != undefined) {
+      if (
+        VITE_REMOTE_INPAINTING_API_ADDRESS_BASE != undefined ||
+        VITE_PIA_INPAINTING_API_ADDRESS != undefined
+      ) {
         this.useHostedAPIToggle = new BooleanValue(true)
         const useHostedAPIToggleViewContainer = document.createElement('div')
         useHostedAPIToggleViewContainer.id = 'use_remote_api-toggle'
@@ -310,7 +322,6 @@ export class SplashScreen {
           }
           serverAddressContainer.classList.toggle('hidden', state)
           if (state != null && !state) {
-            this.checkServerAddress(this.getCurrentConfiguration(), true)
             this.serverAddressInput?.focus()
           } else {
             this.serverAddressInput?.classList.remove('wrong-input-setting')
@@ -354,11 +365,11 @@ export class SplashScreen {
     const applicationModeButtons = new Map<ApplicationMode, NexusTextButton>()
 
     const applicationModeButtonsLabel: Record<ApplicationMode, string> = {
-      pia: 'PIANOTO',
-      chorale: 'NONOTO',
-      spectrogram: 'NOTONO',
-      folk: 'NONOTO (Folk songs)',
-      leadsheet: 'NONOTO (DeepSheet)',
+      pianoto: 'PIANOTO',
+      nonoto: 'NONOTO',
+      notono: 'NOTONO',
+      'nonoto-folk-song': 'NONOTO (Folk songs)',
+      'nonoto-leadsheet': 'NONOTO (DeepSheet)',
     }
 
     const createApplicationModeButton = (
@@ -377,6 +388,11 @@ export class SplashScreen {
         text: buttonLabel,
         alternateText: buttonLabel,
       })
+      button.element.classList.add(
+        'nexus-text-button',
+        'mode-configuration-button'
+      )
+      button.textElement?.classList.add('mode-configuration-button-text')
       applicationModeButtons.set(applicationMode, button)
     }
     applicationModes.forEach(createApplicationModeButton)
@@ -407,7 +423,7 @@ export class SplashScreen {
       // TODO(@tbazin, 2022/04/25): do not return elements, attach them directly
       //  as properties?
       ;[this.eulaAcceptToggle, this.eulaScrollbar, this.eulaContainer] =
-        this.insertEULA(localizations['eula']['en'])
+        this.insertEULA(localization['eula']['en'])
       this.eulaScrollbar
         .getScrollElement()
         .addEventListener('scroll', (event) => {
@@ -442,7 +458,7 @@ export class SplashScreen {
       disclaimerElement.id = 'splash-screen-disclaimer'
       this.container.appendChild(disclaimerElement)
       disclaimerElement.innerHTML =
-        localizations['splash-screen-disclaimer']['en']
+        localization['splash-screen-disclaimer']['en']
     }
 
     if (autostart) {
@@ -454,11 +470,46 @@ export class SplashScreen {
     startButtonElement?.dispatchEvent(new PointerEvent('pointerup'))
   }
 
-  protected getCurrentConfiguration(): applicationConfiguration {
+  protected getApiStatusCheckMethod():
+    | ((apiAdress: URL) => Promise<boolean>)
+    | undefined {
+    const applicationMode = this.getSelectedApplicationMode()
+    switch (applicationMode) {
+      case 'pianoto':
+        return PiaInpainter.testAPI.bind(PiaInpainter)
+      case 'nonoto':
+      case 'nonoto-leadsheet':
+      case 'nonoto-folk-song':
+      case 'notono':
+        return async (apiAddress: URL) => {
+          const abortController = new AbortController()
+          const timeout = setTimeout(() => {
+            abortController.abort()
+          }, 10000)
+          try {
+            const response = await fetch(
+              new URL('timerange-change', apiAddress),
+              {
+                method: 'post',
+                signal: abortController.signal,
+              }
+            )
+            return response.ok || response.status == 400
+          } catch (reason) {
+            log.error(reason)
+            return false
+          }
+        }
+    }
+  }
+
+  protected getSelectedApplicationMode(): ApplicationMode {
     const applicationModeSelectElement = <HTMLSelectElement>(
       document.getElementById('application-mode-select')
     )
-    let applicationMode = applicationModeSelectElement.value
+    let applicationMode = applicationModeSelectElement.value as
+      | ApplicationMode
+      | ''
     if (
       (applicationMode == undefined || applicationMode == '') &&
       availableApplicationModes.length == 1
@@ -468,80 +519,98 @@ export class SplashScreen {
       // background for a while, in which case, strangely, `applicationModeSelectElement.value == ''`
       applicationMode = availableApplicationModes[0]
     }
-    let configuration: applicationConfiguration
+    if (applicationMode == '' || applicationMode == undefined) {
+      throw new Error('Cannot retrieve currently selected application mode')
+    }
+    return applicationMode
+  }
+
+  protected getCurrentConfiguration(): applicationConfiguration {
+    const applicationMode = this.getSelectedApplicationMode()
+    let configuration: applicationConfiguration = { ...defaultConfiguration }
     switch (applicationMode) {
-      case 'chorale':
-        configuration = nonotoDeepbachConfiguration
+      case 'nonoto':
+        configuration = { ...nonotoDeepbachConfiguration }
         break
-      case 'leadsheet':
-        configuration = nonotoLeadsheetConfiguration
+      case 'nonoto-leadsheet':
+        configuration = { ...nonotoLeadsheetConfiguration }
         break
-      case 'pia':
-        configuration = pianotoConfiguration
+      case 'pianoto':
+        configuration = { ...pianotoConfiguration }
         break
-      case 'folk':
-        configuration = nonotoFolkConfiguration
+      case 'nonoto-folk-song':
+        configuration = { ...nonotoFolkConfiguration }
         break
-      case 'spectrogram':
-        configuration = notonoConfiguration
+      case 'notono':
+        configuration = { ...notonoConfiguration }
         break
     }
 
-    if (!this.useHostedAPI && this.serverAddressInput != null) {
-      if (this.serverAddressInput.value.length > 0) {
-        // TODO(@tbazin, 2022/09/24): auto add final '/' to endpoint address
-        configuration['inpainting_api_address'] = this.serverAddressInput.value
-      }
-    } else {
-      const resourceName = applicationModeToAPIResourceName.get(applicationMode)
-      configuration['inpainting_api_address'] = new URL(
-        resourceName,
-        VITE_REMOTE_INPAINTING_API_ADDRESS
-      ).toString()
-    }
+    configuration['inpainting_api_address'] =
+      this.getServerAddress(configuration)
 
     return configuration
   }
 
-  protected getServerAddress(configuration?: applicationConfiguration): string {
-    let address: string | undefined = undefined
-    if (
-      configuration != null &&
-      (configuration['disable_inpainting_api_parameters_input'] ||
-        this.serverAddressInput == null) &&
-      configuration['inpainting_api_address'] != undefined
-    ) {
-      address = configuration['inpainting_api_address']
+  protected getServerAddress(configuration?: applicationConfiguration): URL {
+    let url: URL | undefined = undefined
+    configuration = configuration ?? this.getCurrentConfiguration()
+
+    if (this.useHostedAPI) {
+      if (
+        configuration != null &&
+        configuration['inpainting_api_address'] != undefined
+      ) {
+        url = new URL(configuration['inpainting_api_address'])
+      } else {
+        const apiEndpointRoute = applicationModeToAPIEndpointRoute.get(
+          this.getSelectedApplicationMode()
+        )
+        if (apiEndpointRoute == undefined) {
+          throw new Error(
+            'Could not retrieve applicationMode-specific API endpoint route'
+          )
+        }
+        url = new URL(apiEndpointRoute, VITE_REMOTE_INPAINTING_API_ADDRESS_BASE)
+      }
     } else {
       if (this.serverAddressInput == null) {
         throw new Error()
       }
-      address =
+      let address =
         this.serverAddressInput.value.length > 0
           ? this.serverAddressInput.value
           : this.serverAddressInput.placeholder
 
       // add trailing slash
       address += address.endsWith('/') ? '' : '/'
+      try {
+        url = new URL(address)
+      } catch (reason) {
+        log.error(reason)
+        this.shakeServerAddressInput(false, true)
+      }
     }
-    return address
+    if (url == undefined) {
+      throw new Error('Could not retrieve inpainting API address')
+    }
+    return url
   }
 
   // TODO(theis, 2021/05/18): check that the address points to a valid API server,
   // through a custom ping-like call
   async checkServerAddress(
-    address?: string,
     forceRetriggerVisualAnimation: boolean = false
   ): Promise<boolean> {
-    if (address == undefined) {
-      address = this.getServerAddress()
+    const apiCheckMethod = this.getApiStatusCheckMethod()
+    if (apiCheckMethod == undefined) {
+      return false
     }
-    // taken from https://stackoverflow.com/a/43467144
-    let url: URL | null = null
-    let isValidURL: boolean = false
-    try {
-      url = new URL(address)
+    const url = this.getServerAddress()
 
+    let isValidURL: boolean = false
+    // taken from https://stackoverflow.com/a/43467144
+    try {
       isValidURL = url.protocol === 'http:' || url.protocol === 'https:'
     } catch (_) {
       isValidURL = false
@@ -550,25 +619,11 @@ export class SplashScreen {
     let serverIsAvailable: boolean = false
     if (isValidURL && url != undefined) {
       try {
-        await fetch(new URL('timerange-change', url), {
-          method: 'post',
-        })
-        serverIsAvailable = true
-      } catch (_) {}
-      if (!serverIsAvailable) {
-        try {
-          const response = await fetch(new URL('', url), {
-            method: 'post',
-            mode: 'no-cors',
-          })
-          console.log('hello')
-          serverIsAvailable = response.ok
-        } catch (reason) {
-          console.log(reason)
-        }
+        serverIsAvailable = await apiCheckMethod(url)
+      } catch (reason) {
+        log.error(reason)
       }
     }
-    console.log(serverIsAvailable)
     this.shakeServerAddressInput(
       serverIsAvailable,
       forceRetriggerVisualAnimation
@@ -589,19 +644,27 @@ export class SplashScreen {
       'wrong-input-setting',
       !serverIsAvailable
     )
+    if (!serverIsAvailable) {
+      this.serverAddressInput?.scrollIntoView({ block: 'center' })
+    }
   }
 
   protected async checkConfiguration(
     configuration: applicationConfiguration,
     forceRetriggerVisualAnimation: boolean = false
   ): Promise<boolean> {
-    return (
-      this.useHostedAPI ||
-      (await this.checkServerAddress(
-        this.getServerAddress(configuration),
-        forceRetriggerVisualAnimation
-      ))
+    if (this.useHostedAPI) {
+      return true
+    }
+
+    this.startButton.text = 'Checking API status...'
+    this.container.classList.add('api-status-check')
+    const remoteApiIsValid = await this.checkServerAddress(
+      forceRetriggerVisualAnimation
     )
+    this.container.classList.remove('api-status-check')
+    this.startButton.text = 'Start'
+    return remoteApiIsValid
   }
 
   protected renderStartButton(): void {
@@ -611,7 +674,10 @@ export class SplashScreen {
 
     const startButtonElement = document.createElement('div')
     startButtonElement.id = 'start-button'
-    startButtonElement.classList.add('control-item')
+    startButtonElement.classList.add(
+      'control-item',
+      'nexus-no-auto-fit-content-size'
+    )
     configurationWindow.appendChild(startButtonElement)
 
     this.startButton = new Nexus.TextButton('#start-button', {
@@ -619,6 +685,7 @@ export class SplashScreen {
       state: false,
       text: 'Start',
     })
+    this.startButton.element.classList.add('nexus-text-button')
 
     const startCallback = async (): Promise<void> => {
       await Tone.start()
