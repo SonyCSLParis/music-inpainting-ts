@@ -569,10 +569,10 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
         scales: {
           x: {
             display: false,
-            ...InpainterGraphicalView.commonAxesOptions,
+            ...SpectrogramInpainterGraphicalView.commonAxesOptions,
           },
           y: {
-            ...InpainterGraphicalView.commonAxesOptions,
+            ...SpectrogramInpainterGraphicalView.commonAxesOptions,
 
             axis: 'y',
             display: true,
@@ -586,7 +586,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
             ticks: {
               align: 'start',
               crossAlign: 'center',
-              ...this.commonTicksOptions,
+              ...SpectrogramInpainterGraphicalView.commonTicksOptions,
             },
           },
         },
