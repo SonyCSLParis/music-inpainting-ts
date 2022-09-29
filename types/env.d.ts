@@ -16,7 +16,8 @@ interface ImportMetaEnv {
   readonly VITE_DEV_SERVER_URL: undefined | string
   readonly VITE_COMPILE_ELECTRON: undefined | string
   readonly VITE_APP_TITLE: undefined | string
-  readonly VITE_REMOTE_INPAINTING_API_ADDRESS: undefined | string
+  readonly VITE_REMOTE_INPAINTING_API_ADDRESS_BASE: undefined | string
+  readonly VITE_PIA_INPAINTING_API_ADDRESS: undefined | string
   readonly VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: undefined | string
   readonly VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT:
     | undefined

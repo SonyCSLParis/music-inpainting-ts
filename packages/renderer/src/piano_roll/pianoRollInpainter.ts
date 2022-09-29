@@ -282,7 +282,7 @@ export class PiaInpainter extends UndoableInpainter<
       this.emit('busy')
       try {
         const response = this.fetch(
-          'https://pia.api.cslmusic.team/',
+          this.defaultApiAddress.href,
           requestOptions,
           [this.abortController.signal]
         )
@@ -784,5 +784,33 @@ export class PiaInpainter extends UndoableInpainter<
   ): Promise<this> {
     this.clear()
     return this
+  }
+
+  // TODO(@tbazin, 2022/09/29): create a proper status checking method on the API
+  // rather than using this approach, since it creates some load on the backend
+  static async testAPI(apiAdress: URL): Promise<boolean> {
+    const apiManager = new PiaAPIManager()
+    const undoManager = new UndoManager()
+    const testInpainter = new PiaInpainter(apiManager, apiAdress, undoManager)
+    const dummyNoteSequence = new NoteSequence()
+    const dummyPiaJSON = apiManager.noteSequenceToPiaJSON(
+      dummyNoteSequence,
+      0,
+      1
+    )
+    const requestOptions = {
+      crossDomain: true,
+      method: 'POST',
+      body: JSON.stringify(dummyPiaJSON),
+    }
+    const response = await testInpainter.fetch(
+      apiAdress.href,
+      requestOptions,
+      [],
+      undefined,
+      undefined,
+      null
+    )
+    return response != undefined && response.ok
   }
 }
