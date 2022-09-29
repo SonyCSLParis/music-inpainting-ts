@@ -1,5 +1,11 @@
 // Module to create native browser windows
-import { BrowserWindow, ipcMain } from 'electron'
+import {
+  BrowserWindow,
+  HandlerDetails,
+  ipcMain,
+  shell,
+  webContents,
+} from 'electron'
 import path from 'path'
 import log from 'loglevel'
 import type { LinkServerElectron } from './ableton_link/linkServer.electron'
@@ -97,13 +103,6 @@ export async function createWindow(): Promise<void> {
   })
 
   openWindows.set(windowID, browserWindow)
-
-  // Force exit mode for html5 fullscreen api
-  browserWindow.on('leave-full-screen', (event) => {
-    if (document != undefined) {
-      document.webkitExitFullscreen()
-    }
-  })
 }
 
 export function existsWindow(): boolean {
