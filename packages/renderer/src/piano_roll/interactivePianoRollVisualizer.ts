@@ -74,7 +74,10 @@ export function pianorollify(
   noteSequence = removeDrums(noteSequence)
   noteSequence = mapAllInstrumentsToFirstVoice(noteSequence)
   noteSequence = trimStartSilence(noteSequence)
-  // noteSequence = clipMidiPitchesRanges(noteSequence)
+  // clip MIDI range since PIA does not support the whole MIDI pitch-range
+  // TODO(@tbazin, 2022/09/30): move this to the PIA api,
+  // this is a limitation of PIA
+  noteSequence = clipMidiPitchesRanges(noteSequence)
   return mm_sequences.trim(noteSequence, 0, cropDuration, true)
 }
 
