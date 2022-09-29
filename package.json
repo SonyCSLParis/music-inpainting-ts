@@ -1,7 +1,7 @@
 {
-  "name": "nonoto",
+  "name": "music-inpainting-ts",
   "version": "0.3.0",
-  "description": "Electron and web application for interactive music composition",
+  "description": "A collection of web interfaces for AI-assisted interactive music creation",
   "private": true,
   "engines": {
     "node": ">=v18.5.0",
