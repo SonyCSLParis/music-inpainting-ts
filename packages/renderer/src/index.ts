@@ -1138,9 +1138,8 @@ async function render(
     }
   }
   if (
-    !VITE_COMPILE_ELECTRON &&
-    ((configuration['osmd'] && sheetInpainterGraphicalView != undefined) ||
-      (configuration['piano_roll'] && piaInpainterGraphicalView != undefined))
+    (configuration['osmd'] && sheetInpainterGraphicalView != undefined) ||
+    (configuration['piano_roll'] && piaInpainterGraphicalView != undefined)
   ) {
     {
       // Insert zoom controls
