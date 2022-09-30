@@ -741,6 +741,13 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
       interactiveGrid.setPlayingColumn(currentlyPlayingColumn)
     })
   }
+
+  protected renderZoomControls(containerElement: HTMLElement): void {
+    throw new Error('No zoom control on SpectrogramInpainter')
+  }
+  protected zoomCallback(zoomIn: boolean): void {
+    throw new Error('No zoom control on SpectrogramInpainter')
+  }
 }
 
 export class SpectrogramInpainterGraphicalView extends LoadingDisplay(

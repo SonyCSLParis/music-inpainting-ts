@@ -590,7 +590,7 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   .reset-loop-control {
     background-color: color.change(color.invert($body), $alpha: 0.4);
     > * {
-      background-color: color.change(color.invert($body), $alpha: 0.4);
+      background-color: color.change($body, $alpha: 0.4);
       &:hover {
         background-color: color.invert($body);
       }
@@ -598,6 +598,11 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
         $panes,
         $lightness: $overlay-lightness-factor * 60%
       );
+    }
+  }
+  .reset-loop-control {
+    .reset-loop-control-disable-icon {
+      color: color.scale($text, $lightness: -80%);
     }
   }
   #help-icon {

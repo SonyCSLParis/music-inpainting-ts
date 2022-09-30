@@ -22,7 +22,8 @@ import * as ControlLabels from '../src/controlLabels'
 type ToneInstrument = Instrument<InstrumentOptions>
 type InstrumentOrPiano = ToneInstrument | Piano
 
-const VITE_AUTOLOAD_SAMPLES = import.meta.env.VITE_AUTOLOAD_SAMPLES != undefined
+const VITE_NO_AUTOLOAD_SAMPLES =
+  import.meta.env.VITE_NO_AUTOLOAD_SAMPLES != undefined
 
 let piano: Piano
 let sampledInstruments: Record<string, Tone.Sampler> // declare variable but do not load samples yet
@@ -88,7 +89,7 @@ export async function initializeInstruments(): Promise<void> {
     //   // harmonics: -10,
     // },
   })
-  if (VITE_AUTOLOAD_SAMPLES) {
+  if (!VITE_NO_AUTOLOAD_SAMPLES) {
     await piano.load()
     if (useEffects) {
       const reverb = await effects

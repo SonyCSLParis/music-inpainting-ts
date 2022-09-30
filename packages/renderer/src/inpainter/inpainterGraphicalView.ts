@@ -3,6 +3,7 @@ import * as Tone from 'tone'
 import log from 'loglevel'
 import $ from 'jquery'
 import { debounce, throttled } from 'chart.js/helpers'
+import screenfull from 'screenfull'
 
 import { PlaybackManager } from '../playback'
 import { Inpainter } from './inpainter'
@@ -610,6 +611,58 @@ export abstract class InpainterGraphicalView<
     })
     this.timeScale = chart
     return this.timeScale
+  }
+
+  renderZoomControls(containerElement: HTMLElement): void {
+    const zoomOutButton = document.createElement('div')
+    zoomOutButton.classList.add('zoom-out')
+    containerElement.appendChild(zoomOutButton)
+    const zoomOutButtonIcon = document.createElement('i')
+    zoomOutButtonIcon.classList.add('fa-solid', 'fa-search-minus', 'fa-2x')
+    zoomOutButton.appendChild(zoomOutButtonIcon)
+
+    const zoomInButton = document.createElement('div')
+    zoomInButton.classList.add('zoom-in')
+    containerElement.appendChild(zoomInButton)
+    const zoomInButtonIcon = document.createElement('i')
+    zoomInButtonIcon.classList.add('fa-solid', 'fa-search-plus', 'fa-2x')
+    zoomInButton.appendChild(zoomInButtonIcon)
+
+    zoomOutButton.addEventListener('click', () => this.zoomCallback(false))
+    zoomInButton.addEventListener('click', () => this.zoomCallback(true))
+  }
+
+  protected abstract zoomCallback(zoomIn: boolean): void
+
+  renderFullscreenControl(containerElement: HTMLElement): void {
+    const fullscreenButton = document.createElement('div')
+    fullscreenButton.classList.add('fullscreen-toggle')
+    containerElement.appendChild(fullscreenButton)
+    const fullscreenButtonIcon = document.createElement('i')
+    fullscreenButtonIcon.classList.add(
+      'fa-solid',
+      'fa-2x',
+      screenfull.isFullscreen ? 'fa-minimize' : 'fa-maximize'
+    )
+    fullscreenButton.appendChild(fullscreenButtonIcon)
+    const toggleClass = () => {
+      fullscreenButtonIcon.classList.remove('fa-minimize', 'fa-maximize')
+      fullscreenButtonIcon.classList.add(
+        screenfull.isFullscreen ? 'fa-minimize' : 'fa-maximize'
+      )
+    }
+
+    document.addEventListener('fullscreenchange', (e) => {
+      toggleClass()
+    })
+    document.body.addEventListener('fullscreenerror', (e) => {
+      toggleClass()
+    })
+    fullscreenButton.addEventListener('click', () => {
+      if (screenfull.isEnabled) {
+        screenfull.toggle(undefined, { navigationUI: 'hide' }).then(toggleClass)
+      }
+    })
   }
 }
 

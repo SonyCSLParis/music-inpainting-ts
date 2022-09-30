@@ -15,9 +15,10 @@ const VITE_APP_TITLE =
   process.env.VITE_APP_TITLE != undefined
     ? process.env.VITE_APP_TITLE
     : 'music-inpainting.ts'
+const VITE_APP_TITLE_ENV_SET = process.env.VITE_APP_TITLE != undefined
 
 function makeOpenGraphData(): HtmlTagDescriptor[] {
-  let tags: Map<string, string>
+  let tags: Map<string, string> = new Map<string, string>()
   if (!VITE_COMPILE_WEB) {
     return []
   }
@@ -31,38 +32,38 @@ function makeOpenGraphData(): HtmlTagDescriptor[] {
         'og:description',
         'Let your visual thinking draw new sounds. An AI-based interface for inpainting of musical sounds, developed at Sony CSL Paris.',
       ],
-      ['og:type', 'website'],
-      ['og:url', VITE_DEPLOYMENT_URL || ''],
-      [
+    ])
+    if (VITE_DEPLOYMENT_URL != undefined) {
+      tags.set(
         'og:image',
         new URL('notono-preview-20220511-1200_630.jpg', VITE_DEPLOYMENT_URL)
-          .href,
-      ],
-      ['og:image:width', '1200'],
-      ['og:image:height', '630'],
-      ['og:image:alt', 'An screenshot of the NOTONO interface.'],
-    ])
+          .href
+      )
+      tags.set('og:image:width', '1200')
+      tags.set('og:image:height', '630')
+      tags.set('og:image:alt', 'An screenshot of the NOTONO interface.')
+    }
   } else if (VITE_APP_TITLE.toLowerCase() == 'nonoto') {
     tags = new Map([
       [
         'og:title',
-        'NONOTO+DeepBach: AI-assisted interactive generation of chorale music by inpainting',
+        'NONOTO: AI-assisted interactive generation of sheet music by inpainting',
       ],
       [
         'og:description',
-        'Easily create polyphonic music with just the tip of your finger, all in your browser. Developed at Sony CSL Paris.',
+        'Easily create polyphonic music with just the tip of your finger. Developed at Sony CSL Paris.',
       ],
-      ['og:type', 'website'],
-      ['og:url', VITE_DEPLOYMENT_URL || ''],
-      [
+    ])
+    if (VITE_DEPLOYMENT_URL != undefined) {
+      tags.set(
         'og:image',
         new URL('nonoto-preview-20220511-1200_630.jpg', VITE_DEPLOYMENT_URL)
-          .href,
-      ],
-      ['og:image:width', '1200'],
-      ['og:image:height', '630'],
-      ['og:image:alt', 'An screenshot of the NONOTO interface.'],
-    ])
+          .href
+      )
+      tags.set('og:image:width', '1200')
+      tags.set('og:image:height', '630')
+      tags.set('og:image:alt', 'An screenshot of the NONOTO interface.')
+    }
   } else if (VITE_APP_TITLE.toLowerCase() == 'pianoto') {
     tags = new Map([
       [
@@ -71,27 +72,51 @@ function makeOpenGraphData(): HtmlTagDescriptor[] {
       ],
       [
         'og:description',
-        'Be the piano maestro that you deserve to be. Developed at Sony CSL Paris.',
+        'Be the piano maestro that you deserve to be! Developed at Sony CSL Paris.',
+      ],
+    ])
+  } else if (
+    VITE_APP_TITLE.toLowerCase().replace('.', '-') == 'music-inpainting-ts'
+  ) {
+    tags = new Map([
+      ['og:title', 'music-inpainting.ts'],
+      [
+        'og:description',
+        'A collection of web interfaces for AI-assisted interactive music creation',
       ],
       ['og:type', 'website'],
-      ['og:url', VITE_DEPLOYMENT_URL || ''],
-      [
-        'og:image',
-        new URL('pianoto-preview-20220905-1200_630.png', VITE_DEPLOYMENT_URL)
-          .href,
-      ],
-      ['og:image:type', 'image/png'],
-      ['og:image:width', '1200'],
-      ['og:image:height', '630'],
-      ['og:image:alt', 'An screenshot of the PIANOTO interface.'],
     ])
   }
+  if (
+    // TODO(@tbazin, 2022/09/30): create preview with all three interfaces across three columns for packaged-deploy
+    VITE_APP_TITLE.toLowerCase().replace('.', '-') == 'music-inpainting-ts' ||
+    VITE_APP_TITLE.toLowerCase() == 'pianoto'
+  ) {
+    if (VITE_DEPLOYMENT_URL != undefined) {
+      tags.set(
+        'og:image',
+        new URL('pianoto-preview-20220905-1200_630.png', VITE_DEPLOYMENT_URL)
+          .href
+      )
+      tags.set('og:image:type', 'image/png')
+      tags.set('og:image:width', '1200')
+      tags.set('og:image:height', '630')
+      tags.set('og:image:alt', 'An screenshot of the PIANOTO interface.')
+    }
+  }
+
+  if (VITE_DEPLOYMENT_URL != undefined) {
+    tags.set('og:url', VITE_DEPLOYMENT_URL)
+  }
+  tags.set('og:type', 'website')
+
   const toTag = ([attrType, content]: [string, string]): HtmlTagDescriptor => {
     const attrs = {}
     attrs['property'] = attrType
     attrs['content'] = content
     return { tag: 'meta', attrs: attrs }
   }
+
   return Array.from(tags.entries()).map(toTag)
 }
 
@@ -121,6 +146,15 @@ const htmlPlugin = () => {
   }
 }
 
+const outputDirectory =
+  'dist' +
+  (VITE_COMPILE_WEB
+    ? '-' +
+      (VITE_APP_TITLE_ENV_SET
+        ? VITE_APP_TITLE.toLowerCase().replace('.', '-')
+        : 'web')
+    : '')
+
 /**
  * @type {import('vite').UserConfig}
  * @see https://vitejs.dev/config/
@@ -144,8 +178,7 @@ const config: UserConfig = {
   build: {
     sourcemap: true,
     target: `chrome${chrome}`,
-    outDir:
-      'dist' + (VITE_COMPILE_WEB ? '-' + VITE_APP_TITLE.toLowerCase() : ''),
+    outDir: outputDirectory,
     assetsDir: './assets/',
     rollupOptions: {
       input: join(PACKAGE_ROOT, 'index.html'),

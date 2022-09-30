@@ -18,7 +18,6 @@ import {
 } from './interactivePianoRollVisualizer'
 import { MidiInpainter } from '../sheet/sheetInpainter'
 import { EventEmitter } from 'events'
-import screenfull from 'screenfull'
 import { CartesianScaleOptions, TickOptions } from 'chart.js'
 
 import { NoteSequence } from '@magenta/music/esm/protobuf'
@@ -280,63 +279,10 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   //   this.style.
   // }
 
-  renderZoomControls(containerElement: HTMLElement): void {
-    const zoomOutButton = document.createElement('div')
-    zoomOutButton.classList.add('zoom-out')
-    containerElement.appendChild(zoomOutButton)
-    const zoomOutButtonIcon = document.createElement('i')
-    zoomOutButtonIcon.classList.add('fa-solid', 'fa-search-minus')
-    zoomOutButton.appendChild(zoomOutButtonIcon)
-
-    const zoomInButton = document.createElement('div')
-    zoomInButton.classList.add('zoom-in')
-    containerElement.appendChild(zoomInButton)
-    const zoomInButtonIcon = document.createElement('i')
-    zoomInButtonIcon.classList.add('fa-solid', 'fa-search-plus')
-    zoomInButton.appendChild(zoomInButtonIcon)
-
-    zoomOutButton.addEventListener('click', () => {
-      this.pixelsPerTimeStep -= 2
-      this.render()
-      log.info(`Zoom level now: ${this.pixelsPerTimeStep} pixelsPerTimeStep`)
-    })
-    zoomInButton.addEventListener('click', () => {
-      this.pixelsPerTimeStep += 2
-      this.render()
-      log.info(`Zoom level now: ${this.pixelsPerTimeStep} pixelsPerTimeStep`)
-    })
-  }
-
-  renderFullscreenControl(containerElement: HTMLElement): void {
-    const fullscreenButton = document.createElement('div')
-    fullscreenButton.classList.add('fullscreen-toggle')
-    containerElement.appendChild(fullscreenButton)
-    const fullscreenButtonIcon = document.createElement('i')
-    fullscreenButtonIcon.classList.add(
-      'fa-solid',
-      screenfull.isFullscreen ? 'fa-minimize' : 'fa-maximize'
-    )
-    fullscreenButton.appendChild(fullscreenButtonIcon)
-    const toggleClass = () => {
-      fullscreenButtonIcon.classList.remove('fa-minimize', 'fa-maximize')
-      fullscreenButtonIcon.classList.add(
-        screenfull.isFullscreen ? 'fa-minimize' : 'fa-maximize'
-      )
-    }
-
-    document.addEventListener('fullscreenchange', (e) => {
-      // containerElement.classList.toggle('hidden', screenfull.isFullscreen)
-      toggleClass()
-    })
-    document.body.addEventListener('fullscreenerror', (e) => {
-      // containerElement.classList.toggle('hidden', screenfull.isFullscreen)
-      toggleClass()
-    })
-    fullscreenButton.addEventListener('click', () => {
-      if (screenfull.isEnabled) {
-        screenfull.toggle(undefined, { navigationUI: 'hide' }).then(toggleClass)
-      }
-    })
+  protected zoomCallback(zoomIn: boolean): void {
+    this.pixelsPerTimeStep += (zoomIn ? 1 : -1) * 10
+    this.render()
+    log.info(`Zoom level now: ${this.pixelsPerTimeStep} pixelsPerTimeStep`)
   }
 
   protected visualizerEmitter: EventEmitter = new EventEmitter()

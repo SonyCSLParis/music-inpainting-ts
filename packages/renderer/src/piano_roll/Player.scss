@@ -1,7 +1,8 @@
 @use 'sass:color';
 @use 'sass:math';
-
 @import '../../styles/mixins/imports';
+@import '../../styles/mixins/_measures';
+
 $off-white-color: #faebd7;
 $hot-orange-color: #ff6e00;
 $ipswich-pine-color: #e3a95e;
@@ -483,37 +484,9 @@ $midi-visualizer-background-color: color.scale(black, $lightness: +10%);
     top: auto;
     bottom: 1.5vh;
   }
-  .zoom-control {
-    div {
-      width: 30px;
-    }
-    i {
-      font-size: 30px;
-    }
-  }
-}
-
-body.pianoto {
-  // #header-center-element {
-  //   grid-template-columns: 1fr;
-  // }
-  // #undo-button-container,
-  // #redo-button-container {
-  //   display: none !important;
-  //   visibility: hidden !important;
-  // }
-  // .application-header {
-  //   grid-template-columns: 15% 1fr 15%;
-  // }
-  // .header-logo {
-  //   display: flex;
-  // }
 }
 
 .piano-roll-inpainter {
-  .midi-visualizer-top-margin {
-    // margin-bottom: 1.5vh;
-  }
   .inpainter-time-scale-container {
     overflow: visible;
     pointer-events: none;
@@ -552,30 +525,17 @@ body.pianoto {
 }
 
 .reset-loop-control {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  height: 2em;
-  width: 2em;
-  div i {
-    font-size: 1.8em;
-    line-height: 1.1em;
-  }
-  i {
-    @include fa-icon-solid($fa-var-repeat);
-  }
-  div {
-    width: 100%;
-    height: 100%;
-  }
+  top: 2px;
+  right: $main-area-additional-controls-horizontal-offset;
 
   filter: grayscale(1);
-  opacity: 0.3;
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 0.15s;
 }
 
 .midi-visualizer.enabled-loop .reset-loop-control {
   opacity: 1;
   pointer-events: all;
-  filter: none;
+  // filter: none;
 }
