@@ -1138,27 +1138,19 @@ async function render(
       inpainterGraphicalView.renderZoomControls(zoomControlsGridElement)
     }
   }
-  if (
-    (configuration['osmd'] && sheetInpainterGraphicalView != undefined) ||
-    (configuration['piano_roll'] && piaInpainterGraphicalView != undefined)
-  ) {
-    {
-      // Insert zoom controls
-      const fullscreenControlContainerElement = document.createElement('div')
-      fullscreenControlContainerElement.classList.add(
-        'fullscreen-control',
-        'control-item'
-      )
-      // zoomControlsGridElement.classList.add('two-columns');
-      const mainPanel = document.getElementById('main-panel')
-      mainPanel.appendChild(fullscreenControlContainerElement)
-      inpainterGraphicalView.renderFullscreenControl(
-        fullscreenControlContainerElement
-      )
-    }
-  }
+  // Insert fullscreen control
+  const fullscreenControlContainerElement = document.createElement('div')
+  fullscreenControlContainerElement.classList.add(
+    'fullscreen-control',
+    'control-item'
+  )
+  // zoomControlsGridElement.classList.add('two-columns');
+  const mainPanel = document.getElementById('main-panel')
+  mainPanel.appendChild(fullscreenControlContainerElement)
+  inpainterGraphicalView.renderFullscreenControl(
+    fullscreenControlContainerElement
+  )
 
-  {
     if (configuration['insert_help']) {
       // initialize help menu
       if (

@@ -203,31 +203,14 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     this.updateContainerWidth(true)
   }
 
-  renderZoomControls(containerElement: HTMLElement): void {
-    const zoomOutButton = document.createElement('div')
-    zoomOutButton.classList.add('zoom-out')
-    containerElement.appendChild(zoomOutButton)
-    const zoomOutButtonIcon = document.createElement('i')
-    zoomOutButtonIcon.classList.add('fa-solid', 'fa-search-minus')
-    zoomOutButton.appendChild(zoomOutButtonIcon)
-
-    const zoomInButton = document.createElement('div')
-    zoomInButton.classList.add('zoom-in')
-    containerElement.appendChild(zoomInButton)
-    const zoomInButtonIcon = document.createElement('i')
-    zoomInButtonIcon.classList.add('fa-solid', 'fa-search-plus')
-    zoomInButton.appendChild(zoomInButtonIcon)
-
-    zoomOutButton.addEventListener('click', () => {
-      this.sheet.Zoom /= 1.2
-      this.render()
-      log.info(`OSMD zoom level now: ${this.sheet.Zoom}`)
-    })
-    zoomInButton.addEventListener('click', () => {
-      this.sheet.Zoom *= 1.2
-      this.render()
-      log.info(`OSMD zoom level now: ${this.sheet.Zoom}`)
-    })
+  protected zoomCallback(zoomIn: boolean): void {
+    if (zoomIn) {
+      this.sheet.Zoom *= 1.1
+    } else {
+      this.sheet.Zoom /= 1.1
+    }
+    this.render()
+    log.info(`OSMD zoom level now: ${this.sheet.Zoom}`)
   }
 
   protected _refresh(): void {

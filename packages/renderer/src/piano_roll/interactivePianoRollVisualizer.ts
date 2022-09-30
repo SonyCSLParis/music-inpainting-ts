@@ -1091,7 +1091,6 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       async (ev: PointerEvent) => {
         const onPointerMove = () => {
           this.inLoopSelectionOperation = true
-          this.classList.remove('enabled-loop')
           if (isDraggingMargin == 'left') {
             const currentLoopEnd = this.playbackManager.loopEnd
             const newLoopStart = this.playbackManager.totalProgressToTime(
@@ -1477,9 +1476,24 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       )
       this.appendChild(resetLoopButtonContainer)
       const resetLoopButton = document.createElement('div')
+      resetLoopButton.classList.add('fa-1x', 'fa-stack')
       resetLoopButtonContainer.appendChild(resetLoopButton)
       const resetLoopButtonIcon = document.createElement('i')
+      resetLoopButtonIcon.classList.add(
+        'fa-stack-1x',
+        'fa-solid',
+        'fa-repeat',
+        'reset-loop-control-loop-icon'
+      )
+      const overlayDisableIcon = document.createElement('i')
+      overlayDisableIcon.classList.add(
+        'fa-stack-2x',
+        'fa-solid',
+        'fa-ban',
+        'reset-loop-control-disable-icon'
+      )
       resetLoopButton.appendChild(resetLoopButtonIcon)
+      resetLoopButton.appendChild(overlayDisableIcon)
 
       resetLoopButtonContainer.addEventListener('pointerdown', (ev) => {
         ev.stopPropagation()

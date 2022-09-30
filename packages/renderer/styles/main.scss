@@ -9,6 +9,7 @@
 @use 'sass:color';
 
 @import 'mixins/imports';
+@import 'mixins/_measures';
 
 html,
 body {
@@ -556,5 +557,66 @@ select {
   100% {
     opacity: 0%;
     visibility: hidden;
+  }
+}
+
+$zoom-border-radius: 5px;
+.zoom-control {
+  left: $main-area-additional-controls-horizontal-offset;
+  top: $main-area-additional-controls-vertical-offset;
+}
+.fullscreen-control {
+  right: $main-area-additional-controls-horizontal-offset;
+  bottom: $main-area-additional-controls-vertical-offset;
+}
+
+.zoom-control {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 3px;
+  justify-items: center;
+}
+
+.zoom-control,
+.fullscreen-control,
+.reset-loop-control {
+  position: absolute;
+  &,
+  > div {
+    border-radius: calc(#{$zoom-border-radius});
+  }
+
+  &:hover {
+    opacity: 1;
+  }
+
+  div {
+    cursor: pointer;
+
+    &:hover i {
+      filter: brightness(1.15);
+    }
+  }
+}
+
+$padding-length: clamp(0.2rem, 4vw, 0.5rem);
+.zoom-control {
+  .zoom-in,
+  .zoom-out {
+    padding: $padding-length;
+  }
+  .zoom-out {
+    border-radius: $zoom-border-radius 0 0 $zoom-border-radius;
+  }
+  .zoom-in {
+    border-radius: 0 $zoom-border-radius $zoom-border-radius 0;
+    padding: $padding-length;
+  }
+}
+
+.fullscreen-control,
+.reset-loop-control {
+  > div {
+    padding: $padding-length;
   }
 }
