@@ -60,7 +60,8 @@ const VITE_REMOTE_INPAINTING_API_ADDRESS_BASE: string | undefined = import.meta
 const VITE_PIA_INPAINTING_API_ADDRESS: string | undefined = import.meta.env
   .VITE_PIA_INPAINTING_API_ADDRESS
 const VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: string | undefined =
-  import.meta.env.VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+  import.meta.env.VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS ??
+  'http://localhost:'
 const VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT: boolean =
   import.meta.env.VITE_NO_SPLASH_SCREEN_INSERT_CUSTOM_API_ADDRESS_INPUT !=
   undefined
@@ -646,16 +647,20 @@ export class SplashScreen {
     serverIsAvailable: boolean,
     forceRetriggerVisualAnimation: boolean = false
   ): void {
-    this.serverAddressInput?.classList.toggle('wrong-input-setting', false)
-    if (forceRetriggerVisualAnimation) {
-      this.serverAddressInput?.offsetHeight // trigger reflow
+    if (this.serverAddressInput == undefined) {
+      return
     }
-    this.serverAddressInput?.classList.toggle(
+    this.serverAddressInput.classList.toggle('wrong-input-setting', false)
+    if (forceRetriggerVisualAnimation) {
+      this.serverAddressInput.offsetHeight // trigger reflow
+    }
+    this.serverAddressInput.classList.toggle(
       'wrong-input-setting',
       !serverIsAvailable
     )
     if (!serverIsAvailable) {
-      this.serverAddressInput?.scrollIntoView({ block: 'center' })
+      this.serverAddressInput.scrollIntoView({ block: 'center' })
+      this.serverAddressInput.focus()
     }
   }
 
