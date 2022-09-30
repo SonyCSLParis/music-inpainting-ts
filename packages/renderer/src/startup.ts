@@ -717,9 +717,7 @@ export class SplashScreen {
       true
     )
 
-    if (this.useHostedAPIToggle == undefined) {
-      this.checkServerAddress()
-    } else {
+    if (this.useHostedAPIToggle != undefined) {
       this.useHostedAPIToggle.emitChanged()
     }
   }
