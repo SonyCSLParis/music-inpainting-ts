@@ -660,13 +660,8 @@ export class SplashScreen {
   }
 
   protected async checkConfiguration(
-    configuration: applicationConfiguration,
     forceRetriggerVisualAnimation: boolean = false
   ): Promise<boolean> {
-    if (this.useHostedAPI) {
-      return true
-    }
-
     this.startButton.text = 'Checking API status...'
     this.container.classList.add('api-status-check')
     const remoteApiIsValid = await this.checkServerAddress(
@@ -793,7 +788,7 @@ export class SplashScreen {
   protected async disposeAndStart(): Promise<void> {
     const currentConfiguration = this.getCurrentConfiguration()
 
-    if (!(await this.checkConfiguration(currentConfiguration, true))) {
+    if (!(await this.checkConfiguration(true))) {
       return
     }
 

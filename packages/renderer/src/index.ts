@@ -164,11 +164,6 @@ async function render(
     document.body.classList.add('pianoto')
   }
   if (configuration['osmd'] || configuration['piano_roll']) {
-    // document.body.setAttribute('theme', 'millenial-pink')
-    // void setBackgroundColorElectron(
-    //   colors.millenial_pink_panes_background_color
-    // )
-    // setNexusColors('black', colors.millenial_pink_theme_pink)
     document.body.setAttribute('theme', 'black-white')
     void setBackgroundColorElectron(
       colors.millenial_pink_panes_background_color
@@ -1151,46 +1146,46 @@ async function render(
     fullscreenControlContainerElement
   )
 
-    if (configuration['insert_help']) {
-      // initialize help menu
-      if (
-        configuration['spectrogram'] &&
-        spectrogramInpainterGraphicalView != null
-      ) {
-        helpTour = new NotonoTour(
-          [configuration['main_language']],
-          spectrogramInpainterGraphicalView,
-          REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
-        )
-      } else if (configuration['osmd'] && sheetInpainterGraphicalView != null) {
-        helpTour = new NonotoTour(
-          [configuration['main_language']],
-          sheetInpainterGraphicalView,
-          REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
-        )
-      } else if (
-        configuration['piano_roll'] &&
-        piaInpainterGraphicalView != null
-      ) {
-        // TODO
-        // helpTour = new NonotoTour(
-        //   [configuration['main_language']],
-        //   piaInpainterGraphicalView,
-        //   REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
-        // )
-      } else {
-        // FIXME(@tbazin, 2021/10/14): else branch should not be required,
-        // alternatives should be detected automatically
-        throw new Error('Unsupported configuration')
-      }
-      if (helpTour != null) {
-        const mainPanel = document.getElementById('main-panel')
-        const helpIcon = helpTour.renderIcon(mainPanel)
-        helpIcon.classList.add('disabled')
-        inpainterGraphicalView.once('ready', () => {
-          helpIcon.classList.remove('disabled')
-        })
-      }
+  if (configuration['insert_help']) {
+    // TODO(@tbazin, 2022/09/30): add `'Take Help Tour'` option toggle on splash screen
+    // initialize help menu
+    if (
+      configuration['spectrogram'] &&
+      spectrogramInpainterGraphicalView != null
+    ) {
+      helpTour = new NotonoTour(
+        [configuration['main_language']],
+        spectrogramInpainterGraphicalView,
+        REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
+      )
+    } else if (configuration['osmd'] && sheetInpainterGraphicalView != null) {
+      helpTour = new NonotoTour(
+        [configuration['main_language']],
+        sheetInpainterGraphicalView,
+        REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
+      )
+    } else if (
+      configuration['piano_roll'] &&
+      piaInpainterGraphicalView != null
+    ) {
+      // TODO(@tbazin, 2022/09/30): create PIANOTO help-tour
+      // helpTour = new NonotoTour(
+      //   [configuration['main_language']],
+      //   piaInpainterGraphicalView,
+      //   REGISTER_IDLE_STATE_DETECTOR ? 2 * 1000 * 60 : undefined
+      // )
+    } else {
+      // FIXME(@tbazin, 2021/10/14): else branch should not be required,
+      // alternatives should be detected automatically
+      throw new Error('Unsupported configuration')
+    }
+    if (helpTour != null) {
+      const mainPanel = document.getElementById('main-panel')
+      const helpIcon = helpTour.renderIcon(mainPanel)
+      helpIcon.classList.add('disabled')
+      inpainterGraphicalView.once('ready', () => {
+        helpIcon.classList.remove('disabled')
+      })
     }
   }
 
