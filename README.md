@@ -1,5 +1,10 @@
 ![Pianoto-logo](assets/music-inpainting-ts.png)
 
+### :warning: WARNING: History clean-up :fire: :ambulance:
+
+On September 30, 2022, we rewrote the repository's history to remove useless binary blobs, greatly reducing the repository's download size.
+If you cloned the repository before then, your clone will have an incompatible history, so please erase this clone and clone it again to get the updated, clean history!
+
 # Interactive Music Inpainting for the Web
 
 This repository holds the source code for the web-based, AI-assisted interactive music creation apps developed by Théis Bazin at Sony CSL Paris.
