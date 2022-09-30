@@ -1,7 +1,6 @@
 import log from 'loglevel'
 import * as Tone from 'tone'
 import { Piano } from '@tonejs/piano'
-import { SampleLibrary } from '../src/dependencies/Tonejs-Instruments'
 import * as presets from './presets'
 import { limiter, effects } from './effects'
 
@@ -282,28 +281,6 @@ export function renderDownloadButton(
     this.classList.add('fa-spin')
 
     const loadPromises: Promise<any>[] = []
-    if (sampledInstrumentsNames.length > 0) {
-      const sampleLibraryLoadPromise = new Promise((resolve) => {
-        sampledInstruments = SampleLibrary.load({
-          instruments: sampledInstrumentsNames,
-          baseUrl: 'https://nbrosowsky.github.io/tonejs-instruments/samples/',
-        })
-
-        sampledInstrumentsNames.forEach(function (instrumentName) {
-          sampledInstruments[instrumentName].release = 0.5
-          sampledInstruments[instrumentName].toDestination()
-        })
-
-        resolve(sampledInstruments)
-      })
-      void sampleLibraryLoadPromise.then(() => {
-        sampledInstrumentsNames.forEach((instrumentName) => {
-          instrumentSelect.addOption(instrumentName)
-        })
-      })
-      loadPromises.push(sampleLibraryLoadPromise)
-    }
-
     const pianoLoadPromise: Promise<void> = piano.load()
     void pianoLoadPromise.then(() => {
       instrumentSelect.addOption('Piano')
