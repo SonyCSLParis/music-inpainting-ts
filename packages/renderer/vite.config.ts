@@ -182,7 +182,7 @@ const config: UserConfig = {
     assetsDir: './assets/',
     rollupOptions: {
       input: join(PACKAGE_ROOT, 'index.html'),
-      external: [],
+      external: ['@tensorflow/tfjs'],
     },
     emptyOutDir: true,
     brotliSize: false,
