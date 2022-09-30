@@ -1,7 +1,6 @@
 import { Inpainter } from './inpainter/inpainter'
 import { NotonoData } from './spectrogram/spectrogramInpainter'
 import { SheetData, SheetInpainter } from './sheet/sheetInpainter'
-import { Buffer } from 'buffer'
 import { InpainterGraphicalView } from './inpainter/inpainterGraphicalView'
 import { SheetInpainterGraphicalView } from './sheet/sheetInpainterGraphicalView'
 import { PiaInpainter, PianoRollData } from './piano_roll/pianoRollInpainter'
@@ -167,15 +166,14 @@ export abstract class DownloadButton<
     appDir: 'temp' | 'documents' = 'temp'
   ): Promise<string> {
     if (VITE_COMPILE_ELECTRON) {
-      {
-        const storagePath = await window.ipcRendererInterface.getPath(
-          fileName,
-          appDir
-        )
-        const buffer = Buffer.from(await blob.arrayBuffer())
-        await window.ipcRendererInterface.saveFile(storagePath, buffer)
-        return storagePath
-      }
+      const Buffer = (await import('buffer')).Buffer
+      const storagePath = await window.ipcRendererInterface.getPath(
+        fileName,
+        appDir
+      )
+      const buffer = Buffer.from(await blob.arrayBuffer())
+      await window.ipcRendererInterface.saveFile(storagePath, buffer)
+      return storagePath
     } else {
       throw Error('Not in an electron environment')
     }
