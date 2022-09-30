@@ -85,7 +85,8 @@ import '../styles/disableMouse.scss'
 
 const VITE_DUMMY_GENERATE = import.meta.env.VITE_DUMMY_GENERATE != undefined
 const VITE_AUTOSTART = import.meta.env.VITE_AUTOSTART != undefined
-const VITE_AUTOLOAD_SAMPLES = import.meta.env.VITE_AUTOLOAD_SAMPLES != undefined
+const VITE_NO_AUTOLOAD_SAMPLES =
+  import.meta.env.VITE_NO_AUTOLOAD_SAMPLES != undefined
 const VITE_COMPILE_ELECTRON = import.meta.env.VITE_COMPILE_ELECTRON != undefined
 
 if (VITE_COMPILE_ELECTRON) {
@@ -1000,7 +1001,7 @@ async function render(
         'PolySynth',
         'SteelPan',
       ]
-      if (VITE_AUTOLOAD_SAMPLES) {
+      if (!VITE_NO_AUTOLOAD_SAMPLES) {
         initialInstrumentOptions = ['Piano', ...initialInstrumentOptions]
       }
       instrumentSelect = new Instruments.InstrumentSelect(
@@ -1052,7 +1053,7 @@ async function render(
         registerDisableInstrumentsOnMidiEnabled(chordsInstrumentSelect)
       }
 
-      if (!VITE_AUTOLOAD_SAMPLES) {
+      if (VITE_NO_AUTOLOAD_SAMPLES) {
         Instruments.renderDownloadButton(
           instrumentsGridElement,
           instrumentSelect,
