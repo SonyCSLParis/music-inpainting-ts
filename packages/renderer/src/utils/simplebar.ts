@@ -82,7 +82,7 @@ class TouchEnabledSimpleBar extends SimpleBar {
 }
 
 export class ScrollLockSimpleBar extends TouchEnabledSimpleBar {
-  axis: {
+  declare axis: {
     x: {
       track: { el: HTMLElement; rect: DOMRect }
       scrollbar: { el: HTMLElement; rect: DOMRect }
@@ -113,7 +113,7 @@ export class ScrollLockSimpleBar extends TouchEnabledSimpleBar {
     }
   }
 
-  get scrollHandles(): Element[] {
+  get scrollHandles(): (Element | null)[] {
     return this.scrollTracks.map((element) =>
       element.getElementsByClassName(this.scrollHandlesClassNames).item(0)
     )
