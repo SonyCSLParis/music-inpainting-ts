@@ -7,6 +7,11 @@ If you cloned the repository before then, your clone will have an incompatible h
 
 # Interactive Music Inpainting for the Web
 
+
+| PIANOTO | NOTONO | NONOTO |
+| ------- | ------ | ------ |
+| <img width="700" alt="A screenshot of the PIANOTO interface" src="https://user-images.githubusercontent.com/9104039/193407898-fa4fe8e7-4b4f-4389-83f8-e1f69892cdf6.png"> | <img width="700" alt="A screenshot of the NOTONO interface" src="https://user-images.githubusercontent.com/9104039/193407225-9aad0d6a-ad73-42f5-a339-85a381575a48.png"> | <img width="700" alt="A screenshot of the NONOTO interface" src="https://user-images.githubusercontent.com/9104039/193407575-3e906ebc-03b9-4ad6-9aac-1ed95a1b65e6.png"> |
+
 This repository holds the source code for the web-based, AI-assisted interactive music creation apps developed by Théis Bazin at Sony CSL Paris.
 These apps are all based on *inpainting*, that is, the use of AI-models to transform images, sounds or sheets in a *local* fashion: just tell the model which zones of the media you'd like to transform (because you don't like it or because you'd like to see a variation of it!) and it will regenerate it for you.
 
@@ -21,16 +26,13 @@ https://user-images.githubusercontent.com/9104039/193406815-5adf940a-de74-4bb0-a
 
 **NOTONO** lets you use your visual brain to create instrument sounds. Your guitar sample is lacking some depth? Paint some subs from an organ into it! Generate new sounds from scratch or drag-and-drop sounds of your choice into NOTONO to edit them.
 
-| NOTONO | Demo video (2021 version)|
-| ---------- | ------------------------ |
-| <img width="700" alt="A screenshot of the NOTONO interface" src="https://user-images.githubusercontent.com/9104039/193407225-9aad0d6a-ad73-42f5-a339-85a381575a48.png"> | <video src='https://user-images.githubusercontent.com/9104039/193407123-0c03942c-be44-435f-b9c1-633d1a6d5473.mp4' /> |
+https://user-images.githubusercontent.com/9104039/193407123-0c03942c-be44-435f-b9c1-633d1a6d5473.mp4
 
 **NONOTO** is an interactive interface for symbolic sheet music generation and transformation by inpainting.
 Along with the DeepBach model by Gaëtan Hadjeres, NONOTO lets you generate 4-part chorale-like music in the style of J.S. Bach. Synchronize the app with Ableton Live via the included Ableton Link support and route the output via MIDI to get a smart, melodic and harmonic 4-channel sequencer. Get creative with the chorales by routing the different voices to custom synthesizers!
 
-| NONOTO | Demo video (synced with Ableton Live) |
-| ---------- | ------------------------ |
-| <img width="700" alt="A screenshot of the NONOTO interface" src="https://user-images.githubusercontent.com/9104039/193407575-3e906ebc-03b9-4ad6-9aac-1ed95a1b65e6.png"> | <video src='https://user-images.githubusercontent.com/9104039/193407027-44cf7734-8df3-454f-9ac3-ae1cc95d180c.mp4' /> |
+Here is a demo video of using NONOTO in synch with Ableton Live via Ableton Link!
+<video src='https://user-images.githubusercontent.com/9104039/193407027-44cf7734-8df3-454f-9ac3-ae1cc95d180c.mp4' />
 
 These apps can be used either as standard web applications or as a packaged [Electron](https://electronjs.org/) app (which brings a few perks such as native drag-out or the support for Ableton-Link).
 They all share the same audio engine, based on the Web Audio API through Yotam Mann's [Tone.js](https://github.com/Tonejs/Tone.js/).
