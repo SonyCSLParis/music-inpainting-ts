@@ -17,6 +17,8 @@ Note that these apps each work in tandem with a specific AI models for inference
 **PIANOTO** helps you be the piano maestro that you deserve to be. It is an A.I.-powered interactive MIDI piano roll, for mobile and desktop.
 Swipe on the musical representation to regenerate zones, always staying coherent with the context!
 
+https://user-images.githubusercontent.com/9104039/193406815-5adf940a-de74-4bb0-a151-6f3e32ea9b6a.mp4
+
 **NOTONO** lets you use your visual brain to create instrument sounds. Your guitar sample is lacking some depth? Paint some subs from an organ into it! Generate new sounds from scratch or drag-and-drop sounds of your choice into NOTONO to edit them.
 
 **NONOTO** is an interactive interface for symbolic sheet music generation and transformation by inpainting.
