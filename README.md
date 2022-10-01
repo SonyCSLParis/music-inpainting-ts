@@ -75,9 +75,9 @@ We **strongly** recommend running these images on a machine equipped with an NVI
 
 |Application|Model|Docker image|Sample command (with recommended arguments and parameters)|
 |-----------|----|-----|-------|
-|🎹 PIANOTO|PIA v3|`public.ecr.aws/csl-music-team/piano_inpainting_app:v3`|`docker run -p 5000:<YOUR_LOCAL_PORT> --rm --gpus <GPU_INDEXES> public.ecr.aws/csl-music-team/piano_inpainting_app:v3 serve`|
-|🔊 NOTONO|NOTONO|`public.ecr.aws/csl-music-team/notono:pytorch-1.11.0-cuda11.3-cudnn8-runtime`|`docker run -p 8000:<YOUR_LOCAL_PORT> --rm --gpus <GPU_INDEXES> public.ecr.aws/csl-music-team/notono:pytorch-1.11.0-cuda11.3-cudnn8-runtime`
-|🎼 NONOTO|DeepBach|`public.ecr.aws/csl-music-team/deepbach:latest`|`docker run -p 5000:<YOUR_LOCAL_PORT> --rm --gpus <GPU_INDEXES> public.ecr.aws/csl-music-team/deepbach:latest --num_iterations_per_quarter=25 --num_iterations_per_quarter_initial_generate=10`
+|**PIANOTO**|[PIAv3](https://ghadjeres.github.io/piano-inpainting-application/)|`public.ecr.aws/csl-music-team/piano_inpainting_app:v3`|`docker run -p 5000:<YOUR_LOCAL_PORT> --rm --gpus <GPU_INDEXES> public.ecr.aws/csl-music-team/piano_inpainting_app:v3 serve`|
+|**NOTONO**|[NOTONO](https://github.com/SonyCSLParis/interactive-spectrogram-inpainting/)|`public.ecr.aws/csl-music-team/notono:pytorch-1.11.0-cuda11.3-cudnn8-runtime`|`docker run -p 8000:<YOUR_LOCAL_PORT> --rm --gpus <GPU_INDEXES> public.ecr.aws/csl-music-team/notono:pytorch-1.11.0-cuda11.3-cudnn8-runtime`
+|**NONOTO**|[DeepBach](https://github.com/Ghadjeres/DeepBach)|`public.ecr.aws/csl-music-team/deepbach:latest`|`docker run -p 5000:<YOUR_LOCAL_PORT> --rm --gpus <GPU_INDEXES> public.ecr.aws/csl-music-team/deepbach:latest --num_iterations_per_quarter=25 --num_iterations_per_quarter_initial_generate=10`
 
 
 ### Example
