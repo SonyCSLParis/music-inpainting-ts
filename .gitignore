@@ -94,3 +94,5 @@ src/main/**/*.d.ts
 
 # ignore changes to the local configuration file
 config.json
+
+private_scripts/
