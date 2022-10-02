@@ -9,15 +9,14 @@ If you cloned the repository before then, your clone will have an incompatible h
 
 
 | PIANOTO | NOTONO | NONOTO |
-| ------- | ------ | ------ |
+| :-----: | :----: | :----: |
 | <img width="700" alt="A screenshot of the PIANOTO interface" src="https://user-images.githubusercontent.com/9104039/193407898-fa4fe8e7-4b4f-4389-83f8-e1f69892cdf6.png"> | <img width="700" alt="A screenshot of the NOTONO interface" src="https://user-images.githubusercontent.com/9104039/193407225-9aad0d6a-ad73-42f5-a339-85a381575a48.png"> | <img width="700" alt="A screenshot of the NONOTO interface" src="https://user-images.githubusercontent.com/9104039/193407575-3e906ebc-03b9-4ad6-9aac-1ed95a1b65e6.png"> |
+|**Expressive piano performances** creation|Time-frequency inpainting of **instrument spectrograms**|Inpainting of **music sheet** (*with Ableton-Link support*)|
 
 This repository holds the source code for the web-based, AI-assisted interactive music creation apps developed by Théis Bazin at Sony CSL Paris.
-These apps are all based on *inpainting*, that is, the use of AI-models to transform images, sounds or sheets in a *local* fashion: just tell the model which zones of the media you'd like to transform (because you don't like it or because you'd like to see a variation of it!) and it will regenerate it for you.
+These apps are all based on *inpainting*, that is, the use of AI-models to transform images, sounds or sheets in a *local* fashion: just tell the model which zones of the media you'd like to transform (because you don't like it or because you'd like to see a variation of it!) and it will regenerate it for you. Thanks to the intuitive interactions offered by inpainting, these apps remove the need for cumbersome micro-level edits and work nicely on mobile as well!
 
-Thanks to the very intuitive and user-friendly interactions offered by inpainting, these apps do not require users to perform cumbersome micro-level edits and work nicely on mobile as well.
-
-Note that these apps each work in tandem with a specific AI models for inference. The respective models are distributed as Docker images, the relevant links and ```docker run``` parameters are provided [in this README](#running-the-models-locally).
+Note that the `music-inpainting.ts` interfaces each require connection to an AI model for inference. We provide compatible models are distributed as Docker images, the relevant links and ```docker run``` parameters are provided [in this README](#running-the-models-locally). Nevertheless, the apps are **model-agnostic** and we encourage practioners to use them in conjunction with their own models!
 
 ### PIANOTO
 
@@ -40,7 +39,7 @@ https://user-images.githubusercontent.com/9104039/193407123-0c03942c-be44-435f-b
 **NONOTO** is an interactive interface for symbolic sheet music generation and transformation by inpainting.
 Along with the DeepBach model by Gaëtan Hadjeres, NONOTO lets you generate 4-part chorale-like music in the style of J.S. Bach. Synchronize the app with Ableton Live via the included Ableton Link support and route the output via MIDI to get a smart, melodic and harmonic 4-channel sequencer. Get creative with the chorales by routing the different voices to custom synthesizers!
 
-Here is a demo video of using NONOTO in sync with Ableton Live via Ableton Link:
+Here is a demo video of using NONOTO in sync with Ableton Live via Ableton-Link:
 
 https://user-images.githubusercontent.com/9104039/193407027-44cf7734-8df3-454f-9ac3-ae1cc95d180c.mp4
 
@@ -59,7 +58,7 @@ You can download MacOS and Linux standalone applications
 
 We recommended using the `nvm` installation manager for Node.js, available
 [here](https://github.com/nvm-sh/nvm#installing-and-updating).
-The music-inpainting.ts apps are currently developed with Node.js version `16.15.0`.
+The music-inpainting.ts apps are currently developed with `node v18.5.0` and `npm v8.15.0`.
 
 We use the standard `npm` package manager.
 
@@ -81,24 +80,44 @@ npm start
 
 We **strongly** recommend running these images on a machine equipped with an NVIDIA CUDA-compatible GPU.
 
-⚠️ Note the additional `serve` command in the `docker run` command for PIA!
+|Application|Model|Docker image|
+|-----------|----|-----|
+|**PIANOTO**|[PIAv3](https://ghadjeres.github.io/piano-inpainting-application/)|`public.ecr.aws/csl-music-team/piano_inpainting_app:v3`|
+|**NOTONO**|[NOTONO](https://github.com/SonyCSLParis/interactive-spectrogram-inpainting/)|`public.ecr.aws/csl-music-team/notono:pytorch-1.11.0-cuda11.3-cudnn8-runtime`
+|**NONOTO**|[DeepBach](https://github.com/Ghadjeres/DeepBach)|`public.ecr.aws/csl-music-team/deepbach:latest`
 
-|Application|Model|Docker image|Sample command (with recommended arguments and parameters)|
-|-----------|----|-----|-------|
-|**PIANOTO**|[PIAv3](https://ghadjeres.github.io/piano-inpainting-application/)|`public.ecr.aws/csl-music-team/piano_inpainting_app:v3`|`docker run -p 5000:<YOUR_LOCAL_PORT> --rm --gpus <GPU_INDEXES> public.ecr.aws/csl-music-team/piano_inpainting_app:v3 serve`|
-|**NOTONO**|[NOTONO](https://github.com/SonyCSLParis/interactive-spectrogram-inpainting/)|`public.ecr.aws/csl-music-team/notono:pytorch-1.11.0-cuda11.3-cudnn8-runtime`|`docker run -p 8000:<YOUR_LOCAL_PORT> --rm --gpus <GPU_INDEXES> public.ecr.aws/csl-music-team/notono:pytorch-1.11.0-cuda11.3-cudnn8-runtime`
-|**NONOTO**|[DeepBach](https://github.com/Ghadjeres/DeepBach)|`public.ecr.aws/csl-music-team/deepbach:latest`|`docker run -p 5000:<YOUR_LOCAL_PORT> --rm --gpus <GPU_INDEXES> public.ecr.aws/csl-music-team/deepbach:latest --num_iterations_per_quarter=25 --num_iterations_per_quarter_initial_generate=10`
+### Sample commands (with recommended arguments and parameters)
+
+##### Reminders
+
+The `docker run` `-p` parameter takes a pair of ports of the form `CONTAINER_PORT:LOCALHOST_PORT`.
+
+You might need to run the following commands as root depending on your installation of Docker.
 
 
-### Example
+The following commands start an inference server with access to the GPU with index `0` and listening on port `5005` (adapt to your own convenience).
 
-To run PIANOTO locally with GPU support on GPU index 0 and expose the model on port 6000, run the following command (you might need to run this command as root depending on your installation of Docker):
+Choose the appropriate model, run the command and leave the server running in the background. Then launch the `music-inpainting.ts` interface as described above, set the **Inpainting API address** input field to `http://localhost:5005` and select the appropriate mode, that's it!
+
+#### PIAv3
 
 ```shell
-docker run -p 5000:6000 --rm --gpus 0 public.ecr.aws/csl-music-team/piano_inpainting_app:v3 serve
+docker run -p 5000:5005 --rm --gpus 0 public.ecr.aws/csl-music-team/piano_inpainting_app:v3 serve
 ```
 
-Leave this running in the background, then launch the `music-inpainting.ts` interface, set the **Self-hosted API address** field to `http://localhost:6000` and choose the **PIANOTO** mode, that's it!
+⚠️ Note the (required) additional `serve` command!
+
+#### NOTONO (the model)
+
+```shell
+docker run -p 8000:5005 --rm --gpus 0 public.ecr.aws/csl-music-team/notono:pytorch-1.11.0-cuda11.3-cudnn8-runtime
+```
+
+#### DeepBach
+
+```shell
+docker run -p 5000:5005 --rm --gpus 0 public.ecr.aws/csl-music-team/deepbach:latest --num_iterations_per_quarter=25 --num_iterations_per_quarter_initial_generate=10
+```
 
 ## Credits
 
