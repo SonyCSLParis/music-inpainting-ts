@@ -131,7 +131,7 @@ body.running #configuration-selection-container {
 
 #use_remote_api-toggle::before {
   font-size: smaller;
-  content: 'Use hosted Inpainting API (keep this on by default)';
+  content: 'Use default hosted inpainting API';
 }
 
 #server-configuration-container {
