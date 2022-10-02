@@ -62,17 +62,17 @@ The music-inpainting.ts apps are currently developed with `node v18.5.0` and `np
 
 We use the standard `npm` package manager.
 
-The various apps can be installed as follows:
+The apps can be installed as follows:
 
-```sh
+```shell
 git clone https://github.com/SonyCSLParis/music-inpainting-ts.git
-cd NONOTO
+cd music-inpainting-ts
 npm install
 ```
 
-Once, this is done, the NONOTO dev server (an Electron app with live-reloading) can be started with:
+Once this is done, the `music-inpainting.ts` Electron app (with live-reloading enabled for hacking) can be started with:
 
-```sh
+```shell
 npm start
 ```
 
