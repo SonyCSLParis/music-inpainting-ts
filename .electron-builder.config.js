@@ -20,6 +20,9 @@ const config = {
     output: 'dist',
     buildResources: 'buildResources',
   },
+  mac: {
+    mergeASARs: false, // https://github.com/electron-userland/electron-builder/issues/7044#issuecomment-1206816252
+  },
   files: ['packages/**/dist/**'],
   extraMetadata: {
     version: VITE_APP_VERSION,
