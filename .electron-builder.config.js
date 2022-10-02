@@ -20,7 +20,7 @@ const config = {
     output: 'dist',
     buildResources: 'buildResources',
   },
-  files: ['packages/**/dist/**', '!**/node_modules/@tensorflow/*'],
+  files: ['packages/**/dist/**'],
   extraMetadata: {
     version: VITE_APP_VERSION,
   },
