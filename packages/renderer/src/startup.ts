@@ -297,10 +297,20 @@ export class SplashScreen {
       this.serverAddressInput = document.createElement('input')
       this.serverAddressInput.type = 'url'
       this.serverAddressInput.id = 'server-address-input'
-      this.serverAddressInput.value = VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+      this.serverAddressInput.value =
+        VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS ?? ''
       this.serverAddressInput.placeholder =
-        VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS
+        VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS ?? ''
       serverAddressContainer.appendChild(this.serverAddressInput)
+
+      const serverSetupHelpIcon = document.createElement('a')
+      serverSetupHelpIcon.classList.add('fa-solid', 'fa-circle-question')
+      serverSetupHelpIcon.title = 'Setup guide'
+      serverSetupHelpIcon.href =
+        'https://github.com/SonyCSLParis/music-inpainting-ts#running-the-models-locally'
+      serverSetupHelpIcon.rel = 'noopener noreferrer'
+      serverSetupHelpIcon.target = '_blank'
+      serverAddressContainer.appendChild(serverSetupHelpIcon)
 
       this.serverAddressInput.addEventListener('input', () => {
         this.serverAddressInput?.classList.remove('wrong-input-setting')

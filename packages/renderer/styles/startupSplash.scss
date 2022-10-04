@@ -143,9 +143,24 @@ body.running #configuration-selection-container {
 
 #server-address-container {
   transition: filter 0.1s ease-in-out;
-  width: 100%;
+  width: 80%;
+  align-items: center;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    'title title'
+    'help input';
   &::before {
+    grid-area: title;
     content: 'Inpainting API address';
+  }
+  input {
+    grid-area: input;
+  }
+  a {
+    grid-area: help;
+    &:hover {
+      filter: brightness(1.15);
+    }
   }
 }
 
@@ -153,8 +168,8 @@ body.running #configuration-selection-container {
   display: grid;
 
   input {
-    width: 60% !important;
-    max-width: 20rem;
+    width: 100% !important;
+    // max-width: 20rem;
     height: 2rem;
   }
 
