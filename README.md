@@ -1,11 +1,11 @@
-![Pianoto-logo](assets/music-inpainting-ts.png)
+[![Pianoto-logo](assets/music-inpainting-ts.png)](https://SonyCSLParis.github.io/music-inpainting-ts/)
 
 ### :warning: WARNING: History clean-up :fire: :ambulance:
 
 On September 30, 2022, we rewrote the repository's history to remove useless binary blobs, greatly reducing the repository's download size.
 If you cloned the repository before then, your clone will have an incompatible history, so please erase this clone and clone it again to get the updated, clean history!
 
-# Interactive Music Inpainting for the Web
+# [Interactive Music Inpainting for the Web](https://SonyCSLParis.github.io/music-inpainting-ts/)
 
 
 | PIANOTO | NOTONO | NONOTO |
@@ -16,7 +16,11 @@ If you cloned the repository before then, your clone will have an incompatible h
 This repository holds the source code for the web-based, AI-assisted interactive music creation apps developed by Théis Bazin at Sony CSL Paris.
 These apps are all based on *inpainting*, that is, the use of AI-models to transform images, sounds or sheets in a *local* fashion: just tell the model which zones of the media you'd like to transform (because you don't like it or because you'd like to see a variation of it!) and it will regenerate it for you. Thanks to the intuitive interactions offered by inpainting, these apps remove the need for cumbersome micro-level edits and work nicely on mobile as well!
 
-Note that the `music-inpainting.ts` interfaces each require connection to an AI model for inference. We provide compatible models are distributed as Docker images, the relevant links and ```docker run``` parameters are provided [in this README](#running-the-models-locally). Nevertheless, the apps are **model-agnostic** and we encourage practioners to use them in conjunction with their own models!
+#### :warning: BYOB (Bring Your Own Backend)
+Note that the `music-inpainting.ts` interfaces each require connection to an AI model for inference!
+Don't panic though:
+- :tada: We provide compatible models as [Docker images](#running-the-models-locally) (GPU recommended).
+- :alembic: The apps are **model-agnostic**: try to use them in conjunction with their own models!
 
 ### PIANOTO
 
@@ -47,7 +51,9 @@ These apps can be used either as standard web applications or as a packaged [Ele
 They all share the same audio engine, based on the Web Audio API through Yotam Mann's [Tone.js](https://github.com/Tonejs/Tone.js/).
 They all support MIDI In and Out for interoperability with external software or hardware, via Jean-Philippe Côté's [webmidi.js](https://github.com/djipco/webmidi/) helper library over the Web MIDI API.
 
-## Installation
+## Usage
+
+You can [access the interfaces here](https://SonyCSLParis.github.io/music-inpainting-ts/)!
 
 ### Packaged Electron applications (Desktop)
 
