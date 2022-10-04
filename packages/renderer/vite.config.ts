@@ -185,7 +185,6 @@ const config: UserConfig = {
       external: [],
     },
     emptyOutDir: true,
-    brotliSize: false,
   },
   test: {
     environment: 'happy-dom',
