@@ -28,6 +28,7 @@ jobs:
     - run: npm ci
     - run: npm run build:renderer --if-present
       env:
+        NODE_OPTIONS: "--max_old_space_size=4096"
         VITE_DEPLOYMENT_URL: 'https://sonycslparis.github.io/music-inpainting-ts'
         VITE_COMPILE_WEB: true
     # - run: npm test
