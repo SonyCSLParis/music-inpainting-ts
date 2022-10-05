@@ -14,11 +14,12 @@ import {
   extractSelectedRegion,
   pianorollify,
 } from './interactivePianoRollVisualizer'
-import { NoteSequence } from '@magenta/music/es6/protobuf'
+import { INoteSequence, NoteSequence } from '@magenta/music/es6/protobuf'
 import {
   midiToSequenceProto,
   sequenceProtoToMidi,
 } from '@magenta/music/esm/core/midi_io'
+import { OnsetsAndFrames } from '@magenta/music/es6/transcription'
 import * as mm_sequences from '@magenta/music/esm/core/sequences'
 
 import { UndoManager } from 'typed-undo'
@@ -207,7 +208,7 @@ export class PiaInpainter extends UndoableInpainter<
   protected async inpaintRegion(
     regionStartQuarters: number,
     regionEndQuarters: number
-  ): Promise<NoteSequence | undefined> {
+  ): Promise<this> {
     if (this.isInRequest) {
       await this.abortCurrentRequests()
     }
@@ -217,11 +218,7 @@ export class PiaInpainter extends UndoableInpainter<
     // regionStartQuarters = Math.floor(regionStartQuarters)
     // regionEndQuarters = Math.ceil(regionEndQuarters)
     const regionTicks = [regionStartQuarters, regionEndQuarters].map((time) =>
-      Math.round(
-        (time / 60) *
-          this.noteSequence.ticksPerQuarter *
-          this.noteSequence.tempos[0].qpm
-      )
+      Math.round((time / 60) * this.noteSequence.ticksPerQuarter * this.tempo)
     )
     this.emit(
       'busy',
@@ -272,7 +269,7 @@ export class PiaInpainter extends UndoableInpainter<
     }
     let notesResult: any[] = []
     let noteSequence_notes: NoteSequence.INote[] = []
-    let inpaintedNoteSequence: NoteSequence | null = null
+    let inpaintedNoteSequence: INoteSequence | null = null
 
     const triggerNewRequest: (
       requestOptions: RequestInit
@@ -339,9 +336,7 @@ export class PiaInpainter extends UndoableInpainter<
 
     const handleNewNotes: (
       response: Response | undefined
-    ) => Promise<NoteSequence | undefined> = async (
-      response: Response | undefined
-    ) => {
+    ) => Promise<this | undefined> = async (response: Response | undefined) => {
       if (response == undefined) {
         throw new Error('Response is undefined')
       }
@@ -400,7 +395,7 @@ export class PiaInpainter extends UndoableInpainter<
             'validate'
           )
         })
-        return currentNoteSequence
+        return this
       }
     }
 
@@ -415,7 +410,7 @@ export class PiaInpainter extends UndoableInpainter<
           this.undoManager.pop()
         }
         this.emit('ready')
-        return this.noteSequence
+        return this
       })
   }
 
@@ -439,14 +434,12 @@ export class PiaInpainter extends UndoableInpainter<
     const piaNoteData =
       this.apiManager.convertNoteSequenceNoteToPiaNoteObject(note)
     const ticks = Math.round(
-      (piaNoteData.time / 60) *
-        this.noteSequence.ticksPerQuarter *
-        this.noteSequence.tempos[0].qpm
+      (piaNoteData.time / 60) * this.noteSequence.ticksPerQuarter * this.tempo
     )
     const durationTicks = Math.round(
       (piaNoteData.duration / 60) *
         this.noteSequence.ticksPerQuarter *
-        this.noteSequence.tempos[0].qpm
+        this.tempo
     )
     const midiNote = {
       name: TonalMidi.midiToNoteName(note.pitch),
@@ -533,6 +526,8 @@ export class PiaInpainter extends UndoableInpainter<
     ])
   }
 
+  readonly tempo: number = 120
+
   protected get valueAsJSONData(): Record<string, any> {
     return this.apiManager.noteSequenceToPiaJSON(
       this.value.noteSequence,
@@ -577,7 +572,7 @@ export class PiaInpainter extends UndoableInpainter<
   }
 
   async updateNoteSequence(
-    noteSequence: NoteSequence,
+    noteSequence: INoteSequence,
     newNotes?: NoteSequence,
     silent: boolean = false,
     canBeMerged: boolean = false,
@@ -646,7 +641,7 @@ export class PiaInpainter extends UndoableInpainter<
         })
         return track
       })
-    newMidi.header.tempos = [{ bpm: 120, ticks: 0 }]
+    newMidi.header.tempos = [{ bpm: this.tempo, ticks: 0 }]
     newMidi.header.timeSignatures = [{ timeSignature: [4, 4], ticks: 0 }]
     newMidi.header.update()
     return newMidi
@@ -699,15 +694,7 @@ export class PiaInpainter extends UndoableInpainter<
   //   })
   // }
 
-  async loadFile(
-    midiFile: File,
-    queryParameters: string[],
-    silent: boolean = true
-  ): Promise<this> {
-    super.loadFile(midiFile, queryParameters, silent)
-    this.abortCurrentRequests()
-    this.emit('busy')
-    let midiInit = new Midi(await midiFile.arrayBuffer())
+  protected loadMidi(midiInit: Midi, silent: boolean = true) {
     midiInit = this.flattenTempoChanges(midiInit)
 
     const forceDuration_secondsNoteSequence = this.forceDuration_ticks
@@ -730,7 +717,6 @@ export class PiaInpainter extends UndoableInpainter<
     //   true
     // )
     const midi = new Midi(sequenceProtoToMidi(noteSequence))
-
     this.setValueInteractive(
       {
         noteSequence: noteSequence,
@@ -738,7 +724,40 @@ export class PiaInpainter extends UndoableInpainter<
       },
       silent
     )
-    this.emit('ready')
+    return this
+  }
+
+  protected async loadMidiFile(
+    midiFile: File,
+    silent: boolean = true
+  ): Promise<this> {
+    let midiInit = new Midi(await midiFile.arrayBuffer())
+    return this.loadMidi(midiInit)
+  }
+
+  async loadFile(
+    file: File,
+    queryParameters: string[],
+    silent: boolean = true
+  ): Promise<this> {
+    super.loadFile(file, queryParameters, silent)
+    this.abortCurrentRequests()
+    this.emit('busy')
+    const midiExtensions = ['mid', 'midi']
+    const ext = file.name.split('.').at(-1)
+    if (ext == undefined) {
+      this.emit('ready')
+      return this
+    }
+
+    if (midiExtensions.includes(ext)) {
+      this.loadMidiFile(file, silent)
+      this.emit('ready')
+    } else {
+      // try to load as an audio file
+      this.loadAudioFile(file)
+    }
+
     return this
   }
 
@@ -754,12 +773,43 @@ export class PiaInpainter extends UndoableInpainter<
     return this.loadFile(midiFile, queryParameters, silent)
   }
 
+  protected audioToMidiTranscriptionModel?: OnsetsAndFrames | null = null
+
+  protected async getAudioToMidiTranscriptionModel(): Promise<OnsetsAndFrames> {
+    if (this.audioToMidiTranscriptionModel != null) {
+      return this.audioToMidiTranscriptionModel
+    }
+    const onsetsAndFrames = new OnsetsAndFrames(
+      'https://storage.googleapis.com/magentadata/js/checkpoints/transcription/onsets_frames_uni'
+    )
+    await onsetsAndFrames.initialize()
+    this.audioToMidiTranscriptionModel = onsetsAndFrames
+    return this.audioToMidiTranscriptionModel
+  }
+
+  async loadAudioFile(blob: Blob | File): Promise<this> {
+    this.emit('busy')
+    const audioContext = new AudioContext()
+    const audioBuffer = await audioContext.decodeAudioData(
+      await blob.arrayBuffer()
+    )
+      const onsetsAndFrames = await this.getAudioToMidiTranscriptionModel()
+      const noteSequence = await onsetsAndFrames.transcribeFromAudioBuffer(
+        audioBuffer,
+        12
+      )
+      const midi = new Midi(sequenceProtoToMidi(noteSequence))
+      this.loadMidi(midi, false)
+      this.emit('ready')
+    return this
+  }
+
   protected makeEmptyNoteSequence(): NoteSequence {
     return new NoteSequence({
       ticksPerQuarter: this.PPQ,
       notes: [],
       totalTime: this.forceDuration_seconds,
-      tempos: [{ time: 0, qpm: 120 }],
+      tempos: [{ time: 0, qpm: this.tempo }],
     })
   }
 

@@ -1775,7 +1775,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     }
     const selectionIsLongEnough =
       (Math.abs(this.selectionTimestamp_B - this.selectionTimestamp_A) * 60) /
-        this.ns.tempos[0].qpm >
+        120 >
       0.2
     return selectionIsLongEnough
   }

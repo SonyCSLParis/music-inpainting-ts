@@ -696,6 +696,10 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
       }
     }
   }
+
+  .inpainter.in-dragdrop-operation {
+    filter: brightness(1.7);
+  }
 }
 
 // $main-color: $lighter-arabian-sand-color;

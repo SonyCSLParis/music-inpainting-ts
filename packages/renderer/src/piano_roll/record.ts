@@ -68,7 +68,7 @@ export class MyCallback extends BaseRecorderCallback {
     ) {
       return
     }
-    noteSequence.tempos = [{ time: 0, qpm: 120 }]
+    noteSequence.tempos = [{ time: 0, qpm: this.inpainter.tempo }]
     noteSequence.ticksPerQuarter = this.inpainter.PPQ
     // const newNotes = noteSequence.notes.slice(this.previousLength)
     const scrollIntoView = 'forward'
@@ -303,7 +303,7 @@ export class MidiRecorder {
       recordedNoteSequence.notes = Array.from(
         new Set(recordedNoteSequence.notes)
       )
-      recordedNoteSequence.tempos = [{ time: 0, qpm: 120 }]
+      recordedNoteSequence.tempos = [{ time: 0, qpm: this.inpainter.tempo }]
       this.inpainter.updateNoteSequence(recordedNoteSequence)
     }
 
