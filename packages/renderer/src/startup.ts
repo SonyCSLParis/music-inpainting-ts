@@ -57,6 +57,8 @@ const VITE_HIDE_IRCAM_LOGO: boolean =
   import.meta.env.VITE_HIDE_IRCAM_LOGO != undefined
 const VITE_REMOTE_INPAINTING_API_ADDRESS_BASE: string | undefined = import.meta
   .env.VITE_REMOTE_INPAINTING_API_ADDRESS_BASE
+const VITE_NO_CHECK_API_STATUS: boolean =
+  import.meta.env.VITE_NO_CHECK_API_STATUS != undefined
 const VITE_PIA_INPAINTING_API_ADDRESS: string | undefined = import.meta.env
   .VITE_PIA_INPAINTING_API_ADDRESS
 const VITE_DEFAULT_CUSTOM_INPAINTING_API_ADDRESS: string | undefined =
@@ -677,14 +679,18 @@ export class SplashScreen {
   protected async checkConfiguration(
     forceRetriggerVisualAnimation: boolean = false
   ): Promise<boolean> {
-    this.startButton.text = 'Checking API status...'
-    this.container.classList.add('api-status-check')
-    const remoteApiIsValid = await this.checkServerAddress(
-      forceRetriggerVisualAnimation
-    )
-    this.container.classList.remove('api-status-check')
-    this.startButton.text = 'Start'
-    return remoteApiIsValid
+    if (!VITE_NO_CHECK_API_STATUS) {
+      this.startButton.text = 'Checking API status...'
+      this.container.classList.add('api-status-check')
+      const remoteApiIsValid = await this.checkServerAddress(
+        forceRetriggerVisualAnimation
+      )
+      this.container.classList.remove('api-status-check')
+      this.startButton.text = 'Start'
+      return remoteApiIsValid
+    } else {
+      return true
+    }
   }
 
   protected renderStartButton(): void {
