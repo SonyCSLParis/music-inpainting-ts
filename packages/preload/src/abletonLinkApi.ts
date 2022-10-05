@@ -1,4 +1,4 @@
-import { ipcRenderer, IpcRendererEvent } from 'electron'
+import { SafeElectronApi } from './safeElectronApi'
 import { exposeInMainWorld } from './exposeInMainWorld'
 
 type linkUpdateCallback = (
@@ -17,8 +17,6 @@ export type AbletonLinkServerEvent = {
   downbeat: () => void
 }
 
-type Callback = (...args: any[]) => void
-type IpcRendererCallback = (event: IpcRendererEvent, ...args: any[]) => void
 const enum AbletonLinkApiMessage {
   'tempo' = 'tempo',
   'phase' = 'phase',
@@ -63,65 +61,11 @@ export interface IAbletonLinkApi {
   disable(windowId: number): Promise<void>
 }
 
-export class AbletonLinkApi implements IAbletonLinkApi {
-  protected listeners: Map<
-    AbletonLinkApiMessage | 'pong' | 'is-enabled',
-    Map<string, IpcRendererCallback>
-  > = new Map()
-  get linkChannelPrefix(): string {
-    return `abletonlink/`
-  }
-
-  protected makeIPCRendererCallbackFromEventFreeCallback(
-    callback: Callback
-  ): IpcRendererCallback {
-    // strip event for security reasons as it includes `sender`
-    return (event: IpcRendererEvent, ...args: any[]) => callback(...args)
-  }
-
-  protected registerCallback(
-    message: AbletonLinkApiMessage | 'pong' | 'is-enabled',
-    callback: Callback,
-    windowId?: number
-  ): string | undefined {
-    const saferFn: IpcRendererCallback = (
-      event: IpcRendererEvent,
-      ...args: any[]
-    ) => {
-      callback(...args)
-    }
-    ipcRenderer.on(this.prefixChannel(message, windowId), saferFn)
-    const key = Symbol().toString()
-    if (!this.listeners.has(message)) {
-      this.listeners.set(message, new Map())
-    }
-    if (this.listeners.get(message)?.set?.(key, saferFn) != undefined) {
-      return key
-    } else {
-      return undefined
-    }
-  }
-
-  protected send(channel: string, windowId?: number, ...args: any[]): void {
-    const prefixedChannel = this.prefixChannel(channel, windowId)
-    ipcRenderer.send(prefixedChannel, ...args)
-  }
-  protected invoke(
-    channel: string,
-    windowId?: number,
-    ...args: any[]
-  ): Promise<any> {
-    const prefixedChannel = this.prefixChannel(channel, windowId)
-    return ipcRenderer.invoke(prefixedChannel, ...args)
-  }
-
-  protected prefixChannel(message: string, windowId?: number): string {
-    return (
-      this.linkChannelPrefix +
-      message +
-      (windowId != null ? `/window-${windowId}/` : '')
-    )
-  }
+export class AbletonLinkApi
+  extends SafeElectronApi<AbletonLinkApiMessage>
+  implements IAbletonLinkApi
+{
+  readonly channelPrefix: string = 'ableton/'
 
   onStateUpdate = (
     windowId: number,
