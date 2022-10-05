@@ -96,9 +96,8 @@ We **strongly** recommend running these images on a machine equipped with an NVI
 
 ##### Reminders
 
-The `docker run` `-p` parameter takes a pair of ports of the form `CONTAINER_PORT:LOCALHOST_PORT`.
-
-You might need to run the following commands as root depending on your installation of Docker.
+* The `docker run` `-p` parameter takes a pair of ports of the form `CONTAINER_PORT:LOCALHOST_PORT`.
+* You might need to run the following commands as root depending on your installation of Docker.
 
 
 The following commands start an inference server with access to the GPU with index `0` and listening on port `5005` (adapt to your own convenience).
