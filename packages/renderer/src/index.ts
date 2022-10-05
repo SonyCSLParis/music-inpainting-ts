@@ -1204,7 +1204,7 @@ async function render(
         }
       } else {
         if (midiFileSelect != null) {
-          midiFileSelect.selectedIndex = 1
+          midiFileSelect.selectedIndex = 0
         }
         const silentInpainterUpdate = false
         await inpainter.dummyGenerate(
