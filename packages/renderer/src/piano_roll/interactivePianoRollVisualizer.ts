@@ -632,7 +632,6 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       this.svgElement == null ||
       this.playbackPositionCursor == null
     ) {
-      console.log('woops')
       return
     }
     const nowPlayingPosition = this.totalProgressToClientX(totalProgress)
@@ -648,12 +647,19 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
 
     const currentTime = totalProgress * this.ns.totalTime
     for (const note of this.ns?.notes ?? []) {
-      this.svgElement
-        .getElementById(this.visualizer.noteToRectID(note))
-        .classList.toggle(
+      const maybeElement = this.svgElement.getElementById(
+        this.visualizer.noteToRectID(note)
+      )
+      if (
+        maybeElement != undefined &&
+        note.startTime != null &&
+        note.endTime != null
+      ) {
+        maybeElement.classList.toggle(
           'active',
           note.startTime <= currentTime && note.endTime > currentTime
         )
+      }
     }
 
     // for (const rect of this.svgElement.getElementsByTagName('rect')) {
