@@ -145,10 +145,10 @@ body.running #configuration-selection-container {
   transition: filter 0.1s ease-in-out;
   width: 80%;
   align-items: center;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1em 1fr 1em;
   grid-template-areas:
-    'title title'
-    'help input';
+    'title title title'
+    'help input help-margin';
   &::before {
     grid-area: title;
     content: 'Inpainting API address';
