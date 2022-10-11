@@ -280,7 +280,7 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   // }
 
   protected zoomCallback(zoomIn: boolean): void {
-    this.pixelsPerTimeStep += (zoomIn ? 1 : -1) * 10
+    this.pixelsPerTimeStep += (zoomIn ? 1 : -1) * 3
     this.render()
     log.info(`Zoom level now: ${this.pixelsPerTimeStep} pixelsPerTimeStep`)
   }

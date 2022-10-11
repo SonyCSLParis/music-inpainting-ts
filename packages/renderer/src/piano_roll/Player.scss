@@ -190,21 +190,24 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
   fill-opacity: calc(0.9 + $velocity-scale-factor * 0.3);
   stroke-opacity: calc(0.9 + $velocity-scale-factor * 0.2);
 
-  // filter: hue-rotate(calc(-1 * $color-rotate-amount + $color-rotate));
-  // invert($midi-velocity-percent);
   &:not(.selected)[data-program='0'] {
     // filter: grayscale(0.5);
   }
   &.active {
     opacity: 1;
-    // fill: color.scale($hot-orange-color, $alpha: -30%);
     stroke: sandybrown;
+  }
+
+  transition: opacity 0.4s, width 0.4s, transform 0.4s, stroke 0.15s;
+  transition-timing-function: ease-in-out;
+  &.selected,
+  &.candidate-selection {
+    transition: opacity 0.4s, width 0.4s, transform 0.4s;
   }
 
   &.selected {
     stroke: darkgray;
     filter: brightness(1.3) hue-rotate(210deg);
-    // animation: 2s pulseHue steps(10) infinite alternate;
     &.invalid-selection {
       stroke: black;
     }
@@ -216,9 +219,6 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
     width: 0;
     transform: translateX(10px);
   }
-  transition-property: opacity, width, transform;
-  transition-duration: 0.4s;
-  transition-timing-function: ease-in-out;
 
   &.growing {
     // HACK(@tbazin, 2022/09/10): hardcoded value here
