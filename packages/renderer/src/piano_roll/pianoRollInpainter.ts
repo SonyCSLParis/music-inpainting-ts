@@ -694,7 +694,7 @@ export class PiaInpainter extends UndoableInpainter<
   //   })
   // }
 
-  protected loadMidi(midiInit: Midi, silent: boolean = true) {
+  protected loadMidi(midiInit: Midi, silent: boolean = false) {
     midiInit = this.flattenTempoChanges(midiInit)
 
     const forceDuration_secondsNoteSequence = this.forceDuration_ticks
@@ -729,7 +729,7 @@ export class PiaInpainter extends UndoableInpainter<
 
   protected async loadMidiFile(
     midiFile: File,
-    silent: boolean = true
+    silent: boolean = false
   ): Promise<this> {
     let midiInit = new Midi(await midiFile.arrayBuffer())
     return this.loadMidi(midiInit)
@@ -738,7 +738,7 @@ export class PiaInpainter extends UndoableInpainter<
   async loadFile(
     file: File,
     queryParameters: string[],
-    silent: boolean = true
+    silent: boolean = false
   ): Promise<this> {
     super.loadFile(file, queryParameters, silent)
     this.abortCurrentRequests()
@@ -793,14 +793,14 @@ export class PiaInpainter extends UndoableInpainter<
     const audioBuffer = await audioContext.decodeAudioData(
       await blob.arrayBuffer()
     )
-      const onsetsAndFrames = await this.getAudioToMidiTranscriptionModel()
-      const noteSequence = await onsetsAndFrames.transcribeFromAudioBuffer(
-        audioBuffer,
-        12
-      )
-      const midi = new Midi(sequenceProtoToMidi(noteSequence))
-      this.loadMidi(midi, false)
-      this.emit('ready')
+    const onsetsAndFrames = await this.getAudioToMidiTranscriptionModel()
+    const noteSequence = await onsetsAndFrames.transcribeFromAudioBuffer(
+      audioBuffer,
+      12
+    )
+    const midi = new Midi(sequenceProtoToMidi(noteSequence))
+    this.loadMidi(midi, false)
+    this.emit('ready')
     return this
   }
 
