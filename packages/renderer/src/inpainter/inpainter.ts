@@ -99,7 +99,7 @@ export abstract class Inpainter<
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
-  protected defaultTimeout: number = 10000
+  protected defaultTimeout: number = 15000
   protected defaultExponentialBackoffDelay: number = 60
   protected maxExponentialBackoffDelay: number = 1024
 
