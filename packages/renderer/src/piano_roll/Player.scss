@@ -198,7 +198,7 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
     stroke: sandybrown;
   }
 
-  transition: opacity 0.4s, width 0.4s, transform 0.4s, stroke 0.15s;
+  transition: opacity 0.4s, width 0.4s, transform 0.4s, stroke 0.1s;
   transition-timing-function: ease-in-out;
   &.selected,
   &.candidate-selection {
