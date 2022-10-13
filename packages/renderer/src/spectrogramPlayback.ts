@@ -222,14 +222,14 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
       size: [60, 20],
       mode: 'absolute',
       min: 0,
-      max: 0.9,
+      max: 0.8,
       step: 0,
-      value: 0.8,
+      value: 0.7,
     })
     gainControl.on('change', (newGain: number) => {
       this.Gain = newGain
     })
-    gainControl.value = 0.8
+    gainControl.value = 0.7
     gainControl
 
     const localizationId = 'gain-control-label'
