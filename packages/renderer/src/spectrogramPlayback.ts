@@ -300,7 +300,7 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
   }
 
   protected onkeyup(data: NoteEventWithChannel): this {
-    this.getSamplersByMidiChannel(data.channel).forEach((voice) => {
+    this.getSamplersByMidiChannel(data.channel, true).forEach((voice) => {
       voice.triggerRelease(data.note)
     })
     return this
@@ -310,17 +310,24 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
     return this.currentPlayerIsA() ? this.voices_A : this.voices_B
   }
 
+  get allVoices(): Tone.Sampler[] {
+    return [...this.voices_A, ...this.voices_B]
+  }
+
   protected getSamplersByMidiChannel(
-    channel: number | number[] | null = 1
+    channel: number | number[] | null = 1,
+    allVoices: boolean = false
   ): Tone.Sampler[] {
+    const voices = allVoices ? this.allVoices : this.currentVoices
     if (channel == null) {
-      return this.currentVoices
-    } else if (Array.isArray(channel)) {
-      return this.currentVoices.filter((value, index) => {
-        channel.includes(index + 1)
-      })
+      return voices
     } else {
-      return [this.currentVoices[channel - 1]]
+      if (!Array.isArray(channel)) {
+        channel = [channel] as number[]
+      }
+      return voices.filter((value, index) => {
+        return channel.includes((index % this.numVoices) + 1)
+      })
     }
   }
 
