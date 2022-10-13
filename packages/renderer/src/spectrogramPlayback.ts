@@ -23,11 +23,13 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
   protected playbackLookahead = 0
   protected interactiveLookahead = 0
 
+  protected static release: Tone.Unit.Time = 0.2
+
   // initialize crossfade to play player A
   protected readonly masterLimiter: Tone.Limiter = new Tone.Limiter(
     -10
   ).toDestination()
-  protected readonly masterGain: Tone.Gain = new Tone.Gain(0.9).connect(
+  protected readonly masterGain: Tone.Gain = new Tone.Gain(0.8).connect(
     this.masterLimiter
   )
   protected readonly crossFade: Tone.CrossFade = new Tone.CrossFade(0).connect(
@@ -108,6 +110,8 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
     })
 
     this.toggleLowLatency(true)
+    this.sampler_A.release = SpectrogramPlaybackManager.release
+    this.sampler_B.release = SpectrogramPlaybackManager.release
   }
 
   protected onkeyup(data: ToneNoteEvent): this {
@@ -273,22 +277,31 @@ export class MultiChannelSpectrogramPlaybackManager extends SpectrogramPlaybackM
   protected voices_A: Tone.Sampler[]
   protected voices_B: Tone.Sampler[]
 
+  protected makeVoice(
+    buffer: Tone.ToneAudioBuffer,
+    destination: Tone.InputNode,
+    release: Tone.Unit.Time = SpectrogramPlaybackManager.release
+  ) {
+    const sampler = new Tone.Sampler({
+      C4: new Tone.Buffer(buffer.get()),
+    })
+    sampler.connect(destination)
+    sampler.release = release
+    return sampler
+  }
+
   constructor(inpainter: SpectrogramInpainter) {
     super(inpainter)
 
     this.voices_A = Array(this.numVoices)
       .fill(0)
       .map(() => {
-        return new Tone.Sampler({
-          C4: new Tone.Buffer(this.buffer_A.get()),
-        }).connect(this.crossFade.a)
+        return this.makeVoice(this.buffer_A, this.crossFade.a)
       })
     this.voices_B = Array(this.numVoices)
       .fill(0)
       .map(() => {
-        return new Tone.Sampler({
-          C4: new Tone.Buffer(this.buffer_B.get()),
-        }).connect(this.crossFade.b)
+        return this.makeVoice(this.buffer_B, this.crossFade.b)
       })
   }
 
