@@ -266,8 +266,8 @@ body.notono {
       fill-opacity: 1;
     }
     &.selected {
-      transition: color, background-color;
       rect.sequencer-toggle-visual {
+        transition: color, background-color;
         opacity: 1;
         fill-opacity: 0.9;
         stroke-opacity: 0.6;
