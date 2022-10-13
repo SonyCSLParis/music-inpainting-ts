@@ -171,7 +171,7 @@ async function render(
     setNexusColors('darkgray', 'black', 'lightgray')
   } else if (configuration['spectrogram']) {
     document.body.classList.add('notono')
-    document.body.setAttribute('theme', 'dark')
+    document.body.setAttribute('theme', 'black-white')
     void setBackgroundColorElectron(
       colors.lavender_dark_mode_panes_background_color
     )

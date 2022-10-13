@@ -78,14 +78,16 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   $overlay-lightness-factor: 1 !default;
   $text: lightgray !default;
   $accent-color: white !default;
-  $spectrogram-image-filter: brightness(1.15) contrast(1.3) blur(2px) !default;
-  $spectrogram-grid-color: $off-white-color;
-  $spectrogram-background-color: transparent;
-  $cycle-select-icon-filter: none;
   $panes-border: color.scale(
     $panes,
     $lightness: $overlay-lightness-factor * 20%
-  );
+  ) !default;
+
+  $spectrogram-background-color: transparent !default;
+  $spectrogram-grid-color: $hot-orange-color !default;
+  $text: $arabian-sand-color !default;
+  $spectrogram-image-filter: invert(1) sepia(1) hue-rotate(-17.8deg)
+    brightness(0.7) contrast(1.5) blur(0.5px) !default;
 
   @if $theme == lavender-light {
     $body: $lavender-body-background;
@@ -127,8 +129,8 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
     $overlay-lightness-factor: +1;
     $text: black;
   } @else if $theme == black-white {
-    $body: color.scale(darkgray, $lightness: +60%);
-    $panes: color.scale(darkgray, $lightness: -80%);
+    $body: color.scale(darkgray, $lightness: +30%);
+    $panes: color.scale(darkgray, $lightness: -90%);
     $panes-border: lightgray;
     $active-control: $lighter-arabian-sand-color;
     $idle-control: $lighter-arabian-sand-color;
@@ -483,20 +485,10 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
     .inpainter-interface-container {
       &::before {
         left: calc(0vw - #{measures.$spectrogram-margin-width});
-        background: radial-gradient(
-          ellipse farthest-corner at right,
-          transparent 0vw,
-          $body measures.$spectrogram-margin-width
-        );
       }
 
       &:after {
         right: calc(0vw - #{measures.$spectrogram-margin-width});
-        background: radial-gradient(
-          ellipse farthest-corner at left,
-          transparent 0vw,
-          $body measures.$spectrogram-margin-width
-        );
       }
 
       .spectrogram-inpainter-interface {
