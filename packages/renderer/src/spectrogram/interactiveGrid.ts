@@ -7,7 +7,7 @@ class CSSClassBasedSequencer extends Nexus.Sequencer {
   buildInterface(): void {
     super.buildInterface()
     this.cells.forEach((cell) => {
-      cell.render = function () {
+      cell.render = function (this: MatrixCell) {
         this.element.classList.toggle('selected', this.state)
       }
     })
@@ -51,8 +51,8 @@ export declare interface InteractiveGrid {
 
 export class InteractiveGrid extends CSSClassBasedSequencer {
   inRectangularSelection = false
-  firstCell?: GridPosition
-  previousCell?: GridPosition
+  currentInteractionFirstCell: GridPosition | null = null
+  currentInteractionPreviousCell: GridPosition | null = null
   rectangularSelections = true
 
   readonly columnsOverlay: HTMLElement
@@ -215,8 +215,8 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
 
   protected onInteractionEnd: () => void = () => {
     this.inRectangularSelection = false
-    this.firstCell = null
-    this.previousCell = null
+    this.currentInteractionFirstCell = null
+    this.currentInteractionPreviousCell = null
     this.removeEventListeners()
     return
   }
@@ -268,9 +268,9 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
       }
     }
     if (this.rectangularSelections && this.inRectangularSelection) {
-      if (this.firstCell == null) {
-        this.firstCell = cell
-        this.previousCell = cell
+      if (this.currentInteractionFirstCell == null) {
+        this.currentInteractionFirstCell = cell
+        this.currentInteractionPreviousCell = cell
         const data = {
           row: cell.row,
           column: cell.column,
@@ -297,12 +297,18 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
         // activate all cells in the rectangle between the first cell
         // of the interaction and the current cell
         const rectangleStart = {
-          row: Math.min(this.firstCell.row, cell.row),
-          column: Math.min(this.firstCell.column, cell.column),
+          row: Math.min(this.currentInteractionFirstCell.row, cell.row),
+          column: Math.min(
+            this.currentInteractionFirstCell.column,
+            cell.column
+          ),
         }
         const rectangleEnd = {
-          row: Math.max(this.firstCell.row, cell.row),
-          column: Math.max(this.firstCell.column, cell.column),
+          row: Math.max(this.currentInteractionFirstCell.row, cell.row),
+          column: Math.max(
+            this.currentInteractionFirstCell.column,
+            cell.column
+          ),
         }
         for (let row = rectangleStart.row; row <= rectangleEnd.row; row++) {
           for (
@@ -329,7 +335,7 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
           this.emit('toggle', data)
         }
       }
-      this.previousCell = cell
+      this.currentInteractionPreviousCell = cell
     }
     super.keyChange(note, on)
   }
