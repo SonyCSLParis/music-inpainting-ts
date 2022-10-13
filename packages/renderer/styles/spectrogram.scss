@@ -245,39 +245,41 @@ body.notono {
   span {
     background-color: rgba(255, 255, 255, 0);
   }
-  svg:hover {
-    fill-opacity: 0.7;
-    rect.sequencer-toggle-visual {
-      transition: color 0.04s, background-color 0.04s;
-    }
-    &.selected rect.sequencer-toggle-visual {
-      fill-opacity: 0.7;
-    }
-  }
-
   svg {
     rect.sequencer-toggle-visual {
       stroke-opacity: 0.3;
-      opacity: 0.4;
+      opacity: 0.8;
       transition-duration: 0.04s;
-      transition: color, background-color, fill 0.2s;
-      animation: pulseOpacity 1s ease-in-out alternate infinite;
+      transition: color, background-color, fill 0.15s, fill-opacity 0.15s;
+      animation: pulseOpacity 1.5s ease-in-out alternate infinite;
       fill: transparent;
-      fill-opacity: 1;
+      fill-opacity: 0;
+      rx: 0.2px;
+      filter: //
+        #{saturate }(calc(0.4 + 0.6 * var(--frequency-ratio))) //
+        hue-rotate(calc(10deg * (1 + var(--frequency-ratio)))) //
+        brightness(calc(0.6 + 0.4 * var(--frequency-ratio))) //
+        contrast(calc(1 + 3 * (1 - var(--frequency-ratio))));
     }
-    &.selected {
+    &.selected rect.sequencer-toggle-visual {
+      transition: color, background-color;
+      opacity: 1;
+      fill-opacity: 0.7;
+      stroke-opacity: 0.6;
+      stroke-width: 4px;
+    }
+
+    &:hover {
+      fill-opacity: 0.8;
       rect.sequencer-toggle-visual {
         transition: color, background-color;
-        opacity: 1;
-        fill-opacity: 0.9;
-        stroke-opacity: 0.6;
-        stroke-width: 3.2px;
+        fill-opacity: 1;
       }
     }
   }
   @keyframes pulseOpacity {
     to {
-      fill-opacity: 0.6;
+      opacity: 0.8;
     }
   }
 }

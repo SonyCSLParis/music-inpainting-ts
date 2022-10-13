@@ -137,6 +137,7 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
     $accent-color: $hot-orange-color;
     $overlay-lightness-factor: 1;
     $text: $arabian-sand-color;
+    $spectrogram-grid-color: white;
   } @else {
     @error "Unknown theme #{$theme}.";
   }
@@ -518,10 +519,14 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
     border-color: $spectrogram-grid-color;
     rect {
       stroke: $spectrogram-grid-color;
+      &.sequencer-toggle-visual {
+        fill: mix(#b6cfc4, #d9cdc5, 30%);
+      }
     }
 
     svg.selected rect.sequencer-toggle-visual {
-      fill: rgb(64, 64, 64);
+      // stroke: hotpink;
+      stroke: #e8d3d9;
       stroke: $off-white-color;
     }
 

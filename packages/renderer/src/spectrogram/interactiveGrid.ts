@@ -117,10 +117,23 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
     return columnsOverlay
   }
 
+  cellIndexToFrequencyIndex(cellIndex: number): number {
+    return this.rows - 1 - Math.floor(cellIndex / this.columns)
+  }
+
   protected createVisualElements(): void {
-    this.cells.forEach((cell) => {
+    this.cells.forEach((cell, cellIndex) => {
       const visualNode = <typeof cell.pad>cell.pad.cloneNode()
       visualNode.classList.add('sequencer-toggle-visual')
+      const frequencyIndex = this.cellIndexToFrequencyIndex(cellIndex)
+      visualNode.style.setProperty(
+        '--frequency-index',
+        frequencyIndex.toString()
+      )
+      visualNode.style.setProperty(
+        '--frequency-ratio',
+        (frequencyIndex / (this.rows - 1)).toString()
+      )
       cell.element.appendChild(visualNode)
       cell.pad.style.opacity = '0'
     })
