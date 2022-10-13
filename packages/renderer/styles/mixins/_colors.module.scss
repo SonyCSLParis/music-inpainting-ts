@@ -532,7 +532,7 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
 
     svg:hover {
       rect.sequencer-toggle-visual {
-        fill: white;
+        fill: lighten(mix(#b6cfc4, #d9cdc5, 30%), 10%);
       }
     }
   }
