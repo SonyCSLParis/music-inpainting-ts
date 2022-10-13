@@ -3,6 +3,17 @@ import { SequencerOptions } from 'nexusui/dist/types/interfaces/sequencer'
 import { BaseInterfaceOptions } from 'nexusui/dist/types/core/interface'
 import type { MatrixCell } from 'nexusui'
 
+class CSSClassBasedSequencer extends Nexus.Sequencer {
+  buildInterface(): void {
+    super.buildInterface()
+    this.cells.forEach((cell) => {
+      cell.render = function () {
+        this.element.classList.toggle('selected', this.state)
+      }
+    })
+  }
+}
+
 type GridPosition = {
   row: number
   column: number
@@ -38,13 +49,11 @@ export declare interface InteractiveGrid {
   ): this
 }
 
-export class InteractiveGrid extends Nexus.Sequencer {
+export class InteractiveGrid extends CSSClassBasedSequencer {
   inRectangularSelection = false
   firstCell?: GridPosition
   previousCell?: GridPosition
   rectangularSelections = true
-
-  readonly mutationObserver: MutationObserver
 
   readonly columnsOverlay: HTMLElement
   static readonly nowPlayingCSSClass = 'sequencer-playing'
@@ -53,10 +62,10 @@ export class InteractiveGrid extends Nexus.Sequencer {
     container: string | HTMLElement,
     options: Partial<
       BaseInterfaceOptions &
-      SequencerOptions & {
-        fill: string
-        accent: string
-      }
+        SequencerOptions & {
+          fill: string
+          accent: string
+        }
     >
   ) {
     super(container, options)
@@ -92,6 +101,11 @@ export class InteractiveGrid extends Nexus.Sequencer {
     this.createVisualElements()
   }
 
+  clearSelection(): void {
+    this.cells.forEach((cell) => (cell.state = false))
+    this.render()
+  }
+
   private createColumnsOverlay() {
     const columnsOverlay = document.createElement('div')
     columnsOverlay.classList.add('sequencer-grid-overlay')
@@ -109,34 +123,8 @@ export class InteractiveGrid extends Nexus.Sequencer {
       visualNode.classList.add('sequencer-toggle-visual')
       cell.element.appendChild(visualNode)
       cell.pad.style.opacity = '0'
-      InteractiveGrid.mutationObserver.observe(cell.pad, {
-        attributes: true,
-        subtree: false,
-        attributeFilter: ['fill'],
-      })
     })
   }
-
-  protected static mutationObserverCallback: MutationCallback = (mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.type == 'attributes') {
-        const attributeName = mutation.attributeName
-        const target = <HTMLElement>mutation.target
-        const matrixCellElement = target.parentElement
-        const visualElement = matrixCellElement
-          .getElementsByClassName('sequencer-toggle-visual')
-          .item(0)
-        visualElement.setAttribute(
-          attributeName,
-          target.getAttribute(attributeName)
-        )
-      }
-    })
-  }
-
-  protected static mutationObserver: MutationObserver = new MutationObserver(
-    InteractiveGrid.mutationObserverCallback
-  )
 
   protected getVisualElement(cell: MatrixCell): SVGElement {
     return <typeof cell.pad>(

@@ -525,8 +525,12 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   .spectrogram-inpainter-interface {
     border-color: $spectrogram-grid-color;
     rect {
-      stroke-opacity: 0.5;
       stroke: $spectrogram-grid-color;
+    }
+
+    svg.selected rect.sequencer-toggle-visual {
+      fill: rgb(64, 64, 64);
+      stroke: $off-white-color;
     }
 
     svg:hover {
@@ -534,6 +538,12 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
         fill: white;
       }
     }
+  }
+  .spectrogram-inpainter.busy
+    .spectrogram-inpainter-interface
+    svg.selected
+    rect.sequencer-toggle-visual {
+    fill: black;
   }
 
   // .spectrogram-inpainter {

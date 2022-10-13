@@ -61,7 +61,6 @@ $spectrogram-height-no-scroll: 90%;
   }
 
   .spectrogram-inpainter-interface {
-    opacity: 0.3;
     span,
     svg {
       pointer-events: none;
@@ -225,8 +224,6 @@ body.notono {
   }
 
   * {
-    transition-property: color, background-color;
-    transition-duration: 0.04s;
     transition-timing-function: ease-in-out;
   }
 
@@ -244,6 +241,62 @@ body.notono {
   }
 }
 
+.spectrogram-inpainter-interface {
+  span {
+    background-color: rgba(255, 255, 255, 0);
+  }
+  svg:hover {
+    fill-opacity: 0.7;
+    rect.sequencer-toggle-visual {
+      transition: color 0.04s, background-color 0.04s;
+    }
+    &.selected rect.sequencer-toggle-visual {
+      fill-opacity: 0.7;
+    }
+  }
+
+  svg {
+    rect.sequencer-toggle-visual {
+      stroke-opacity: 0.3;
+      opacity: 0.4;
+      transition-duration: 0.04s;
+      transition: color, background-color, fill 0.2s;
+      animation: pulseOpacity 1s ease-in-out alternate infinite;
+      fill: transparent;
+      fill-opacity: 1;
+    }
+    &.selected {
+      transition: color, background-color;
+      rect.sequencer-toggle-visual {
+        opacity: 1;
+        fill-opacity: 0.9;
+        stroke-opacity: 0.6;
+        stroke-width: 3.2px;
+      }
+    }
+  }
+  @keyframes pulseOpacity {
+    to {
+      fill-opacity: 0.6;
+    }
+  }
+}
+
+.spectrogram-inpainter.busy {
+  .spectrogram-inpainter-interface {
+    svg {
+      rect.sequencer-toggle-visual {
+        animation: none;
+      }
+      &.selected rect.sequencer-toggle-visual {
+        stroke-width: 2.2px;
+        stroke-opacity: 0.8;
+        fill-opacity: 0.5;
+        opacity: 1;
+      }
+    }
+  }
+}
 .spectrogram-inpainter.playing :not(.disabled-layer) {
   .sequencer-grid-overlay span.sequencer-playing {
     opacity: 0.5;
@@ -251,13 +304,12 @@ body.notono {
 }
 
 .highlight {
-  animation: 500ms ease-in-out 100ms 2 alternate none highlight;
+  animation: highlight 1s ease-in-out 2 alternate;
 }
 
 @keyframes highlight {
   to {
-    opacity: 0.4;
-    background-color: white;
+    background-color: rgba(255, 255, 255, 0.3);
   }
 }
 

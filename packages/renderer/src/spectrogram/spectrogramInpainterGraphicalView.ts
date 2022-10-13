@@ -472,6 +472,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     if (!this.isRendered) {
       return
     }
+    this.clearSelection()
     this.updateNoScroll()
     this.resize()
     this.onchangeGranularity()
@@ -701,6 +702,12 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     this.interactiveGridPerLayer.forEach((interactiveGrid) => {
       interactiveGrid.colorize(type, color)
     })
+  }
+
+  clearSelection(): void {
+    this.interactiveGridPerLayer.forEach((interactiveGrid) =>
+      interactiveGrid.clearSelection()
+    )
   }
 
   get numInteractiveElements(): number {
