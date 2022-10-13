@@ -611,7 +611,7 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
       filter: brightness(0.3);
     }
   }
-  #help-icon {
+  .help-icon {
     color: color.invert($body);
   }
 

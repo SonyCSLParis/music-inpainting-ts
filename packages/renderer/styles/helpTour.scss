@@ -1,6 +1,6 @@
 @use 'mixins/colors.module';
 
-#help-icon {
+.help-icon {
   top: 1.5vh;
   right: 10px;
   position: absolute;
@@ -66,7 +66,8 @@
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   width: 100%;
-  padding: 0;
+  padding: 0.75rem;
+  border-top: thin solid rgba(128, 128, 128, 0.487);
 }
 
 .shepherd-title {
@@ -74,7 +75,8 @@
 }
 
 .shepherd-button {
-  font-size: min(1.3rem, 2vmax);
+  font-size: min(1.3rem, 2vmax, 6vmin);
+  padding: 0.5rem 0rem;
 }
 .shepherd-modal-overlay-container.shepherd-modal-is-visible {
   opacity: 0.8;

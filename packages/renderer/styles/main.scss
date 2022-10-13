@@ -598,6 +598,15 @@ $zoom-border-radius: 5px;
     }
   }
 }
+.zoom-control,
+.fullscreen-control,
+.reset-loop-control,
+.help-icon {
+  transition: transform 0.5s;
+  @media screen and (max-width: 500px) {
+    transform: scale(0.6);
+  }
+}
 
 $padding-length: clamp(0.2rem, 4vw, 0.5rem);
 .zoom-control {

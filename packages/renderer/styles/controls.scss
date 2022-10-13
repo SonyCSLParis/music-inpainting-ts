@@ -426,9 +426,11 @@ $disabled-gridspan-filter: blur(1.3px);
       row-gap: 0.5vh;
     }
   }
-  .gridspan {
-    grid-template-rows: 1fr;
-    padding: 0.25vh 0;
+  body:not(.controls-hidden) {
+    .gridspan {
+      grid-template-rows: 1fr;
+      padding: 0.25vh 0;
+    }
   }
   #bottom-controls {
     grid-template-rows: 1fr;

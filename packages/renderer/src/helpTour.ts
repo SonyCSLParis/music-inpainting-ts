@@ -120,6 +120,7 @@ export abstract class MyShepherdTour<
 
   protected onStart(): void {
     document.body.classList.add('help-tour-on')
+    document.body.classList.remove('controls-hidden')
     this.inpainter.refresh()
     this.initHideOnClickOutside()
   }
@@ -178,7 +179,7 @@ export abstract class MyShepherdTour<
     const helpElement: HTMLAnchorElement = document.createElement('a')
     containerElement.appendChild(helpElement)
 
-    helpElement.id = 'help-icon'
+    helpElement.classList.add('help-icon')
     helpElement.classList.add('fa-solid', 'fa-circle-question')
     helpElement.title = 'Help'
 
@@ -283,6 +284,23 @@ export class NonotoTour extends MyShepherdTour<SheetInpainterGraphicalView> {
 }
 
 export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView> {
+  protected hadAdvancedControls: boolean | null = null
+
+  protected showHideAdvancedControls = {
+    show: () => {
+      this.hadAdvancedControls =
+        document.body.classList.contains('advanced-controls')
+      document.body.classList.add('advanced-controls')
+    },
+    hide: () => {
+      document.body.classList.toggle(
+        'advanced-controls',
+        this.hadAdvancedControls ?? false
+      )
+      this.hadAdvancedControls = null
+    },
+  }
+
   makeStepsOptions(helpContents: helpJSON): Shepherd.Step.StepOptions[] {
     return [
       {
@@ -296,7 +314,7 @@ export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView
       },
       {
         title: 'Spectrogram transformations',
-        attachTo: { element: this.inpainter.interfaceContainer, on: 'bottom' },
+        attachTo: { element: this.inpainter.container, on: 'bottom' },
         text: this.makeHTMLContent(helpContents['notono']['spectrogram']),
         when: {
           show: () => this.inpainter.callToAction(10),
@@ -315,35 +333,26 @@ export class NotonoTour extends MyShepherdTour<SpectrogramInpainterGraphicalView
       },
       {
         title: 'Regenerate',
-        attachTo: { element: '#app-title-container', on: 'bottom' },
+        attachTo: { element: '#app-title', on: 'bottom' },
         text: this.makeHTMLContent(helpContents['general']['title_commands']),
       },
       {
         title: 'Downloading',
         attachTo: { element: '#download-button-gridspan', on: 'top' },
         text: this.makeHTMLContent(helpContents['notono']['download']),
-        when: {
-          show: () => document.body.classList.add('force-advanced-controls'),
-          hide: () => document.body.classList.remove('force-advanced-controls'),
-        },
+        when: this.showHideAdvancedControls,
       },
       {
         title: 'Declick / Gain',
         attachTo: { element: '#mixing-controls-gridspan', on: 'top' },
         text: this.makeHTMLContent(helpContents['notono']['fade-in']),
-        when: {
-          show: () => document.body.classList.add('force-advanced-controls'),
-          hide: () => document.body.classList.remove('force-advanced-controls'),
-        },
+        when: this.showHideAdvancedControls,
       },
       {
         title: 'MIDI-In',
         attachTo: { element: '#midi-input-setup-gridspan', on: 'top' },
         text: this.makeHTMLContent(helpContents['notono']['midi_in']),
-        when: {
-          show: () => document.body.classList.add('force-advanced-controls'),
-          hide: () => document.body.classList.remove('force-advanced-controls'),
-        },
+        when: this.showHideAdvancedControls,
       },
       {
         title: "Audio drag'n'drop",
