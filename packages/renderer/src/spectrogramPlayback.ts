@@ -27,7 +27,7 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
   protected readonly masterLimiter: Tone.Limiter = new Tone.Limiter(
     -10
   ).toDestination()
-  protected readonly masterGain: Tone.Gain = new Tone.Gain(1).connect(
+  protected readonly masterGain: Tone.Gain = new Tone.Gain(0.9).connect(
     this.masterLimiter
   )
   protected readonly crossFade: Tone.CrossFade = new Tone.CrossFade(0).connect(
@@ -218,14 +218,14 @@ export class SpectrogramPlaybackManager extends PlaybackManager<SpectrogramInpai
       size: [60, 20],
       mode: 'absolute',
       min: 0,
-      max: 1.2,
+      max: 0.9,
       step: 0,
-      value: 1,
+      value: 0.8,
     })
     gainControl.on('change', (newGain: number) => {
       this.Gain = newGain
     })
-    gainControl.value = 1
+    gainControl.value = 0.8
     gainControl
 
     const localizationId = 'gain-control-label'
