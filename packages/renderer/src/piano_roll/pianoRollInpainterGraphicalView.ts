@@ -447,12 +447,6 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   protected setCurrentlyPlayingPositionDisplay(totalProgress: number): void {
     this.visualizer?.setPlaybackDisplayProgress(totalProgress)
   }
-
-  protected triggerReflow(): void {
-    const _ = document.body.clientWidth
-    return
-  }
-
   protected scrollTo(progress: number): void {
     this.scrollToPosition(
       this.visualizer?.totalProgressToClientX(progress) ?? 0

@@ -689,11 +689,6 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
     }
   }
 
-  protected triggerReflow(): void {
-    const _ = document.body.clientWidth
-    return
-  }
-
   getInterfaceElementByIndex(index: number): Element | null {
     return this.interfaceElement.children.item(index)
   }

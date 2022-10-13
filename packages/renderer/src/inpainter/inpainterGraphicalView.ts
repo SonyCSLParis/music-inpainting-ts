@@ -32,13 +32,26 @@ export abstract class InpainterGraphicalView<
 
   abstract get isRendered(): boolean
 
+  protected triggerReflow(): void {
+    const _ = document.body.clientWidth
+    return
+  }
+
+  // force repaint to display proper pointer `hover` position
+  triggerRepaint(): void {
+    this.interfaceContainer.style.opacity = '0'
+    setTimeout(() => {
+      this.interfaceContainer.style.opacity = '1'
+    }, 1)
+  }
+
   protected errorTimeout?: NodeJS.Timeout = undefined
   protected flashError(): void {
     if (this.errorTimeout != undefined) {
       clearTimeout(this.errorTimeout)
     }
     this.container.classList.remove('error')
-    this.container.clientWidth // trigger reflow
+    this.triggerReflow()
     this.container.classList.add('error')
     this.errorTimeout = setTimeout(() => {
       this.container.classList.remove('error')
@@ -121,6 +134,7 @@ export abstract class InpainterGraphicalView<
 
   // triggers an animation to catch the user's eye
   public callToAction(
+    interval: number = 100,
     highlightedCellsNumber = this.callToActionHighlightedCellsNumber
   ): void {
     function delay(ms: number): Promise<void> {
@@ -128,7 +142,6 @@ export abstract class InpainterGraphicalView<
     }
 
     let promise = Promise.resolve()
-    const interval = 100
 
     const randomIndexes: number[] = Array(highlightedCellsNumber)
       .fill(0)
@@ -141,22 +154,12 @@ export abstract class InpainterGraphicalView<
 
       promise = promise.then(() => {
         if (element != null) {
+          element.classList.remove('highlight')
+          this.triggerReflow()
           element.classList.add('highlight')
         }
         return delay(interval)
       })
-    })
-
-    void promise.then(() => {
-      setTimeout(() => {
-        randomIndexes.forEach((index) => {
-          const element = this.getInterfaceElementByIndex(index)
-
-          if (element != null) {
-            element.classList.remove('highlight')
-          }
-        })
-      }, 4 * interval * highlightedCellsNumber)
     })
   }
 

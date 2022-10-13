@@ -701,16 +701,7 @@ async function render(
         }
         if (e.key == 'Shift') {
           layerToggle.next(true)
-
-          // force repaint to display proper pointer `hover` position
-          spectrogramInpainterGraphicalView.interfaceContainer.style.visibility =
-            'hidden'
-          setTimeout(() => {
-            if (spectrogramInpainterGraphicalView != undefined) {
-              spectrogramInpainterGraphicalView.interfaceContainer.style.visibility =
-                'visible'
-            }
-          }, 1)
+          spectrogramInpainterGraphicalView.triggerRepaint()
         }
       }
       document.body.addEventListener('keydown', onshiftKey)
@@ -1227,7 +1218,7 @@ async function render(
 
   $(async () => {
     inpainterGraphicalView.once('ready', () => {
-      inpainterGraphicalView.callToAction()
+      inpainterGraphicalView.callToAction(150)
     })
     await sampleNewData(true)
   })
