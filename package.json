@@ -76,9 +76,9 @@
   "author": "Théis Bazin, Hadjeres Gaëtan (gaetan.hadjeres@sony.com)",
   "license": "GPL-3.0",
   "bugs": {
-    "url": "https://github.com/SonyCSLParis/NONOTO/issues"
+    "url": "https://github.com/SonyCSLParis/music-inpainting-ts/issues"
   },
-  "homepage": "https://github.com/SonyCSLParis/NONOTO",
+  "homepage": "https://github.com/SonyCSLParis/music-inpainting-ts",
   "devDependencies": {
     "@types/deep-equal": "^1.0.1",
     "@types/fs-extra": "^9.0.13",
