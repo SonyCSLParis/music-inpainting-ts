@@ -575,6 +575,7 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   .control-item,
   input {
     &:not(.disabled) {
+      filter: main-filter($idle-control, $overlay-lightness-factor, 0.3px);
       &:hover {
         filter: brightness(1.03)
           main-filter($idle-control, $overlay-lightness-factor);
@@ -595,6 +596,9 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
       background-color: color.change($body, $alpha: 0.4);
       &:hover {
         background-color: color.invert($body);
+        .reset-loop-control-disable-icon {
+          filter: brightness(0.6);
+        }
       }
       border-color: color.scale(
         $panes,
@@ -604,7 +608,7 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   }
   .reset-loop-control {
     .reset-loop-control-disable-icon {
-      color: color.scale($text, $lightness: -80%);
+      filter: brightness(0.3);
     }
   }
   #help-icon {
