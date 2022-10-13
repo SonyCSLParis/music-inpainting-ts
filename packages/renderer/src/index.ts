@@ -375,6 +375,13 @@ async function render(
           options: instrumentConstraintSelectOptions,
         }
       )
+      function disableFocus(this: HTMLSelectElement) {
+        this.blur() // otherwise this steals the Keyboard-as-Piano focus
+      }
+      instrumentConstraintSelect.element.addEventListener(
+        'change',
+        disableFocus
+      )
       // set the initial instrument constraint randomly
       instrumentConstraintSelect.shuffle()
 
