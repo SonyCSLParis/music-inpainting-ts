@@ -182,9 +182,11 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
   }
 
   removeNote(note: NoteSequence.Note): boolean {
-    const element = this.svg.getElementById(this.noteToRectID(note))
-    const wasPresent = element != undefined
-    element?.remove()
+    const elements = this.svg.getElementsByClassName(this.noteToString(note))
+    const wasPresent = elements.length > 0
+    if (wasPresent) {
+      Array.from(elements).forEach((element) => {
+    }
     return wasPresent
   }
 
@@ -301,8 +303,10 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
       if (this.svg != null) {
         // HACK(@tbazin, 2022/09/11): should rather ensure there are no duplicates in
         // inpainter.noteSequence!
-        const maybeRect = this.svg.getElementById(this.noteToRectID(note))
-        if (maybeRect != null) {
+        const noteElements = this.svg.getElementsByClassName(
+          this.noteToString(note)
+        )
+        if (noteElements.length > 0) {
           continue
         }
       }
@@ -316,14 +320,14 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
         cssProperties
       )
       if (rect != null) {
-        rect.id = this.noteToRectID(note)
+        rect.classList.add(this.noteToString(note))
       }
     }
     this.drawn = true
   }
 
-  noteToRectID(note: NoteSequence.Note): string {
-    return `${note.startTime.toFixed(3)}-${note.endTime.toFixed(3)}-${
+  noteToString(note: NoteSequence.Note): string {
+    return `note-${note.startTime.toFixed(3)}-${note.endTime.toFixed(3)}-${
       note.pitch
     }`
   }
@@ -647,19 +651,17 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
 
     const currentTime = totalProgress * this.ns.totalTime
     for (const note of this.ns?.notes ?? []) {
-      const maybeElement = this.svgElement.getElementById(
-        this.visualizer.noteToRectID(note)
+      const noteElements = this.svgElement.getElementsByClassName(
+        this.visualizer.noteToString(note)
       )
-      if (
-        maybeElement != undefined &&
-        note.startTime != null &&
-        note.endTime != null
-      ) {
-        maybeElement.classList.toggle(
-          'active',
-          note.startTime <= currentTime && note.endTime > currentTime
-        )
-      }
+      Array.from(noteElements).forEach((noteElement) => {
+        if (note.startTime != null && note.endTime != null) {
+          noteElement.classList.toggle(
+            'active',
+            note.startTime <= currentTime && note.endTime > currentTime
+          )
+        }
+      })
     }
 
     // for (const rect of this.svgElement.getElementsByTagName('rect')) {
@@ -1998,7 +2000,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       cssProperties
     )
     if (rect != null) {
-      rect.id = this.visualizer.noteToRectID(note)
+      rect.classList.add(this.visualizer.noteToString(note))
     }
     return rect
   }
