@@ -138,6 +138,9 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 .midi-visualizer {
   cursor: pointer;
 }
+.midi-visualizer.in-interaction {
+  cursor: grabbing;
+}
 
 .midi-visualizer svg rect.note {
   rx: 1.5px;

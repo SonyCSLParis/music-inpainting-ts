@@ -1285,7 +1285,15 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     )
   }
 
-  protected inSelectionInteraction: boolean = false
+  protected _inSelectionInteraction: boolean = false
+  protected get inSelectionInteraction(): boolean {
+    return this._inSelectionInteraction
+  }
+  protected set inSelectionInteraction(inSelectionInteraction: boolean) {
+    this.classList.toggle('in-interaction', inSelectionInteraction)
+    this._inSelectionInteraction = inSelectionInteraction
+  }
+
   protected startingSelectionInteraction: boolean = false
   get InSelectionInteraction(): boolean {
     return this.inSelectionInteraction
