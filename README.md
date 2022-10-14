@@ -20,7 +20,7 @@ These apps are all based on *inpainting*, that is, the use of AI-models to trans
 Note that the `music-inpainting.ts` interfaces each require connection to an AI model for inference!
 Don't panic though:
 - :tada: We provide compatible models as [Docker images](#running-the-models-locally) (GPU recommended).
-- :alembic: The apps are **model-agnostic**: try to use them in conjunction with their own models!
+- :alembic: The apps are **model-agnostic**: try to use them in conjunction with **your own models**!
 
 ### PIANOTO
 
