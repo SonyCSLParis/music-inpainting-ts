@@ -691,21 +691,34 @@ async function render(
         octaveConstraintControl,
         pitchClassConstraintSelect
       )
-      const onshiftKey = (e: KeyboardEvent) => {
+      let registeredValidShiftKeyDown = false
+      const onShiftKey = (e: KeyboardEvent) => {
         if (
           e.repeat ||
           spectrogramInpainterGraphicalView == undefined ||
-          spectrogramInpainterGraphicalView.interacting
+          spectrogramInpainterGraphicalView.interacting ||
+          spectrogramInpainterGraphicalView.disabled
         ) {
-          return
+          return false
         }
         if (e.key == 'Shift') {
           layerToggle.next(true)
           spectrogramInpainterGraphicalView.triggerRepaint()
+          return true
         }
+        return false
       }
-      document.body.addEventListener('keydown', onshiftKey)
-      document.body.addEventListener('keyup', onshiftKey)
+      document.body.addEventListener('keydown', (e: KeyboardEvent) => {
+        registeredValidShiftKeyDown = onShiftKey(e)
+      })
+      document.body.addEventListener('keyup', (e: KeyboardEvent) => {
+        if (registeredValidShiftKeyDown) {
+          const hasToggled = onShiftKey(e)
+          if (hasToggled) {
+            registeredValidShiftKeyDown = false
+          }
+        }
+      })
 
       const isAdvancedControl = true
       const volumeControlsGridspanElement = document.createElement('div')
