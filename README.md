@@ -43,7 +43,7 @@ https://user-images.githubusercontent.com/9104039/193407123-0c03942c-be44-435f-b
 **NONOTO** is an interactive interface for symbolic sheet music generation and transformation by inpainting.
 Along with the DeepBach model by Gaëtan Hadjeres, NONOTO lets you generate 4-part chorale-like music in the style of J.S. Bach. Synchronize the app with Ableton Live via the included Ableton Link support and route the output via MIDI to get a smart, melodic and harmonic 4-channel sequencer. Get creative with the chorales by routing the different voices to custom synthesizers!
 
-Here is a demo video of using NONOTO in sync with Ableton Live via Ableton-Link:
+Here is a demo video of using NONOTO in sync with Ableton Live via Ableton-Link.
 
 https://user-images.githubusercontent.com/9104039/193407027-44cf7734-8df3-454f-9ac3-ae1cc95d180c.mp4
 
