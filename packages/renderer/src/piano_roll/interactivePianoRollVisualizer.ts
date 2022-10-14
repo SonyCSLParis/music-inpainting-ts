@@ -1840,10 +1840,6 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       this.currentGenerationOverlayContainer.style.animationDuration = `${
         Math.sqrt(width) / 5
       }s`
-      // this.currentGenerationGradient.setAttribute(
-      //   'width',
-      //   Math.min(width / 10, 20).toFixed()
-      // )
     }
   }
 
