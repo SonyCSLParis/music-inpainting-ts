@@ -1218,7 +1218,7 @@ async function render(
 
   $(async () => {
     inpainterGraphicalView.once('ready', () => {
-      inpainterGraphicalView.callToAction(150)
+      setTimeout(() => inpainterGraphicalView.callToAction(150), 200)
     })
     await sampleNewData(true)
   })

@@ -22,6 +22,8 @@ import { CartesianScaleOptions, TickOptions } from 'chart.js'
 
 import { NoteSequence } from '@magenta/music/esm/protobuf'
 
+import { path as cursorPath } from 'ghost-cursor'
+
 class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   PianoRollData,
   PiaInpainter,
@@ -68,7 +70,10 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     this.interfaceContainer.classList.add(
       'piano-roll-inpainter-stacking-container'
     )
-    this.visualizerEmitter.on('ready', () => this.emit('ready'))
+    this.visualizerEmitter.on('ready', () => {
+      // TODO(@tbazin, 2022/10/13): should properly detect when simplebar is ready
+      this.emit('ready')
+    })
 
     this.inpainter.on(
       'atomicAdd',
@@ -209,6 +214,21 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
 
   clearSelection(): void {
     this.visualizer?.clearSelection()
+  }
+
+  public async callToAction(
+    interval?: number,
+    highlightedCellsNumber?: number
+  ): Promise<void> {
+    // TODO(@tbazin, 2022/10/13): insert cursor image and move it + trigger events to simulate action on piano roll
+    const currentX = this.visualizer.scrollLeft
+    const currentWidth = this.scrollableElement.clientWidth
+    const middleHeight =
+      this.interfaceContainer.clientTop +
+      this.interfaceContainer.clientHeight / 2
+    const start = { x: currentX + currentWidth / 5, y: middleHeight }
+    const end = { x: currentX + (2 * currentWidth) / 5, y: middleHeight }
+    const route = cursorPath(start, end)
   }
 
   protected async regenerationCallback(): Promise<void> {
