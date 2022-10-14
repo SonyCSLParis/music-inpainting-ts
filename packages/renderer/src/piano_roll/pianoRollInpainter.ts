@@ -111,12 +111,15 @@ export class PiaInpainter extends UndoableInpainter<
     return PiaInpainter.PPQ
   }
 
+  protected userAbortedFlag = false
+
   protected onUndo(): void {
     if (this.isInRequest) {
       // if (this.undoManager.canUndo()) {
       //   // FIXME(@tbazin, 2022/09/02)
       //   this.undoManager.pop()
       // }
+      this.userAbortedFlag = true
       if (
         this.undoManager.edits.length == 1 &&
         this.undoManager.edits[0].type == 'clear-region'
@@ -209,6 +212,7 @@ export class PiaInpainter extends UndoableInpainter<
     regionStartQuarters: number,
     regionEndQuarters: number
   ): Promise<this> {
+    this.userAbortedFlag = false
     if (this.isInRequest) {
       await this.abortCurrentRequests()
     }
@@ -336,7 +340,7 @@ export class PiaInpainter extends UndoableInpainter<
 
     const handleNewNotes: (
       response: Response | undefined
-    ) => Promise<this | undefined> = async (response: Response | undefined) => {
+    ) => Promise<this> = async (response: Response | undefined) => {
       if (response == undefined) {
         throw new Error('Response is undefined')
       }
@@ -378,7 +382,7 @@ export class PiaInpainter extends UndoableInpainter<
         requestOptions.body = JSON.stringify(responseJSON)
         return triggerNewRequest(requestOptions).then(async (response) => {
           if (response == undefined) {
-            return undefined
+            throw Error()
           }
           handleNewNotes(response)
         })
@@ -404,13 +408,18 @@ export class PiaInpainter extends UndoableInpainter<
       .then(handleNewNotes)
       .catch((reason) => {
         log.error(reason)
-        this.abortCurrentRequests(true)
-        if (this.undoManager.canUndo()) {
-          this.undoManager.undo()
+        if (!this.userAbortedFlag) {
+          this.abortCurrentRequests(true)
+          if (this.undoManager.canUndo()) {
+            this.undoManager.undo()
+            this.undoManager.pop()
+          }
+          this.emit('ready')
+          return this
+        } else {
           this.undoManager.pop()
+          return this
         }
-        this.emit('ready')
-        return this
       })
   }
 
