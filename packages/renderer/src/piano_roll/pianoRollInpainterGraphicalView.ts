@@ -104,24 +104,25 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
           return
         }
         for (const note of selection) {
-          const maybeNoteElementID =
-            this.visualizer?.visualizer.noteToRectID(note)
-          if (maybeNoteElementID == undefined) {
+          const maybeNoteElementClassName =
+            this.visualizer?.visualizer.noteToString(note)
+          if (maybeNoteElementClassName == undefined) {
             continue
           }
-          const maybeNoteElement = document.getElementById(maybeNoteElementID)
-          if (maybeNoteElement == undefined) {
-            continue
-          }
-          const maybeX = maybeNoteElement.getAttribute('x')
-          if (maybeX == undefined) {
-            continue
-          }
-          const currentX = parseInt(maybeX)
-          maybeNoteElement.setAttribute(
-            'x',
-            `${Math.round(currentX + offsetX)}`
+          const noteElements = document.getElementsByClassName(
+            maybeNoteElementClassName
           )
+          if (noteElements.length == 0) {
+            continue
+          }
+          Array.from(noteElements).forEach((noteElement) => {
+            const maybeX = noteElement.getAttribute('x')
+            if (maybeX == undefined) {
+              return
+            }
+            const currentX = parseInt(maybeX)
+            noteElement.setAttribute('x', `${Math.round(currentX + offsetX)}`)
+          })
         }
       }
     )
