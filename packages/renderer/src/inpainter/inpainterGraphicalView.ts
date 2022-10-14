@@ -301,6 +301,15 @@ export abstract class InpainterGraphicalView<
   }
   abstract get canTriggerInpaint(): boolean
 
+  protected _inInteraction = false
+  protected get inInteraction(): boolean {
+    return this.inInteraction
+  }
+  protected set inInteraction(inInteraction: boolean) {
+    this.container.classList.toggle('in-interaction', inInteraction)
+    this._inInteraction = inInteraction
+  }
+
   protected abstract regenerationCallback(): Promise<void>
 
   protected _releaseCallback = () => {
@@ -310,6 +319,7 @@ export abstract class InpainterGraphicalView<
     } else {
       this.enableChanges()
     }
+    this.inInteraction = false
   }
 
   protected registerReleaseCallback(): void {
@@ -335,6 +345,7 @@ export abstract class InpainterGraphicalView<
       if (this.scrollbar != null) {
         this.scrollbar.toggleScrollLock('x', true)
       }
+      this.inInteraction = true
       this.registerReleaseCallback()
     }
   }
