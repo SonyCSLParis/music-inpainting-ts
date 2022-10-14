@@ -45,6 +45,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   ): Promise<void> {
     await this.updateSpectrogramImage(data.spectrogramImage)
     this.clear()
+    this.clearSelection()
     super.onInpainterChange(data)
   }
 

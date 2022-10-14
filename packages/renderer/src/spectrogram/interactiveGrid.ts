@@ -165,32 +165,35 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
       cell.pad.setAttribute('x', '0')
       cell.pad.setAttribute('y', '0')
 
-      // HACK(@tbazin, 2022/02/24): hardcode stroke-dasharray pattern to disable grid-cell outline for
-      // edge sides of the whole interface
-      // tried to do this using responsive SVG, setting up the <svg> elements with a proper viewBox
-      // and referring to these dimensions in the underlying <rect> elements, but the auto-scaling of
-      // the elements apparently breaks the stroke. In order to have fixed width stroke, one
-      // should use vector-effect="non-scaling-stroke", but this is turn breaks using responsive
-      // units in the <rect> elements definition.
-      //
-      // Rationale: should try and replace this hand-crafted grid of <svg> elements with a
-      // simple CSS-grid.
-      //
-      // default Top-edge plus Left-edge pattern
-      const isAtTop = (<HTMLElement>cell.parent).style.top.startsWith('0')
-      const isAtLeft = (<HTMLElement>cell.parent).style.left.startsWith('0')
-      let dasharrayPattern = `${elementWidth},${elementHeight},0,${elementWidth},${elementHeight}`
-      if (isAtTop && isAtLeft) {
-        // disable stroke for top-left corner
-        dasharrayPattern = `0,1`
-      } else if (isAtLeft) {
-        // disable left-edge stroke for cells on the left-side of the grid
-        dasharrayPattern = `${elementWidth},${elementHeight},0,${elementWidth},0,${elementHeight}`
-      } else if (isAtTop) {
-        // disable top-edge stroke for cells on the top-side of the grid
-        dasharrayPattern = `0,${elementWidth},0,${elementHeight},0,${elementWidth},${elementHeight}`
+      const USE_SIDE_EDGES_FREE_GRID = false
+      if (USE_SIDE_EDGES_FREE_GRID) {
+        // HACK(@tbazin, 2022/02/24): hardcode stroke-dasharray pattern to disable grid-cell outline for
+        // edge sides of the whole interface
+        // tried to do this using responsive SVG, setting up the <svg> elements with a proper viewBox
+        // and referring to these dimensions in the underlying <rect> elements, but the auto-scaling of
+        // the elements apparently breaks the stroke. In order to have fixed width stroke, one
+        // should use vector-effect="non-scaling-stroke", but this is turn breaks using responsive
+        // units in the <rect> elements definition.
+        //
+        // Rationale: should try and replace this hand-crafted grid of <svg> elements with a
+        // simple CSS-grid.
+        //
+        // default Top-edge plus Left-edge pattern
+        const isAtTop = (<HTMLElement>cell.parent).style.top.startsWith('0')
+        const isAtLeft = (<HTMLElement>cell.parent).style.left.startsWith('0')
+        let dasharrayPattern = `${elementWidth},${elementHeight},0,${elementWidth},${elementHeight}`
+        if (isAtTop && isAtLeft) {
+          // disable stroke for top-left corner
+          dasharrayPattern = `0,1`
+        } else if (isAtLeft) {
+          // disable left-edge stroke for cells on the left-side of the grid
+          dasharrayPattern = `${elementWidth},${elementHeight},0,${elementWidth},0,${elementHeight}`
+        } else if (isAtTop) {
+          // disable top-edge stroke for cells on the top-side of the grid
+          dasharrayPattern = `0,${elementWidth},0,${elementHeight},0,${elementWidth},${elementHeight}`
+        }
+        visualElement.setAttribute('stroke-dasharray', dasharrayPattern)
       }
-      visualElement.setAttribute('stroke-dasharray', dasharrayPattern)
     })
   }
 

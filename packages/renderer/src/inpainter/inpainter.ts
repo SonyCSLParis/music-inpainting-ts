@@ -139,6 +139,7 @@ export abstract class Inpainter<
         clearTimeout(this.abortTimeout)
       }
       if (response.ok) {
+        this.emit('successful-request')
         return response
       }
     } catch (error: unknown) {

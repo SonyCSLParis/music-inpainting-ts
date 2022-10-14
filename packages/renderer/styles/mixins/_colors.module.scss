@@ -515,32 +515,35 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
     border: 1em solid color.scale($off-white-color, $alpha: -70%);
   }
 
+  $spectrogram-grid-color-base-hue: 210;
+  $spectrogram-grid-color-base-saturation: 39%;
+  $spectrogram-grid-color-base-lightness: 20%;
   .spectrogram-inpainter-interface {
     border-color: $spectrogram-grid-color;
     rect {
       stroke: $spectrogram-grid-color;
       &.sequencer-toggle-visual {
-        fill: mix(#b6cfc4, #d9cdc5, 30%);
-      }
-    }
-
-    svg.selected rect.sequencer-toggle-visual {
-      // stroke: hotpink;
-      stroke: #e8d3d9;
-      stroke: $off-white-color;
-    }
-
-    svg:hover {
-      rect.sequencer-toggle-visual {
-        fill: lighten(mix(#b6cfc4, #d9cdc5, 30%), 10%);
+        stroke: #00ff41; // Enter the Matrix
+        fill: hsl(
+          calc($spectrogram-grid-color-base-hue + 30 * var(--frequency-ratio)),
+          calc(
+            $spectrogram-grid-color-base-saturation - 40% *
+              var(--frequency-ratio)
+          ),
+          calc(
+            $spectrogram-grid-color-base-lightness + 40% *
+              var(--frequency-ratio)
+          )
+        );
       }
     }
   }
-  .spectrogram-inpainter.busy
-    .spectrogram-inpainter-interface
-    svg.selected
-    rect.sequencer-toggle-visual {
-    fill: black;
+  .spectrogram-inpainter.busy .sequencer-toggle-visual {
+    fill: hsl(
+      calc($spectrogram-grid-color-base-hue + 10),
+      calc($spectrogram-grid-color-base-saturation + 20%),
+      calc($spectrogram-grid-color-base-lightness - 10%)
+    );
   }
 
   // .spectrogram-inpainter {

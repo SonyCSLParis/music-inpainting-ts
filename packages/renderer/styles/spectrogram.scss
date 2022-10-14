@@ -209,6 +209,7 @@ body.notono {
         color.change(white, $alpha: 0.4)
       );
       border: 1em solid rgba(255, 255, 255, 0.3);
+      background-color: rgba(255, 255, 255, 0);
       transform: scale3d(1.1, 1.05, 1);
       border-radius: 3em;
       height: 100%;
@@ -242,62 +243,67 @@ body.notono {
 }
 
 .spectrogram-inpainter-interface {
-  span {
-    background-color: rgba(255, 255, 255, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  rect {
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
   }
   svg {
-    rect.sequencer-toggle-visual {
-      stroke-opacity: 0.3;
-      opacity: 0.8;
-      transition-duration: 0.04s;
-      transition: color, background-color, fill 0.15s, fill-opacity 0.15s;
-      animation: pulseOpacity 1.5s ease-in-out alternate infinite;
+    rect:not(.sequencer-toggle-visual) {
+      stroke-opacity: 1;
+      opacity: 0.1 !important;
       fill: transparent;
       fill-opacity: 0;
+      stroke-width: 2px;
+    }
+    rect.sequencer-toggle-visual {
       rx: 0.2px;
-      filter: //
-        #{saturate }(calc(0.4 + 0.6 * var(--frequency-ratio))) //
-        hue-rotate(calc(10deg * (1 + var(--frequency-ratio)))) //
-        brightness(calc(0.6 + 0.4 * var(--frequency-ratio))) //
-        contrast(calc(1 + 3 * (1 - var(--frequency-ratio))));
+      stroke-width: 1px;
+
+      will-change: opacity, fill-opacity;
+      animation: pulseOpacity 1s ease-in-out alternate infinite;
+      transition-property: opacity, fill, stroke, fill-opacity, stroke-opacity;
+      transition-duration: 0.25s;
+
+      opacity: 0;
+      fill-opacity: 0.9;
+      stroke-opacity: 1;
+      --target-opacity: 0;
     }
     &.selected rect.sequencer-toggle-visual {
-      transition: color, background-color;
-      opacity: 1;
-      fill-opacity: 0.7;
-      stroke-opacity: 0.6;
-      stroke-width: 4px;
+      transition-property: fill, stroke-opacity;
+      opacity: 0.8;
+      --target-opacity: 0.8;
     }
 
     &:hover {
-      fill-opacity: 0.8;
       rect.sequencer-toggle-visual {
-        transition: color, background-color;
-        fill-opacity: 0.8;
+        --target-opacity: 0.9;
+        transition-property: fill, stroke-opacity;
+        opacity: 1;
       }
     }
   }
   @keyframes pulseOpacity {
     to {
-      opacity: 0.8;
+      fill-opacity: var(--target-opacity);
+      stroke-opacity: var(--target-opacity);
     }
   }
 }
 
-.spectrogram-inpainter.busy {
-  .spectrogram-inpainter-interface {
-    svg {
-      rect.sequencer-toggle-visual {
-        animation: none;
-      }
-      &.selected rect.sequencer-toggle-visual {
-        stroke-width: 2.2px;
-        stroke-opacity: 0.8;
-        fill-opacity: 0.5;
-        opacity: 1;
-      }
-    }
-  }
+.spectrogram-inpainter.busy .sequencer-toggle-visual {
+  transition-property: opacity, fill, stroke, fill-opacity, stroke-opacity !important;
+  transition-duration: 0.4s;
+}
+.spectrogram-inpainter.busy .selected .sequencer-toggle-visual {
+  transition-duration: 1s;
+}
+.spectrogram-inpainter.busy .selected .sequencer-toggle-visual {
+  // stroke-opacity: 0.7;
+  // fill-opacity: 1;
+  opacity: 1;
 }
 .spectrogram-inpainter.playing :not(.disabled-layer) {
   .sequencer-grid-overlay span.sequencer-playing {

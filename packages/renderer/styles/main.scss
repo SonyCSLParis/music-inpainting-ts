@@ -87,6 +87,20 @@ body.hidden-cursor {
   }
 }
 
+.inpainter:not(.piano-roll-inpainter) {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  .loading-spinner,
+  > :not(.loading-spinner-container):not(.simplebar-track) {
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+  }
+  > :not(.loading-spinner-container):not(.simplebar-track) {
+    will-change: filter;
+    transition-property: opacity, filter;
+    transition-duration: 0.4s;
+  }
+}
 .inpainter:not(.piano-roll-inpainter).busy {
   > :not(.loading-spinner-container):not(.simplebar-track) {
     // emulate modal overlay, highlighting the loading indicator
@@ -121,7 +135,7 @@ body.hidden-cursor {
 
 .inpainter.initializing {
   > :not(.loading-spinner-container) {
-    visibility: hidden;
+    opacity: 0;
   }
 }
 

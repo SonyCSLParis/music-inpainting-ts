@@ -195,6 +195,11 @@ export abstract class InpainterGraphicalView<
     this.inpainter = inpainter
     this.inpainter.on('busy', () => this.onInpainterBusy())
     this.inpainter.on('ready', () => this.onInpainterReady())
+    this.inpainter.on('successful-request', () => {
+      // successull-request is triggered as soon as a request is finished,
+      // this helps in clearing the selection before lifting the `disabled` overlay
+      this.clearSelection()
+    })
     this.inpainter.on('change', (data) => this.onInpainterChange(data))
     this.inpainter.on('error', () => this.onInpainterError())
 
@@ -233,8 +238,10 @@ export abstract class InpainterGraphicalView<
     })
 
     this.once('ready', () => {
-      this.disabled = false
       this.container.classList.remove('initializing')
+      // ensure interface is painted before lifting the `disabled` overlay
+      this.triggerRepaint()
+      this.disabled = false
       this.registerCallback()
     })
 
@@ -297,8 +304,11 @@ export abstract class InpainterGraphicalView<
   protected abstract regenerationCallback(): Promise<void>
 
   protected _releaseCallback = () => {
+    this.disableChanges()
     if (this.canTriggerInpaint) {
       this.regenerationCallback.bind(this)()
+    } else {
+      this.enableChanges()
     }
   }
 
@@ -341,7 +351,6 @@ export abstract class InpainterGraphicalView<
         this.onInteractionStart
       )
     }
-    // TODO(@tbazin, 2022/10/14): cancel interaction on press ESCAPE
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key == 'Escape') {
         this.cancelCurrentInteraction()
