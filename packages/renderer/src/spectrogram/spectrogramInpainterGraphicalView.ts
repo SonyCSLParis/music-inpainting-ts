@@ -266,6 +266,7 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
   readonly boxDurations_quarters: number[]
 
   protected async regenerationCallback(): Promise<void> {
+    this.disableChanges()
     switch (this.granularitySelect.value) {
       case VqvaeLayer.Top: {
         // TODO(@tbazin, 2022/04/22): check this!
