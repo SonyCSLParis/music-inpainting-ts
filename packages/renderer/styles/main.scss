@@ -95,10 +95,12 @@ body.hidden-cursor {
     transform: translate3d(0, 0, 0);
     -webkit-transform: translate3d(0, 0, 0);
   }
-  > :not(.loading-spinner-container):not(.simplebar-track) {
-    will-change: filter;
+}
+
+.inpainter {
+  > :not(.loading-spinner-container) {
     transition-property: opacity, filter;
-    transition-duration: 0.4s;
+    transition-duration: 1s;
   }
 }
 .inpainter:not(.piano-roll-inpainter).busy {

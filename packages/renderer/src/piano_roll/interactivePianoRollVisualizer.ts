@@ -181,11 +181,23 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     return this.getSize()
   }
 
-  removeNote(note: NoteSequence.Note): boolean {
+  removeNote(note: NoteSequence.Note, animate: boolean = false): boolean {
     const elements = this.svg.getElementsByClassName(this.noteToString(note))
     const wasPresent = elements.length > 0
     if (wasPresent) {
       Array.from(elements).forEach((element) => {
+        if (animate) {
+          // @ts-ignore-error
+          element.addEventListener('transitionend', (e: TransitionEvent) => {
+            if (e.propertyName == 'opacity') {
+              element.remove()
+            }
+          })
+          element.classList.add('transition-to-remove-note')
+        } else {
+          element.remove()
+        }
+      })
     }
     return wasPresent
   }
@@ -202,6 +214,9 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     if (!this.svg) {
       return null
     }
+    cssProperties.push(['--initial-offset-x', `${-1 + 2 * Math.random()}`])
+    cssProperties.push(['--initial-offset-y', `${-1 + 2 * Math.random()}`])
+    cssProperties.push(['--initial-rotation', `${-1 + 2 * Math.random()}`])
     const rect: SVGRectElement = document.createElementNS(svgNamespace, 'rect')
     rect.classList.add('note')
     // rect.setAttribute('fill', fill)

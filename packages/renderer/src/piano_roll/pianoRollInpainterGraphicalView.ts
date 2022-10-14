@@ -157,9 +157,9 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     }
     let rect = this.visualizer?.drawNote(note)
     if (reveal) {
-      rect?.classList.add('hideNote')
+      rect?.classList.add('reveal-note')
       this.triggerReflow()
-      rect?.classList.remove('hideNote')
+      rect?.classList.remove('reveal-note')
     }
     rect?.classList.add('new-note')
 
@@ -424,7 +424,7 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
       if (data.removeNotes != null) {
         this.visualizer?.setNoteSequenceSilent(data.noteSequence)
         data.removeNotes.forEach((note) =>
-          this.visualizer?.visualizer.removeNote(note)
+          this.visualizer?.visualizer.removeNote(note, true)
         )
       } else {
         this.abortDrawing()
