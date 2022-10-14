@@ -205,10 +205,14 @@ export abstract class DownloadButton<
     baseName = baseName ?? this.defaultFilename.name
     extension = extension ?? this.defaultFilename.extension
     const dotFreeExtension = extension.replace(/^\./, '')
-    const timestamp: string = new Date()
+    const now = new Date()
+    const day = now
       .toISOString()
+      .split('T')[0]
       .replace(/:/g, '_')
-      .replace(/\..+/, '')
+      .replace(/-/g, '_')
+    const time = now.toTimeString().slice(0, 8).replace(/:/g, '_')
+    const timestamp = day + 'T' + time
 
     return `${baseName}-${timestamp}.${dotFreeExtension}`
   }
