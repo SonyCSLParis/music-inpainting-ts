@@ -83,6 +83,12 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
     super.onInpainterChange(data)
   }
 
+  clearSelection(): void {}
+
+  protected cancelCurrentInteraction(): void {
+    // TODO(@tbazin, 2022/10/14)
+  }
+
   get queryParameters(): string[] {
     return super.queryParameters
   }
@@ -400,18 +406,18 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
       )
 
       // add Drag'n'Drop support between timeContainers
-      div.setAttribute('draggable', 'true')
-      div.addEventListener('dragstart', ondragstartTimecontainer_handler, true)
-      div.addEventListener('dragover', ondragoverTimecontainer_handler, true)
-      div.addEventListener('dragenter', ondragenterTimecontainer_handler, true)
-      div.addEventListener('dragleave', ondragleaveTimecontainer_handler, true)
-      div.addEventListener(
-        'drop',
-        makeOndropTimecontainer_handler(
-          this.copyTimecontainerContent.bind(this)
-        ),
-        true
-      )
+      // div.setAttribute('draggable', 'true')
+      // div.addEventListener('dragstart', ondragstartTimecontainer_handler, true)
+      // div.addEventListener('dragover', ondragoverTimecontainer_handler, true)
+      // div.addEventListener('dragenter', ondragenterTimecontainer_handler, true)
+      // div.addEventListener('dragleave', ondragleaveTimecontainer_handler, true)
+      // div.addEventListener(
+      //   'drop',
+      //   makeOndropTimecontainer_handler(
+      //     this.copyTimecontainerContent.bind(this)
+      //   ),
+      //   true
+      // )
 
       // add div to the rendering backend's <HTMLElement> for positioning
       this.overlaysContainer.appendChild(commonDiv)

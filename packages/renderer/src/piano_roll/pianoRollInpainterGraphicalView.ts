@@ -207,6 +207,10 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     )
   }
 
+  clearSelection(): void {
+    this.visualizer?.clearSelection()
+  }
+
   protected async regenerationCallback(): Promise<void> {
     if (
       this.visualizer == null ||

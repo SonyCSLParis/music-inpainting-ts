@@ -271,8 +271,8 @@ export abstract class InpainterGraphicalView<
     })
   }
 
-  protected toggleBusyClass(state: boolean): void {
-    this.container.classList.toggle('busy', state)
+  protected toggleBusyClass(isBusy: boolean): void {
+    this.container.classList.toggle('busy', isBusy)
   }
 
   protected static blockEventCallback: (e: Event) => void = (e: Event) => {
@@ -296,17 +296,28 @@ export abstract class InpainterGraphicalView<
 
   protected abstract regenerationCallback(): Promise<void>
 
-  protected registerReleaseCallback = () => {
+  protected _releaseCallback = () => {
+    if (this.canTriggerInpaint) {
+      this.regenerationCallback.bind(this)()
+    }
+  }
+
+  protected registerReleaseCallback(): void {
     // call the actual callback on pointer release to allow for click and drag
-    document.addEventListener(
-      'pointerup',
-      () => {
-        if (this.canTriggerInpaint) {
-          this.regenerationCallback.bind(this)()
-        }
-      },
-      { once: true } // eventListener removed after being called
-    )
+    document.addEventListener('pointerup', this._releaseCallback, {
+      once: true,
+    })
+  }
+
+  protected removeReleaseCallback(): void {
+    document.removeEventListener('pointerup', this._releaseCallback)
+  }
+
+  abstract clearSelection(): void
+
+  protected cancelCurrentInteraction(): void {
+    this.clearSelection()
+    this.removeReleaseCallback()
   }
 
   protected onInteractionStart = () => {
@@ -330,6 +341,12 @@ export abstract class InpainterGraphicalView<
         this.onInteractionStart
       )
     }
+    // TODO(@tbazin, 2022/10/14): cancel interaction on press ESCAPE
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key == 'Escape') {
+        this.cancelCurrentInteraction()
+      }
+    })
   }
 
   // set currently playing interface position by progress ratio

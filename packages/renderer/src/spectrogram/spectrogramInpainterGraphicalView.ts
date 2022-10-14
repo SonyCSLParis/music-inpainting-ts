@@ -704,6 +704,10 @@ class SpectrogramInpainterGraphicalViewBase extends InpainterGraphicalView<
       interactiveGrid.clearSelection()
     )
   }
+  protected cancelCurrentInteraction(): void {
+    this.interactiveGrid?.cancelCurrentInteraction()
+    super.cancelCurrentInteraction()
+  }
 
   get numInteractiveElements(): number {
     return this.numRows * this.numColumns

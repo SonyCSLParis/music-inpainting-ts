@@ -1648,7 +1648,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       ev.stopPropagation()
       if (!ev.shiftKey) {
         this.selectionTimestamp_B = null
-        this.resetSelectedRegion()
+        this.clearSelection()
         try {
           this.setSelectedRegion()
         } catch {}
@@ -1680,7 +1680,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
         return
       }
       if (ev.offsetY < 0 || ev.offsetY > this.svgElement.clientHeight) {
-        this.resetSelectedRegion()
+        this.clearSelection()
       }
       if (!this.inSelectionInteraction && this.startingSelectionInteraction) {
         this.inSelectionInteraction = true
@@ -1729,14 +1729,14 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
         this.copySelectionOverlayToRegenerationOverlay()
         this.regenerationCallback()
       }
-      this.resetSelectedRegion()
+      this.clearSelection()
     })
     this.svgElement.addEventListener('pointerleave', () => {
       if (VITE_SCREENSHOT_MODE) {
         return
       }
       this._lastPointermoveClientX = null
-      this.resetSelectedRegion()
+      this.clearSelection()
     })
   }
 
@@ -1855,7 +1855,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     }
   }
 
-  protected resetSelectedRegion() {
+  clearSelection() {
     this.inSelectionInteraction = false
     this.startingSelectionInteraction = false
     this.selectionTimestamp_A = null

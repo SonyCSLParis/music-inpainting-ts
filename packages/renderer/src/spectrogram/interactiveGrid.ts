@@ -102,7 +102,9 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
   }
 
   clearSelection(): void {
-    this.cells.forEach((cell) => (cell.state = false))
+    this.cells.forEach((cell) => {
+      cell.turnOff(false)
+    })
     this.render()
   }
 
@@ -240,6 +242,10 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
     return
   }
 
+  cancelCurrentInteraction() {
+    this.onInteractionEnd()
+  }
+
   protected getCell(cell: GridPosition): MatrixCell {
     return this.cells[this.getIndex(cell)]
   }
@@ -266,8 +272,8 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
     }
   }
 
-  keyChange(note, on: boolean): void {
-    const cell = this.matrix.locate(note)
+  keyChange(matrixCellIndex: number, on: boolean): void {
+    const cell = this.matrix.locate(matrixCellIndex)
     const previousState: boolean =
       this.matrix.pattern[cell.row][cell.column] == 1
     if (!this.rectangularSelections) {
@@ -279,8 +285,14 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
         }
         this.emit('toggle', data)
       }
-    }
-    if (this.rectangularSelections && this.inRectangularSelection) {
+    } else if (!this.inRectangularSelection) {
+      // disable edits outside of valid rectangular selection interaction
+      if (on) {
+        this.cells[matrixCellIndex].turnOff(false)
+      } else {
+        this.cells[matrixCellIndex].turnOn(false)
+      }
+    } else {
       if (this.currentInteractionFirstCell == null) {
         this.currentInteractionFirstCell = cell
         this.currentInteractionPreviousCell = cell
@@ -350,6 +362,6 @@ export class InteractiveGrid extends CSSClassBasedSequencer {
       }
       this.currentInteractionPreviousCell = cell
     }
-    super.keyChange(note, on)
+    super.keyChange(matrixCellIndex, on)
   }
 }
