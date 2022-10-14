@@ -63,6 +63,11 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
     }
   }
 }
+.midi-visualizer-selection-overlay,
+.midi-visualizer-current-generation-overlay-container {
+  transition-property: opacity, fill-opacity;
+  transition-duration: 0.6s;
+}
 .midi-visualizer-selection-overlay {
   fill: white;
   fill-opacity: 0.2;
@@ -91,20 +96,18 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
   filter: blur(10px);
   -webkit-mask-composite: source-out;
 }
-.inpainter.busy {
-  .midi-visualizer-current-generation-gradient {
-    filter: blur(1px);
-    width: 10px;
-    animation: sliding 2s linear infinite;
-    animation-duration: inherit;
-  }
+.midi-visualizer-current-generation-gradient {
+  filter: blur(1px);
+  width: 10px;
+  animation: sliding 2s linear infinite;
+  animation-duration: inherit;
 }
 .midi-visualizer-current-generation-overlay-container {
-  display: none;
+  opacity: 0;
 }
 .piano-roll-inpainter.busy {
   .midi-visualizer-current-generation-overlay-container {
-    display: block;
+    opacity: 1;
   }
 }
 @keyframes pulsing {

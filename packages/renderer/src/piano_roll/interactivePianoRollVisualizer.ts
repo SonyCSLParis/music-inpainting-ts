@@ -1796,8 +1796,10 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     ) {
       this.selectionOverlay.setAttribute('x', '0')
       this.selectionOverlay.setAttribute('width', '0')
+      this.selectionOverlay.style.setProperty('opacity', '0')
       return
     }
+    this.selectionOverlay.style.removeProperty('opacity')
 
     this.selectionOverlay.classList.toggle(
       'invalid-selection',
@@ -1856,11 +1858,11 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
   }
 
   clearSelection() {
+    this.selectionOverlay?.style.setProperty('opacity', '0')
     this.inSelectionInteraction = false
     this.startingSelectionInteraction = false
     this.selectionTimestamp_A = null
     this.selectionTimestamp_B = null
-    this.selectionOverlay?.setAttribute('width', '0')
   }
   protected setSelectedRegion(
     timestamps?: [number, number],
