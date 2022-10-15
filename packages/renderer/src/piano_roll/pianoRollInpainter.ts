@@ -318,12 +318,23 @@ export class PiaInpainter extends UndoableInpainter<
       return inpaintedNoteSequence
     }
 
-    function removePotentialDuplicateFirstNote(
+    // some notes in the first incoming batch can be duplicate of the final notes
+    //  `initialNotesBeforeRegion`, detect and remove those
+    //  note that it doesn't necessarily have to be the first note of the incoming batch!
+    function removePotentialDuplicateNotes(
       incomingNotes: NoteSequence.Note[]
     ): NoteSequence.Note[] {
       if (initialNotesBeforeRegion.length > 0 && incomingNotes.length > 0) {
-        const lastNotePrevious =
-          initialNotesBeforeRegion[initialNotesBeforeRegion.length - 1]
+        const lastNotePrevious = initialNotesBeforeRegion
+          .filter(
+            (note) => note.startTime != undefined && note.endTime != undefined
+          )
+          .last()
+        // TODO(@tbazin, 2022/10.15): finish this
+        const previousNotesAtSameTimeAsLastNote =
+          initialNotesBeforeRegion.filter((note) => {
+            note.startTime == lastNotePrevious.startTime
+          })
         const firstNoteIncoming = incomingNotes[0]
         if (
           lastNotePrevious.pitch == firstNoteIncoming.pitch &&
@@ -363,7 +374,7 @@ export class PiaInpainter extends UndoableInpainter<
       if (isFirstRequest) {
         // HACK(@tbazin, 2022/09/02): patches a weird behaviour in the PIA API
         isFirstRequest = false
-        incomingNotes = removePotentialDuplicateFirstNote(incomingNotes)
+        incomingNotes = removePotentialDuplicateNotes(incomingNotes)
       }
       this.addNewNotesStepByStep(incomingNotes)
       notesResult.push(...incomingNotes)
