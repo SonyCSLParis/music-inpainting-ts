@@ -202,6 +202,21 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     return wasPresent
   }
 
+  protected updateRandomTransitionCSSProperties(rect: SVGRectElement): void {
+    const cssProperties: CSSProperty[] = []
+    const makeRandomNumber = (exponent: number = 1) => {
+      const sign = -1 + 2 * Math.random()
+      const value = Math.random() ** exponent
+      return sign * value
+    }
+    cssProperties.push(['--initial-offset-x', `${makeRandomNumber(2)}`])
+    cssProperties.push(['--initial-offset-y', `${makeRandomNumber(2)}`])
+    cssProperties.push(['--initial-rotation', `${makeRandomNumber(3)}`])
+    cssProperties.forEach(([key, value]: CSSProperty) => {
+      rect.style.setProperty(key, value)
+    })
+  }
+
   drawNote(
     x: number,
     y: number,
@@ -214,9 +229,6 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     if (!this.svg) {
       return null
     }
-    cssProperties.push(['--initial-offset-x', `${-1 + 2 * Math.random()}`])
-    cssProperties.push(['--initial-offset-y', `${-1 + 2 * Math.random()}`])
-    cssProperties.push(['--initial-rotation', `${-1 + 2 * Math.random()}`])
     const rect: SVGRectElement = document.createElementNS(svgNamespace, 'rect')
     rect.classList.add('note')
     // rect.setAttribute('fill', fill)
@@ -246,6 +258,7 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
     //     }
     //   })
     //   .findIndex((value) => x < value)
+    this.updateRandomTransitionCSSProperties(rect)
     this.svg.appendChild(rect)
 
     const isGeneratedNoteIndex = dataAttributes.findIndex(

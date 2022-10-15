@@ -162,7 +162,7 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 }
 
 .midi-visualizer svg rect.note {
-  --initial-offset-x: 1;
+  --initial-offset-x: 0;
   --initial-offset-y: 0;
   --initial-rotation: 0;
   $midi-velocity-percent: 80%;
@@ -237,7 +237,7 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
   &.transition-to-remove-note {
     transform: //
       translateX(calc(10px + var(--initial-offset-x) * 30px))
-      translateY(calc(-1 * (var(--initial-offset-y) + 1) / 2 * 120px))
+      translateY(calc(-1 * (var(--initial-offset-y) + 1) / 2 * 60px))
       rotate(calc(var(--initial-rotation) * 10deg)); //
     opacity: 0;
   }
@@ -245,7 +245,7 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
     opacity: 0;
     filter: blur(5px);
     transform: //
-      translateX(calc(10px + var(--initial-offset-x) * 10px))
+      translateX(calc(var(--initial-offset-x) * 20px))
       translateY(calc((var(--initial-offset-y) + 1) / 2 * 50px))
       rotate(calc(var(--initial-rotation) * 3deg)); //
   }
