@@ -5,6 +5,10 @@ import {
 } from '@magenta/music/esm/core/visualizer'
 import { urlToNoteSequence } from '@magenta/music/esm/core/midi_io'
 import * as mm_sequences from '@magenta/music/esm/core/sequences'
+import {
+  MIN_MIDI_PITCH,
+  MAX_MIDI_PITCH,
+} from '@magenta/music/esm/core/constants'
 
 import { PlayerElement, VisualizerElement } from 'html-midi-player'
 import Color from 'color'
@@ -405,7 +409,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     return this.visualizer.Size
   }
 
-  protected getMinMaxPitches(noExtraPadding = false): [number, number] {
+  getMinMaxPitches(noExtraPadding = false): [number, number] {
     const MIN_MIDI_PITCH = 0
     const MAX_MIDI_PITCH = 127
     if (this.ns == null || this.ns.notes == null) {
@@ -450,6 +454,42 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
   set config(value: VisualizerConfig) {
     this._config = value
     this.initVisualizer()
+  }
+
+  updateMinMaxPitches(
+    noExtraPadding?: boolean | undefined,
+    additionalNotes: NoteSequence.Note[] = []
+  ): void {
+    if (
+      additionalNotes.length == 0 &&
+      this.config.minPitch &&
+      this.config.maxPitch
+    ) {
+      return
+    }
+
+    // If the pitches haven't been specified already, figure them out
+    // from the NoteSequence.
+    if (this._config.minPitch === undefined) {
+      this._config.minPitch = MAX_MIDI_PITCH
+    }
+    if (this._config.maxPitch === undefined) {
+      this._config.maxPitch = MIN_MIDI_PITCH
+    }
+    // Find the smallest pitch so that we can scale the drawing correctly.
+    for (const note of [
+      ...(this.noteSequence?.notes ?? []),
+      ...additionalNotes,
+    ]) {
+      this._config.minPitch = Math.min(note.pitch, this._config.minPitch)
+      this._config.maxPitch = Math.max(note.pitch, this._config.maxPitch)
+    }
+
+    // Add a little bit of padding at the top and the bottom.
+    if (additionalNotes.length == 0 && !noExtraPadding) {
+      this._config.minPitch -= 2
+      this._config.maxPitch += 2
+    }
   }
 
   async updateZoom(pixelsPerTimestep: number): Promise<void> {

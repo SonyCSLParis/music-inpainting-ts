@@ -491,6 +491,9 @@ export class PiaInpainter extends UndoableInpainter<
       )
       try {
         await Promise.all(this.noteByNoteUpdatesPromises.slice(0, numPromises))
+        if (reveal) {
+          this.emit('incoming-notes', newNotes)
+        }
         for (let index = 0; index < newNotes.length; index++) {
           if (rejected) {
             reject()

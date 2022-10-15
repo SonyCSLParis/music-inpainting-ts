@@ -85,6 +85,19 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
       }
     )
 
+    this.inpainter.on('incoming-notes', (newNotes: NoteSequence.Note[]) => {
+      const minMaxPitchesBefore = this.visualizer?.getMinMaxPitches()
+      this.visualizer?.updateMinMaxPitches(undefined, newNotes)
+      const minMaxPitchesAfter = this.visualizer?.getMinMaxPitches()
+      if (
+        minMaxPitchesBefore == undefined ||
+        minMaxPitchesAfter == undefined ||
+        minMaxPitchesAfter[0] != minMaxPitchesBefore[0] ||
+        minMaxPitchesAfter[1] != minMaxPitchesBefore[1]
+      ) {
+        this.visualizer?.reload()
+      }
+    })
     this.inpainter.on('grow-note', (note: NoteSequence.Note) =>
       this.startGrowingNote(note)
     )
