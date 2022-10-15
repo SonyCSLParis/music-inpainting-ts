@@ -10,16 +10,14 @@ import {
 import { Metronome } from '@magenta/music/esm/core/metronome'
 import { NoteSequence } from '@magenta/music/es6/protobuf'
 import { ToneMidiInput } from '../midi_io/midiInput'
-import {
-  ClickableVisualizerElement,
-  pianorollify,
-} from './interactivePianoRollVisualizer'
+import { pianorollify } from './interactivePianoRollVisualizer'
 import { NoSpecialKeysAudioKeys } from '../audiokeys/focusedAudiokeys'
 import * as Instruments from '../../instruments/instruments'
 import { PlaybackManager } from '../playback'
 import { Inpainter } from '../inpainter/inpainter'
 import { PianoRollInpainterGraphicalView } from './pianoRollInpainterGraphicalView'
 import type { VisualizerConfig } from '@magenta/music/esm/core/visualizer'
+import { Midi } from '@tonaljs/tonal'
 
 //@ts-expect-error
 export class FixedRecorder extends Recorder {
@@ -42,8 +40,38 @@ export class FixedRecorder extends Recorder {
     this.inpainter?.emit('grow-note', this.onNotes.get(pitch))
   }
   noteOff(pitch: number, velocity: number, timeStamp: number) {
-    // this.inpainter?.emit('clear-grow-note', this.onNotes.get(pitch))
-    super.noteOff(pitch, velocity, timeStamp)
+    super.noteOff(pitch, timeStamp)
+  }
+}
+
+export class DesktopKeyboardEnabledRecorder extends FixedRecorder {
+  readonly desktopKeyboard = new NoSpecialKeysAudioKeys({
+    polyphony: Infinity,
+    rows: 2,
+    rootNote: 60,
+    layoutIndependentMapping: true,
+  })
+
+  async initialize(): Promise<void> {
+    await super.initialize()
+    this.desktopKeyboard.down((note) => {
+      const noteName = Midi.midiToNoteName(note.note)
+      Instruments.keyDown(noteName, note.velocity / 127)
+
+      if (this.firstNoteTimestamp == undefined) {
+        this.firstNoteTimestamp = performance.now()
+      }
+      this.noteOn(note.note, note.velocity, performance.now())
+    })
+    this.desktopKeyboard.up((note) => {
+      const noteName = Midi.midiToNoteName(note.note)
+      Instruments.keyUp(noteName, note.velocity / 127)
+
+      this.noteOff(note.note, note.velocity, performance.now())
+      if (this.callbackObject && this.callbackObject.run) {
+        this.callbackObject.run(this.getNoteSequence())
+      }
+    })
   }
 }
 
@@ -70,12 +98,6 @@ export class MyCallback extends BaseRecorderCallback {
     }
     noteSequence.tempos = [{ time: 0, qpm: this.inpainter.tempo }]
     noteSequence.ticksPerQuarter = this.inpainter.PPQ
-    // const newNotes = noteSequence.notes.slice(this.previousLength)
-    const scrollIntoView = 'forward'
-    // this.inpainter?.emit(
-    //   'clear-grow-note',
-    //   noteSequence.notes[noteSequence.notes.length - 1]
-    // )
     this.inpainter.addNewNotesStepByStep([newNote], 10, false, false)
     this.previousLength = noteSequence.notes.length
   }
@@ -86,8 +108,6 @@ export class MyCallback extends BaseRecorderCallback {
 }
 
 export class MidiRecorder {
-  protected desktopKeyboard = new NoSpecialKeysAudioKeys({})
-
   static readyForRecordingClasses: string[] = [
     'record-button--ready-for-recording',
   ]
@@ -111,7 +131,7 @@ export class MidiRecorder {
   protected interface: HTMLElement | null = null
 
   constructor(
-    recorder: FixedRecorder,
+    recorder: DesktopKeyboardEnabledRecorder,
     inpainter: PiaInpainter,
     inpainterGraphicalView: PianoRollInpainterGraphicalView,
     playbackManager: PlaybackManager,
@@ -130,22 +150,10 @@ export class MidiRecorder {
         this.recorder.setTempo(bpm)
       })
     }
-
-    // this.desktopKeyboard.down((note) => {
-    //   this.recorder.getMIDIInputs()[0].dispatchEvent emit('keyDown', {
-    //     note: note.frequency,
-    //   })
-    // })
-    // this.desktopKeyboard.up((note) => {
-    //   this.midiInputListener?.emit('keyUp', {
-    //     note: note.frequency,
-    //   })
-    // })
   }
 
   async render(parent: HTMLElement) {
     this.parent = parent
-    this.parent.classList.add('disabled-gridspan')
     this.parent.classList.add('advanced')
 
     const midiInputListener = await MidiIn.getMidiInputListener()
@@ -159,9 +167,6 @@ export class MidiRecorder {
     this.midiInputListener?.on('keyUp', (e) => {
       Instruments.keyUp(e.note, e.velocity)
     })
-    this.midiInputListener?.on('change-device', (deviceId) =>
-      this.parent?.classList.toggle('disabled-gridspan', deviceId == null)
-    )
 
     this.container = document.createElement('div')
     this.container.classList.add('record-controls-container')
@@ -248,19 +253,6 @@ export class MidiRecorder {
   }
 
   async startRecording(): Promise<void> {
-    if (
-      this.midiInputListener == null ||
-      this.midiInputListener.deviceId == null ||
-      (this.midiInputListener?.deviceId != 'all' &&
-        this.recorder
-          .getMIDIInputs()
-          .find(
-            (midiInput) => midiInput.id == this.midiInputListener?.deviceId
-          ) == undefined)
-    ) {
-      new Notification('Set up Midi-In device first!')
-      return
-    }
     const startTime =
       (this.playbackManager.transport.toSeconds(
         this.playbackManager.transport.position

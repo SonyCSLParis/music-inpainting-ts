@@ -30,7 +30,11 @@ import Nexus, {
 import * as Header from './header'
 
 import { PlaybackCommands } from './playbackCommands'
-import { FixedRecorder, MidiRecorder, MyCallback } from './piano_roll/record'
+import {
+  DesktopKeyboardEnabledRecorder,
+  MidiRecorder,
+  MyCallback,
+} from './piano_roll/record'
 import { PlaybackManager } from './playback'
 import MidiSheetPlaybackManager from './sheetPlayback'
 import { MultiChannelSpectrogramPlaybackManager as SpectrogramPlaybackManager } from './spectrogramPlayback'
@@ -938,7 +942,7 @@ async function render(
     bottomControlsGridElement.appendChild(recordCommandsGridspanElement)
 
     const recorderCallback = new MyCallback(piaInpainter)
-    const recorder = new FixedRecorder(
+    const recorder = new DesktopKeyboardEnabledRecorder(
       { startRecordingAtFirstNote: true },
       recorderCallback
     )
