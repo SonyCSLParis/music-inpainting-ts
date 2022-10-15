@@ -87,17 +87,14 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 .midi-visualizer-current-generation-overlay {
   fill: silver;
   fill-opacity: 0.6;
-  filter: blur(10px);
   animation: pulsing 3s ease-in-out infinite alternate;
 }
 .midi-visualizer-current-generation-gradient-fill {
   fill: white;
   fill-opacity: 0.8;
-  filter: blur(10px);
   -webkit-mask-composite: source-out;
 }
 .midi-visualizer-current-generation-gradient {
-  filter: blur(1px);
   width: 10px;
   animation: sliding 2s linear infinite;
   animation-duration: inherit;
