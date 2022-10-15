@@ -129,7 +129,7 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
     $overlay-lightness-factor: +1;
     $text: black;
   } @else if $theme == black-white {
-    $body: color.scale(darkgray, $lightness: +30%);
+    $body: color.scale(darkgray, $lightness: +60%);
     $panes: color.scale(darkgray, $lightness: -90%);
     $panes-border: lightgray;
     $active-control: $lighter-arabian-sand-color;
@@ -217,6 +217,9 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
 
   .loading-spinner {
     color: color.scale($text, $alpha: -60%);
+  }
+  .sheet-inpainter .loading-spinner {
+    color: color.adjust($text, $alpha: 0.8);
   }
 
   .logo {
@@ -520,6 +523,11 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   $spectrogram-grid-color-base-lightness: 20%;
   .spectrogram-inpainter-interface {
     border-color: $spectrogram-grid-color;
+    svg:not(.selected):hover {
+      rect.sequencer-toggle-visual {
+        stroke: $hot-orange-color;
+      }
+    }
     rect {
       stroke: $spectrogram-grid-color;
       &.sequencer-toggle-visual {

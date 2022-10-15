@@ -208,10 +208,10 @@ body.notono {
         color.change(white, $alpha: 0.2) 80%,
         color.change(white, $alpha: 0.4)
       );
-      border: 1em solid rgba(255, 255, 255, 0.3);
+      border: 0.2emem solid rgba(255, 255, 255, 0.3);
       background-color: rgba(255, 255, 255, 0);
       transform: scale3d(1.1, 1.05, 1);
-      border-radius: 3em;
+      border-radius: 0.5em;
       height: 100%;
       flex-direction: column;
       flex: 1;
