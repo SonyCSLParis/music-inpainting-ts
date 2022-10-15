@@ -55,21 +55,25 @@ export class DesktopKeyboardEnabledRecorder extends FixedRecorder {
   async initialize(): Promise<void> {
     await super.initialize()
     this.desktopKeyboard.down((note) => {
-      const noteName = Midi.midiToNoteName(note.note)
-      Instruments.keyDown(noteName, note.velocity / 127)
+      if (this.isRecording()) {
+        const noteName = Midi.midiToNoteName(note.note)
+        Instruments.keyDown(noteName, note.velocity / 127)
 
-      if (this.firstNoteTimestamp == undefined) {
-        this.firstNoteTimestamp = performance.now()
+        if (this.firstNoteTimestamp == undefined) {
+          this.firstNoteTimestamp = performance.now()
+        }
+        this.noteOn(note.note, note.velocity, performance.now())
       }
-      this.noteOn(note.note, note.velocity, performance.now())
     })
     this.desktopKeyboard.up((note) => {
-      const noteName = Midi.midiToNoteName(note.note)
-      Instruments.keyUp(noteName, note.velocity / 127)
+      if (this.isRecording()) {
+        const noteName = Midi.midiToNoteName(note.note)
+        Instruments.keyUp(noteName, note.velocity / 127)
 
-      this.noteOff(note.note, note.velocity, performance.now())
-      if (this.callbackObject && this.callbackObject.run) {
-        this.callbackObject.run(this.getNoteSequence())
+        this.noteOff(note.note, note.velocity, performance.now())
+        if (this.callbackObject && this.callbackObject.run) {
+          this.callbackObject.run(this.getNoteSequence())
+        }
       }
     })
   }
