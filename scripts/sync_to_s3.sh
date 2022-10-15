@@ -4,7 +4,8 @@
 
 BUILD_DIR=$1
 S3_BUCKET_NAME=$2
-CLOUDFRONT_DISTRIBUTION_ID=$3
+CREATE_INVALIDATION=$3
+CLOUDFRONT_DISTRIBUTION_ID=$4
 
 # Sync all files except for index.html
 echo "Uploading files to $S3_BUCKET_NAME..."
@@ -18,5 +19,7 @@ aws s3 cp $BUILD_DIR/index.html s3://$S3_BUCKET_NAME/index.html \
   --cache-control max-age=0,no-cache,no-store,must-revalidate \
   --content-type text/html
 
-echo "Invalidating Cloudfront distribution"
-aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths '/*'
+if [ "$CREATE_INVALIDATION" = true ] ; then
+  echo "Invalidating Cloudfront distribution"
+  aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths '/*'
+fi

@@ -36,9 +36,9 @@
     "serve:notono": "http-server -c-1 -p 8080 -P http://localhost:5000 ./packages/renderer/dist-notono",
     "serve:nonoto": "http-server -c-1 -p 8080 -P http://localhost:5000 ./packages/renderer/dist-nonoto",
     "serve:pianoto": "http-server -c-1 -p 8080 -P http://localhost:5000 ./packages/renderer/dist-pianoto",
-    "deploy:notono": "bash ./scripts/sync_to_s3.sh ./packages/renderer/dist-notono/ notono-static-website EM6BPT6R6J692",
-    "deploy:nonoto": "bash ./scripts/sync_to_s3.sh ./packages/renderer/dist-nonoto/ nonoto-static-website E1IFNFB9MWQIHV",
-    "deploy:pianoto": "bash ./scripts/sync_to_s3.sh ./packages/renderer/dist-pianoto/ pianoto-static-website E32O5TZ9EQMVW",
+    "deploy:notono": "bash ./scripts/sync_to_s3.sh ./packages/renderer/dist-notono/ notono-static-website false EM6BPT6R6J692",
+    "deploy:nonoto": "bash ./scripts/sync_to_s3.sh ./packages/renderer/dist-nonoto/ nonoto-static-website false E1IFNFB9MWQIHV",
+    "deploy:pianoto": "bash ./scripts/sync_to_s3.sh ./packages/renderer/dist-pianoto/ pianoto-static-website false E32O5TZ9EQMVW",
     "deploy:notono-aisongcontest": "bash ./scripts/sync_to_s3.sh ./packages/renderer/dist-notono/ notono-aisongcontest-static-website EJD1KJCHHKF3W"
   },
   "old_scripts": {
