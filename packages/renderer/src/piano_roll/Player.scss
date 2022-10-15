@@ -213,7 +213,6 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
   }
 
   transition: opacity 0.8s, width 0.6s, transform 1s, stroke 0.18s, filter 1s;
-  filter: none;
   transition-timing-function: ease-in-out;
   &.selected,
   &.candidate-selection {
