@@ -523,15 +523,19 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
   $spectrogram-grid-color-base-lightness: 20%;
   .spectrogram-inpainter-interface {
     border-color: $spectrogram-grid-color;
-    svg:not(.selected):hover {
+    svg:not(.selected) {
       rect.sequencer-toggle-visual {
         stroke: $hot-orange-color;
+      }
+    }
+    svg.selected {
+      rect.sequencer-toggle-visual {
+        stroke: #00ff41; // Enter the Matrix
       }
     }
     rect {
       stroke: $spectrogram-grid-color;
       &.sequencer-toggle-visual {
-        stroke: #00ff41; // Enter the Matrix
         fill: hsl(
           calc($spectrogram-grid-color-base-hue + 30 * var(--frequency-ratio)),
           calc(
