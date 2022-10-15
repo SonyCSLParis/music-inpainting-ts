@@ -84,7 +84,6 @@ import '../styles/overlays.scss'
 
 import '../styles/osmd.scss'
 import '../styles/spectrogram.scss'
-import './piano_roll/Player.scss'
 import '../styles/disableMouse.scss'
 
 const VITE_DUMMY_GENERATE = import.meta.env.VITE_DUMMY_GENERATE != undefined

@@ -1,7 +1,3 @@
-import screenfull from 'screenfull'
-import $ from 'jquery'
-
-import '../styles/main.scss'
 import '../styles/header.scss'
 import {
   setBackgroundColorElectron,

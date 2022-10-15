@@ -18,8 +18,6 @@ import defaultConfiguration from '../../common/default_config.json'
 import customConfiguration from '../../../config.json'
 
 import '../styles/startupSplash.scss'
-import { setBackgroundColorElectron } from './utils/display'
-import colors from '../styles/mixins/_colors.module.scss'
 import { unmute } from './utils/unmute'
 import { PiaInpainter } from './piano_roll/pianoRollInpainter'
 

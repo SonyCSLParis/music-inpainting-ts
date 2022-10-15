@@ -9,7 +9,7 @@ import * as mm_sequences from '@magenta/music/esm/core/sequences'
 import { PlayerElement, VisualizerElement } from 'html-midi-player'
 import Color from 'color'
 
-// import './Player.scss'
+import './Player.scss'
 import * as Tone from 'tone'
 import EventEmitter from 'events'
 import MidiSheetPlaybackManager from '../sheetPlayback'
