@@ -87,20 +87,18 @@ body.hidden-cursor {
   }
 }
 
-.inpainter:not(.piano-roll-inpainter) {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  .loading-spinner,
-  > :not(.loading-spinner-container):not(.simplebar-track) {
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
+.inpainter {
+  &.sheet-inpainter svg,
+  .spectrogram-inpainter-image-container img {
+    transition-property: opacity;
+    transition-duration: 0.3s;
   }
 }
 
-.inpainter {
-  > :not(.loading-spinner-container) {
-    transition-property: opacity, filter;
-    transition-duration: 1s;
+.inpainter.busy {
+  &.sheet-inpainter svg,
+  .spectrogram-inpainter-image-container img {
+    opacity: 0.3;
   }
 }
 .inpainter:not(.piano-roll-inpainter).busy {
@@ -108,8 +106,6 @@ body.hidden-cursor {
     // emulate modal overlay, highlighting the loading indicator
     // FIXME(@tbazin, 2022/02/18): fix NOTONO scrollbar still disabled by this
     //  -> this is because the :not() based selection is improper, should target specific objects
-    opacity: 0.6;
-    filter: blur(2.5px);
     & * {
       cursor: wait !important;
       pointer-events: none !important;

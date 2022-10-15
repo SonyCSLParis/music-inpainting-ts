@@ -539,6 +539,14 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
     }
   }
   .spectrogram-inpainter.busy .sequencer-toggle-visual {
+    // disabled because it consumes too much resources
+    // fill: hsl(
+    //   calc($spectrogram-grid-color-base-hue + 10),
+    //   calc($spectrogram-grid-color-base-saturation + 20%),
+    //   calc($spectrogram-grid-color-base-lightness - 10%)
+    // );
+  }
+  .spectrogram-inpainter rect:not(.sequencer-toggle-visual) {
     fill: hsl(
       calc($spectrogram-grid-color-base-hue + 10),
       calc($spectrogram-grid-color-base-saturation + 20%),

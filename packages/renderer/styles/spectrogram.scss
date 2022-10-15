@@ -259,28 +259,30 @@ body.notono {
     }
     rect.sequencer-toggle-visual {
       rx: 0.2px;
-      stroke-width: 1px;
+      stroke-width: 1.5px;
 
-      will-change: opacity, fill-opacity;
-      animation: pulseOpacity 1s ease-in-out alternate infinite;
+      will-change: opacity, fill-opacity, stroke-opacity;
+      // Disabled because it consumes too much resources
+      // animation: pulseOpacity 1s ease-in-out alternate infinite;
+      // --target-opacity: 0;
       transition-property: opacity, fill, stroke, fill-opacity, stroke-opacity;
+      transition-property: opacity; //, fill, stroke, fill-opacity, stroke-opacity;
       transition-duration: 0.25s;
 
       opacity: 0;
-      fill-opacity: 0.9;
+      fill-opacity: 0.8;
       stroke-opacity: 1;
-      --target-opacity: 0;
     }
     &.selected rect.sequencer-toggle-visual {
-      transition-property: fill, stroke-opacity;
+      // --target-opacity: 0.8;
+      transition-property: none;
       opacity: 0.8;
-      --target-opacity: 0.8;
     }
 
     &:hover {
       rect.sequencer-toggle-visual {
-        --target-opacity: 0.9;
-        transition-property: fill, stroke-opacity;
+        // --target-opacity: 0.9;
+        transition-property: none;
         opacity: 1;
       }
     }
