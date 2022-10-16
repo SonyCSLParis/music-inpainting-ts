@@ -86,16 +86,20 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
     )
 
     this.inpainter.on('incoming-notes', (newNotes: NoteSequence.Note[]) => {
-      const minMaxPitchesBefore = this.visualizer?.getMinMaxPitches()
-      this.visualizer?.updateMinMaxPitches(undefined, newNotes)
-      const minMaxPitchesAfter = this.visualizer?.getMinMaxPitches()
+      if (this.visualizer == undefined) {
+        return
+      }
+      this.visualizer.incomingNotesForMinMaxPitchComputation = null
+      const minMaxPitchesBefore = this.visualizer.getMinMaxPitches()
+      this.visualizer.incomingNotesForMinMaxPitchComputation = newNotes
+      const minMaxPitchesAfter = this.visualizer.getMinMaxPitches()
       if (
         minMaxPitchesBefore == undefined ||
         minMaxPitchesAfter == undefined ||
         minMaxPitchesAfter[0] != minMaxPitchesBefore[0] ||
         minMaxPitchesAfter[1] != minMaxPitchesBefore[1]
       ) {
-        this.visualizer?.reload()
+        this.visualizer.reload()
       }
     })
     this.inpainter.on('grow-note', (note: NoteSequence.Note) =>
@@ -422,6 +426,9 @@ class PianoRollInpainterGraphicalViewBase extends InpainterGraphicalView<
   protected onInpainterChange(data: PianoRollData): void {
     if (data.type != null && data.type == 'validate') {
       return
+    }
+    if (this.visualizer != undefined) {
+      this.visualizer.incomingNotesForMinMaxPitchComputation = []
     }
     if (data.newNotes != null) {
       // intermediary update with new batch of notes from the API,
