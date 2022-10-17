@@ -209,7 +209,7 @@ class NoteByNotePianoRollSVGVisualizer extends PianoRollSVGVisualizer {
   protected updateRandomTransitionCSSProperties(rect: SVGRectElement): void {
     const cssProperties: CSSProperty[] = []
     const makeRandomNumber = (exponent: number = 1) => {
-      const sign = -1 + 2 * Math.random()
+      const sign = Math.random() > 0.5 ? 1 : -1
       const value = Math.random() ** exponent
       return sign * value
     }

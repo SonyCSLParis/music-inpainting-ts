@@ -209,7 +209,9 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
     stroke: sandybrown;
   }
 
-  transition: opacity 0.8s, width 0.6s, transform 1s, stroke 0.18s, filter 1s;
+  transition: opacity 0.8s, width 0.6s,
+    transform calc(var(--initial-offset-x) * 0.2s + 0.9s), stroke 0.18s,
+    filter calc(var(--initial-offset-x) * 0.2s + 0.8s);
   transition-timing-function: ease-in-out;
   &.selected,
   &.candidate-selection {
@@ -224,6 +226,12 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
     fill: color.scale($hot-orange-color, $alpha: -20%);
     fill: hsl(236, 90%, 70%, 0.8);
   }
+  transition-timing-function: cubic-bezier(
+    1,
+    0.2,
+    calc(0.8 + var(--initial-offset-x) * 0.08),
+    1.4
+  );
 
   filter: none;
   &.reveal-note,
@@ -232,17 +240,18 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
   }
   &.transition-to-remove-note {
     transform: //
-      translateX(calc(10px + var(--initial-offset-x) * 30px))
-      translateY(calc(-1 * (var(--initial-offset-y) + 1) / 2 * 60px))
+      translateX(calc(10px + var(--initial-offset-x) * 7px))
+      translateY(calc(-1 * (var(--initial-offset-y) + 1) / 2 * 30px))
       rotate(calc(var(--initial-rotation) * 10deg)); //
     opacity: 0;
+    transition-timing-function: linear;
   }
   &.reveal-note {
     opacity: 0;
     filter: blur(5px);
     transform: //
-      translateX(calc(var(--initial-offset-x) * 20px))
-      translateY(calc((var(--initial-offset-y) + 1) / 2 * 50px))
+      translateX(calc(var(--initial-offset-x) * 15px))
+      translateY(calc((var(--initial-offset-y) + 1) / 2 * 30px))
       rotate(calc(var(--initial-rotation) * 3deg)); //
   }
 
