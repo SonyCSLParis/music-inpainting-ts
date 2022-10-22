@@ -87,6 +87,10 @@ body.hidden-cursor {
   }
 }
 
+.simplebar-dragging .simplebar-track:hover {
+  cursor: grabbing;
+}
+
 .inpainter {
   &.sheet-inpainter svg,
   .spectrogram-inpainter-image-container img {

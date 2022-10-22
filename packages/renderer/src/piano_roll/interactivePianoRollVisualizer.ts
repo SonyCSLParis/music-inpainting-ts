@@ -1315,7 +1315,6 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
     this._inSelectionInteraction = inSelectionInteraction
   }
 
-  protected startingSelectionInteraction: boolean = false
   get InSelectionInteraction(): boolean {
     return this.inSelectionInteraction
   }
@@ -1701,7 +1700,7 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
         this.selectionOverlay.setAttribute('width', '0')
         this.selectionTimestamp_A = clickTime
         this.selectionTimestamp_B = clickTime
-        this.startingSelectionInteraction = true
+        this.inSelectionInteraction = true
       } else {
         this.seekCallback(ev)
       }
@@ -1727,10 +1726,6 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
       }
       if (ev.offsetY < 0 || ev.offsetY > this.svgElement.clientHeight) {
         this.clearSelection()
-      }
-      if (!this.inSelectionInteraction && this.startingSelectionInteraction) {
-        this.inSelectionInteraction = true
-        this.startingSelectionInteraction = false
       }
       if (!this.inSelectionInteraction) {
         return
@@ -1902,7 +1897,6 @@ export class ClickableVisualizerElement extends MonoVoiceVisualizerElement {
   clearSelection() {
     this.selectionOverlay?.style.setProperty('opacity', '0')
     this.inSelectionInteraction = false
-    this.startingSelectionInteraction = false
     this.selectionTimestamp_A = null
     this.selectionTimestamp_B = null
   }

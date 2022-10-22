@@ -190,6 +190,7 @@ body.running #configuration-selection-container {
     grid-auto-flow: column;
     grid-auto-columns: 1fr;
     max-width: 75vw;
+    padding: 0 1vw;
 
     > div {
       margin: 0 1vw;

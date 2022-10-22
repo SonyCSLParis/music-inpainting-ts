@@ -128,12 +128,12 @@ $lighter-arabian-sand-color: color.scale($arabian-sand-color, $lightness: +40%);
 
 .midi-visualizer-loop-overlay {
   position: relative;
-  fill: lightblue;
+  fill: antiquewhite;
   fill-opacity: 0.3;
 }
 
 .midi-visualizer {
-  cursor: pointer;
+  cursor: grab;
 }
 .midi-visualizer.in-interaction {
   cursor: grabbing;
