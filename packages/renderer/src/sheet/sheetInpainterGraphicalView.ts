@@ -127,7 +127,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   protected onClickTimestampBoxFactory(
     timeStart: Fraction,
     timeEnd: Fraction
-  ): (event: PointerEvent) => void {
+  ): (this: HTMLElement, event?: PointerEvent | MouseEvent) => Promise<void> {
     // FIXME(theis) hardcoded 4/4 time-signature
     const [timeRangeStart_quarter, timeRangeEnd_quarter] = [
       timeStart,
@@ -139,14 +139,19 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
       `time_range_end_quarter=${timeRangeEnd_quarter}`,
     ]
 
-    return () => {
-      const metadata = this.getMetadata()
-      // TODO(theis, 2021-08-10): use inpainter.inpaint method
-      void this.inpainter.inpaint(
-        [...this.queryParameters, ...timerangeQueryParameters],
+    const self = this
+    return async function (
+      this: HTMLElement,
+      event?: PointerEvent | MouseEvent
+    ) {
+      this.classList.add('selected')
+      const metadata = self.getMetadata()
+      await self.inpainter.inpaint(
+        [...self.queryParameters, ...timerangeQueryParameters],
         undefined,
         metadata
       )
+      this.classList.remove('selected')
     }
   }
 
@@ -341,7 +346,7 @@ class SheetInpainterGraphicalViewBase extends InpainterGraphicalView<
   protected createTimeContainer(
     divId: string,
     duration_quarters: number,
-    onclick: (event?: PointerEvent) => void,
+    onclick: (this: HTMLElement, event?: PointerEvent | MouseEvent) => void,
     timestamps: [Fraction, Fraction]
   ): HTMLElement {
     // container for positioning the timestamp box and attached boxes

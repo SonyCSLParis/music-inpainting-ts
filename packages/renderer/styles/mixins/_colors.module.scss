@@ -672,6 +672,10 @@ $lighter-darkgray: color.scale(black, $lightness: +5%);
         }
       }
 
+      &.selected {
+        background-color: color.scale($accent-color, $alpha: -80%);
+      }
+
       &.dragover::after {
         background-color: $accent-color;
       }

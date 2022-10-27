@@ -40,10 +40,14 @@ $chords-font-stack: 'Boogaloo', cursive;
     position: absolute;
     opacity: 0;
   }
+  &.selected {
+    animation: pulsing 0.5s alternate infinite;
+    opacity: 0.5;
+  }
 
   &.active {
-    display: block;
     opacity: 1;
+    display: block;
     z-index: 1;
     pointer-events: all;
 
