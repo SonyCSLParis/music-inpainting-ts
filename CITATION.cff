@@ -1,13 +1,14 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 authors:
-- family-names: "Bazin"
-  given-names: "Théis"
-  orcid: "https://orcid.org/0000-0002-6263-4020"
-- family-names: "Hadjeres"
-  given-names: "Gaëtan"
-  orcid: "https://orcid.org/0000-0003-1462-6103"
-title: SonyCSLParis/music-inpainting-ts: v1.4.5
+  - family-names: "Bazin"
+    given-names: "Théis"
+    orcid: "https://orcid.org/0000-0002-6263-4020"
+  - family-names: "Hadjeres"
+    given-names: "Gaëtan"
+    orcid: "https://orcid.org/0000-0003-1462-6103"
+  - name: "Sony CSL Paris"
+title: "music-inpainting.ts"
 version: 1.4.5
 doi: 10.5281/zenodo.7263014
 date-released: 2022-10-29
