@@ -1,5 +1,7 @@
 [![Pianoto-logo](assets/music-inpainting-ts.png)](https://SonyCSLParis.github.io/music-inpainting-ts/)
 
+[![DOI](https://zenodo.org/badge/138577839.svg)](https://zenodo.org/badge/latestdoi/138577839)
+
 # [Interactive Music Inpainting for the Web](https://SonyCSLParis.github.io/music-inpainting-ts/)
 
 
