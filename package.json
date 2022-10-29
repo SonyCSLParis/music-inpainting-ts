@@ -1,6 +1,6 @@
 {
   "name": "music-inpainting-ts",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "A collection of web interfaces for AI-assisted interactive music creation",
   "private": true,
   "engines": {
