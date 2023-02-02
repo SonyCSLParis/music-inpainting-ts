@@ -121,7 +121,7 @@
     "jquery": "^3.6.1",
     "loglevel": "^1.8.0",
     "nexusui": "https://github.com/SonyCSLParis/nexusui#types",
-    "opensheetmusicdisplay": "1.4.5",
+    "opensheetmusicdisplay": "1.7.4",
     "screenfull": "^6.0.2",
     "shepherd.js": "^10.0.1",
     "simplebar": "^5.3.9",
